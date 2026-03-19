@@ -153,7 +153,7 @@
         searchResults.textContent = '';
         var customers = [];
         if (res && res.data) {
-          customers = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          customers = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
         }
         if (customers.length === 0) {
           searchResults.style.display = 'none';
@@ -291,7 +291,7 @@
 
       var claim = null;
       if (res && res.data) {
-        claim = res.data.data || res.data;
+        claim = res.data.data || res.data.message || res.data;
       }
       if (!claim) {
         content.appendChild(UI.error('Could not load breakdown details.'));

@@ -139,7 +139,8 @@
 
     // Fetch attendance status
     window.fieldAPI.apiCall('GET', '/api/field/attendance/today').then(function (res) {
-      var att = (!res.error && res.data) ? res.data : null;
+      var raw = (!res.error && res.data) ? res.data : null;
+      var att = raw ? (raw.message || raw.data || raw) : null;
       renderState(actionArea, att, empName, today, gps);
     }).catch(function () {
       actionArea.textContent = '';
@@ -175,7 +176,8 @@
               }
               UI.toast('Checked in!', 'success');
               window.fieldAPI.apiCall('GET', '/api/field/attendance/today').then(function (r2) {
-                var newAtt = (!r2.error && r2.data) ? r2.data : null;
+                var r2raw = (!r2.error && r2.data) ? r2.data : null;
+                var newAtt = r2raw ? (r2raw.message || r2raw.data || r2raw) : null;
                 renderState(container, newAtt, empName, today, gps);
               });
             }).catch(function (err) {
@@ -228,7 +230,8 @@
               _timers = [];
               UI.toast('Checked out!', 'success');
               window.fieldAPI.apiCall('GET', '/api/field/attendance/today').then(function (r2) {
-                var newAtt = (!r2.error && r2.data) ? r2.data : null;
+                var r2raw = (!r2.error && r2.data) ? r2.data : null;
+                var newAtt = r2raw ? (r2raw.message || r2raw.data || r2raw) : null;
                 renderState(container, newAtt, empName, today, gps);
               });
             }).catch(function (err) {

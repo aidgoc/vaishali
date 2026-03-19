@@ -145,7 +145,7 @@
 
         var items = [];
         if (res && res.data) {
-          items = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          items = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
         }
 
         if (items.length === 0) {
@@ -269,7 +269,7 @@
         searchResults.textContent = '';
         var customers = [];
         if (res && res.data) {
-          customers = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          customers = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
         }
         if (customers.length === 0) {
           searchResults.style.display = 'none';
@@ -426,7 +426,7 @@
           return;
         }
         UI.toast('Visit started!', 'success');
-        var newName = (res.data && (res.data.name || (res.data.data && res.data.data.name))) || '';
+        var newName = (res.data && (res.data.name || (res.data.data && res.data.data.name) || (res.data.message && res.data.message.name))) || '';
         if (newName) {
           location.hash = '#/dcr/' + newName;
         } else {
@@ -456,7 +456,7 @@
 
       var dcr = null;
       if (res && res.data) {
-        dcr = res.data.data || res.data;
+        dcr = res.data.data || res.data.message || res.data;
       }
       if (!dcr) {
         content.appendChild(UI.error('Could not load visit.'));

@@ -129,7 +129,7 @@
         return;
       }
 
-      allItems = (res.data && res.data.data) ? res.data.data : [];
+      allItems = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
       renderList();
     }).catch(function () {
       listArea.textContent = '';
@@ -166,7 +166,7 @@
         return;
       }
 
-      var data = (res.data && res.data.data) ? res.data.data : null;
+      var data = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : null;
       if (!data) {
         content.appendChild(UI.error('Document not found'));
         return;

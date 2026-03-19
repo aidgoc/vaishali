@@ -27,7 +27,7 @@
       // Remove skeleton
       if (loader.parentNode) loader.parentNode.removeChild(loader);
 
-      var profile = (resp.data && resp.data.data) || (resp.data) || {};
+      var profile = (resp.data && resp.data.data) || (resp.data && resp.data.message) || (resp.data) || {};
       var employeeName = profile.employee_name || 'Employee';
       var department = profile.department || '';
       var designation = profile.designation || '';

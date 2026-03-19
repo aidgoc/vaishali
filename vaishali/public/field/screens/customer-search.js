@@ -108,8 +108,13 @@
         return;
       }
 
-      // Handle both {data: [...]} and {data: {data: [...]}} formats
-      var customers = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      // Handle: FastAPI {data: [...]}, Frappe {message: [...]}, nested {data: {data: [...]}}
+      var customers = [];
+      if (res.data) {
+        if (Array.isArray(res.data)) customers = res.data;
+        else if (Array.isArray(res.data.data)) customers = res.data.data;
+        else if (Array.isArray(res.data.message)) customers = res.data.message;
+      }
 
       // Initial render — show all
       renderList(listEl, countEl, customers, '');

@@ -80,7 +80,7 @@
         return;
       }
 
-      var advances = (res.data && res.data.data) ? res.data.data : [];
+      var advances = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
 
       if (advances.length === 0) {
         listArea.appendChild(UI.empty('banknote', 'No advances yet'));
@@ -207,7 +207,7 @@
         return;
       }
 
-      var adv = (res.data && res.data.data) ? res.data.data : null;
+      var adv = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : null;
       if (!adv) {
         contentArea.appendChild(UI.error('Advance not found'));
         return;

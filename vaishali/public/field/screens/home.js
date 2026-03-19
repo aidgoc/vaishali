@@ -144,8 +144,10 @@
       var attResult = results[0];
       var dcrResult = results[1];
 
-      var att = attResult.data || {};
-      var dcrs = (dcrResult.data && dcrResult.data.data) || [];
+      var attRaw = attResult.data || {};
+      var att = attRaw.message || attRaw.data || attRaw;
+      var dcrRaw = dcrResult.data || {};
+      var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
 
       var visitCount = dcrs.length;
       var completedCount = 0;
@@ -236,12 +238,12 @@
       appEl.appendChild(holidayContainer);
       var currentYear = today.split('-')[0];
       api.apiCall('GET', '/api/resource/Holiday%20List?filters=[["from_date","<=","' + today + '"],["to_date",">=","' + today + '"]]&fields=["name"]&limit_page_length=1').then(function (hlRes) {
-        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || [])) : [];
+        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || hlRes.data.message || [])) : [];
         if (lists.length === 0) return;
         return api.apiCall('GET', '/api/resource/Holiday%20List/' + encodeURIComponent(lists[0].name));
       }).then(function (hlDoc) {
         if (!hlDoc || !hlDoc.data) return;
-        var docData = hlDoc.data.data || hlDoc.data;
+        var docData = hlDoc.data.data || hlDoc.data.message || hlDoc.data;
         var allHolidays = docData.holidays || [];
         var upcoming = allHolidays.filter(function (h) { return h.holiday_date >= today; }).slice(0, 5);
         if (upcoming.length > 0) {
@@ -291,12 +293,14 @@
       var teamResult = results[0];
       var approvalsResult = results[1];
 
-      var teamData = teamResult.data || {};
+      var teamRaw = teamResult.data || {};
+      var teamData = teamRaw.message || teamRaw.data || teamRaw;
       var presentCount = teamData.present_count || 0;
       var totalCount = teamData.total_count || 0;
-      var teamMembers = (teamData.data) || [];
+      var teamMembers = teamData.data || teamData.members || [];
 
-      var approvals = (approvalsResult.data && approvalsResult.data.data) || [];
+      var appRaw = approvalsResult.data || {};
+      var approvals = appRaw.data || appRaw.message || (Array.isArray(appRaw) ? appRaw : []);
       var pendingCount = approvals.length;
 
       // Count visits from team data
@@ -400,12 +404,12 @@
       appEl.appendChild(mgrHolidayContainer);
       var mgrToday = todayISO();
       api.apiCall('GET', '/api/resource/Holiday%20List?filters=[["from_date","<=","' + mgrToday + '"],["to_date",">=","' + mgrToday + '"]]&fields=["name"]&limit_page_length=1').then(function (hlRes) {
-        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || [])) : [];
+        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || hlRes.data.message || [])) : [];
         if (lists.length === 0) return;
         return api.apiCall('GET', '/api/resource/Holiday%20List/' + encodeURIComponent(lists[0].name));
       }).then(function (hlDoc) {
         if (!hlDoc || !hlDoc.data) return;
-        var docData = hlDoc.data.data || hlDoc.data;
+        var docData = hlDoc.data.data || hlDoc.data.message || hlDoc.data;
         var allHolidays = docData.holidays || [];
         var upcoming = allHolidays.filter(function (h) { return h.holiday_date >= mgrToday; }).slice(0, 5);
         if (upcoming.length > 0) {

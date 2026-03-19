@@ -82,7 +82,7 @@
       content.textContent = '';
 
       // ── Balance cards ──
-      var allocations = (balanceRes && balanceRes.data && balanceRes.data.data) || [];
+      var allocations = (balanceRes && balanceRes.data && (balanceRes.data.data || balanceRes.data.message)) || [];
       // Group by leave_type, take first (latest) per type
       var byType = {};
       for (var i = 0; i < allocations.length; i++) {
@@ -124,7 +124,7 @@
       ]));
 
       // ── Applications list ──
-      var applications = (appRes && appRes.data && appRes.data.data) || [];
+      var applications = (appRes && appRes.data && (appRes.data.data || appRes.data.message)) || [];
       if (applications.length > 0) {
         content.appendChild(UI.sectionHeading('APPLICATIONS'));
         for (var k = 0; k < applications.length; k++) {
@@ -287,7 +287,7 @@
     window.fieldAPI.apiCall('GET', path).then(function (res) {
       content.textContent = '';
 
-      var data = (res && res.data && res.data.data) || null;
+      var data = (res && res.data && (res.data.data || res.data.message)) || null;
       if (!data) {
         content.appendChild(UI.error('Could not load leave application.'));
         return;

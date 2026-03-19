@@ -81,7 +81,7 @@
         return;
       }
 
-      var claims = (res.data && res.data.data) || [];
+      var claims = (res.data && (res.data.data || res.data.message)) || [];
 
       // Pending total card
       var pendingTotal = 0;
@@ -334,12 +334,12 @@
     window.fieldAPI.apiCall('GET', '/api/resource/Expense Claim/' + encodeURIComponent(name)).then(function (res) {
       appEl.removeChild(loadingEl);
 
-      if (res.error || !res.data || !res.data.data) {
+      if (res.error || !res.data || !(res.data.data || res.data.message)) {
         appEl.appendChild(UI.error('Failed to load expense claim.'));
         return;
       }
 
-      var claim = res.data.data;
+      var claim = res.data.data || res.data.message;
       var displayStatus = claim.approval_status || claim.status || 'Draft';
 
       // Header: status pill + total amount

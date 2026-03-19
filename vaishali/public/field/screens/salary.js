@@ -56,7 +56,7 @@
         return;
       }
 
-      var slips = (res.data && res.data.data) ? res.data.data : [];
+      var slips = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
 
       if (slips.length === 0) {
         listArea.appendChild(UI.empty('wallet', 'No salary slips yet'));
@@ -103,7 +103,7 @@
         return;
       }
 
-      var data = (res.data && res.data.data) ? res.data.data : null;
+      var data = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : null;
       if (!data) {
         contentArea.appendChild(UI.error('Salary slip not found'));
         return;

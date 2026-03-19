@@ -145,7 +145,7 @@
 
       var mv = null;
       if (res && res.data) {
-        mv = res.data.data || res.data;
+        mv = res.data.data || res.data.message || res.data;
       }
       if (!mv) {
         content.appendChild(UI.error('Could not load installation details.'));

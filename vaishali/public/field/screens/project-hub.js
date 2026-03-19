@@ -62,7 +62,7 @@
         return;
       }
 
-      var projects = (res.data && res.data.data) || res.data || [];
+      var projects = (res.data && (res.data.data || res.data.message)) || res.data || [];
       if (!Array.isArray(projects)) projects = [];
 
       if (projects.length === 0) {
