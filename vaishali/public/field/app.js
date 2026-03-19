@@ -347,7 +347,8 @@
 
   window.addEventListener('hashchange', onRouteChange);
 
-  document.addEventListener('DOMContentLoaded', function () {
+  // Run startup — handle both DOMContentLoaded and late-loading (dynamic scripts)
+  function _startup() {
     // Wait for Auth to load session from IDB (async), then route
     Auth.getSession().then(function (session) {
       if (!session) {
@@ -408,6 +409,13 @@
     if (!navigator.onLine) {
       api.updateOfflineBanner(true);
     }
-  });
+  }
+
+  // Handle both: DOMContentLoaded (normal) and late-load (dynamic scripts)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _startup);
+  } else {
+    _startup();
+  }
 
 })();
