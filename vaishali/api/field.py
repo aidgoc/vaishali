@@ -319,6 +319,69 @@ def get_approvals():
     return results
 
 
+# ── Holidays ─────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_upcoming_holidays(limit=5):
+    """Get upcoming holidays from the active Holiday List."""
+    today = date.today().isoformat()
+    # Find the active holiday list covering today
+    lists = frappe.get_list("Holiday List",
+        filters=[["from_date", "<=", today], ["to_date", ">=", today]],
+        fields=["name"], limit_page_length=1)
+    if not lists:
+        return []
+    doc = frappe.get_doc("Holiday List", lists[0].name)
+    holidays = [{"holiday_date": str(h.holiday_date), "description": h.description}
+                for h in doc.holidays if str(h.holiday_date) >= today]
+    holidays.sort(key=lambda x: x["holiday_date"])
+    return holidays[:int(limit)]
+
+
+# ── Approval Actions (Manager) ────────────────────────────────────
+
+@frappe.whitelist(methods=["POST"])
+def process_approval(doctype, name, action):
+    """Approve or reject a Leave Application, Expense Claim, or Employee Advance."""
+    allowed_doctypes = {"Leave Application", "Expense Claim", "Employee Advance"}
+    if doctype not in allowed_doctypes:
+        frappe.throw(_(f"Cannot process approval for {doctype}"))
+
+    tier = _get_nav_tier()
+    if tier == "field":
+        frappe.throw(_("Only managers and admins can process approvals"))
+
+    doc = frappe.get_doc(doctype, name)
+
+    if action == "approve":
+        if doctype == "Leave Application":
+            doc.status = "Approved"
+            doc.save(ignore_permissions=True)
+            doc.submit()
+        elif doctype == "Expense Claim":
+            doc.approval_status = "Approved"
+            doc.save(ignore_permissions=True)
+            doc.submit()
+        elif doctype == "Employee Advance":
+            doc.save(ignore_permissions=True)
+            doc.submit()
+    elif action == "reject":
+        if doctype == "Leave Application":
+            doc.status = "Rejected"
+            doc.save(ignore_permissions=True)
+            doc.submit()
+        elif doctype == "Expense Claim":
+            doc.approval_status = "Rejected"
+            doc.save(ignore_permissions=True)
+        elif doctype == "Employee Advance":
+            doc.add_comment("Comment", "Rejected via DSPL ERP")
+    else:
+        frappe.throw(_(f"Invalid action: {action}"))
+
+    frappe.db.commit()
+    return {"success": True, "action": action, "doctype": doctype, "name": name}
+
+
 # ── Session Info ──────────────────────────────────────────────────
 
 @frappe.whitelist()

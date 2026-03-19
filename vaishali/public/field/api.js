@@ -263,6 +263,14 @@
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
+      else if (path.match(/^\/api\/field\/approvals\/[^/]+\/[^/]+\/(approve|reject)$/)) {
+        var apParts = path.replace('/api/field/approvals/', '').split('/');
+        body = body || {};
+        body.doctype = decodeURIComponent(apParts[0]);
+        body.name = decodeURIComponent(apParts[1]);
+        body.action = apParts[2];
+        path = '/api/method/vaishali.api.field.process_approval';
+      }
       else if (path.match(/^\/api\/field\/dcr\/[^/]+\/checkout$/)) {
         path = '/api/method/vaishali.api.field.checkout_dcr';
       }
@@ -279,6 +287,7 @@
         else if (method === 'DELETE') path = '/api/method/vaishali.api.chat.clear_history';
         else path = '/api/method/vaishali.api.chat.get_history';
       }
+      else if (path === '/api/field/holidays') path = '/api/method/vaishali.api.field.get_upcoming_holidays';
       else if (path === '/api/field/login') path = '/api/method/login';
 
       var controller = new AbortController();
