@@ -215,6 +215,110 @@ def get_stats(month=None):
     }
 
 
+# ── Team (Manager) ───────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_team():
+    """Team overview for managers — today's attendance status of all DSPL employees."""
+    today = date.today().isoformat()
+    employees = frappe.get_list("Employee",
+        filters={"company": COMPANY, "status": "Active"},
+        fields=["name", "employee_name", "department", "designation"],
+        order_by="employee_name asc", limit_page_length=0)
+
+    # Get today's checkins for all employees
+    checkins = frappe.get_list("Employee Checkin",
+        filters={"time": [">=", f"{today} 00:00:00"]},
+        fields=["employee", "log_type", "time"],
+        order_by="time asc", limit_page_length=0)
+
+    # Build per-employee status
+    emp_status = {}
+    for c in checkins:
+        if c.employee not in emp_status:
+            emp_status[c.employee] = {"checked_in": False, "checked_out": False}
+        if c.log_type == "IN":
+            emp_status[c.employee]["checked_in"] = True
+            emp_status[c.employee]["in_time"] = str(c.time)
+        if c.log_type == "OUT":
+            emp_status[c.employee]["checked_out"] = True
+
+    # Get today's active DCRs (visits)
+    active_dcrs = frappe.get_list("Daily Call Report",
+        filters={"date": today, "status": "Ongoing"},
+        fields=["employee"], limit_page_length=0)
+    in_field = {d.employee for d in active_dcrs}
+
+    members = []
+    present_count = 0
+    for emp in employees:
+        st = emp_status.get(emp.name, {})
+        status = "Absent"
+        if emp.name in in_field:
+            status = "In Field"
+        elif st.get("checked_in") and not st.get("checked_out"):
+            status = "Present"
+            present_count += 1
+        elif st.get("checked_in"):
+            status = "Present"
+            present_count += 1
+        members.append({
+            "name": emp.name, "employee_name": emp.employee_name,
+            "department": emp.department, "designation": emp.designation,
+            "status": status
+        })
+
+    return {
+        "present_count": present_count,
+        "total_count": len(employees),
+        "members": members,
+        "data": members,
+    }
+
+
+# ── Approvals (Manager) ─────────────────────────────────────────
+
+@frappe.whitelist()
+def get_approvals():
+    """Pending approvals for the current user (leave, expense, advance)."""
+    user = frappe.session.user
+    results = []
+
+    # Pending leave applications
+    leaves = frappe.get_list("Leave Application",
+        filters={"status": "Open", "leave_approver": user},
+        fields=["name", "employee", "employee_name", "leave_type",
+                "from_date", "to_date", "total_leave_days", "status"],
+        order_by="creation desc", limit_page_length=20)
+    for l in leaves:
+        l["doctype"] = "Leave Application"
+        l["type"] = "Leave Application"
+        results.append(l)
+
+    # Pending expense claims
+    expenses = frappe.get_list("Expense Claim",
+        filters={"approval_status": "Draft", "expense_approver": user},
+        fields=["name", "employee", "employee_name", "total_claimed_amount",
+                "approval_status"],
+        order_by="creation desc", limit_page_length=20)
+    for e in expenses:
+        e["doctype"] = "Expense Claim"
+        e["type"] = "Expense Claim"
+        results.append(e)
+
+    # Pending employee advances
+    advances = frappe.get_list("Employee Advance",
+        filters={"docstatus": 0},
+        fields=["name", "employee", "employee_name", "advance_amount", "status"],
+        order_by="creation desc", limit_page_length=20)
+    for a in advances:
+        a["doctype"] = "Employee Advance"
+        a["type"] = "Employee Advance"
+        results.append(a)
+
+    return results
+
+
 # ── Session Info ──────────────────────────────────────────────────
 
 @frappe.whitelist()
