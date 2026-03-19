@@ -15,6 +15,11 @@ def _get_api_key():
     return key
 
 
+def _get_openrouter_key():
+    """Get OpenRouter API key from site config (optional — used for worker models)."""
+    return frappe.conf.get("openrouter_api_key") or ""
+
+
 def _truncate(s, max_len=_MAX_TOOL_RESULT_CHARS):
     if len(s) <= max_len:
         return s
