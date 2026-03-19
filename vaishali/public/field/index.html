@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#E60005">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DSPL Field">
+  <title>DSPL Field</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/@knadh/oat@0.4.1/oat.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="offline-banner" class="offline-banner" hidden>
+    <span>You're offline — actions will sync when connected</span>
+    <span id="pending-count"></span>
+    <button id="sync-now-btn" class="small outline" hidden>Sync now</button>
+  </div>
+
+  <div id="update-banner" class="update-banner" hidden>
+    <span>New version available</span>
+    <button id="update-btn" class="small">Update</button>
+  </div>
+
+  <main id="app" class="container app-container">
+    <div aria-busy="true" data-spinner="overlay" style="min-height:60vh"></div>
+  </main>
+
+  <nav id="bottom-nav" class="bottom-nav" hidden>
+    <!-- Dynamically built by app.js buildBottomNav() based on user role -->
+  </nav>
+
+  <script src="https://unpkg.com/@knadh/oat@0.4.1/oat.min.js" defer></script>
+  <script src="icons.js"></script>
+  <script src="ui.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script src="router.js"></script>
+  <script src="screens/home.js"></script>
+  <script src="screens/profile.js"></script>
+  <script src="screens/attendance.js"></script>
+  <script src="screens/hr-hub.js"></script>
+  <script src="screens/leave.js"></script>
+  <script src="screens/expense.js"></script>
+  <script src="screens/advance.js"></script>
+  <script src="screens/salary.js"></script>
+  <script src="screens/visits.js"></script>
+  <script src="screens/approvals.js"></script>
+  <script src="screens/team.js"></script>
+  <script src="screens/pipeline.js"></script>
+  <script src="screens/project-hub.js"></script>
+  <script src="screens/amc.js"></script>
+  <script src="screens/customer-detail.js"></script>
+  <script src="screens/debtors.js"></script>
+  <script src="screens/my-targets.js"></script>
+  <script src="screens/follow-ups.js"></script>
+  <script src="screens/customer-search.js"></script>
+  <script src="screens/service-dashboard.js"></script>
+  <script src="screens/installation.js"></script>
+  <script src="screens/breakdown.js"></script>
+  <script src="screens/production.js"></script>
+  <script src="screens/dispatch.js"></script>
+  <script src="screens/revenue.js"></script>
+  <script src="screens/chat.js"></script>
+  <script src="app.js?v=13"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(function(reg) {
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              var banner = document.getElementById('update-banner');
+              if (banner) banner.hidden = false;
+              var btn = document.getElementById('update-btn');
+              if (btn) {
+                btn.addEventListener('click', function() {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                });
+              }
+            }
+          });
+        });
+      }).catch(function(err) {
+        console.warn('SW registration failed:', err);
+      });
+    }
+  </script>
+</body>
+</html>

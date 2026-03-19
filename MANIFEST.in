@@ -1,0 +1,11 @@
+include MANIFEST.in
+include requirements.txt
+include *.md
+include *.py
+include *.txt
+recursive-include vaishali *.py
+recursive-include vaishali *.json
+recursive-include vaishali *.html
+recursive-include vaishali *.css
+recursive-include vaishali *.js
+recursive-include vaishali *.png
