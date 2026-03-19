@@ -352,6 +352,25 @@
     // Wait for Auth to load session from IDB (async), then route
     Auth.getSession().then(function (session) {
       if (!session) {
+        // On Frappe Cloud, user might already be logged in via desk session
+        // Check cookie before showing login screen
+        var userCookie = document.cookie.match(/user_id=([^;]+)/);
+        var userId = userCookie ? decodeURIComponent(userCookie[1]) : null;
+        if (userId && userId !== 'Guest') {
+          // User has active Frappe session — auto-populate from session info
+          return api.apiCall('GET', '/api/field/session-info').then(function (res) {
+            var info = (res.data && (res.data.data || res.data.message)) || {};
+            if (info.employee) {
+              return api.saveSession(info.employee, info.nav_tier).then(function () {
+                Auth.setEmployee(info.employee);
+                Auth.setNavTier(info.nav_tier);
+                buildBottomNav();
+                navigate('#/home');
+              });
+            }
+            navigate('#/login');
+          }).catch(function () { navigate('#/login'); });
+        }
         navigate('#/login');
         return;
       }

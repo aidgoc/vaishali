@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "DSPL ERP — AI-native ERP with Vaishali agent, View Engine, and Field PWA"
 requires-python = ">=3.10"
 authors = [{name = "Harshwardhan Gokhale", email = "harsh@dgoc.in"}]
+dependencies = [
+    "anthropic>=0.40.0",
+]
 
 [build-system]
 requires = ["flit_core >=3.2,<4"]
