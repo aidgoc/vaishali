@@ -231,20 +231,25 @@
         appEl.appendChild(salesLinksRow);
       }
 
-      // Upcoming holidays
+      // Upcoming holidays — fetch from Holiday List parent (Holiday child table has no direct read permission)
       var holidayContainer = el('div');
       appEl.appendChild(holidayContainer);
-      api.apiCall('GET', '/api/resource/Holiday?filters=[["holiday_date",">=","' + today + '"]]&fields=["holiday_date","description"]&order_by=holiday_date asc&limit_page_length=5').then(function (hRes) {
-        var holidays = [];
-        if (hRes && hRes.data) {
-          holidays = Array.isArray(hRes.data) ? hRes.data : (hRes.data.data || []);
-        }
-        if (holidays.length > 0) {
+      var currentYear = today.split('-')[0];
+      api.apiCall('GET', '/api/resource/Holiday%20List?filters=[["from_date","<=","' + today + '"],["to_date",">=","' + today + '"]]&fields=["name"]&limit_page_length=1').then(function (hlRes) {
+        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || [])) : [];
+        if (lists.length === 0) return;
+        return api.apiCall('GET', '/api/resource/Holiday%20List/' + encodeURIComponent(lists[0].name));
+      }).then(function (hlDoc) {
+        if (!hlDoc || !hlDoc.data) return;
+        var docData = hlDoc.data.data || hlDoc.data;
+        var allHolidays = docData.holidays || [];
+        var upcoming = allHolidays.filter(function (h) { return h.holiday_date >= today; }).slice(0, 5);
+        if (upcoming.length > 0) {
           holidayContainer.appendChild(UI.sectionHeading('UPCOMING HOLIDAYS'));
-          for (var h = 0; h < holidays.length; h++) {
-            var hol = holidays[h];
+          for (var h = 0; h < upcoming.length; h++) {
+            var hol = upcoming[h];
             var hDate = hol.holiday_date || '';
-            var hDesc = hol.description || hol.name || '';
+            var hDesc = (hol.description || hol.name || '').replace(/<[^>]*>/g, '').trim();
             var dParts = hDate.split('-');
             var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             var dateLabel = dParts.length === 3 ? parseInt(dParts[2], 10) + ' ' + months[parseInt(dParts[1], 10) - 1] : hDate;
@@ -390,21 +395,25 @@
       ]);
       appEl.appendChild(linksRow);
 
-      // Upcoming holidays
+      // Upcoming holidays — fetch from Holiday List parent (Holiday child table has no direct read permission)
       var mgrHolidayContainer = el('div');
       appEl.appendChild(mgrHolidayContainer);
       var mgrToday = todayISO();
-      api.apiCall('GET', '/api/resource/Holiday?filters=[["holiday_date",">=","' + mgrToday + '"]]&fields=["holiday_date","description"]&order_by=holiday_date asc&limit_page_length=5').then(function (hRes) {
-        var holidays = [];
-        if (hRes && hRes.data) {
-          holidays = Array.isArray(hRes.data) ? hRes.data : (hRes.data.data || []);
-        }
-        if (holidays.length > 0) {
+      api.apiCall('GET', '/api/resource/Holiday%20List?filters=[["from_date","<=","' + mgrToday + '"],["to_date",">=","' + mgrToday + '"]]&fields=["name"]&limit_page_length=1').then(function (hlRes) {
+        var lists = hlRes && hlRes.data ? (Array.isArray(hlRes.data) ? hlRes.data : (hlRes.data.data || [])) : [];
+        if (lists.length === 0) return;
+        return api.apiCall('GET', '/api/resource/Holiday%20List/' + encodeURIComponent(lists[0].name));
+      }).then(function (hlDoc) {
+        if (!hlDoc || !hlDoc.data) return;
+        var docData = hlDoc.data.data || hlDoc.data;
+        var allHolidays = docData.holidays || [];
+        var upcoming = allHolidays.filter(function (h) { return h.holiday_date >= mgrToday; }).slice(0, 5);
+        if (upcoming.length > 0) {
           mgrHolidayContainer.appendChild(UI.sectionHeading('UPCOMING HOLIDAYS'));
-          for (var h = 0; h < holidays.length; h++) {
-            var hol = holidays[h];
+          for (var h = 0; h < upcoming.length; h++) {
+            var hol = upcoming[h];
             var hDate = hol.holiday_date || '';
-            var hDesc = hol.description || hol.name || '';
+            var hDesc = (hol.description || hol.name || '').replace(/<[^>]*>/g, '').trim();
             var dParts = hDate.split('-');
             var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             var dateLabel = dParts.length === 3 ? parseInt(dParts[2], 10) + ' ' + months[parseInt(dParts[1], 10) - 1] : hDate;
