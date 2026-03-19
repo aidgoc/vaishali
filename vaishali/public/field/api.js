@@ -279,8 +279,8 @@
 
       return fetch(path, fetchOpts).then(function (resp) {
         clearTimeout(timer);
-        // Auto-recovery: if 401/403 on a non-login path, session is stale — force re-login
-        if ((resp.status === 401 || resp.status === 403) && path.indexOf('/login') === -1) {
+        // Auto-recovery: only on 401 (unauthorized = expired session). NOT 403 (forbidden = no permission)
+        if (resp.status === 401 && path.indexOf('/login') === -1) {
           console.warn('[API] Auth failed (' + resp.status + ') — clearing session');
           clearSession().then(function () {
             location.hash = '#/login';
