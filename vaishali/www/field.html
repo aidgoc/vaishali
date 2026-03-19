@@ -1,67 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#E60005">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="DSPL Field">
-  <title>DSPL Field</title>
-  <link rel="stylesheet" href="https://unpkg.com/@knadh/oat@0.4.1/oat.min.css">
-  <link rel="stylesheet" href="/assets/vaishali/field/style.css">
-</head>
-<body>
-  <div id="offline-banner" class="offline-banner" hidden>
-    <span>You're offline — actions will sync when connected</span>
-  </div>
+{%- extends "templates/web.html" -%}
 
-  <div id="update-banner" class="update-banner" hidden>
-    <span>New version available</span>
-    <button id="update-btn" class="small">Update</button>
-  </div>
+{%- block page_content -%}
+<style>
+  /* Hide Frappe web chrome — full-screen PWA */
+  .web-footer, .navbar, .page-header, .page-header-wrapper,
+  footer, .website-footer { display: none !important; }
+  .main-section { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+  .container { max-width: 100% !important; padding: 0 !important; }
+  body { background: var(--bg-color, #fff); }
+</style>
 
-  <main id="app" class="container app-container">
-    <div aria-busy="true" data-spinner="overlay" style="min-height:60vh"></div>
-  </main>
+<div id="offline-banner" class="offline-banner" hidden>
+  <span>You're offline — actions will sync when connected</span>
+</div>
 
-  <nav id="bottom-nav" class="bottom-nav" hidden>
-    <!-- Dynamically built by app.js -->
-  </nav>
+<div id="update-banner" class="update-banner" hidden>
+  <span>New version available</span>
+  <button id="update-btn" class="small">Update</button>
+</div>
 
-  <script src="https://unpkg.com/@knadh/oat@0.4.1/oat.min.js" defer></script>
-  <script src="/assets/vaishali/field/icons.js"></script>
-  <script src="/assets/vaishali/field/ui.js"></script>
-  <script src="/assets/vaishali/field/api.js"></script>
-  <script src="/assets/vaishali/field/auth.js"></script>
-  <script src="/assets/vaishali/field/router.js"></script>
-  <!-- Screen modules loaded here -->
-  <script src="/assets/vaishali/field/screens/home.js"></script>
-  <script src="/assets/vaishali/field/screens/profile.js"></script>
-  <script src="/assets/vaishali/field/screens/attendance.js"></script>
-  <script src="/assets/vaishali/field/screens/hr-hub.js"></script>
-  <script src="/assets/vaishali/field/screens/leave.js"></script>
-  <script src="/assets/vaishali/field/screens/expense.js"></script>
-  <script src="/assets/vaishali/field/screens/advance.js"></script>
-  <script src="/assets/vaishali/field/screens/salary.js"></script>
-  <script src="/assets/vaishali/field/screens/visits.js"></script>
-  <script src="/assets/vaishali/field/screens/approvals.js"></script>
-  <script src="/assets/vaishali/field/screens/team.js"></script>
-  <script src="/assets/vaishali/field/screens/pipeline.js"></script>
-  <script src="/assets/vaishali/field/screens/project-hub.js"></script>
-  <script src="/assets/vaishali/field/screens/amc.js"></script>
-  <script src="/assets/vaishali/field/screens/customer-detail.js"></script>
-  <script src="/assets/vaishali/field/screens/debtors.js"></script>
-  <script src="/assets/vaishali/field/screens/my-targets.js"></script>
-  <script src="/assets/vaishali/field/screens/follow-ups.js"></script>
-  <script src="/assets/vaishali/field/screens/customer-search.js"></script>
-  <script src="/assets/vaishali/field/screens/service-dashboard.js"></script>
-  <script src="/assets/vaishali/field/screens/installation.js"></script>
-  <script src="/assets/vaishali/field/screens/breakdown.js"></script>
-  <script src="/assets/vaishali/field/screens/production.js"></script>
-  <script src="/assets/vaishali/field/screens/dispatch.js"></script>
-  <script src="/assets/vaishali/field/screens/revenue.js"></script>
-  <script src="/assets/vaishali/field/screens/chat.js"></script>
-  <script src="/assets/vaishali/field/app.js"></script>
-</body>
-</html>
+<main id="app" class="container app-container">
+  <div aria-busy="true" data-spinner="overlay" style="min-height:60vh"></div>
+</main>
+
+<nav id="bottom-nav" class="bottom-nav" hidden>
+  <!-- Dynamically built by app.js -->
+</nav>
+
+<script>
+  // Boot context from Frappe (same pattern as HRMS/CRM)
+  window.csrf_token = "{{ csrf_token }}";
+  window.dspl_boot = {{ boot }};
+  if (!window.frappe) window.frappe = {};
+  window.frappe.csrf_token = "{{ csrf_token }}";
+</script>
+
+<link rel="stylesheet" href="/assets/vaishali/field/style.css">
+
+<script src="/assets/vaishali/field/icons.js"></script>
+<script src="/assets/vaishali/field/ui.js"></script>
+<script src="/assets/vaishali/field/api.js"></script>
+<script src="/assets/vaishali/field/auth.js"></script>
+<script src="/assets/vaishali/field/router.js"></script>
+<script src="/assets/vaishali/field/screens/home.js"></script>
+<script src="/assets/vaishali/field/screens/profile.js"></script>
+<script src="/assets/vaishali/field/screens/attendance.js"></script>
+<script src="/assets/vaishali/field/screens/hr-hub.js"></script>
+<script src="/assets/vaishali/field/screens/leave.js"></script>
+<script src="/assets/vaishali/field/screens/expense.js"></script>
+<script src="/assets/vaishali/field/screens/advance.js"></script>
+<script src="/assets/vaishali/field/screens/salary.js"></script>
+<script src="/assets/vaishali/field/screens/visits.js"></script>
+<script src="/assets/vaishali/field/screens/approvals.js"></script>
+<script src="/assets/vaishali/field/screens/team.js"></script>
+<script src="/assets/vaishali/field/screens/pipeline.js"></script>
+<script src="/assets/vaishali/field/screens/project-hub.js"></script>
+<script src="/assets/vaishali/field/screens/amc.js"></script>
+<script src="/assets/vaishali/field/screens/customer-detail.js"></script>
+<script src="/assets/vaishali/field/screens/debtors.js"></script>
+<script src="/assets/vaishali/field/screens/my-targets.js"></script>
+<script src="/assets/vaishali/field/screens/follow-ups.js"></script>
+<script src="/assets/vaishali/field/screens/customer-search.js"></script>
+<script src="/assets/vaishali/field/screens/service-dashboard.js"></script>
+<script src="/assets/vaishali/field/screens/installation.js"></script>
+<script src="/assets/vaishali/field/screens/breakdown.js"></script>
+<script src="/assets/vaishali/field/screens/production.js"></script>
+<script src="/assets/vaishali/field/screens/dispatch.js"></script>
+<script src="/assets/vaishali/field/screens/revenue.js"></script>
+<script src="/assets/vaishali/field/screens/chat.js"></script>
+<script src="/assets/vaishali/field/app.js"></script>
+{%- endblock -%}

@@ -1,7 +1,7 @@
 [project]
 name = "vaishali"
 version = "0.1.0"
-description = "DSPL Org OS — AI agent + View Engine for ERPNext"
+description = "DSPL ERP — AI-native ERP with Vaishali agent, View Engine, and Field PWA"
 requires-python = ">=3.10"
 authors = [{name = "Harshwardhan Gokhale", email = "harsh@dgoc.in"}]
 

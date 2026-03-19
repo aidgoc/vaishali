@@ -255,14 +255,31 @@
 
       // Translate /api/field/* to Frappe method paths
       if (path === '/api/field/attendance/today') path = '/api/method/vaishali.api.field.attendance_today';
-      if (path === '/api/field/attendance' && method === 'POST') path = '/api/method/vaishali.api.field.create_checkin';
-      if (path === '/api/field/me') path = '/api/method/vaishali.api.field.get_me';
-      if (path === '/api/field/customers') path = '/api/method/vaishali.api.field.get_customers';
-      if (path.indexOf('/api/field/chat') === 0) {
-        if (method === 'POST') path = '/api/method/vaishali.api.chat.send_message';
-        else if (method === 'GET') path = '/api/method/vaishali.api.chat.get_history';
-        else if (method === 'DELETE') path = '/api/method/vaishali.api.chat.clear_history';
+      else if (path === '/api/field/attendance' && method === 'POST') path = '/api/method/vaishali.api.field.create_checkin';
+      else if (path === '/api/field/me') path = '/api/method/vaishali.api.field.get_me';
+      else if (path === '/api/field/nav-tier') path = '/api/method/vaishali.api.field.get_nav_tier';
+      else if (path === '/api/field/session-info') path = '/api/method/vaishali.api.field.get_session_info';
+      else if (path === '/api/field/customers') path = '/api/method/vaishali.api.field.get_customers';
+      else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
+      else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
+      else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
+      else if (path.match(/^\/api\/field\/dcr\/[^/]+\/checkout$/)) {
+        path = '/api/method/vaishali.api.field.checkout_dcr';
       }
+      else if (path.match(/^\/api\/field\/dcr\/[^/]+$/)) {
+        var dcrId = path.replace('/api/field/dcr/', '');
+        path = '/api/method/vaishali.api.field.get_dcr?dcr_id=' + encodeURIComponent(dcrId);
+      }
+      else if (path === '/api/field/dcr' || path.indexOf('/api/field/dcr?') === 0) {
+        if (method === 'POST') path = '/api/method/vaishali.api.field.create_dcr';
+        else path = '/api/method/vaishali.api.field.get_dcrs';
+      }
+      else if (path.indexOf('/api/field/chat') === 0) {
+        if (method === 'POST') path = '/api/method/vaishali.api.chat.send_message';
+        else if (method === 'DELETE') path = '/api/method/vaishali.api.chat.clear_history';
+        else path = '/api/method/vaishali.api.chat.get_history';
+      }
+      else if (path === '/api/field/login') path = '/api/method/login';
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);
@@ -289,6 +306,11 @@
           return { data: null, status: resp.status, error: 'Session expired' };
         }
         return resp.json().then(function (data) {
+          // Normalize Frappe {message: X} → {data: X, message: X}
+          // This way res.data.data always works regardless of source
+          if (data && data.message !== undefined && data.data === undefined) {
+            data.data = data.message;
+          }
           return { data: data, status: resp.status };
         }).catch(function () {
           return { data: null, status: resp.status };
