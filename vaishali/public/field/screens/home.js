@@ -272,14 +272,20 @@
   function renderManagerHome(appEl) {
     appEl.appendChild(UI.skeleton(3));
 
+    var today = todayISO();
+
     Promise.all([
       api.apiCall('GET', '/api/field/team'),
-      api.apiCall('GET', '/api/field/approvals')
+      api.apiCall('GET', '/api/field/approvals'),
+      api.apiCall('GET', '/api/field/attendance/today'),
+      api.apiCall('GET', '/api/field/dcr?date=' + today)
     ]).then(function (results) {
       appEl.textContent = '';
 
       var teamResult = results[0];
       var approvalsResult = results[1];
+      var attResult = results[2];
+      var dcrResult = results[3];
 
       var teamRaw = teamResult.data || {};
       var teamData = teamRaw.message || teamRaw.data || teamRaw;
@@ -291,23 +297,52 @@
       var approvals = appRaw.data || appRaw.message || (Array.isArray(appRaw) ? appRaw : []);
       var pendingCount = approvals.length;
 
-      // Count visits from team data
-      var visitsCount = 0;
+      var attRaw = attResult.data || {};
+      var att = attRaw.message || attRaw.data || attRaw;
+
+      var dcrRaw = dcrResult.data || {};
+      var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
+      var myVisitCount = dcrs.length;
+
+      // Count team in-field from team data
+      var teamFieldCount = 0;
       for (var i = 0; i < teamMembers.length; i++) {
-        if (teamMembers[i].status === 'In Field') visitsCount++;
+        if (teamMembers[i].status === 'In Field') teamFieldCount++;
       }
 
-      // Greeting (without department)
-      appEl.appendChild(greetingHero(false));
+      // Greeting
+      appEl.appendChild(greetingHero(true));
 
       // KPI row
       appEl.appendChild(UI.grid([
-        UI.statCard(presentCount, 'Present'),
-        UI.statCard(pendingCount, 'Pending'),
-        UI.statCard(visitsCount, 'Visits')
+        UI.statCard(presentCount + '/' + totalCount, 'Team Present'),
+        UI.statCard(pendingCount, 'Approvals'),
+        UI.statCard(teamFieldCount, 'In Field')
       ], 3));
 
-      // Pending approvals
+      // ── ACTIONS — daily tasks everyone needs ──
+      appEl.appendChild(UI.sectionHeading('ACTIONS'));
+
+      // Attendance card
+      appEl.appendChild(attendanceCard(att));
+
+      // New Visit + My Visits row
+      appEl.appendChild(el('div', { className: 'action-row', style: { display: 'flex', gap: '8px', margin: '8px 0' } }, [
+        UI.btn('+ New Visit', {
+          type: 'primary',
+          icon: 'mapPin',
+          onClick: function () { location.hash = '#/dcr/new'; }
+        }),
+        UI.btn('My Visits' + (myVisitCount ? ' (' + myVisitCount + ')' : ''), {
+          type: 'outline',
+          onClick: function () { location.hash = '#/dcr'; }
+        })
+      ]));
+
+      // HR tiles
+      appEl.appendChild(hrTiles());
+
+      // ── PENDING APPROVALS ──
       appEl.appendChild(UI.sectionHeading('PENDING APPROVALS'));
 
       if (approvals.length === 0) {
@@ -328,64 +363,66 @@
             onClick: function () { location.hash = '#/approvals'; }
           }));
         }
+        if (approvals.length > 3) {
+          appEl.appendChild(el('div', { style: { textAlign: 'center', padding: '4px 0' } }, [
+            UI.btn('View All (' + approvals.length + ')', {
+              type: 'outline',
+              onClick: function () { location.hash = '#/approvals'; }
+            })
+          ]));
+        }
       }
 
-      // Quick links
-      var linksRow = el('div', { className: 'quick-links-row' }, [
-        UI.btn('All Approvals', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/approvals'; }
-        }),
-        UI.btn('Team', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/team'; }
-        }),
-        UI.btn('Targets', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/targets'; }
-        }),
-        UI.btn('Follow Ups', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/follow-ups'; }
-        }),
-        UI.btn('Customers', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/customers'; }
-        }),
-        UI.btn('Pipeline', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/pipeline'; }
-        }),
-        UI.btn('Revenue', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/revenue'; }
-        }),
-        UI.btn('Receivables', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/debtors'; }
-        }),
-        UI.btn('Projects', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/projects'; }
-        }),
-        UI.btn('Service', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/service'; }
-        }),
-        UI.btn('Breakdowns', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/breakdowns'; }
-        }),
-        UI.btn('Production', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/production'; }
-        }),
-        UI.btn('Dispatch', {
-          type: 'outline',
-          onClick: function () { location.hash = '#/dispatch'; }
-        })
-      ]);
-      appEl.appendChild(linksRow);
+      // ── SALES & CRM ──
+      appEl.appendChild(UI.sectionHeading('SALES & CRM'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/pipeline'; } }, [
+          icon('shoppingCart'), el('span', { textContent: 'Pipeline' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/targets'; } }, [
+          icon('briefcase'), el('span', { textContent: 'Targets' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/follow-ups'; } }, [
+          icon('clock'), el('span', { textContent: 'Follow Ups' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/customers'; } }, [
+          icon('users'), el('span', { textContent: 'Customers' })
+        ])
+      ]));
+
+      // ── OPERATIONS ──
+      appEl.appendChild(UI.sectionHeading('OPERATIONS'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/service'; } }, [
+          icon('settings'), el('span', { textContent: 'Service' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/production'; } }, [
+          icon('refresh'), el('span', { textContent: 'Production' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/dispatch'; } }, [
+          icon('shoppingCart'), el('span', { textContent: 'Dispatch' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/breakdowns'; } }, [
+          icon('bell'), el('span', { textContent: 'Breakdowns' })
+        ])
+      ]));
+
+      // ── FINANCE & MANAGEMENT ──
+      appEl.appendChild(UI.sectionHeading('FINANCE'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/revenue'; } }, [
+          icon('wallet'), el('span', { textContent: 'Revenue' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/debtors'; } }, [
+          icon('receipt'), el('span', { textContent: 'Receivables' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/projects'; } }, [
+          icon('clip'), el('span', { textContent: 'Projects' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/team'; } }, [
+          icon('users'), el('span', { textContent: 'Team' })
+        ])
+      ]));
 
       // Upcoming holidays — via whitelisted endpoint
       var mgrHolidayContainer = el('div');
