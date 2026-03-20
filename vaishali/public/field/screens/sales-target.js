@@ -44,17 +44,77 @@
 
   // ─── Screen ───────────────────────────────────────────────────────
 
+  // ─── My Performance section ───────────────────────────────────────
+
+  function renderMyPerformance(appEl, perf) {
+    appEl.appendChild(UI.sectionHeading('MY PERFORMANCE'));
+
+    var convPct = perf.conversion ? perf.conversion.quote_to_order : 0;
+    var convTarget = perf.conversion ? perf.conversion.target_qo : 75;
+    var convColor = convPct >= convTarget ? 'var(--green)' : convPct >= convTarget * 0.7 ? 'var(--amber)' : 'var(--red)';
+
+    var statsRow = el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '0 16px' } }, [
+      UI.statCard(perf.orders ? perf.orders.count : 0, 'Orders this FY'),
+      UI.statCard(perf.orders ? ('\u20b9' + ((perf.orders.total || 0) / 100000).toFixed(1) + 'L') : '\u20b90', 'Order Value'),
+      UI.statCard(perf.quotations ? perf.quotations.count : 0, 'Quotes this FY'),
+      UI.statCard(perf.quotations ? ('\u20b9' + ((perf.quotations.total || 0) / 100000).toFixed(1) + 'L') : '\u20b90', 'Quote Value'),
+    ]);
+    appEl.appendChild(statsRow);
+
+    var statsRow2 = el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '8px 16px 0' } }, [
+      UI.statCard(perf.visits_this_month || 0, 'Visits this Month'),
+      UI.statCard(perf.leads_this_fy || 0, 'Leads this FY'),
+      el('div', { style: { flex: '1', background: 'var(--surface-card)', borderRadius: '10px', padding: '12px', minWidth: '80px', textAlign: 'center' } }, [
+        el('div', { style: { fontSize: '20px', fontWeight: '700', color: convColor } }, [
+          el('span', { textContent: convPct + '%' })
+        ]),
+        el('div', { style: { fontSize: '11px', color: 'var(--ink-tertiary)', marginTop: '4px' } }, [
+          el('span', { textContent: 'Conv. Rate' })
+        ]),
+        el('div', { style: { fontSize: '10px', color: 'var(--ink-tertiary)' } }, [
+          el('span', { textContent: 'target: ' + convTarget + '%' })
+        ])
+      ])
+    ]);
+    appEl.appendChild(statsRow2);
+  }
+
   window.Screens = window.Screens || {};
   window.Screens.salesTargets = function (appEl) {
     appEl.textContent = '';
+    appEl.appendChild(UI.page('Sales Targets', '#/home'));
     var skels = UI.skeleton(4);
     appEl.appendChild(skels);
 
-    api.apiCall('GET', '/api/field/sales-targets').then(function (res) {
+    var perfData = null;
+    var targetsData = null;
+
+    var perfDone = api.apiCall('GET', '/api/field/my-performance').then(function (res) {
+      var raw = res.data || {};
+      perfData = raw.message || raw.data || raw;
+    }).catch(function () { perfData = {}; });
+
+    var targetsDone = api.apiCall('GET', '/api/field/sales-targets').then(function (res) {
+      var raw = res.data || {};
+      targetsData = raw.message || raw.data || raw;
+    }).catch(function (err) {
+      console.error('[salesTargets]', err);
+    });
+
+    Promise.all([perfDone, targetsDone]).then(function () {
       appEl.removeChild(skels);
 
-      var raw = res.data || {};
-      var d = raw.message || raw.data || raw;
+      if (!targetsData) {
+        appEl.appendChild(UI.error('Could not load sales targets'));
+        return;
+      }
+
+      var d = targetsData;
+
+      // ── My Performance ──────────────────────────────────────────
+      if (perfData && (perfData.employee || perfData.orders)) {
+        renderMyPerformance(appEl, perfData);
+      }
 
       var totalTarget = d.total_target || 62800000;
       var totalActual = d.total_actual || 0;
@@ -107,7 +167,7 @@
       appEl.appendChild(prodSection);
 
     }).catch(function (err) {
-      appEl.removeChild(skels);
+      if (skels.parentNode) appEl.removeChild(skels);
       appEl.appendChild(UI.error('Could not load sales targets'));
       console.error('[salesTargets]', err);
     });

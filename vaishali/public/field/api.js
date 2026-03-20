@@ -335,6 +335,8 @@
       else if (path === '/api/field/holidays') path = '/api/method/vaishali.api.field.get_upcoming_holidays';
       else if (path === '/api/field/login') path = '/api/method/login';
       else if (path === '/api/field/sales-targets') path = '/api/method/vaishali.api.field.get_sales_targets';
+      else if (path === '/api/field/my-performance') path = '/api/method/vaishali.api.field.get_my_sales_performance';
+      else if (path === '/api/field/sales-funnel') path = '/api/method/vaishali.api.field.get_sales_funnel';
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);

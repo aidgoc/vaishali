@@ -649,6 +649,182 @@ def create_stock_entry(**kwargs):
     return doc.as_dict()
 
 
+# ── Personal Sales Performance ───────────────────────────────
+
+@frappe.whitelist()
+def get_my_sales_performance():
+    """Get current user's personal sales performance — orders, quotations, visits this FY."""
+    emp = _get_employee()
+    user = frappe.session.user
+    from datetime import date
+    today = date.today()
+    fy_start = f"{today.year}-04-01" if today.month >= 4 else f"{today.year - 1}-04-01"
+
+    # My orders this FY
+    orders = frappe.get_list("Sales Order",
+        filters=[["docstatus", "=", 1], ["owner", "=", user],
+                 ["transaction_date", ">=", fy_start], ["company", "=", COMPANY]],
+        fields=["grand_total", "transaction_date"])
+    order_total = sum(o.grand_total or 0 for o in orders)
+
+    # My quotations this FY
+    quotes = frappe.get_list("Quotation",
+        filters=[["docstatus", "=", 1], ["owner", "=", user],
+                 ["transaction_date", ">=", fy_start]],
+        fields=["grand_total", "transaction_date"])
+    quote_total = sum(q.grand_total or 0 for q in quotes)
+
+    # My visits this month
+    month_start = today.replace(day=1).isoformat()
+    visits = frappe.db.count("Daily Call Report",
+        filters={"employee": emp.name, "date": [">=", month_start]})
+
+    # My leads this FY
+    leads = frappe.db.count("Lead",
+        filters={"lead_owner": user, "creation": [">=", fy_start]})
+
+    return {
+        "employee": emp.employee_name,
+        "fy_start": fy_start,
+        "orders": {"count": len(orders), "total": order_total},
+        "quotations": {"count": len(quotes), "total": quote_total},
+        "visits_this_month": visits,
+        "leads_this_fy": leads,
+        "conversion": {
+            "quote_to_order": round(len(orders) / len(quotes) * 100, 1) if len(quotes) > 0 else 0,
+            "target_qo": 75
+        }
+    }
+
+
+# ── Sales Funnel ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_sales_funnel():
+    """Get sales funnel metrics for current FY."""
+    from datetime import date
+    today = date.today()
+    fy_start = f"{today.year}-04-01" if today.month >= 4 else f"{today.year - 1}-04-01"
+    month_start = today.replace(day=1).isoformat()
+
+    # This FY counts
+    visits_fy = frappe.db.count("Daily Call Report",
+        filters={"date": [">=", fy_start], "company": COMPANY})
+    leads_fy = frappe.db.count("Lead",
+        filters={"creation": [">=", fy_start]})
+    quotes_fy = frappe.db.count("Quotation",
+        filters={"docstatus": 1, "transaction_date": [">=", fy_start], "company": COMPANY})
+    orders_fy = frappe.db.count("Sales Order",
+        filters={"docstatus": 1, "transaction_date": [">=", fy_start], "company": COMPANY})
+
+    # This month counts
+    visits_month = frappe.db.count("Daily Call Report",
+        filters={"date": [">=", month_start], "company": COMPANY})
+    leads_month = frappe.db.count("Lead",
+        filters={"creation": [">=", month_start]})
+    quotes_month = frappe.db.count("Quotation",
+        filters={"docstatus": 1, "transaction_date": [">=", month_start], "company": COMPANY})
+    orders_month = frappe.db.count("Sales Order",
+        filters={"docstatus": 1, "transaction_date": [">=", month_start], "company": COMPANY})
+
+    # Revenue
+    order_value = frappe.db.sql("""
+        SELECT COALESCE(SUM(grand_total), 0) FROM `tabSales Order`
+        WHERE docstatus=1 AND transaction_date >= %s AND company = %s
+    """, (fy_start, COMPANY))[0][0]
+
+    quote_value = frappe.db.sql("""
+        SELECT COALESCE(SUM(grand_total), 0) FROM `tabQuotation`
+        WHERE docstatus=1 AND transaction_date >= %s AND company = %s
+    """, (fy_start, COMPANY))[0][0]
+
+    return {
+        "fy": {
+            "visits": visits_fy, "leads": leads_fy,
+            "quotations": quotes_fy, "orders": orders_fy,
+            "order_value": float(order_value), "quote_value": float(quote_value)
+        },
+        "month": {
+            "visits": visits_month, "leads": leads_month,
+            "quotations": quotes_month, "orders": orders_month
+        },
+        "ratios": {
+            "visit_to_lead": round(leads_fy / visits_fy * 100, 1) if visits_fy > 0 else 0,
+            "lead_to_quote": round(quotes_fy / leads_fy * 100, 1) if leads_fy > 0 else 0,
+            "quote_to_order": round(orders_fy / quotes_fy * 100, 1) if quotes_fy > 0 else 0,
+            "target_vi": 50, "target_iq": 50, "target_qo": 75
+        }
+    }
+
+
+# ── Monthly Report Card ───────────────────────────────────────
+
+@frappe.whitelist()
+def get_monthly_report():
+    """Generate monthly report card with key metrics."""
+    from datetime import date
+    today = date.today()
+    month_start = today.replace(day=1).isoformat()
+    fy_start = f"{today.year}-04-01" if today.month >= 4 else f"{today.year - 1}-04-01"
+
+    months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    month_name = months[today.month - 1] + ' ' + str(today.year)
+
+    # This month metrics
+    orders_month = frappe.get_list("Sales Order",
+        filters=[["docstatus","=",1],["transaction_date",">=",month_start],["company","=",COMPANY]],
+        fields=["grand_total"])
+    revenue_month = sum(o.grand_total or 0 for o in orders_month)
+
+    visits_month = frappe.db.count("Daily Call Report",
+        filters={"date": [">=", month_start]})
+
+    leads_month = frappe.db.count("Lead",
+        filters={"creation": [">=", month_start]})
+
+    quotes_month = frappe.get_list("Quotation",
+        filters=[["docstatus","=",1],["transaction_date",">=",month_start],["company","=",COMPANY]],
+        fields=["grand_total"])
+    quote_value = sum(q.grand_total or 0 for q in quotes_month)
+
+    # Outstanding receivables
+    outstanding = frappe.db.sql("""
+        SELECT COALESCE(SUM(outstanding_amount), 0) FROM `tabSales Invoice`
+        WHERE docstatus=1 AND outstanding_amount > 0 AND company = %s
+    """, COMPANY)[0][0]
+
+    # Attendance this month
+    attendance = frappe.db.count("Attendance",
+        filters={"attendance_date": [">=", month_start], "status": "Present", "company": COMPANY})
+
+    # YTD totals
+    orders_ytd = frappe.get_list("Sales Order",
+        filters=[["docstatus","=",1],["transaction_date",">=",fy_start],["company","=",COMPANY]],
+        fields=["grand_total"])
+    revenue_ytd = sum(o.grand_total or 0 for o in orders_ytd)
+
+    return {
+        "month": month_name,
+        "this_month": {
+            "revenue": revenue_month,
+            "orders": len(orders_month),
+            "visits": visits_month,
+            "leads": leads_month,
+            "quotations": len(quotes_month),
+            "quote_value": quote_value
+        },
+        "ytd": {
+            "revenue": revenue_ytd,
+            "orders": len(orders_ytd),
+            "target": 100900000
+        },
+        "health": {
+            "outstanding": outstanding,
+            "attendance_days": attendance
+        }
+    }
+
+
 # ── Sales Targets ─────────────────────────────────────────────
 
 @frappe.whitelist()
