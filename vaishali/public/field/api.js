@@ -279,10 +279,11 @@
       else if (path === '/api/field/items' || path.indexOf('/api/field/items?') === 0) {
         var iQS = ''; var iQI = path.indexOf('?'); if (iQI !== -1) iQS = path.substring(iQI); path = '/api/method/vaishali.api.field.get_items' + iQS;
       }
+      else if (path === '/api/field/stock/warehouses') path = '/api/method/vaishali.api.field.get_warehouses';
+      else if (path === '/api/field/stock/entry' && method === 'POST') path = '/api/method/vaishali.api.field.create_stock_entry';
       else if (path === '/api/field/stock' || path.indexOf('/api/field/stock?') === 0) {
         var sQS = ''; var sQI = path.indexOf('?'); if (sQI !== -1) sQS = path.substring(sQI); path = '/api/method/vaishali.api.field.get_stock_items' + sQS;
       }
-      else if (path === '/api/field/stock/entry' && method === 'POST') path = '/api/method/vaishali.api.field.create_stock_entry';
       else if (path === '/api/field/warehouses') path = '/api/method/vaishali.api.field.get_warehouses';
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
