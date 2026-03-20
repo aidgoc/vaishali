@@ -37,8 +37,10 @@
       var status = profile.status || '';
 
       // Avatar section — centered
+      var avatarEl = UI.avatar(employeeName, 88);
+      avatarEl.classList.add('avatar-self');
       var avatarSection = el('div', { style: { textAlign: 'center', margin: '0 auto 16px' } }, [
-        UI.avatar(employeeName, 88)
+        avatarEl
       ]);
       appEl.appendChild(avatarSection);
 

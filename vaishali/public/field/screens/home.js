@@ -48,8 +48,9 @@
   // ─── Greeting hero ────────────────────────────────────────────────
 
   function greetingHero(showDepartment) {
+    var nameSpan = el('span', { className: 'greeting-name' }, [firstName()]);
     var children = [
-      el('h2', null, [greetingText() + ', ' + firstName()])
+      el('h2', null, [greetingText() + ', ', nameSpan])
     ];
     var metaParts = [];
     if (showDepartment) {

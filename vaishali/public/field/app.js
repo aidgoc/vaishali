@@ -137,6 +137,9 @@
     { pattern: '#/advance/:id', handler: function (p) { S().advanceDetail(appEl, p); }, tab: 'home' },
     { pattern: '#/salary',      handler: function () { S().salaryList(appEl); },     tab: 'home' },
     { pattern: '#/salary/:id',  handler: function (p) { S().salaryDetail(appEl, p); }, tab: 'home' },
+    // Leads
+    { pattern: '#/lead/new',    handler: function () { S().leadNew(appEl); },          tab: 'home' },
+    { pattern: '#/leads',       handler: function () { S().leadList(appEl); },         tab: 'home' },
     // Sales
     { pattern: '#/pipeline',      handler: function () { S().pipeline(appEl); },         tab: 'home' },
     { pattern: '#/targets',       handler: function () { S().myTargets(appEl); },        tab: 'home' },

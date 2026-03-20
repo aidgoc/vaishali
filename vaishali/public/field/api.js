@@ -265,6 +265,13 @@
         if (custQIdx !== -1) custQS = path.substring(custQIdx);
         path = '/api/method/vaishali.api.field.get_customers' + custQS;
       }
+      else if (path === '/api/field/leads' || path.indexOf('/api/field/leads?') === 0) {
+        var leadQS = '';
+        var leadQIdx = path.indexOf('?');
+        if (leadQIdx !== -1) leadQS = path.substring(leadQIdx);
+        path = '/api/method/vaishali.api.field.get_leads' + leadQS;
+      }
+      else if (path === '/api/field/lead' && method === 'POST') path = '/api/method/vaishali.api.field.create_lead';
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';

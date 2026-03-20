@@ -405,6 +405,36 @@ def get_session_info():
     }
 
 
+# ── Leads ─────────────────────────────────────────────────────────
+
+@frappe.whitelist(methods=["POST"])
+def create_lead(**kwargs):
+    """Create a Lead doctype from the field PWA."""
+    doc = frappe.new_doc("Lead")
+    doc.lead_owner = frappe.session.user
+    for field in ["lead_name", "company_name", "mobile_no", "email_id",
+                  "source", "territory", "notes"]:
+        if field in kwargs and kwargs[field]:
+            doc.set(field, kwargs[field])
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+@frappe.whitelist()
+def get_leads(search=None, limit=50):
+    """List recent leads owned by the current user."""
+    filters = [["lead_owner", "=", frappe.session.user]]
+    if search:
+        filters.append(["lead_name", "like", f"%{search}%"])
+    return frappe.get_list("Lead",
+        filters=filters,
+        fields=["name", "lead_name", "company_name", "mobile_no", "email_id",
+                "source", "territory", "status", "creation"],
+        order_by="creation desc",
+        limit_page_length=int(limit))
+
+
 # ── Doc Event: Auto-create Lead on DCR checkout ──────────────────
 
 def on_dcr_update(doc, method):

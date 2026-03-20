@@ -9,6 +9,7 @@
     expense: 'all', 'expense-new': 'all', 'expense-detail': 'all',
     advance: 'all', 'advance-new': 'all', 'advance-detail': 'all',
     salary: 'all', 'salary-detail': 'all',
+    leads: 'all', 'lead-new': 'all',
     visits: 'all', 'visit-new': 'all', 'visit-detail': 'all',
     projects: 'all', 'project-detail': 'all',
     amc: 'manager',

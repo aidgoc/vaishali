@@ -1,0 +1,190 @@
+/* lead.js — Lead screens for DSPL Field PWA (List, New) */
+(function () {
+  'use strict';
+
+  // ── Helpers ──────────────────────────────────────────────────────────
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function statusColor(status) {
+    if (!status) return 'gray';
+    var s = status.toLowerCase();
+    if (s === 'converted') return 'green';
+    if (s === 'lead' || s === 'open') return 'blue';
+    if (s === 'opportunity') return 'orange';
+    if (s === 'interested') return 'orange';
+    if (s === 'do not contact') return 'red';
+    return 'gray';
+  }
+
+  // ── Screen: Lead List ───────────────────────────────────────────────
+
+  window.Screens = window.Screens || {};
+
+  window.Screens.leadList = function (appEl) {
+    var el = UI.el;
+
+    appEl.appendChild(UI.page('Leads'));
+
+    var listContainer = el('div');
+    var searchQuery = '';
+
+    // Search bar
+    var searchBar = UI.searchInput('Search leads...', function (query) {
+      searchQuery = query;
+      loadLeads();
+    });
+    appEl.appendChild(searchBar);
+
+    appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
+      UI.btn('+ New Lead', {
+        type: 'primary',
+        block: true,
+        icon: 'plus',
+        onClick: function () { location.hash = '#/lead/new'; }
+      })
+    ]));
+
+    appEl.appendChild(listContainer);
+
+    function loadLeads() {
+      listContainer.textContent = '';
+      listContainer.appendChild(UI.skeleton(3));
+
+      var path = '/api/field/leads';
+      if (searchQuery) {
+        path += '?search=' + encodeURIComponent(searchQuery);
+      }
+
+      window.fieldAPI.apiCall('GET', path).then(function (res) {
+        listContainer.textContent = '';
+
+        var items = [];
+        if (res && res.data) {
+          items = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
+        }
+
+        if (items.length === 0) {
+          listContainer.appendChild(UI.empty('clip', 'No leads yet'));
+          return;
+        }
+
+        for (var i = 0; i < items.length; i++) {
+          (function (lead) {
+            var name = lead.lead_name || 'Unknown';
+            var company = lead.company_name || '';
+            var source = lead.source || '';
+            var date = formatDate(lead.creation);
+            var status = lead.status || 'Lead';
+            var sub = [company, source, date].filter(Boolean).join(' \u00b7 ');
+
+            listContainer.appendChild(UI.listCard({
+              avatar: name,
+              title: name,
+              sub: sub,
+              right: UI.pill(status, statusColor(status))
+            }));
+          })(items[i]);
+        }
+      }).catch(function (err) {
+        listContainer.textContent = '';
+        listContainer.appendChild(UI.error('Failed to load leads: ' + (err.message || err)));
+      });
+    }
+
+    loadLeads();
+  };
+
+  // ── Screen: New Lead ────────────────────────────────────────────────
+
+  window.Screens.leadNew = function (appEl) {
+    var el = UI.el;
+    appEl.appendChild(UI.page('New Lead', '#/leads'));
+
+    // Form fields
+    var leadNameInput = UI.textInput('Lead name');
+    var companyNameInput = UI.textInput('Company name');
+    var mobileInput = UI.textInput('Mobile number', { type: 'tel' });
+    var emailInput = UI.textInput('Email address', { type: 'email' });
+
+    var sourceOptions = ['Campaign', 'Cold Call', 'Advertisement', 'Reference', 'Website', 'Other'];
+    var sourceField = UI.select('Source', sourceOptions);
+    var sourceSelect = sourceField.querySelector('select');
+
+    var territoryInput = UI.textInput('Territory');
+    var notesArea = UI.textarea('Notes', { rows: 3 });
+
+    // Error display
+    var errorBox = el('div', { style: { display: 'none' } });
+
+    // Submit button
+    var submitBtn = UI.btn('CREATE LEAD', {
+      type: 'success',
+      block: true,
+      icon: 'plus',
+      onClick: handleSubmit
+    });
+
+    // Build form card
+    var formChildren = [
+      UI.field('Lead Name *', leadNameInput),
+      UI.field('Company Name', companyNameInput),
+      UI.field('Mobile No', mobileInput),
+      UI.field('Email', emailInput),
+      sourceField,
+      UI.field('Territory', territoryInput),
+      UI.field('Notes', notesArea),
+      errorBox,
+      el('div', { style: { marginTop: '12px' } }, [submitBtn])
+    ];
+
+    appEl.appendChild(UI.card(formChildren));
+
+    function showError(msg) {
+      errorBox.textContent = '';
+      errorBox.style.display = 'block';
+      errorBox.appendChild(UI.error(msg));
+    }
+
+    function handleSubmit() {
+      errorBox.style.display = 'none';
+
+      if (!leadNameInput.value.trim()) {
+        showError('Please enter a lead name.');
+        return;
+      }
+
+      submitBtn._setLoading(true, 'Creating...');
+
+      var payload = {
+        lead_name: leadNameInput.value.trim(),
+        company_name: companyNameInput.value.trim(),
+        mobile_no: mobileInput.value.trim(),
+        email_id: emailInput.value.trim(),
+        source: sourceSelect.value,
+        territory: territoryInput.value.trim(),
+        notes: notesArea.value.trim()
+      };
+
+      window.fieldAPI.apiCall('POST', '/api/field/lead', payload).then(function (res) {
+        if (res.error || (res.status && res.status >= 400)) {
+          showError('Failed: ' + (res.error || 'Server error'));
+          submitBtn._setLoading(false);
+          return;
+        }
+        UI.toast('Lead created!', 'success');
+        location.hash = '#/leads';
+      }).catch(function (err) {
+        showError('Error: ' + (err.message || err));
+        submitBtn._setLoading(false);
+      });
+    }
+  };
+
+})();
