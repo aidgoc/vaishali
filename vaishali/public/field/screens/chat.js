@@ -6,9 +6,10 @@
   var el = UI.el;
 
   // Chat API call — calls /api/ai/* directly (nginx proxies to FastAPI).
-  // Uses apiCall so cookie auth and CSRF headers are still handled correctly.
+  // Uses apiCall with extended timeout (120s) because Claude brain loop
+  // with tool calls can take 30-60 seconds for complex queries.
   function chatCall(method, path, body) {
-    return api.apiCall(method, path, body);
+    return api.apiCall(method, path, body, { timeout: 120000 });
   }
 
   // ─── Session ID ─────────────────────────────────────────────────
