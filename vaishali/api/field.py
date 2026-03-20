@@ -98,17 +98,20 @@ def get_dcrs(date_filter=None, start_date=None, end_date=None, department=None):
 
 @frappe.whitelist(methods=["POST"])
 def create_dcr(**kwargs):
+    emp = _get_employee()
     doc = frappe.new_doc("Daily Call Report")
-    for field in ["employee", "date", "department", "visit_purpose", "service_purpose",
+    doc.employee = emp.name
+    doc.employee_name = emp.employee_name
+    for field in ["date", "department", "visit_purpose", "service_purpose",
                   "customer", "prospect_name", "prospect_company", "prospect_phone",
                   "prospect_address", "check_in_time", "check_in_gps", "status",
                   "equipment_name", "serial_no", "job_card_no"]:
         if field in kwargs and kwargs[field]:
-            # Map date_val to date if needed
-            key = "date" if field == "date_val" else field
-            doc.set(key, kwargs[field])
-    if "date_val" in kwargs:
-        doc.date = kwargs["date_val"]
+            doc.set(field, kwargs[field])
+    if not doc.department:
+        doc.department = emp.department
+    if not doc.status:
+        doc.status = "Ongoing"
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return doc.as_dict()
