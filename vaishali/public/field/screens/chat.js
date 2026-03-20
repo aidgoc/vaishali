@@ -216,7 +216,12 @@
   function renderChat(container) {
     container.textContent = '';
 
-    // Header
+    // Chat needs a special layout — flex column filling #app completely
+    container.style.padding = '0';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+
+    // Header bar (pinned top inside chat)
     var headerTitle = el('div', { className: 'chat-header-title' }, [
       el('span', { textContent: 'Vaishali' }),
       el('span', { className: 'chat-header-sub', textContent: 'DSPL AI Assistant' }),
@@ -235,7 +240,7 @@
     ]);
     container.appendChild(header);
 
-    // Chat messages area
+    // Chat messages area (scrollable middle)
     _chatContainer = el('div', { className: 'chat-messages' });
     container.appendChild(_chatContainer);
 

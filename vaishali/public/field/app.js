@@ -78,6 +78,7 @@
           className: 'nav-item',
           href: t.hash,
           'data-tab': t.tab,
+          'aria-label': t.label,
           onClick: function (e) { e.preventDefault(); location.hash = t.hash; }
         }, [
           iconSpan,
@@ -92,8 +93,13 @@
     var links = navEl.querySelectorAll('.nav-item');
     for (var i = 0; i < links.length; i++) {
       var tab = links[i].getAttribute('data-tab');
-      if (tab === tabName) links[i].classList.add('active');
-      else links[i].classList.remove('active');
+      if (tab === tabName) {
+        links[i].classList.add('active');
+        links[i].setAttribute('aria-current', 'page');
+      } else {
+        links[i].classList.remove('active');
+        links[i].removeAttribute('aria-current');
+      }
     }
   }
 
@@ -246,17 +252,20 @@
     var headerEl = document.getElementById('app-header');
     headerEl.textContent = '';
     if (matched.back) {
-      var backBtn = el('button', { className: 'header-back', onClick: function () { _navigatingBack = true; location.hash = matched.back; } });
+      var backBtn = el('button', { className: 'header-back', 'aria-label': 'Go back', onClick: function () { _navigatingBack = true; location.hash = matched.back; } });
       if (window.icon) backBtn.appendChild(window.icon('back'));
       headerEl.appendChild(backBtn);
     }
     if (matched.title) {
-      headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title }));
+      headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title, role: 'heading', 'aria-level': '1' }));
     }
 
-    // 2. Render content
+    // 2. Render content — reset any screen-specific overrides (e.g. chat layout)
     appEl.textContent = '';
     appEl.scrollTop = 0;
+    appEl.style.padding = '';
+    appEl.style.display = '';
+    appEl.style.flexDirection = '';
 
     // 2a. Apply slide transition
     appEl.className = '';

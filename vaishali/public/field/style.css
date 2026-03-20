@@ -1932,12 +1932,10 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-0);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  flex-shrink: 0;
 }
 
 .chat-header-left {
@@ -1978,17 +1976,18 @@ textarea {
   background: var(--surface-1);
 }
 
-/* Messages container */
+/* Messages container — scrollable middle zone */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 14px;
+  padding: 16px 20px;
   padding-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Message row */
@@ -2204,13 +2203,10 @@ textarea {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border-default);
+  padding: 10px 20px;
+  border-top: 1px solid var(--border-subtle);
   background: var(--surface-0);
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
 }
 
 .chat-input {
