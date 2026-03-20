@@ -272,10 +272,10 @@
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
-          icon: 'wallet',
-          label: 'Salary',
-          sub: 'View slips',
-          onClick: function () { location.hash = '#/salary'; }
+          icon: 'briefcase',
+          label: 'HR Services',
+          sub: 'Leave, Salary, Expenses',
+          onClick: function () { location.hash = '#/hr'; }
         })
       ]);
       appEl.appendChild(actionGrid);
