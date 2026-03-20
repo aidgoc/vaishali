@@ -242,6 +242,7 @@
         UI.actionCard({
           icon: 'umbrella',
           label: 'Leave',
+          sub: 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
@@ -345,6 +346,7 @@
         UI.actionCard({
           icon: 'umbrella',
           label: 'Leave',
+          sub: 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({

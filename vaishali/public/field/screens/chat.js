@@ -194,7 +194,7 @@
 
   // ─── Load history ──────────────────────────────────────────────
   function loadHistory() {
-    return chatCall('GET', '/api/ai/history').then(function (resp) {
+    return chatCall('GET', '/api/ai/history?session_id=' + encodeURIComponent(_sessionId)).then(function (resp) {
       if (resp.data && resp.data.history) {
         _messages = resp.data.history;
       }
@@ -205,7 +205,7 @@
 
   // ─── Clear history ─────────────────────────────────────────────
   function clearHistory() {
-    chatCall('DELETE', '/api/ai/history').then(function () {
+    chatCall('DELETE', '/api/ai/history?session_id=' + encodeURIComponent(_sessionId)).then(function () {
       _messages = [];
       var appEl = document.getElementById('app');
       if (appEl) renderChat(appEl);

@@ -281,6 +281,9 @@
       }
       else if (path === '/api/field/stock/warehouses') path = '/api/method/vaishali.api.field.get_warehouses';
       else if (path === '/api/field/stock/entry' && method === 'POST') path = '/api/method/vaishali.api.field.create_stock_entry';
+      else if (path === '/api/field/stock/items' || path.indexOf('/api/field/stock/items?') === 0) {
+        var siQS = ''; var siQI = path.indexOf('?'); if (siQI !== -1) siQS = path.substring(siQI); path = '/api/method/vaishali.api.field.get_stock_items' + siQS;
+      }
       else if (path === '/api/field/stock' || path.indexOf('/api/field/stock?') === 0) {
         var sQS = ''; var sQI = path.indexOf('?'); if (sQI !== -1) sQS = path.substring(sQI); path = '/api/method/vaishali.api.field.get_stock_items' + sQS;
       }
