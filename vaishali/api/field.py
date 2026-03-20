@@ -484,3 +484,130 @@ def verify_telegram_token(token):
     if employee_id:
         frappe.cache().delete_value(cache_key)
     return {"employee_id": employee_id}
+
+
+# ── Items (for quotation picker) ─────────────────────────────
+
+@frappe.whitelist()
+def get_items(search=None):
+    filters = [["disabled", "=", 0]]
+    if search:
+        filters.append(["item_name", "like", f"%{search}%"])
+    return frappe.get_list("Item",
+        filters=filters,
+        fields=["name", "item_name", "item_group", "stock_uom",
+                "standard_rate", "image"],
+        order_by="item_name asc",
+        limit_page_length=50)
+
+
+# ── Quotations ───────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_my_quotations(status=None):
+    emp = _get_employee()
+    user = frappe.session.user
+    filters = [["owner", "=", user]]
+    if status:
+        filters.append(["status", "=", status])
+    return frappe.get_list("Quotation",
+        filters=filters,
+        fields=["name", "party_name", "grand_total", "status",
+                "transaction_date", "valid_till"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_quotation(**kwargs):
+    items = kwargs.get("items", [])
+    if not items:
+        frappe.throw(_("At least one item is required"))
+
+    customer = kwargs.get("customer")
+    if not customer:
+        frappe.throw(_("Customer is required"))
+
+    if isinstance(items, str):
+        import json
+        items = json.loads(items)
+
+    doc = frappe.new_doc("Quotation")
+    doc.quotation_to = "Customer"
+    doc.party_name = customer
+    doc.company = COMPANY
+    doc.transaction_date = date.today().isoformat()
+    doc.order_type = "Sales"
+
+    for item in items:
+        doc.append("items", {
+            "item_code": item.get("item_code"),
+            "qty": float(item.get("qty", 1)),
+            "rate": float(item.get("rate", 0)),
+        })
+
+    if kwargs.get("remarks"):
+        doc.terms = kwargs["remarks"]
+
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+# ── Warehouses ───────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_warehouses():
+    return frappe.get_list("Warehouse",
+        filters=[["company", "=", COMPANY], ["is_group", "=", 0], ["disabled", "=", 0]],
+        fields=["name", "warehouse_name"],
+        order_by="warehouse_name asc",
+        limit_page_length=100)
+
+
+# ── Stock ────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_stock_items(search=None, warehouse=None):
+    filters = []
+    if warehouse:
+        filters.append(["warehouse", "=", warehouse])
+    if search:
+        filters.append(["item_code", "like", f"%{search}%"])
+    filters.append(["actual_qty", ">", 0])
+    return frappe.get_list("Bin",
+        filters=filters,
+        fields=["item_code", "warehouse", "actual_qty", "projected_qty",
+                "reserved_qty", "ordered_qty"],
+        order_by="item_code asc",
+        limit_page_length=100)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_stock_entry(**kwargs):
+    items = kwargs.get("items", [])
+    if not items:
+        frappe.throw(_("At least one item is required"))
+
+    if isinstance(items, str):
+        import json
+        items = json.loads(items)
+
+    doc = frappe.new_doc("Stock Entry")
+    doc.stock_entry_type = "Material Receipt"
+    doc.company = COMPANY
+
+    for item in items:
+        doc.append("items", {
+            "item_code": item.get("item_code"),
+            "qty": float(item.get("qty", 1)),
+            "t_warehouse": item.get("warehouse"),
+        })
+
+    if kwargs.get("remarks"):
+        doc.remarks = kwargs["remarks"]
+
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()
