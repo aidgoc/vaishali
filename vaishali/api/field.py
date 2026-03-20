@@ -647,3 +647,57 @@ def create_stock_entry(**kwargs):
     doc.submit()
     frappe.db.commit()
     return doc.as_dict()
+
+
+# ── Sales Targets ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_sales_targets():
+    """Get sales target vs actual for the current financial year."""
+    from datetime import date
+    today = date.today()
+    if today.month >= 4:
+        fy_start = f"{today.year}-04-01"
+        fy_end = f"{today.year + 1}-03-31"
+    else:
+        fy_start = f"{today.year - 1}-04-01"
+        fy_end = f"{today.year}-03-31"
+
+    # Hardcoded targets from ABP (until we have a Target DocType)
+    targets = [
+        {"product": "ACD with SLI", "target_qty": 50, "target_amount": 11250000, "rate": 225000},
+        {"product": "DRM 3400", "target_qty": 60, "target_amount": 21000000, "rate": 350000},
+        {"product": "DJ-1005", "target_qty": 20, "target_amount": 2000000, "rate": 100000},
+        {"product": "E-DASH EOT", "target_qty": 100, "target_amount": 6000000, "rate": 60000},
+        {"product": "E-Dash Chain Hoist", "target_qty": 100, "target_amount": 2800000, "rate": 28000},
+        {"product": "WWSI", "target_qty": 100, "target_amount": 1700000, "rate": 17000},
+        {"product": "F-Dash", "target_qty": 40, "target_amount": 1600000, "rate": 40000},
+        {"product": "MRT Systems", "target_qty": 2, "target_amount": 5000000, "rate": 2500000},
+        {"product": "MRT Service", "target_qty": 100, "target_amount": 800000, "rate": 8000},
+        {"product": "TPS", "target_qty": 50, "target_amount": 1250000, "rate": 25000},
+        {"product": "Installation", "target_qty": 310, "target_amount": 3600000, "rate": 10000},
+        {"product": "Spares & Services", "target_qty": 50, "target_amount": 2500000, "rate": 50000},
+    ]
+
+    # Get actual sales orders this FY
+    orders = frappe.get_list("Sales Order",
+        filters=[["docstatus", "=", 1], ["transaction_date", ">=", fy_start], ["transaction_date", "<=", fy_end],
+                 ["company", "=", COMPANY]],
+        fields=["grand_total"],
+        limit_page_length=0)
+    total_actual = sum(o.grand_total or 0 for o in orders)
+
+    # Get quotation count this FY
+    quotes = frappe.db.count("Quotation", filters={
+        "docstatus": 1, "transaction_date": [">=", fy_start], "company": COMPANY
+    })
+
+    total_target = sum(t["target_amount"] for t in targets)
+
+    return {
+        "fy": f"{fy_start[:4]}-{fy_end[2:4]}",
+        "total_target": total_target,
+        "total_actual": total_actual,
+        "total_quotes": quotes,
+        "products": targets
+    }

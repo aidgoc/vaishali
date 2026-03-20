@@ -157,6 +157,7 @@
     // Sales
     { pattern: '#/pipeline',   handler: function () { S().pipeline(appEl); },       tab: 'home', title: 'Pipeline',   back: '#/home' },
     { pattern: '#/targets',    handler: function () { S().myTargets(appEl); },      tab: 'home', title: 'My Targets', back: '#/home' },
+    { pattern: '#/sales-targets', handler: function () { S().salesTargets(appEl); }, tab: 'home', title: 'Sales Targets', back: '#/home' },
     { pattern: '#/follow-ups', handler: function () { S().followUps(appEl); },      tab: 'home', title: 'Follow Ups', back: '#/home' },
     { pattern: '#/customers',  handler: function () { S().customerSearch(appEl); }, tab: 'home', title: 'Customers',  back: '#/home' },
 

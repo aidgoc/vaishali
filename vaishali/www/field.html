@@ -10,9 +10,9 @@
   <link rel="stylesheet" href="/assets/vaishali/field/style.css?v={{ _v }}">
 </head>
 <body>
-  <header id="app-header"></header>
-  <main id="app"></main>
-  <nav id="bottom-nav"></nav>
+  <header id="app-header" role="banner"></header>
+  <main id="app" role="main"></main>
+  <nav id="bottom-nav" role="navigation" aria-label="Main navigation"></nav>
 
   <script>
     window.csrf_token = "{{ csrf_token }}";
@@ -55,6 +55,7 @@
   <script src="/assets/vaishali/field/screens/quotation.js?v={{ _v }}"></script>
   <script src="/assets/vaishali/field/screens/stock.js?v={{ _v }}"></script>
   <script src="/assets/vaishali/field/screens/chat.js?v={{ _v }}"></script>
+  <script src="/assets/vaishali/field/screens/sales-target.js?v={{ _v }}"></script>
   <script src="/assets/vaishali/field/app.js?v={{ _v }}"></script>
 
   <script>

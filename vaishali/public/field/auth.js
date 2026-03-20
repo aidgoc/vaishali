@@ -20,6 +20,7 @@
     'sales-orders': 'admin', 'sales-order-detail': 'admin',
     pipeline: 'manager',
     targets: 'all',
+    'sales-targets': 'all',
     'follow-ups': 'all',
     customers: 'all',
     'customer-detail': 'all',

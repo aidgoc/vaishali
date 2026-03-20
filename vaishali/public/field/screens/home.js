@@ -99,7 +99,7 @@
     if (tab === 'sales') {
       tiles = [
         { label: 'Pipeline', ic: 'shoppingCart', hash: '#/pipeline' },
-        { label: 'Targets', ic: 'briefcase', hash: '#/targets' },
+        { label: 'Targets', ic: 'briefcase', hash: '#/sales-targets' },
         { label: 'Follow Ups', ic: 'clock', hash: '#/follow-ups' },
         { label: 'Customers', ic: 'users', hash: '#/customers' },
         { label: 'Leads', ic: 'user', hash: '#/leads' },
@@ -145,7 +145,7 @@
       container.appendChild(UI.sectionHeading('SALES'));
       var salesTiles = [
         { label: 'Pipeline', ic: 'shoppingCart', hash: '#/pipeline' },
-        { label: 'Targets', ic: 'briefcase', hash: '#/targets' },
+        { label: 'Targets', ic: 'briefcase', hash: '#/sales-targets' },
         { label: 'Follow Ups', ic: 'clock', hash: '#/follow-ups' },
         { label: 'Customers', ic: 'users', hash: '#/customers' }
       ];
