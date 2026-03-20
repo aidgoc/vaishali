@@ -241,19 +241,55 @@
 
     var isSales = empDept.indexOf('sales') >= 0 || empDept.indexOf('marketing') >= 0;
     var isService = empDept.indexOf('service') >= 0 || empDept.indexOf('support') >= 0;
+    var isOther = !isSales && !isService;
 
-    var visitPurposeField = null;
-    var visitPurposeSelect = null;
-    var servicePurposeField = null;
-    var servicePurposeSelect = null;
+    // Visit type — auto-detected for sales/service, choosable for others
+    var visitType = isSales ? 'sales' : isService ? 'service' : null;
 
-    if (isSales || (!isSales && !isService)) {
-      visitPurposeField = UI.select('Visit Purpose', salesPurposes);
-      visitPurposeSelect = visitPurposeField.querySelector('select');
+    var visitPurposeField = UI.select('Visit Purpose', salesPurposes);
+    var visitPurposeSelect = visitPurposeField.querySelector('select');
+    var servicePurposeField = UI.select('Service Purpose', servicePurposes);
+    var servicePurposeSelect = servicePurposeField.querySelector('select');
+
+    // Visit type picker (only shown if department is neither sales nor service)
+    var typePickerEl = null;
+    if (isOther) {
+      var salesBtn = UI.btn('Sales Visit', { type: 'outline', onClick: function () { setVisitType('sales'); } });
+      var serviceBtn = UI.btn('Service Visit', { type: 'outline', onClick: function () { setVisitType('service'); } });
+      typePickerEl = el('div', { style: { marginBottom: '16px' } }, [
+        el('div', { className: 'section-heading', textContent: 'VISIT TYPE' }),
+        el('div', { style: { display: 'flex', gap: '8px' } }, [salesBtn, serviceBtn])
+      ]);
     }
-    if (isService || (!isSales && !isService)) {
-      servicePurposeField = UI.select('Service Purpose', servicePurposes);
-      servicePurposeSelect = servicePurposeField.querySelector('select');
+
+    function setVisitType(type) {
+      visitType = type;
+      if (type === 'sales') {
+        visitPurposeField.style.display = 'block';
+        servicePurposeField.style.display = 'none';
+        serviceFields.style.display = 'none';
+        if (typePickerEl) {
+          typePickerEl.querySelector('.section-heading').textContent = 'SALES VISIT';
+        }
+      } else {
+        visitPurposeField.style.display = 'none';
+        servicePurposeField.style.display = 'block';
+        serviceFields.style.display = 'block';
+        if (typePickerEl) {
+          typePickerEl.querySelector('.section-heading').textContent = 'SERVICE VISIT';
+        }
+      }
+    }
+
+    // Auto-hide based on detected department
+    if (isSales) {
+      servicePurposeField.style.display = 'none';
+    } else if (isService) {
+      visitPurposeField.style.display = 'none';
+    } else {
+      // Other departments — hide both until type is chosen
+      visitPurposeField.style.display = 'none';
+      servicePurposeField.style.display = 'none';
     }
 
     // Customer search
@@ -335,8 +371,8 @@
       prospectFields.style.display = val ? 'block' : 'none';
     });
 
-    // Service-specific fields
-    var serviceFields = el('div', { style: { display: isService || (!isSales && !isService) ? 'block' : 'none' } });
+    // Service-specific fields (only visible for service visits)
+    var serviceFields = el('div', { style: { display: isService ? 'block' : 'none' } });
     var equipmentInput = UI.textInput('Equipment name');
     var serialInput = UI.textInput('Serial number');
     var jobCardInput = UI.textInput('Job card number');
@@ -357,14 +393,13 @@
 
     // Build form card
     var formChildren = [];
-    if (visitPurposeField) formChildren.push(visitPurposeField);
-    if (servicePurposeField) formChildren.push(servicePurposeField);
+    if (typePickerEl) formChildren.push(typePickerEl);
+    formChildren.push(visitPurposeField);
+    formChildren.push(servicePurposeField);
     formChildren.push(customerField);
     formChildren.push(prospectToggle);
     formChildren.push(prospectFields);
-    if (isService || (!isSales && !isService)) {
-      formChildren.push(serviceFields);
-    }
+    formChildren.push(serviceFields);
     formChildren.push(errorBox);
     formChildren.push(el('div', { style: { marginTop: '12px' } }, [submitBtn]));
 
@@ -378,6 +413,12 @@
 
     function handleSubmit() {
       errorBox.style.display = 'none';
+
+      // For other departments, must pick visit type first
+      if (isOther && !visitType) {
+        showError('Please select a visit type (Sales or Service).');
+        return;
+      }
 
       if (!isProspect && !selectedCustomer) {
         showError('Please select a customer or add a prospect.');
@@ -401,10 +442,10 @@
       if (selectedCustomer && !isProspect) {
         payload.customer = selectedCustomer;
       }
-      if (visitPurposeSelect) {
+      // Only send the purpose field matching the visit type
+      if (visitType === 'sales') {
         payload.visit_purpose = visitPurposeSelect.value;
-      }
-      if (servicePurposeSelect) {
+      } else if (visitType === 'service') {
         payload.service_purpose = servicePurposeSelect.value;
       }
       if (isProspect) {
@@ -413,7 +454,7 @@
         payload.prospect_phone = prospectPhoneInput.value.trim();
         payload.prospect_address = prospectAddressInput.value.trim();
       }
-      if (isService || (!isSales && !isService)) {
+      if (visitType === 'service') {
         payload.equipment_name = equipmentInput.value.trim();
         payload.serial_no = serialInput.value.trim();
         payload.job_card_no = jobCardInput.value.trim();
