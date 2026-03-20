@@ -63,35 +63,6 @@
     return el('div', { className: 'greeting-hero' }, children);
   }
 
-  // ─── Attendance card ──────────────────────────────────────────────
-
-  function attendanceCard(att) {
-    var checkedIn = att && att.checked_in;
-    var accent = checkedIn ? 'green' : 'blue';
-    var statusText = checkedIn ? 'Checked in' : 'Not checked in';
-    var children = [
-      el('div', { className: 'attendance-status' }, [
-        el('span', { className: 'attendance-dot ' + (checkedIn ? 'dot-green' : 'dot-gray') }),
-        el('span', { textContent: statusText })
-      ])
-    ];
-    if (checkedIn && att.check_in_time) {
-      children.push(
-        el('div', { className: 'attendance-time', textContent: 'Since ' + formatTime(att.check_in_time) })
-      );
-    }
-    if (checkedIn && att.check_out_time) {
-      children.push(
-        el('div', { className: 'attendance-time', textContent: 'Out at ' + formatTime(att.check_out_time) })
-      );
-    }
-    return UI.card(children, {
-      accent: accent,
-      tappable: true,
-      onClick: function () { location.hash = '#/attendance'; }
-    });
-  }
-
   // ─── Visit card ───────────────────────────────────────────────────
 
   function visitCard(dcr) {
@@ -104,29 +75,125 @@
     });
   }
 
-  // ─── HR tiles ─────────────────────────────────────────────────────
+  // ─── Tabbed department navigation (manager) ───────────────────────
 
-  function hrTiles() {
-    var tiles = [
-      { label: 'Leave', ic: 'umbrella', hash: '#/leave' },
-      { label: 'Salary', ic: 'wallet', hash: '#/salary' },
-      { label: 'Expenses', ic: 'receipt', hash: '#/expense' },
-      { label: 'Advances', ic: 'banknote', hash: '#/advance' }
-    ];
-    var tileEls = [];
+  function renderDeptTabs(container) {
+    var tabContent = el('div');
+
+    var tabBar = UI.tabs([
+      { value: 'sales', label: 'Sales' },
+      { value: 'operations', label: 'Operations' },
+      { value: 'finance', label: 'Finance' }
+    ], 'sales', function (val) {
+      renderTabContent(tabContent, val);
+    });
+
+    container.appendChild(tabBar);
+    container.appendChild(tabContent);
+    renderTabContent(tabContent, 'sales');
+  }
+
+  function renderTabContent(container, tab) {
+    container.textContent = '';
+    var tiles = [];
+    if (tab === 'sales') {
+      tiles = [
+        { label: 'Pipeline', ic: 'shoppingCart', hash: '#/pipeline' },
+        { label: 'Targets', ic: 'briefcase', hash: '#/targets' },
+        { label: 'Follow Ups', ic: 'clock', hash: '#/follow-ups' },
+        { label: 'Customers', ic: 'users', hash: '#/customers' },
+        { label: 'Leads', ic: 'user', hash: '#/leads' },
+        { label: 'Quotations', ic: 'file', hash: '#/quotations' }
+      ];
+    } else if (tab === 'operations') {
+      tiles = [
+        { label: 'Service', ic: 'settings', hash: '#/service' },
+        { label: 'Production', ic: 'refresh', hash: '#/production' },
+        { label: 'Dispatch', ic: 'shoppingCart', hash: '#/dispatch' },
+        { label: 'Breakdowns', ic: 'bell', hash: '#/breakdowns' },
+        { label: 'Stock', ic: 'briefcase', hash: '#/stock' }
+      ];
+    } else {
+      tiles = [
+        { label: 'Revenue', ic: 'wallet', hash: '#/revenue' },
+        { label: 'Receivables', ic: 'receipt', hash: '#/debtors' },
+        { label: 'Projects', ic: 'clip', hash: '#/projects' },
+        { label: 'Team', ic: 'users', hash: '#/team' },
+        { label: 'Approvals', ic: 'check', hash: '#/approvals' }
+      ];
+    }
+
+    var grid = el('div', { className: 'hr-grid' });
     for (var i = 0; i < tiles.length; i++) {
       (function (t) {
-        var tileEl = el('div', {
-          className: 'hr-tile',
-          onClick: function () { location.hash = t.hash; }
-        }, [
-          icon(t.ic),
-          el('span', { textContent: t.label })
+        var tile = el('div', { className: 'hr-tile', onClick: function () { location.hash = t.hash; } }, [
+          icon(t.ic), el('span', { textContent: t.label })
         ]);
-        tileEls.push(tileEl);
+        grid.appendChild(tile);
       })(tiles[i]);
     }
-    return el('div', { className: 'hr-grid' }, tileEls);
+    container.appendChild(grid);
+  }
+
+  // ─── Department shortcuts (field staff) ───────────────────────────
+
+  function renderDeptShortcuts(container) {
+    var empData = Auth.getEmployee() || {};
+    var dept = (empData.department || '').toLowerCase();
+
+    if (dept.indexOf('sales') >= 0 || dept.indexOf('marketing') >= 0) {
+      container.appendChild(UI.sectionHeading('SALES'));
+      var salesTiles = [
+        { label: 'Pipeline', ic: 'shoppingCart', hash: '#/pipeline' },
+        { label: 'Targets', ic: 'briefcase', hash: '#/targets' },
+        { label: 'Follow Ups', ic: 'clock', hash: '#/follow-ups' },
+        { label: 'Customers', ic: 'users', hash: '#/customers' }
+      ];
+      var salesGrid = el('div', { className: 'hr-grid' });
+      for (var i = 0; i < salesTiles.length; i++) {
+        (function (t) {
+          salesGrid.appendChild(el('div', { className: 'hr-tile', onClick: function () { location.hash = t.hash; } }, [
+            icon(t.ic), el('span', { textContent: t.label })
+          ]));
+        })(salesTiles[i]);
+      }
+      container.appendChild(salesGrid);
+    }
+
+    if (dept.indexOf('service') >= 0) {
+      container.appendChild(UI.sectionHeading('SERVICE'));
+      var serviceTiles = [
+        { label: 'Service', ic: 'settings', hash: '#/service' },
+        { label: 'Installations', ic: 'package', hash: '#/installations' },
+        { label: 'Breakdowns', ic: 'bell', hash: '#/breakdowns' }
+      ];
+      var serviceGrid = el('div', { className: 'hr-grid' });
+      for (var j = 0; j < serviceTiles.length; j++) {
+        (function (t) {
+          serviceGrid.appendChild(el('div', { className: 'hr-tile', onClick: function () { location.hash = t.hash; } }, [
+            icon(t.ic), el('span', { textContent: t.label })
+          ]));
+        })(serviceTiles[j]);
+      }
+      container.appendChild(serviceGrid);
+    }
+
+    if (dept.indexOf('production') >= 0 || dept.indexOf('manufacturing') >= 0) {
+      container.appendChild(UI.sectionHeading('PRODUCTION'));
+      var prodTiles = [
+        { label: 'Production', ic: 'settings', hash: '#/production' },
+        { label: 'Dispatch', ic: 'shoppingCart', hash: '#/dispatch' }
+      ];
+      var prodGrid = el('div', { className: 'hr-grid' });
+      for (var k = 0; k < prodTiles.length; k++) {
+        (function (t) {
+          prodGrid.appendChild(el('div', { className: 'hr-tile', onClick: function () { location.hash = t.hash; } }, [
+            icon(t.ic), el('span', { textContent: t.label })
+          ]));
+        })(prodTiles[k]);
+      }
+      container.appendChild(prodGrid);
+    }
   }
 
   // ─── Field Home ───────────────────────────────────────────────────
@@ -150,109 +217,42 @@
       var dcrRaw = dcrResult.data || {};
       var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
 
+      var checkedIn = att && att.checked_in;
       var visitCount = dcrs.length;
-      var completedCount = 0;
-      for (var i = 0; i < dcrs.length; i++) {
-        if (dcrs[i].status === 'Completed') completedCount++;
-      }
 
-      // Greeting
+      // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
 
-      // Attendance card
-      appEl.appendChild(attendanceCard(att));
+      // 2. Action cards 2x2 grid
+      var actionGrid = el('div', { className: 'action-grid' }, [
+        UI.actionCard({
+          icon: 'mapPin',
+          label: checkedIn ? 'Check Out' : 'Check In',
+          sub: checkedIn && att.check_in_time ? 'Since ' + formatTime(att.check_in_time) : 'Not checked in',
+          accent: checkedIn ? 'green' : 'red',
+          onClick: function () { location.hash = '#/attendance'; }
+        }),
+        UI.actionCard({
+          icon: 'plus',
+          label: '+ New Visit',
+          value: visitCount || null,
+          sub: visitCount ? (visitCount === 1 ? '1 visit today' : visitCount + ' visits today') : 'No visits yet',
+          onClick: function () { location.hash = '#/dcr/new'; }
+        }),
+        UI.actionCard({
+          icon: 'umbrella',
+          label: 'Leave',
+          onClick: function () { location.hash = '#/leave'; }
+        }),
+        UI.actionCard({
+          icon: 'wallet',
+          label: 'Salary',
+          onClick: function () { location.hash = '#/salary'; }
+        })
+      ]);
+      appEl.appendChild(actionGrid);
 
-      // Stats row
-      appEl.appendChild(UI.grid([
-        UI.statCard(visitCount, 'Visits'),
-        UI.statCard(completedCount, 'Completed')
-      ], 2));
-
-      // New Visit button
-      appEl.appendChild(UI.btn('+ New Visit', {
-        type: 'primary',
-        block: true,
-        icon: 'plus',
-        onClick: function () { location.hash = '#/dcr/new'; }
-      }));
-
-      // HR tiles
-      appEl.appendChild(UI.sectionHeading('HR SERVICES'));
-      appEl.appendChild(hrTiles());
-
-      // Service quick links (for service department employees)
-      var empSvc = Auth.getEmployee();
-      var deptSvc = (empSvc && empSvc.department) ? empSvc.department.toLowerCase() : '';
-      if (deptSvc.indexOf('service') !== -1) {
-        appEl.appendChild(UI.sectionHeading('SERVICE'));
-        var serviceGrid = el('div', { className: 'hr-grid' }, [
-          el('div', { className: 'hr-tile', onClick: function() { location.hash = '#/service'; } }, [
-            icon('wrench'), el('span', { textContent: 'Dashboard' })
-          ]),
-          el('div', { className: 'hr-tile', onClick: function() { location.hash = '#/installations'; } }, [
-            icon('package'), el('span', { textContent: 'Installs' })
-          ]),
-          el('div', { className: 'hr-tile', onClick: function() { location.hash = '#/breakdowns'; } }, [
-            icon('alert'), el('span', { textContent: 'Breakdowns' })
-          ])
-        ]);
-        appEl.appendChild(serviceGrid);
-      }
-
-      // Production quick links (for production department employees)
-      var empProd = Auth.getEmployee();
-      var deptProd = (empProd && empProd.department) ? empProd.department.toLowerCase() : '';
-      if (deptProd.indexOf('production') !== -1 || deptProd.indexOf('manufacturing') !== -1) {
-        appEl.appendChild(UI.sectionHeading('PRODUCTION'));
-        var prodGrid = el('div', { className: 'hr-grid' }, [
-          el('div', { className: 'hr-tile', onClick: function() { location.hash = '#/production'; } }, [
-            icon('settings'), el('span', { textContent: 'Dashboard' })
-          ]),
-          el('div', { className: 'hr-tile', onClick: function() { location.hash = '#/dispatch'; } }, [
-            icon('shoppingCart'), el('span', { textContent: 'Dispatch' })
-          ])
-        ]);
-        appEl.appendChild(prodGrid);
-      }
-
-      // Sales quick links (for users with sales-related departments)
-      var empData = Auth.getEmployee() || {};
-      var dept = (empData.department || '').toLowerCase();
-      var hasSalesAccess = dept.indexOf('sales') >= 0 || dept.indexOf('marketing') >= 0 || Auth.isManager();
-      if (hasSalesAccess) {
-        appEl.appendChild(UI.sectionHeading('SALES QUICK LINKS'));
-        var salesLinksRow = el('div', { className: 'quick-links-row' }, [
-          UI.btn('My Targets', {
-            type: 'outline',
-            onClick: function () { location.hash = '#/targets'; }
-          }),
-          UI.btn('Follow Ups', {
-            type: 'outline',
-            onClick: function () { location.hash = '#/follow-ups'; }
-          })
-        ]);
-        appEl.appendChild(salesLinksRow);
-      }
-
-      // Upcoming holidays — via whitelisted endpoint (avoids Holiday List permission issues)
-      var holidayContainer = el('div');
-      appEl.appendChild(holidayContainer);
-      api.apiCall('GET', '/api/field/holidays').then(function (hlRes) {
-        var holidays = (hlRes.data && (hlRes.data.data || hlRes.data.message)) || hlRes.data || [];
-        if (!Array.isArray(holidays) || holidays.length === 0) return;
-        holidayContainer.appendChild(UI.sectionHeading('UPCOMING HOLIDAYS'));
-        for (var h = 0; h < holidays.length; h++) {
-          var hol = holidays[h];
-          var hDate = hol.holiday_date || '';
-          var hDesc = (hol.description || '').replace(/<[^>]*>/g, '').trim();
-          var dParts = hDate.split('-');
-          var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          var dateLabel = dParts.length === 3 ? parseInt(dParts[2], 10) + ' ' + months[parseInt(dParts[1], 10) - 1] : hDate;
-          holidayContainer.appendChild(UI.listCard({ title: hDesc, sub: dateLabel }));
-        }
-      }).catch(function () { /* ignore */ });
-
-      // Today's visits
+      // 3. Today's visits
       appEl.appendChild(UI.sectionHeading("TODAY'S VISITS"));
       if (dcrs.length === 0) {
         appEl.appendChild(UI.empty('empty', 'No visits today'));
@@ -261,6 +261,10 @@
           appEl.appendChild(visitCard(dcrs[j]));
         }
       }
+
+      // 4. Department shortcuts
+      renderDeptShortcuts(appEl);
+
     }).catch(function () {
       appEl.textContent = '';
       appEl.appendChild(greetingHero(true));
@@ -300,6 +304,7 @@
 
       var attRaw = attResult.data || {};
       var att = attRaw.message || attRaw.data || attRaw;
+      var checkedIn = att && att.checked_in;
 
       var dcrRaw = dcrResult.data || {};
       var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
@@ -311,41 +316,47 @@
         if (teamMembers[i].status === 'In Field') teamFieldCount++;
       }
 
-      // Greeting
+      // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
 
-      // KPI row
+      // 2. KPI chips row
       appEl.appendChild(UI.grid([
         UI.statCard(presentCount + '/' + totalCount, 'Team Present'),
         UI.statCard(pendingCount, 'Approvals'),
         UI.statCard(teamFieldCount, 'In Field')
       ], 3));
 
-      // ── ACTIONS — daily tasks everyone needs ──
-      appEl.appendChild(UI.sectionHeading('ACTIONS'));
-
-      // Attendance card
-      appEl.appendChild(attendanceCard(att));
-
-      // New Visit + My Visits row
-      appEl.appendChild(el('div', { className: 'action-row', style: { display: 'flex', gap: '8px', margin: '8px 0' } }, [
-        UI.btn('+ New Visit', {
-          type: 'primary',
+      // 3. Action cards 2x2 grid
+      var actionGrid = el('div', { className: 'action-grid' }, [
+        UI.actionCard({
           icon: 'mapPin',
+          label: checkedIn ? 'Check Out' : 'Check In',
+          sub: checkedIn && att.check_in_time ? 'Since ' + formatTime(att.check_in_time) : 'Not checked in',
+          accent: checkedIn ? 'green' : 'red',
+          onClick: function () { location.hash = '#/attendance'; }
+        }),
+        UI.actionCard({
+          icon: 'plus',
+          label: '+ New Visit',
+          value: myVisitCount || null,
+          sub: myVisitCount ? (myVisitCount === 1 ? '1 visit today' : myVisitCount + ' visits today') : 'No visits yet',
           onClick: function () { location.hash = '#/dcr/new'; }
         }),
-        UI.btn('My Visits' + (myVisitCount ? ' (' + myVisitCount + ')' : ''), {
-          type: 'outline',
-          onClick: function () { location.hash = '#/dcr'; }
+        UI.actionCard({
+          icon: 'umbrella',
+          label: 'Leave',
+          onClick: function () { location.hash = '#/leave'; }
+        }),
+        UI.actionCard({
+          icon: 'receipt',
+          label: 'Expenses',
+          onClick: function () { location.hash = '#/expense'; }
         })
-      ]));
+      ]);
+      appEl.appendChild(actionGrid);
 
-      // HR tiles
-      appEl.appendChild(hrTiles());
-
-      // ── PENDING APPROVALS ──
+      // 4. Pending Approvals section
       appEl.appendChild(UI.sectionHeading('PENDING APPROVALS'));
-
       if (approvals.length === 0) {
         appEl.appendChild(UI.empty('check', 'No pending approvals'));
       } else {
@@ -374,74 +385,10 @@
         }
       }
 
-      // ── SALES & CRM ──
-      appEl.appendChild(UI.sectionHeading('SALES & CRM'));
-      appEl.appendChild(el('div', { className: 'hr-grid' }, [
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/pipeline'; } }, [
-          icon('shoppingCart'), el('span', { textContent: 'Pipeline' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/targets'; } }, [
-          icon('briefcase'), el('span', { textContent: 'Targets' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/follow-ups'; } }, [
-          icon('clock'), el('span', { textContent: 'Follow Ups' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/customers'; } }, [
-          icon('users'), el('span', { textContent: 'Customers' })
-        ])
-      ]));
+      // 5. Tabbed department navigation
+      appEl.appendChild(UI.sectionHeading('DEPARTMENTS'));
+      renderDeptTabs(appEl);
 
-      // ── OPERATIONS ──
-      appEl.appendChild(UI.sectionHeading('OPERATIONS'));
-      appEl.appendChild(el('div', { className: 'hr-grid' }, [
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/service'; } }, [
-          icon('settings'), el('span', { textContent: 'Service' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/production'; } }, [
-          icon('refresh'), el('span', { textContent: 'Production' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/dispatch'; } }, [
-          icon('shoppingCart'), el('span', { textContent: 'Dispatch' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/breakdowns'; } }, [
-          icon('bell'), el('span', { textContent: 'Breakdowns' })
-        ])
-      ]));
-
-      // ── FINANCE & MANAGEMENT ──
-      appEl.appendChild(UI.sectionHeading('FINANCE'));
-      appEl.appendChild(el('div', { className: 'hr-grid' }, [
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/revenue'; } }, [
-          icon('wallet'), el('span', { textContent: 'Revenue' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/debtors'; } }, [
-          icon('receipt'), el('span', { textContent: 'Receivables' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/projects'; } }, [
-          icon('clip'), el('span', { textContent: 'Projects' })
-        ]),
-        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/team'; } }, [
-          icon('users'), el('span', { textContent: 'Team' })
-        ])
-      ]));
-
-      // Upcoming holidays — via whitelisted endpoint
-      var mgrHolidayContainer = el('div');
-      appEl.appendChild(mgrHolidayContainer);
-      api.apiCall('GET', '/api/field/holidays').then(function (hlRes) {
-        var holidays = (hlRes.data && (hlRes.data.data || hlRes.data.message)) || hlRes.data || [];
-        if (!Array.isArray(holidays) || holidays.length === 0) return;
-        mgrHolidayContainer.appendChild(UI.sectionHeading('UPCOMING HOLIDAYS'));
-        for (var h = 0; h < holidays.length; h++) {
-          var hol = holidays[h];
-          var hDate = hol.holiday_date || '';
-          var hDesc = (hol.description || '').replace(/<[^>]*>/g, '').trim();
-          var dParts = hDate.split('-');
-          var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          var dateLabel = dParts.length === 3 ? parseInt(dParts[2], 10) + ' ' + months[parseInt(dParts[1], 10) - 1] : hDate;
-          mgrHolidayContainer.appendChild(UI.listCard({ title: hDesc, sub: dateLabel }));
-        }
-      }).catch(function () { /* ignore */ });
     }).catch(function () {
       appEl.textContent = '';
       appEl.appendChild(greetingHero(false));

@@ -560,6 +560,43 @@
   }
 
   /* ──────────────────────────────────────────────────────────────
+     32. actionCard(opts)
+     ────────────────────────────────────────────────────────────── */
+  function actionCard(opts) {
+    // opts: { icon, label, value, sub, onClick, accent }
+    // accent: 'green', 'red', or null
+    var cls = 'action-card';
+    if (opts.accent) cls += ' accent-' + opts.accent;
+
+    var children = [];
+
+    // Icon
+    if (opts.icon) {
+      var ic = el('div', { className: 'action-icon' });
+      setIconHTML(ic, opts.icon);
+      children.push(ic);
+    }
+
+    // Label
+    children.push(el('div', { className: 'action-label', textContent: opts.label || '' }));
+
+    // Value (large)
+    if (opts.value != null) {
+      children.push(el('div', { className: 'action-value', textContent: String(opts.value) }));
+    }
+
+    // Sub text
+    if (opts.sub) {
+      children.push(el('div', { className: 'action-sub', textContent: opts.sub }));
+    }
+
+    return el('div', {
+      className: cls,
+      onClick: opts.onClick || null
+    }, children);
+  }
+
+  /* ──────────────────────────────────────────────────────────────
      Export
      ────────────────────────────────────────────────────────────── */
   window.UI = {
@@ -592,7 +629,8 @@
     nav: nav,
     updateNavActive: updateNavActive,
     fab: fab,
-    bottomSheet: bottomSheet
+    bottomSheet: bottomSheet,
+    actionCard: actionCard
   };
 
 })();
