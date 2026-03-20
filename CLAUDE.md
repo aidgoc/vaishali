@@ -187,28 +187,24 @@ The PWA uses clean paths that get translated to Frappe method paths:
 - **Visits:** `getGPS()` → `check_in_gps`/`check_out_gps` as "lat,lng" strings on `Daily Call Report`
 - **Prospect flow:** "New prospect?" toggle → free text fields → "Convert to Lead" button on completed visits
 
-## Infrastructure (AWS EC2)
+## Infrastructure
 
-- **Instance:** i-08deae9f14e3cc99e (t3.medium, ap-south-1)
-- **IP:** 35.154.17.172 → dgoc.logstop.com
+- **Hosting:** AWS EC2 (t3.medium, ap-south-1)
 - **Stack:** Ubuntu 22.04, Frappe v15, MariaDB, Redis, nginx, supervisor
-- **FastAPI:** dspl-fastapi service on 127.0.0.1:8443, proxied via nginx at /api/ai/*
-- **Backup:** s3://dspl-erp-backups (ap-south-1)
+- **FastAPI:** dspl-fastapi service on localhost:8443, proxied via nginx at /api/ai/*
 
 ## Development Commands
 
 ```bash
 # Local development
 cd ~/vaishali
-bench --site dgoc.logstop.com migrate    # After Python changes
+bench --site <your-site> migrate         # After Python changes
 bench build --app vaishali               # After JS changes (not needed for www/ assets)
 bench clear-cache                        # Clear Redis cache
 
-# Deploy to EC2
-ssh -i ~/.ssh/heft-erp-key.pem ubuntu@35.154.17.172
-# On EC2:
+# On production server:
 cd /home/frappe/frappe-bench
-bench --site dgoc.logstop.com migrate
+bench --site <your-site> migrate
 sudo supervisorctl restart all
 ```
 
