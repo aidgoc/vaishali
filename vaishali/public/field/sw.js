@@ -1,50 +1,16 @@
-var CACHE_NAME = 'dspl-field-v16';
+var CACHE_NAME = 'dspl-field-v17';
 var PRECACHE_URLS = [
-  '/field/',
-  '/field/index.html',
-  '/field/icons.js',
-  '/field/ui.js',
-  '/field/api.js',
-  '/field/auth.js',
-  '/field/router.js',
-  '/field/screens/home.js',
-  '/field/screens/profile.js',
-  '/field/screens/attendance.js',
-  '/field/screens/hr-hub.js',
-  '/field/screens/leave.js',
-  '/field/screens/expense.js',
-  '/field/screens/advance.js',
-  '/field/screens/salary.js',
-  '/field/screens/visits.js',
-  '/field/screens/approvals.js',
-  '/field/screens/team.js',
-  '/field/screens/pipeline.js',
-  '/field/screens/project-hub.js',
-  '/field/screens/amc.js',
-  '/field/screens/customer-detail.js',
-  '/field/screens/debtors.js',
-  '/field/screens/my-targets.js',
-  '/field/screens/follow-ups.js',
-  '/field/screens/customer-search.js',
-  '/field/screens/service-dashboard.js',
-  '/field/screens/installation.js',
-  '/field/screens/breakdown.js',
-  '/field/screens/production.js',
-  '/field/screens/dispatch.js',
-  '/field/screens/revenue.js',
-  '/field/screens/chat.js',
-  '/field/app.js',
-  '/field/style.css',
-  '/field/manifest.json',
-  '/field/icons/icon-192.png',
-  '/field/icons/icon-512.png',
-  'https://unpkg.com/@knadh/oat@0.4.1/oat.min.css',
-  'https://unpkg.com/@knadh/oat@0.4.1/oat.min.js',
+  '/field',
+  '/assets/vaishali/field/style.css',
+  '/assets/vaishali/field/icons.js',
+  '/assets/vaishali/field/ui.js',
+  '/assets/vaishali/field/api.js',
+  '/assets/vaishali/field/auth.js',
+  '/assets/vaishali/field/router.js',
+  '/assets/vaishali/field/app.js'
 ];
 
-// ---------------------------------------------------------------------------
-// 1. Install — Precache static shell
-// ---------------------------------------------------------------------------
+// Install — precache shell assets
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -55,18 +21,13 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// ---------------------------------------------------------------------------
-// 2. Activate — Clean old caches
-// ---------------------------------------------------------------------------
+// Activate — clean old caches
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
       return Promise.all(
-        names.filter(function(name) {
-          return name.startsWith('dspl-field-') && name !== CACHE_NAME;
-        }).map(function(name) {
-          return caches.delete(name);
-        })
+        names.filter(function(name) { return name !== CACHE_NAME; })
+             .map(function(name) { return caches.delete(name); })
       );
     }).then(function() {
       return self.clients.claim();
@@ -74,40 +35,48 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// ---------------------------------------------------------------------------
-// 3. Fetch — Stale-while-revalidate for static, passthrough for API
-// ---------------------------------------------------------------------------
+// Fetch — network-first for API, cache-first for assets
 self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
 
-  // API requests: let the browser handle normally
-  if (url.pathname.startsWith('/api/')) {
+  // API calls — network only (never cache API responses in SW)
+  if (url.pathname.indexOf('/api/') === 0) {
+    return;  // let the browser handle it normally
+  }
+
+  // Assets — stale-while-revalidate (serve from cache, update in background)
+  if (url.pathname.indexOf('/assets/') === 0) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(function(cache) {
+        return cache.match(event.request).then(function(cached) {
+          var fetchPromise = fetch(event.request).then(function(response) {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          }).catch(function() {
+            return cached;
+          });
+          return cached || fetchPromise;
+        });
+      })
+    );
     return;
   }
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.match(event.request).then(function(cachedResponse) {
-        var fetchPromise = fetch(event.request).then(function(networkResponse) {
-          // Only cache successful responses and same-origin / CORS-ok responses
-          if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(function() {
-          // Network failed — return nothing (cachedResponse already served if available)
-          return undefined;
-        });
-
-        // Return cached immediately, update in background
-        return cachedResponse || fetchPromise;
-      });
-    })
-  );
+  // HTML page — network first, fallback to cache
+  if (event.request.mode === 'navigate' || url.pathname === '/field') {
+    event.respondWith(
+      fetch(event.request).catch(function() {
+        return caches.match('/field');
+      })
+    );
+    return;
+  }
 });
 
 // ---------------------------------------------------------------------------
-// 4. Background Sync — "field-sync" tag
+// Background Sync — "field-sync" tag
 // ---------------------------------------------------------------------------
 
 function openDBFromSW() {
@@ -267,8 +236,8 @@ function doBackgroundSync() {
 
         return self.registration.showNotification('DSPL Field Sync', {
           body: body,
-          icon: '/field/icons/icon-192.png',
-          badge: '/field/icons/icon-192.png'
+          icon: '/assets/vaishali/field/icons/icon-192.png',
+          badge: '/assets/vaishali/field/icons/icon-192.png'
         });
       });
     });

@@ -56,5 +56,12 @@
   <script src="/assets/vaishali/field/screens/stock.js?v={{ _v }}"></script>
   <script src="/assets/vaishali/field/screens/chat.js?v={{ _v }}"></script>
   <script src="/assets/vaishali/field/app.js?v={{ _v }}"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/assets/vaishali/field/sw.js')
+        .catch(function(err) { console.warn('SW registration failed:', err); });
+    }
+  </script>
 </body>
 </html>
