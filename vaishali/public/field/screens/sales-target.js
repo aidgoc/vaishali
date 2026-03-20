@@ -47,7 +47,6 @@
   window.Screens = window.Screens || {};
   window.Screens.salesTargets = function (appEl) {
     appEl.textContent = '';
-    appEl.appendChild(UI.page('Sales Targets FY 26-27', '#/home'));
     var skels = UI.skeleton(4);
     appEl.appendChild(skels);
 
