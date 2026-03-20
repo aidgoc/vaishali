@@ -74,7 +74,7 @@
     listContainer.appendChild(UI.skeleton(3));
 
     // Load warehouses
-    api.apiCall('GET', '/api/field/stock/warehouses').then(function (res) {
+    api.apiCall('GET', '/api/field/warehouses').then(function (res) {
       var warehouses = [];
       if (res && res.data) {
         warehouses = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
@@ -156,7 +156,7 @@
     ]);
 
     // Load warehouses
-    api.apiCall('GET', '/api/field/stock/warehouses').then(function (res) {
+    api.apiCall('GET', '/api/field/warehouses').then(function (res) {
       var warehouses = [];
       if (res && res.data) {
         warehouses = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
