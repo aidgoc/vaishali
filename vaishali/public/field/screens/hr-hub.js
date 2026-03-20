@@ -1,23 +1,28 @@
+/* hr-hub.js — HR Services screen */
 (function () {
   'use strict';
+  var el = UI.el;
+
   window.Screens = window.Screens || {};
   window.Screens.hrHub = function (appEl) {
     var tiles = [
-      { label: 'Leave', ic: 'umbrella', hash: '#/leave', color: 'tile-green' },
-      { label: 'Expenses', ic: 'receipt', hash: '#/expense', color: 'tile-blue' },
-      { label: 'Advances', ic: 'banknote', hash: '#/advance', color: 'tile-amber' },
-      { label: 'Salary', ic: 'wallet', hash: '#/salary', color: '' }
+      { label: 'Leave', ic: 'umbrella', hash: '#/leave' },
+      { label: 'Expenses', ic: 'receipt', hash: '#/expense' },
+      { label: 'Advances', ic: 'banknote', hash: '#/advance' },
+      { label: 'Salary', ic: 'wallet', hash: '#/salary' }
     ];
 
-    var grid = UI.el('div', { className: 'quick-actions' });
+    var grid = el('div', { className: 'hr-grid' });
     for (var i = 0; i < tiles.length; i++) {
       (function (t) {
-        var iconEl = UI.el('div', { className: 'tile-icon' });
-        iconEl.appendChild(icon(t.ic));
-        grid.appendChild(UI.el('div', {
-          className: 'action-tile' + (t.color ? ' ' + t.color : ''),
+        var tile = el('div', {
+          className: 'hr-tile',
           onClick: function () { location.hash = t.hash; }
-        }, [iconEl, UI.el('div', { className: 'tile-label', textContent: t.label })]));
+        }, [
+          icon(t.ic),
+          el('span', { textContent: t.label })
+        ]);
+        grid.appendChild(tile);
       })(tiles[i]);
     }
     appEl.appendChild(grid);

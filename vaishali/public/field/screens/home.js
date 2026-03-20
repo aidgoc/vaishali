@@ -258,8 +258,8 @@
           onClick: function () { location.hash = '#/attendance'; }
         }),
         UI.actionCard({
-          icon: 'plus',
-          label: '+ New Visit',
+          icon: 'clip',
+          label: 'New Visit',
           value: visitCount || null,
           sub: visitCount ? (visitCount === 1 ? '1 visit today' : visitCount + ' visits today') : 'No visits yet',
           onClick: function () { location.hash = '#/dcr/new'; }
@@ -388,8 +388,8 @@
           onClick: function () { location.hash = '#/attendance'; }
         }),
         UI.actionCard({
-          icon: 'plus',
-          label: '+ New Visit',
+          icon: 'clip',
+          label: 'New Visit',
           value: myVisitCount || null,
           sub: myVisitCount ? (myVisitCount === 1 ? '1 visit today' : myVisitCount + ' visits today') : 'No visits yet',
           onClick: function () { location.hash = '#/dcr/new'; }
@@ -410,6 +410,23 @@
         })
       ]);
       appEl.appendChild(actionGrid);
+
+      // 3b. HR Services row
+      appEl.appendChild(UI.sectionHeading('HR SERVICES'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/leave'; } }, [
+          icon('umbrella'), el('span', { textContent: 'Leave' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/salary'; } }, [
+          icon('wallet'), el('span', { textContent: 'Salary' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/expense'; } }, [
+          icon('receipt'), el('span', { textContent: 'Expenses' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/advance'; } }, [
+          icon('banknote'), el('span', { textContent: 'Advances' })
+        ])
+      ]));
 
       // 4. Pending Approvals section
       appEl.appendChild(UI.sectionHeading('PENDING APPROVALS'));
