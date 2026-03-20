@@ -235,9 +235,9 @@
     var selectedCustomer = null;
     var isProspect = false;
 
-    // Purpose dropdowns
-    var salesPurposes = ['Sales Visit', 'Quotation Follow-up', 'Collection', 'Demo', 'Other'];
-    var servicePurposes = ['Breakdown Repair', 'AMC Service', 'Installation', 'Inspection', 'Other'];
+    // Purpose dropdowns — must match Daily Call Report DocType select options exactly
+    var salesPurposes = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Quotation Follow-up', 'Order Follow-up', 'Recovery', 'Relationship Building'];
+    var servicePurposes = ['Installation', 'Breakdown / Repair', 'Preventive Maintenance (AMC)', 'Commissioning', 'Training', 'Warranty Service', 'Inspection'];
 
     var isSales = empDept.indexOf('sales') >= 0 || empDept.indexOf('marketing') >= 0;
     var isService = empDept.indexOf('service') >= 0 || empDept.indexOf('support') >= 0;
