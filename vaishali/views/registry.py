@@ -206,7 +206,7 @@ VIEWS = {
             "quotations": {
                 "doctype": "Quotation",
                 "fields": ["name", "party_name", "grand_total", "status", "transaction_date"],
-                "filters": [["project", "=", "{context}"]],
+                "filters": [],
                 "order_by": "transaction_date desc",
                 "limit": 20,
                 "skip_company_filter": True,
@@ -251,7 +251,7 @@ VIEWS = {
             "boms": {
                 "doctype": "BOM",
                 "fields": ["name", "item", "item_name", "total_cost", "is_active", "is_default"],
-                "filters": [["project", "=", "{context}"]],
+                "filters": [],
                 "order_by": "creation desc",
                 "limit": 20,
                 "skip_company_filter": True,
@@ -554,8 +554,7 @@ VIEWS = {
         "section_defs": {
             "active_schedules": {
                 "doctype": "Maintenance Schedule",
-                "fields": ["name", "customer", "transaction_date", "status",
-                           "items"],
+                "fields": ["name", "customer", "transaction_date", "status"],
                 "filters": [["docstatus", "=", 1]],
                 "order_by": "transaction_date desc",
                 "limit": 50,

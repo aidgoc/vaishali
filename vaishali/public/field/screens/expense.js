@@ -55,19 +55,33 @@
     appEl.appendChild(loadingEl);
 
     var emp = Auth.getEmployee() || {};
-    var empName = emp.name || '';
+    // emp.name is the ERPNext Employee ID (e.g. HR-EMP-00001)
+    // emp.employee_name is the human-readable name
+    var empId = emp.name || '';
+    var empHumanName = emp.employee_name || '';
 
-    if (!empName) {
+    if (!empId && !empHumanName) {
       appEl.removeChild(loadingEl);
       appEl.appendChild(UI.error('Employee not found. Please log in again.'));
       return;
+    }
+
+    // Use Employee ID for the filter; fall back to employee_name if ID looks like a human name
+    var filterField = 'employee';
+    var filterValue = empId;
+    if (empId && empId.indexOf(' ') !== -1 && empHumanName) {
+      filterField = 'employee_name';
+      filterValue = empId;
+    } else if (!empId && empHumanName) {
+      filterField = 'employee_name';
+      filterValue = empHumanName;
     }
 
     var fields = JSON.stringify([
       'name', 'posting_date', 'total_claimed_amount',
       'total_sanctioned_amount', 'status', 'approval_status'
     ]);
-    var filters = JSON.stringify([['employee', '=', empName]]);
+    var filters = JSON.stringify([[filterField, '=', filterValue]]);
     var qs = '?filters=' + encodeURIComponent(filters) +
              '&fields=' + encodeURIComponent(fields) +
              '&order_by=posting_date desc' +
@@ -251,9 +265,10 @@
 
     function submitClaim() {
       var emp = Auth.getEmployee() || {};
-      var empName = emp.name || '';
+      // emp.name should be the ERPNext Employee ID (e.g. HR-EMP-00001)
+      var empId = emp.name || '';
 
-      if (!empName) {
+      if (!empId) {
         UI.toast('Employee not found. Please log in again.', 'danger');
         return;
       }
@@ -290,7 +305,7 @@
       submitBtn._setLoading(true, 'Submitting\u2026');
 
       var body = {
-        employee: empName,
+        employee: empId,
         company: COMPANY,
         posting_date: todayISO(),
         expenses: expenses

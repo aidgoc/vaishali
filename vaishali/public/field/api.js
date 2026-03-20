@@ -259,7 +259,12 @@
       else if (path === '/api/field/me') path = '/api/method/vaishali.api.field.get_me';
       else if (path === '/api/field/nav-tier') path = '/api/method/vaishali.api.field.get_nav_tier';
       else if (path === '/api/field/session-info') path = '/api/method/vaishali.api.field.get_session_info';
-      else if (path === '/api/field/customers') path = '/api/method/vaishali.api.field.get_customers';
+      else if (path === '/api/field/customers' || path.indexOf('/api/field/customers?') === 0) {
+        var custQS = '';
+        var custQIdx = path.indexOf('?');
+        if (custQIdx !== -1) custQS = path.substring(custQIdx);
+        path = '/api/method/vaishali.api.field.get_customers' + custQS;
+      }
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
@@ -279,8 +284,23 @@
         path = '/api/method/vaishali.api.field.get_dcr?dcr_id=' + encodeURIComponent(dcrId);
       }
       else if (path === '/api/field/dcr' || path.indexOf('/api/field/dcr?') === 0) {
-        if (method === 'POST') path = '/api/method/vaishali.api.field.create_dcr';
-        else path = '/api/method/vaishali.api.field.get_dcrs';
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_dcr';
+        } else {
+          // Parse query params from original path and map to get_dcrs param names
+          var dcrQS = '';
+          var dcrQIdx = path.indexOf('?');
+          if (dcrQIdx !== -1) {
+            var dcrParams = new URLSearchParams(path.substring(dcrQIdx + 1));
+            var mappedParams = [];
+            if (dcrParams.get('date')) mappedParams.push('date_filter=' + encodeURIComponent(dcrParams.get('date')));
+            if (dcrParams.get('from_date')) mappedParams.push('start_date=' + encodeURIComponent(dcrParams.get('from_date')));
+            if (dcrParams.get('to_date')) mappedParams.push('end_date=' + encodeURIComponent(dcrParams.get('to_date')));
+            if (dcrParams.get('department')) mappedParams.push('department=' + encodeURIComponent(dcrParams.get('department')));
+            if (mappedParams.length) dcrQS = '?' + mappedParams.join('&');
+          }
+          path = '/api/method/vaishali.api.field.get_dcrs' + dcrQS;
+        }
       }
       else if (path.indexOf('/api/field/chat') === 0) {
         if (method === 'POST') path = '/api/method/vaishali.api.chat.send_message';

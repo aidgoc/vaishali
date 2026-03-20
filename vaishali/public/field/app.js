@@ -227,6 +227,15 @@
       buildBottomNav();
     }
     appEl.textContent = '';
+    // Show loading skeleton immediately to prevent blank flash
+    var _loadingSkel = document.createElement('div');
+    _loadingSkel.className = 'route-loading';
+    for (var _si = 0; _si < 4; _si++) {
+      var _bar = document.createElement('div');
+      _bar.className = 'skeleton-bar';
+      _loadingSkel.appendChild(_bar);
+    }
+    appEl.appendChild(_loadingSkel);
     if (matched.tab !== null) {
       updateNavActive(matched.tab);
     }

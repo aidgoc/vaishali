@@ -28,19 +28,34 @@
     appEl.appendChild(UI.page('Salary Slips', '#/hr'));
 
     var emp = Auth.getEmployee() || {};
-    var empName = emp.name || emp.employee_id || '';
+    // emp.name is the ERPNext Employee ID (e.g. HR-EMP-00001)
+    // emp.employee_name is the human-readable name
+    var empId = emp.name || emp.employee_id || '';
+    var empHumanName = emp.employee_name || '';
 
     var listArea = UI.el('div');
     listArea.appendChild(UI.skeleton(3));
     appEl.appendChild(listArea);
 
-    if (!empName) {
+    if (!empId && !empHumanName) {
       listArea.textContent = '';
       listArea.appendChild(UI.error('Employee record not linked. Contact admin.'));
       return;
     }
 
-    var filters = JSON.stringify([['employee', '=', empName], ['docstatus', '=', 1]]);
+    // Use Employee ID for the filter; fall back to employee_name if ID looks like a human name
+    var filterField = 'employee';
+    var filterValue = empId;
+    if (empId && empId.indexOf(' ') !== -1 && empHumanName) {
+      // emp.name contains spaces — it's actually the employee name, not the ID
+      filterField = 'employee_name';
+      filterValue = empId;
+    } else if (!empId && empHumanName) {
+      filterField = 'employee_name';
+      filterValue = empHumanName;
+    }
+
+    var filters = JSON.stringify([[filterField, '=', filterValue], ['docstatus', '=', 1]]);
     var fields = JSON.stringify(['name', 'posting_date', 'start_date', 'end_date', 'net_pay', 'gross_pay', 'total_deduction']);
     var path = '/api/resource/Salary Slip'
       + '?filters=' + encodeURIComponent(filters)

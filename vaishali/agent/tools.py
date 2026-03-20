@@ -12,10 +12,49 @@ import json
 import os
 from datetime import date
 
-import store
-from config import FINANCIAL_DOCTYPES
+# ── Inline definitions (originally from old bot's config.py and shared/knowledge.py) ──
 
-from shared.knowledge import COMPANY_KNOWLEDGE
+FINANCIAL_DOCTYPES = {
+    "Journal Entry", "Payment Entry",
+    "Sales Invoice", "Purchase Invoice",
+    "Stock Entry", "Sales Order", "Purchase Order",
+    "Stock Reconciliation", "BOM",
+    "Purchase Receipt", "Delivery Note", "Material Request",
+    "Quality Inspection", "Landed Cost Voucher",
+    "Quotation", "Supplier Quotation",
+    "Expense Claim", "Salary Slip", "Payroll Entry",
+    "Employee Advance", "Work Order", "Timesheet",
+    "Request for Quotation", "Leave Allocation",
+    "Job Card", "Production Plan", "Asset Movement",
+}
+
+COMPANY_KNOWLEDGE = """
+# DSPL ERPNext — LIVE DATA REFERENCE
+
+## COMPANIES ON THIS SITE
+1. Dynamic Servitech Private Limited (DSPL) — DEFAULT
+2. Dynamic Crane Engineers Private Limited (DCEPL) — DO NOT TOUCH
+
+## KEY ACCOUNTS
+- Cash: Cash - DSPL
+- Debtors: Debtors - DSPL (Receivable, party_type=Customer)
+- Creditors: Creditors - DSPL (Payable, party_type=Supplier)
+- Income: Sales - DSPL, Service - DSPL
+- Cost Center: Main - DSPL
+
+## WAREHOUSES
+- Stores - DSPL (main), Finished Goods - DSPL, Work In Progress - DSPL
+
+## GST TAX TEMPLATES
+- Sales: Output GST In-state - DSPL, Output GST Out-state - DSPL
+- Purchase: Input GST In-state - DSPL, Input GST Out-state - DSPL
+
+## LEAVE TYPES
+Casual Leave, Compensatory Off, Sick Leave, Privilege Leave, Leave Without Pay
+
+## PRICE LISTS
+Standard Buying, Standard Selling
+"""
 
 COMPANY = os.getenv("COMPANY_NAME", "Dynamic Servitech Private Limited")
 ABBR = "DSPL"
@@ -2614,11 +2653,17 @@ TOOLS = [
 
 
 def _resolve_employee_for_chat(user_id):
-    """Look up employee mapping for a chat user."""
-    mapping = store.get_employee_by_telegram(str(user_id))
-    if not mapping:
+    """Look up employee mapping for a chat user.
+    Note: On Frappe Cloud, this is handled by the session/auth layer, not the old SQLite store.
+    """
+    try:
+        import store
+        mapping = store.get_employee_by_telegram(str(user_id))
+        if not mapping:
+            return None, None
+        return mapping["employee_id"], mapping
+    except ImportError:
         return None, None
-    return mapping["employee_id"], mapping
 
 
 def execute_tool(tool_name, tool_input, erp_client, user_role,
@@ -2700,21 +2745,24 @@ def execute_tool(tool_name, tool_input, erp_client, user_role,
                         return _json({"error": f"{doctype} {doc_name} is cancelled (docstatus=2) and cannot be submitted."})
             except Exception:
                 pass  # let the actual submit call handle errors
-            # Financial approval gate
+            # Financial approval gate (approvals_engine is from old bot — skip if unavailable)
             if doctype in FINANCIAL_DOCTYPES:
-                import approvals_engine as ae
-                if doc is None:
-                    try:
-                        doc = erp_client.get_doc(doctype, doc_name)
-                    except Exception:
-                        pass
-                amount = ae.get_amount(doctype, doc) if isinstance(doc, dict) else 0
-                if ae.needs_approval(doctype, amount, user_role):
-                    description = f"Submit {doctype} {doc_name} for ₹{amount:,.0f}"
-                    return ae.create_financial_approval(
-                        user_id or 0, user_name or "unknown", user_role,
-                        doctype, doc_name, amount, description,
-                    )
+                try:
+                    import approvals_engine as ae
+                    if doc is None:
+                        try:
+                            doc = erp_client.get_doc(doctype, doc_name)
+                        except Exception:
+                            pass
+                    amount = ae.get_amount(doctype, doc) if isinstance(doc, dict) else 0
+                    if ae.needs_approval(doctype, amount, user_role):
+                        description = f"Submit {doctype} {doc_name} for ₹{amount:,.0f}"
+                        return ae.create_financial_approval(
+                            user_id or 0, user_name or "unknown", user_role,
+                            doctype, doc_name, amount, description,
+                        )
+                except ImportError:
+                    pass  # approval engine not available — proceed with direct submit
 
         # Role-based submit restriction
         if user_role == "user" and tool_input.get("submit"):
@@ -3934,31 +3982,19 @@ def execute_tool(tool_name, tool_input, erp_client, user_role,
             return _json(erp_client.delete_doc(tool_input["doctype"], tool_input["name"]))
 
         elif tool_name == "erp_attach":
-            import media as media_mod
-            try:
-                prefix = tool_input.get("file_prefix", "")
-                if not prefix:
-                    files = store.get_user_media(user_id or 0)
-                    return media_mod.format_file_list(files)
-                files = store.get_user_media(user_id or 0, limit=50)
-                match = next((f for f in files if f["file_id"].startswith(prefix)), None)
-                if not match:
-                    return json.dumps({"error": f"No file found starting with '{prefix}'"})
-                ok = media_mod.attach_to_erp(
-                    erp_client, match["file_path"],
-                    tool_input["doctype"], tool_input["docname"], match["file_id"]
-                )
-                return json.dumps({"attached": ok, "file": match["filename"]})
-            except Exception as e:
-                return json.dumps({"error": str(e)})
+            # erp_attach depends on old bot's media store — not available on Frappe Cloud
+            return json.dumps({"error": "File attachment via chat is not yet supported in this deployment. Use the ERPNext UI to attach files."})
 
         elif tool_name == "semantic_search":
-            import vector_store
-            hits = vector_store.search(
-                tool_input["query"],
-                top_k=int(tool_input.get("top_k", 5)),
-            )
-            return vector_store.format_search_results(hits, tool_input["query"])
+            try:
+                import vector_store
+                hits = vector_store.search(
+                    tool_input["query"],
+                    top_k=int(tool_input.get("top_k", 5)),
+                )
+                return vector_store.format_search_results(hits, tool_input["query"])
+            except ImportError:
+                return json.dumps({"error": "Semantic search not available in this deployment. Use search_records instead."})
 
         elif tool_name == "get_print_pdf":
             pdf_bytes = erp_client.get_print_pdf(

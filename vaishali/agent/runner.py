@@ -28,7 +28,10 @@ def _truncate(s, max_len=_MAX_TOOL_RESULT_CHARS):
 
 def run_agent(message, employee=None, role="user", user=None):
     """Run the Vaishali agent. Returns {response, tool_calls}."""
-    import anthropic
+    try:
+        import anthropic
+    except ImportError:
+        return {"response": "The anthropic Python package is not installed. Run: bench pip install anthropic", "tool_calls": []}
     from vaishali.agent.prompt import build_system_prompt
     from vaishali.agent.tools import get_tools_for_role, TOOL_CATEGORIES
     from vaishali.agent.executor import execute_tool

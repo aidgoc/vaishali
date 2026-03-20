@@ -2220,3 +2220,97 @@ textarea {
 .priority-pill.low { background: var(--surface-2); color: var(--ink-tertiary); }
 .priority-pill { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
 .service-actions { display: flex; gap: 8px; margin: 12px 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE POLISH (375px iPhone targets)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Loading skeleton on route transition ───────────────── */
+/* Shown instantly when appEl is cleared, before screen JS runs */
+.route-loading {
+  padding: 20px 0;
+}
+.route-loading .skeleton-bar {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-1) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  margin-bottom: 16px;
+}
+.route-loading .skeleton-bar:nth-child(1) { width: 45%; height: 20px; margin-bottom: 20px; }
+.route-loading .skeleton-bar:nth-child(2) { width: 100%; height: 80px; border-radius: var(--radius-lg); }
+.route-loading .skeleton-bar:nth-child(3) { width: 100%; height: 80px; border-radius: var(--radius-lg); }
+.route-loading .skeleton-bar:nth-child(4) { width: 70%; }
+
+/* ── 2. Tab-bar pills: prevent truncation ──────────────────── */
+.tab-bar {
+  flex-wrap: nowrap;
+}
+.tab-item {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* ── 3. Cards: consistent spacing ──────────────────────────── */
+.card-surface,
+.list-card,
+.att-card,
+.visit-card,
+.stat-card {
+  border-radius: var(--radius-lg);  /* 16px */
+}
+.card-surface { padding: 16px; margin-bottom: 12px; }
+.list-card    { padding: 14px 16px; margin-bottom: 12px; }
+
+/* ── 4. Form inputs: full-width, 16px font (prevents iOS zoom) */
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+textarea,
+select {
+  font-size: 16px;
+  padding: 12px 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── 5. Stat cards: equal width, no squeeze ────────────────── */
+.stats-row {
+  display: flex;
+  gap: 12px;
+}
+.stats-row .stat-card {
+  flex: 1;
+  min-width: 0;
+}
+.stats-row.three-col {
+  display: flex;
+}
+.stats-row.three-col .stat-card {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 6. Touch targets: min 44px ────────────────────────────── */
+.list-card      { min-height: 44px; }
+.action-tile    { min-height: 44px; }
+.tab-item       { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.btn-primary-styled,
+.btn-outline,
+.checkin-btn,
+.app-container .btn-primary,
+.login-container .btn-primary { min-height: 44px; }
+
+/* ── 7. Bottom nav: safe area + touch ──────────────────────── */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-item {
+  min-height: 44px;
+}
