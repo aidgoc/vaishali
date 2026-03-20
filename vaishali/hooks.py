@@ -17,4 +17,16 @@ doc_events = {
     "Daily Call Report": {
         "on_update": "vaishali.api.field.on_dcr_update",
     },
+    "Leave Application": {
+        "on_submit": "vaishali.notifications.on_leave_application_submit",
+        "on_update": "vaishali.notifications.on_leave_application_update",
+    },
+    "Expense Claim": {
+        "on_submit": "vaishali.notifications.on_expense_claim_submit",
+        "on_update": "vaishali.notifications.on_expense_claim_update",
+    },
+    "Employee Advance": {
+        "on_submit": "vaishali.notifications.on_employee_advance_submit",
+        "on_update": "vaishali.notifications.on_employee_advance_update",
+    },
 }

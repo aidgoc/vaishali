@@ -1,0 +1,133 @@
+"""Telegram notification doc event handlers for DSPL ERP.
+
+Each handler fires a POST to the internal FastAPI service at
+http://127.0.0.1:8443/api/ai/notify.  All calls are fire-and-forget via
+_notify(), which catches every exception so Frappe is never blocked.
+"""
+import frappe
+import requests
+
+
+NOTIFY_URL = "http://127.0.0.1:8443/api/ai/notify"
+MANAGER_USERS = ["harsh@dgoc.in", "bng@dgoc.in"]
+
+
+# ── Internal helpers ─────────────────────────────────────────────
+
+def _notify(employee_id, message):
+    """Fire-and-forget POST to FastAPI. Never raises."""
+    try:
+        requests.post(
+            NOTIFY_URL,
+            json={"employee_id": employee_id, "message": message},
+            timeout=3,
+        )
+    except Exception:
+        pass
+
+
+def _get_managers():
+    """Return employee IDs for the two default managers."""
+    managers = []
+    for user in MANAGER_USERS:
+        emp_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if emp_id:
+            managers.append(emp_id)
+    return managers
+
+
+def _get_leave_approvers(employee):
+    """Return employee IDs of department-level leave approvers.
+
+    Falls back to _get_managers() if no department approvers are found.
+    """
+    dept = frappe.db.get_value("Employee", employee, "department")
+    approvers = []
+    if dept:
+        rows = frappe.db.sql(
+            """
+            SELECT DISTINCT e.name
+            FROM `tabEmployee` e
+            JOIN `tabDepartment Approver` da ON da.approver = e.user_id
+            WHERE da.parent = %s
+              AND da.parentfield = 'leave_approvers'
+              AND e.status = 'Active'
+            """,
+            dept,
+            as_dict=True,
+        )
+        approvers = [r["name"] for r in rows]
+    return approvers if approvers else _get_managers()
+
+
+# ── Leave Application ────────────────────────────────────────────
+
+def on_leave_application_submit(doc, method):
+    """Notify leave approvers when an application is submitted."""
+    approvers = _get_leave_approvers(doc.employee)
+    msg = (
+        f"New leave request from {doc.employee_name}: "
+        f"{doc.leave_type} {doc.from_date} – {doc.to_date} "
+        f"({doc.total_leave_days} day(s)). Please review."
+    )
+    for emp_id in approvers:
+        _notify(emp_id, msg)
+
+
+def on_leave_application_update(doc, method):
+    """Notify the applicant when their leave status changes."""
+    if doc.status not in ("Approved", "Rejected"):
+        return
+    msg = (
+        f"Your leave request ({doc.leave_type} {doc.from_date} – {doc.to_date}) "
+        f"has been {doc.status.lower()}."
+    )
+    _notify(doc.employee, msg)
+
+
+# ── Expense Claim ────────────────────────────────────────────────
+
+def on_expense_claim_submit(doc, method):
+    """Notify managers when an expense claim is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"New expense claim from {doc.employee_name}: "
+        f"₹{doc.total_claimed_amount}. Please review."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_expense_claim_update(doc, method):
+    """Notify the applicant when their expense claim approval_status changes."""
+    if doc.approval_status not in ("Approved", "Rejected"):
+        return
+    msg = (
+        f"Your expense claim of ₹{doc.total_claimed_amount} "
+        f"has been {doc.approval_status.lower()}."
+    )
+    _notify(doc.employee, msg)
+
+
+# ── Employee Advance ─────────────────────────────────────────────
+
+def on_employee_advance_submit(doc, method):
+    """Notify managers when an employee advance is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"New advance request from {doc.employee_name}: "
+        f"₹{doc.advance_amount}. Please review."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_employee_advance_update(doc, method):
+    """Notify the applicant when their advance status changes."""
+    if doc.status not in ("Paid", "Claimed", "Cancelled"):
+        return
+    msg = (
+        f"Your advance request of ₹{doc.advance_amount} "
+        f"status is now: {doc.status}."
+    )
+    _notify(doc.employee, msg)

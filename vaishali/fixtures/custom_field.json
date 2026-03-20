@@ -1,0 +1,13 @@
+[
+    {
+        "doctype": "Custom Field",
+        "dt": "Employee",
+        "fieldname": "telegram_chat_id",
+        "fieldtype": "Data",
+        "label": "Telegram Chat ID",
+        "insert_after": "cell_phone",
+        "read_only": 1,
+        "module": "Vaishali",
+        "description": "Linked via DSPL Field App profile"
+    }
+]

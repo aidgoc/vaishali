@@ -420,3 +420,34 @@ def on_dcr_update(doc, method):
         frappe.db.commit()
     except Exception:
         pass
+
+
+# ── Telegram Linking ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def generate_telegram_token():
+    """Generate a one-time token for Telegram linking."""
+    import uuid
+    user = frappe.session.user
+    employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    if not employee:
+        frappe.throw("No employee record found for your account")
+
+    token = str(uuid.uuid4())
+    cache_key = f"telegram_link_{token}"
+    frappe.cache().set_value(cache_key, employee, expires_in_sec=300)
+
+    return {
+        "token": token,
+        "bot_url": f"https://t.me/DGOCerp_bot?start={token}",
+    }
+
+
+@frappe.whitelist()
+def verify_telegram_token(token):
+    """Verify a Telegram linking token. Called by FastAPI via service API key."""
+    cache_key = f"telegram_link_{token}"
+    employee_id = frappe.cache().get_value(cache_key)
+    if employee_id:
+        frappe.cache().delete_value(cache_key)
+    return {"employee_id": employee_id}
