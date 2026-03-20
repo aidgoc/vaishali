@@ -1,41 +1,14 @@
 /* app.js — DSPL Field App: route dispatcher + login screen
    All other screens live in screens/*.js and register on window.Screens.
+   HTML provides #app-header, #app, #bottom-nav — no dynamic shell creation.
 */
 (function () {
   'use strict';
 
   var api = window.fieldAPI;
 
-  // On Frappe Cloud, #app and #bottom-nav don't exist (HTML is sanitized).
-  // Create them dynamically if missing.
-  function ensureShell() {
-    if (document.getElementById('app') && document.getElementById('bottom-nav')) return;
-    var target = document.querySelector('.web-page-content') ||
-                 document.querySelector('.webpage-content') ||
-                 document.querySelector('.page_content') ||
-                 document.querySelector('main') ||
-                 document.body;
-    target.textContent = '';
-    // App container
-    var appMain = document.createElement('main');
-    appMain.id = 'app';
-    appMain.className = 'container app-container';
-    target.appendChild(appMain);
-    // Bottom nav
-    var nav = document.createElement('nav');
-    nav.id = 'bottom-nav';
-    nav.className = 'bottom-nav';
-    nav.hidden = true;
-    target.appendChild(nav);
-  }
-  ensureShell();
-
-  var appEl = document.getElementById('app');
-  var navEl = document.getElementById('bottom-nav');
-
-  // ─── Helpers ────────────────────────────────────────────────────────
-
-  function el(tag, attrs, children) {
+  // Use UI.el if available, otherwise inline fallback
+  var el = (window.UI && window.UI.el) || function (tag, attrs, children) {
     var node = document.createElement(tag);
     if (attrs) {
       var keys = Object.keys(attrs);
@@ -67,38 +40,50 @@
       }
     }
     return node;
-  }
+  };
+
+  var appEl  = document.getElementById('app');
+  var navEl  = document.getElementById('bottom-nav');
+
+  // ─── Helpers ────────────────────────────────────────────────────────
 
   function navigate(hash) {
     location.hash = hash;
   }
 
   function hideBottomNav() {
-    navEl.hidden = true;
+    navEl.style.display = 'none';
   }
 
-  // Icon emoji fallbacks (used when icon() isn't available)
-  var _emojiMap = { home: '\u{1F3E0}', clip: '\u{1F4CB}', bot: '\u{1F916}', user: '\u{1F464}', check: '\u2705', users: '\u{1F465}' };
+  function showBottomNav() {
+    navEl.style.display = '';
+  }
+
+  // ─── Bottom Nav — 3 tabs ──────────────────────────────────────────
 
   function buildBottomNav() {
-    var tabs = Auth.getNavTabs();
     navEl.textContent = '';
+    var tabs = [
+      { tab: 'home',    ic: 'home', label: 'Home',    hash: '#/home' },
+      { tab: 'chat',    ic: 'bot',  label: 'AI',      hash: '#/chat' },
+      { tab: 'profile', ic: 'user', label: 'Me',      hash: '#/profile' }
+    ];
     for (var i = 0; i < tabs.length; i++) {
-      var t = tabs[i];
-      var iconSpan = el('span', { className: 'nav-icon' });
-      if (window.icon && t.ic) {
-        // icon() returns an HTMLSpanElement wrapping an SVG
-        iconSpan.appendChild(window.icon(t.ic));
-      } else {
-        iconSpan.textContent = _emojiMap[t.ic] || t.label.charAt(0);
-      }
-      var a = el('a', { className: 'nav-item', href: t.hash, 'data-tab': t.tab }, [
-        iconSpan,
-        el('span', { className: 'nav-label', textContent: t.label })
-      ]);
-      navEl.appendChild(a);
+      (function (t) {
+        var iconSpan = el('span', { className: 'nav-icon' });
+        if (window.icon) iconSpan.appendChild(window.icon(t.ic));
+        var a = el('a', {
+          className: 'nav-item',
+          href: t.hash,
+          'data-tab': t.tab,
+          onClick: function (e) { e.preventDefault(); location.hash = t.hash; }
+        }, [
+          iconSpan,
+          el('span', { className: 'nav-label', textContent: t.label })
+        ]);
+        navEl.appendChild(a);
+      })(tabs[i]);
     }
-    navEl.hidden = false;
   }
 
   function updateNavActive(tabName) {
@@ -116,76 +101,101 @@
 
   var routes = [
     // Auth
-    { pattern: '#/login', handler: renderLogin, tab: null },
+    { pattern: '#/login', handler: renderLogin, tab: null, title: null, back: null },
+
     // Core
-    { pattern: '#/home',        handler: function () { S().home(appEl); },          tab: 'home' },
-    { pattern: '#/attendance',  handler: function () { S().attendance(appEl); },     tab: 'home' },
+    { pattern: '#/home',       handler: function () { S().home(appEl); },       tab: 'home',    title: 'DSPL Field', back: null },
+    { pattern: '#/attendance', handler: function () { S().attendance(appEl); },  tab: 'home',    title: 'Attendance', back: '#/home' },
+
     // Visits / DCR
-    { pattern: '#/dcr/new',     handler: function () { S().visitNew(appEl); },       tab: 'visits' },
-    { pattern: '#/dcr',         handler: function () { S().visitsList(appEl); },     tab: 'visits' },
-    { pattern: '#/dcr/:id',     handler: function (p) { S().visitDetail(appEl, p); }, tab: 'visits' },
-    // HR
-    { pattern: '#/hr',          handler: function () { S().hrHub(appEl); },          tab: 'home' },
-    { pattern: '#/leave',       handler: function () { S().leaveHome(appEl); },      tab: 'home' },
-    { pattern: '#/leave/apply', handler: function () { S().leaveApply(appEl); },     tab: 'home' },
-    { pattern: '#/leave/:id',   handler: function (p) { S().leaveDetail(appEl, p); }, tab: 'home' },
-    { pattern: '#/expense',     handler: function () { S().expenseList(appEl); },    tab: 'home' },
-    { pattern: '#/expense/new', handler: function () { S().expenseNew(appEl); },     tab: 'home' },
-    { pattern: '#/expense/:id', handler: function (p) { S().expenseDetail(appEl, p); }, tab: 'home' },
-    { pattern: '#/advance',     handler: function () { S().advanceList(appEl); },    tab: 'home' },
-    { pattern: '#/advance/new', handler: function () { S().advanceNew(appEl); },     tab: 'home' },
-    { pattern: '#/advance/:id', handler: function (p) { S().advanceDetail(appEl, p); }, tab: 'home' },
-    { pattern: '#/salary',      handler: function () { S().salaryList(appEl); },     tab: 'home' },
-    { pattern: '#/salary/:id',  handler: function (p) { S().salaryDetail(appEl, p); }, tab: 'home' },
+    { pattern: '#/dcr/new',  handler: function () { S().visitNew(appEl); },          tab: 'home', title: 'New Visit', back: '#/dcr' },
+    { pattern: '#/dcr',      handler: function () { S().visitsList(appEl); },        tab: 'home', title: 'Visits',    back: '#/home' },
+    { pattern: '#/dcr/:id',  handler: function (p) { S().visitDetail(appEl, p); },   tab: 'home', title: 'Visit',     back: '#/dcr' },
+
+    // HR Hub
+    { pattern: '#/hr',          handler: function () { S().hrHub(appEl); },          tab: 'home', title: 'HR Services', back: '#/home' },
+
+    // Leave
+    { pattern: '#/leave/apply', handler: function () { S().leaveApply(appEl); },     tab: 'home', title: 'Apply Leave',  back: '#/leave' },
+    { pattern: '#/leave',       handler: function () { S().leaveHome(appEl); },      tab: 'home', title: 'Leave',        back: '#/hr' },
+    { pattern: '#/leave/:id',   handler: function (p) { S().leaveDetail(appEl, p); },tab: 'home', title: 'Leave Detail', back: '#/leave' },
+
+    // Expense
+    { pattern: '#/expense/new', handler: function () { S().expenseNew(appEl); },         tab: 'home', title: 'New Expense',    back: '#/expense' },
+    { pattern: '#/expense',     handler: function () { S().expenseList(appEl); },        tab: 'home', title: 'Expenses',       back: '#/hr' },
+    { pattern: '#/expense/:id', handler: function (p) { S().expenseDetail(appEl, p); },  tab: 'home', title: 'Expense Detail', back: '#/expense' },
+
+    // Advance
+    { pattern: '#/advance/new', handler: function () { S().advanceNew(appEl); },         tab: 'home', title: 'Request Advance', back: '#/advance' },
+    { pattern: '#/advance',     handler: function () { S().advanceList(appEl); },        tab: 'home', title: 'Advances',        back: '#/hr' },
+    { pattern: '#/advance/:id', handler: function (p) { S().advanceDetail(appEl, p); },  tab: 'home', title: 'Advance Detail',  back: '#/advance' },
+
+    // Salary
+    { pattern: '#/salary',     handler: function () { S().salaryList(appEl); },        tab: 'home', title: 'Salary Slips',  back: '#/hr' },
+    { pattern: '#/salary/:id', handler: function (p) { S().salaryDetail(appEl, p); },  tab: 'home', title: 'Salary Slip',   back: '#/salary' },
+
     // Leads
-    { pattern: '#/lead/new',    handler: function () { S().leadNew(appEl); },          tab: 'home' },
-    { pattern: '#/leads',       handler: function () { S().leadList(appEl); },         tab: 'home' },
+    { pattern: '#/lead/new', handler: function () { S().leadNew(appEl); },   tab: 'home', title: 'New Lead', back: '#/leads' },
+    { pattern: '#/leads',    handler: function () { S().leadList(appEl); },  tab: 'home', title: 'Leads',    back: null },
+
     // Quotations
-    { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },     tab: 'home' },
-    { pattern: '#/quotations',     handler: function () { S().quotationList(appEl); },    tab: 'home' },
+    { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },  tab: 'home', title: 'New Quotation', back: '#/quotations' },
+    { pattern: '#/quotations',     handler: function () { S().quotationList(appEl); }, tab: 'home', title: 'Quotations',    back: '#/home' },
+
     // Stock
-    { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },        tab: 'home' },
-    { pattern: '#/stock',        handler: function () { S().stockList(appEl); },          tab: 'home' },
+    { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },  tab: 'home', title: 'Add Stock',    back: '#/stock' },
+    { pattern: '#/stock',        handler: function () { S().stockList(appEl); },    tab: 'home', title: 'Stock Levels', back: '#/home' },
+
     // Sales
-    { pattern: '#/pipeline',      handler: function () { S().pipeline(appEl); },         tab: 'home' },
-    { pattern: '#/targets',       handler: function () { S().myTargets(appEl); },        tab: 'home' },
-    { pattern: '#/follow-ups',    handler: function () { S().followUps(appEl); },        tab: 'home' },
-    { pattern: '#/customers',     handler: function () { S().customerSearch(appEl); },   tab: 'home' },
+    { pattern: '#/pipeline',   handler: function () { S().pipeline(appEl); },       tab: 'home', title: 'Pipeline',   back: '#/home' },
+    { pattern: '#/targets',    handler: function () { S().myTargets(appEl); },      tab: 'home', title: 'My Targets', back: '#/home' },
+    { pattern: '#/follow-ups', handler: function () { S().followUps(appEl); },      tab: 'home', title: 'Follow Ups', back: '#/home' },
+    { pattern: '#/customers',  handler: function () { S().customerSearch(appEl); }, tab: 'home', title: 'Customers',  back: '#/home' },
+
     // Customer / Debtors / Revenue
-    { pattern: '#/customer/:id',  handler: function (p) { S().customerDetail(appEl, p); }, tab: 'home' },
-    { pattern: '#/debtors',       handler: function () { S().debtors(appEl); },          tab: 'home' },
-    { pattern: '#/revenue',       handler: function () { S().revenueDashboard(appEl); }, tab: 'home' },
+    { pattern: '#/customer/:id', handler: function (p) { S().customerDetail(appEl, p); }, tab: 'home', title: 'Customer',    back: '#/customers' },
+    { pattern: '#/debtors',      handler: function () { S().debtors(appEl); },            tab: 'home', title: 'Receivables', back: '#/home' },
+    { pattern: '#/revenue',      handler: function () { S().revenueDashboard(appEl); },   tab: 'home', title: 'Revenue',     back: '#/home' },
+
     // Projects
-    { pattern: '#/projects',      handler: function () { S().projectList(appEl); },       tab: 'home' },
-    { pattern: '#/project/:id',   handler: function (p) { S().projectDetail(appEl, p); }, tab: 'home' },
+    { pattern: '#/projects',    handler: function () { S().projectList(appEl); },         tab: 'home', title: 'Projects', back: '#/home' },
+    { pattern: '#/project/:id', handler: function (p) { S().projectDetail(appEl, p); },   tab: 'home', title: 'Project',  back: '#/projects' },
+
     // AMC
-    { pattern: '#/amc',           handler: function () { S().amcTracker(appEl); },        tab: 'home' },
+    { pattern: '#/amc', handler: function () { S().amcTracker(appEl); }, tab: 'home', title: 'AMC Tracker', back: '#/home' },
+
     // Service
-    { pattern: '#/service',          handler: function () { S().serviceDashboard(appEl); }, tab: 'home' },
-    { pattern: '#/installations',    handler: function () { S().installationList(appEl); }, tab: 'home' },
-    { pattern: '#/installation/:id', handler: function (p) { S().installationDetail(appEl, p); }, tab: 'home' },
-    { pattern: '#/breakdowns',       handler: function () { S().breakdownList(appEl); }, tab: 'home' },
-    { pattern: '#/breakdown/new',    handler: function () { S().breakdownNew(appEl); }, tab: 'home' },
-    { pattern: '#/breakdown/:id',    handler: function (p) { S().breakdownDetail(appEl, p); }, tab: 'home' },
+    { pattern: '#/service',          handler: function () { S().serviceDashboard(appEl); },       tab: 'home', title: 'Service',      back: '#/home' },
+    { pattern: '#/installations',    handler: function () { S().installationList(appEl); },       tab: 'home', title: 'Installations', back: '#/service' },
+    { pattern: '#/installation/:id', handler: function (p) { S().installationDetail(appEl, p); }, tab: 'home', title: 'Installation',  back: '#/installations' },
+    { pattern: '#/breakdowns',       handler: function () { S().breakdownList(appEl); },          tab: 'home', title: 'Breakdowns',    back: '#/service' },
+    { pattern: '#/breakdown/new',    handler: function () { S().breakdownNew(appEl); },           tab: 'home', title: 'Log Breakdown', back: '#/breakdowns' },
+    { pattern: '#/breakdown/:id',    handler: function (p) { S().breakdownDetail(appEl, p); },    tab: 'home', title: 'Breakdown',     back: '#/breakdowns' },
+
     // Production
-    { pattern: '#/production',  handler: function () { S().productionDashboard(appEl); }, tab: 'home' },
-    { pattern: '#/dispatch',    handler: function () { S().dispatchTracker(appEl); },     tab: 'home' },
+    { pattern: '#/production', handler: function () { S().productionDashboard(appEl); }, tab: 'home', title: 'Production', back: '#/home' },
+    { pattern: '#/dispatch',   handler: function () { S().dispatchTracker(appEl); },     tab: 'home', title: 'Dispatch',   back: '#/home' },
+
     // Manager
-    { pattern: '#/approvals',     handler: function () { S().approvalsList(appEl); },    tab: 'approvals' },
-    { pattern: '#/approvals/:type/:id', handler: function (p) { S().approvalDetail(appEl, p); }, tab: 'approvals' },
-    { pattern: '#/team',          handler: function () { S().teamOverview(appEl); },     tab: 'team' },
+    { pattern: '#/approvals',            handler: function () { S().approvalsList(appEl); },        tab: 'home', title: 'Approvals', back: null },
+    { pattern: '#/approvals/:type/:id',  handler: function (p) { S().approvalDetail(appEl, p); },   tab: 'home', title: 'Approval',  back: '#/approvals' },
+    { pattern: '#/team',                 handler: function () { S().teamOverview(appEl); },          tab: 'home', title: 'Team',      back: null },
+
     // AI Chat
-    { pattern: '#/chat',        handler: function () { S().chat(appEl); },           tab: 'chat' },
+    { pattern: '#/chat', handler: function () { S().chat(appEl); }, tab: 'chat', title: 'AI Chat', back: null },
+
     // Profile
-    { pattern: '#/profile',     handler: function () { S().profile(appEl); },        tab: 'profile' },
+    { pattern: '#/profile', handler: function () { S().profile(appEl); }, tab: 'profile', title: 'Profile', back: null }
   ];
+
+  // ─── Route Matching ─────────────────────────────────────────────────
 
   function matchRoute(hash) {
     if (!hash || hash === '#' || hash === '#/') hash = '#/home';
     for (var i = 0; i < routes.length; i++) {
       var r = routes[i];
       if (r.pattern.indexOf(':') === -1) {
-        if (hash === r.pattern) return { handler: r.handler, params: {}, tab: r.tab };
+        if (hash === r.pattern) return { handler: r.handler, params: {}, tab: r.tab, title: r.title, back: r.back };
       } else {
         var patParts = r.pattern.split('/');
         var hashParts = hash.split('/');
@@ -200,17 +210,18 @@
             break;
           }
         }
-        if (match) return { handler: r.handler, params: params, tab: r.tab };
+        if (match) return { handler: r.handler, params: params, tab: r.tab, title: r.title, back: r.back };
       }
     }
     return null;
   }
 
+  // ─── Route Rendering ────────────────────────────────────────────────
+
   function onRouteChange() {
     var hash = location.hash || '#/home';
     var matched = matchRoute(hash);
     if (!matched) {
-      // Unknown route — show home
       matched = matchRoute('#/home');
       if (!matched) return;
     }
@@ -218,10 +229,8 @@
     // Read session synchronously from Auth cache (already loaded at startup)
     var session = Auth.getEmployee();
     if (!session && hash !== '#/login') {
-      // Not logged in — try async load first
       Auth.getSession().then(function (s) {
         if (!s) { navigate('#/login'); return; }
-        // Session loaded, retry
         _renderRoute(matched, hash);
       });
       return;
@@ -231,32 +240,39 @@
   }
 
   function _renderRoute(matched, hash) {
-    // Rebuild nav if empty
-    if (navEl.children.length === 0 && hash !== '#/login') {
-      buildBottomNav();
+    // 1. Render header
+    var headerEl = document.getElementById('app-header');
+    headerEl.textContent = '';
+    if (matched.back) {
+      var backBtn = el('button', { className: 'header-back', onClick: function () { location.hash = matched.back; } });
+      if (window.icon) backBtn.appendChild(window.icon('back'));
+      headerEl.appendChild(backBtn);
     }
+    if (matched.title) {
+      headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title }));
+    }
+
+    // 2. Render content
     appEl.textContent = '';
-    // Show loading skeleton immediately to prevent blank flash
-    var _loadingSkel = document.createElement('div');
-    _loadingSkel.className = 'route-loading';
-    for (var _si = 0; _si < 4; _si++) {
-      var _bar = document.createElement('div');
-      _bar.className = 'skeleton-bar';
-      _loadingSkel.appendChild(_bar);
-    }
-    appEl.appendChild(_loadingSkel);
+    appEl.scrollTop = 0;
+
+    // 3. Update nav highlight
     if (matched.tab !== null) {
       updateNavActive(matched.tab);
     }
+
+    // 4. Call screen handler
     matched.handler(matched.params);
   }
 
   // ─── Login Screen (kept here — only screen not in screens/) ────────
 
   function renderLogin() {
+    document.getElementById('app-header').style.display = 'none';
+    document.getElementById('bottom-nav').style.display = 'none';
+
     api.getSession().then(function (session) {
       if (session) { navigate('#/home'); return; }
-      hideBottomNav();
 
       var errorBox = el('div', { className: 'field-group', style: { color: 'var(--dspl-red)', display: 'none' } });
       var emailInput = el('input', { type: 'email', placeholder: 'Email', 'aria-label': 'Email' });
@@ -278,7 +294,6 @@
         // Try Frappe native login first, then fall back to FastAPI tunnel
         var loginFn;
         if (typeof api.frappeLogin === 'function') {
-          // Explicit frappeLogin method available
           loginFn = api.frappeLogin(email, pass).then(function (res) {
             if (res.error) return { error: res.error, status: res.status || 401 };
             return {
@@ -292,13 +307,10 @@
             };
           });
         } else {
-          // Try Frappe native login (POST /api/method/login), then get session info
           loginFn = api.apiCall('POST', '/api/method/login', { usr: email, pwd: pass }).then(function (res) {
             if (res.error || res.status >= 400) {
-              // Fall back to FastAPI tunnel login
               return api.apiCall('POST', '/api/field/login', { email: email, password: pass });
             }
-            // Frappe login succeeded — now get session info from our custom endpoint
             return api.apiCall('GET', '/api/method/vaishali.api.field.get_session_info').then(function (infoRes) {
               if (infoRes.error || !infoRes.data) {
                 return { error: 'Failed to get session info', status: 500 };
@@ -327,16 +339,16 @@
             return;
           }
           var d = res.data;
-          // Save session (with API keys if available)
           var saveFn = typeof api.saveSession === 'function' && api.saveSession.length >= 4
             ? api.saveSession(d.employee, d.nav_tier || 'field', d.api_key, d.api_secret)
             : api.saveSession(d.api_key, d.api_secret, d.employee);
           saveFn.then(function () {
             Auth.saveSession(d.employee, d.nav_tier || 'field', d.roles || []).then(function () {
-              // Auto-generate API keys if missing (for tunnel calls)
               if (typeof api.ensureApiKeys === 'function') {
                 api.ensureApiKeys();
               }
+              document.getElementById('app-header').style.display = '';
+              document.getElementById('bottom-nav').style.display = '';
               buildBottomNav();
               navigate('#/home');
             });
@@ -365,17 +377,13 @@
 
   window.addEventListener('hashchange', onRouteChange);
 
-  // Run startup — handle both DOMContentLoaded and late-loading (dynamic scripts)
   function _startup() {
-    // Wait for Auth to load session from IDB (async), then route
     Auth.getSession().then(function (session) {
       if (!session) {
-        // On Frappe Cloud, user might already be logged in via desk session
-        // Check cookie before showing login screen
+        // Check Frappe cookie before showing login
         var userCookie = document.cookie.match(/user_id=([^;]+)/);
         var userId = userCookie ? decodeURIComponent(userCookie[1]) : null;
         if (userId && userId !== 'Guest') {
-          // User has active Frappe session — auto-populate from session info
           return api.apiCall('GET', '/api/field/session-info').then(function (res) {
             var info = (res.data && (res.data.data || res.data.message)) || {};
             if (info.employee) {
@@ -393,32 +401,9 @@
         return;
       }
 
-      // Validate session is still active (Frappe cookie might have expired)
-      // On Frappe Cloud, check get_logged_user. On FastAPI, skip (token auth).
-      var validatePromise;
-      if (window.CHAT_API_BASE) {
-        // Frappe Cloud — check if cookie session is still valid
-        validatePromise = api.apiCall('GET', '/api/method/frappe.auth.get_logged_user').then(function (res) {
-          if (res.error || !res.data || !res.data.message) {
-            // Cookie expired — clear session and redirect to login
-            return api.clearSession ? api.clearSession() : Promise.resolve();
-          }
-          return 'valid';
-        });
-      } else {
-        validatePromise = Promise.resolve('valid');
-      }
-
-      validatePromise.then(function (result) {
-        if (result !== 'valid') {
-          navigate('#/login');
-          return;
-        }
-
-      // Session is loaded and validated — safe to build nav now
+      // Session exists — build nav and route
       buildBottomNav();
 
-      // Ensure API keys exist for tunnel calls (auto-generates if missing)
       if (typeof api.ensureApiKeys === 'function') {
         api.ensureApiKeys();
       }
@@ -440,15 +425,13 @@
           });
         }
       });
-      }); // end validatePromise.then
-    }); // end Auth.getSession.then
+    });
 
     if (!navigator.onLine) {
       api.updateOfflineBanner(true);
     }
   }
 
-  // Handle both: DOMContentLoaded (normal) and late-load (dynamic scripts)
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _startup);
   } else {
