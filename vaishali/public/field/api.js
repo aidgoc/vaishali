@@ -330,6 +330,8 @@
         else if (method === 'DELETE') path = '/api/method/vaishali.api.chat.clear_history';
         else path = '/api/method/vaishali.api.chat.get_history';
       }
+      else if (path === '/api/field/leave-balance') path = '/api/method/vaishali.api.field.get_leave_balance';
+      else if (path === '/api/field/pending-expenses') path = '/api/method/vaishali.api.field.get_pending_expenses';
       else if (path === '/api/field/holidays') path = '/api/method/vaishali.api.field.get_upcoming_holidays';
       else if (path === '/api/field/login') path = '/api/method/login';
 

@@ -205,20 +205,45 @@
 
     Promise.all([
       api.apiCall('GET', '/api/field/attendance/today'),
-      api.apiCall('GET', '/api/field/dcr?date=' + today)
+      api.apiCall('GET', '/api/field/dcr?date=' + today),
+      api.apiCall('GET', '/api/field/leave-balance'),
+      api.apiCall('GET', '/api/field/pending-expenses')
     ]).then(function (results) {
       appEl.textContent = '';
 
       var attResult = results[0];
       var dcrResult = results[1];
+      var leaveResult = results[2];
+      var expenseResult = results[3];
 
       var attRaw = attResult.data || {};
       var att = attRaw.message || attRaw.data || attRaw;
       var dcrRaw = dcrResult.data || {};
       var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
 
+      var leaveRaw = leaveResult.data || {};
+      var leaveBalances = leaveRaw.data || leaveRaw.message || (Array.isArray(leaveRaw) ? leaveRaw : []);
+      var expenseRaw = expenseResult.data || {};
+      var expenseData = expenseRaw.data || expenseRaw.message || expenseRaw || {};
+
       var checkedIn = att && att.checked_in;
       var visitCount = dcrs.length;
+
+      // Find Privilege Leave balance
+      var plBalance = null;
+      for (var li = 0; li < leaveBalances.length; li++) {
+        if (leaveBalances[li].leave_type === 'Privilege Leave') {
+          plBalance = leaveBalances[li].remaining;
+          break;
+        }
+      }
+      // Fall back to first entry if no PL found
+      if (plBalance === null && leaveBalances.length > 0) {
+        plBalance = leaveBalances[0].remaining;
+      }
+
+      var expenseCount = expenseData.count || 0;
+      var expenseTotal = expenseData.total || 0;
 
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
@@ -242,12 +267,14 @@
         UI.actionCard({
           icon: 'umbrella',
           label: 'Leave',
-          sub: 'View balance & apply',
+          value: plBalance !== null ? String(Math.floor(plBalance)) + ' PL' : null,
+          sub: plBalance !== null ? 'balance' : 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
           icon: 'wallet',
           label: 'Salary',
+          sub: 'View slips',
           onClick: function () { location.hash = '#/salary'; }
         })
       ]);
@@ -284,7 +311,9 @@
       api.apiCall('GET', '/api/field/team'),
       api.apiCall('GET', '/api/field/approvals'),
       api.apiCall('GET', '/api/field/attendance/today'),
-      api.apiCall('GET', '/api/field/dcr?date=' + today)
+      api.apiCall('GET', '/api/field/dcr?date=' + today),
+      api.apiCall('GET', '/api/field/leave-balance'),
+      api.apiCall('GET', '/api/field/pending-expenses')
     ]).then(function (results) {
       appEl.textContent = '';
 
@@ -292,6 +321,8 @@
       var approvalsResult = results[1];
       var attResult = results[2];
       var dcrResult = results[3];
+      var leaveResult = results[4];
+      var expenseResult = results[5];
 
       var teamRaw = teamResult.data || {};
       var teamData = teamRaw.message || teamRaw.data || teamRaw;
@@ -311,11 +342,31 @@
       var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
       var myVisitCount = dcrs.length;
 
+      var leaveRaw = leaveResult.data || {};
+      var leaveBalances = leaveRaw.data || leaveRaw.message || (Array.isArray(leaveRaw) ? leaveRaw : []);
+      var expenseRaw = expenseResult.data || {};
+      var expenseData = expenseRaw.data || expenseRaw.message || expenseRaw || {};
+
       // Count team in-field from team data
       var teamFieldCount = 0;
       for (var i = 0; i < teamMembers.length; i++) {
         if (teamMembers[i].status === 'In Field') teamFieldCount++;
       }
+
+      // Find Privilege Leave balance
+      var plBalance = null;
+      for (var li = 0; li < leaveBalances.length; li++) {
+        if (leaveBalances[li].leave_type === 'Privilege Leave') {
+          plBalance = leaveBalances[li].remaining;
+          break;
+        }
+      }
+      if (plBalance === null && leaveBalances.length > 0) {
+        plBalance = leaveBalances[0].remaining;
+      }
+
+      var expenseCount = expenseData.count || 0;
+      var expenseTotal = expenseData.total || 0;
 
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
@@ -346,12 +397,15 @@
         UI.actionCard({
           icon: 'umbrella',
           label: 'Leave',
-          sub: 'View balance & apply',
+          value: plBalance !== null ? String(Math.floor(plBalance)) + ' PL' : null,
+          sub: plBalance !== null ? 'balance' : 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
           icon: 'receipt',
           label: 'Expenses',
+          value: expenseCount > 0 ? String(expenseCount) : null,
+          sub: expenseCount > 0 ? '\u20b9' + expenseTotal.toLocaleString('en-IN') + ' pending' : 'No pending claims',
           onClick: function () { location.hash = '#/expense'; }
         })
       ]);

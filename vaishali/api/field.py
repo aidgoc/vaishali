@@ -486,6 +486,42 @@ def verify_telegram_token(token):
     return {"employee_id": employee_id}
 
 
+# ── Leave Balance ────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_leave_balance():
+    """Get current user's leave balance summary."""
+    emp = _get_employee()
+    from frappe.utils import today
+    balances = frappe.get_list("Leave Allocation",
+        filters={"employee": emp.name, "docstatus": 1, "to_date": [">=", today()]},
+        fields=["leave_type", "total_leaves_allocated", "total_leaves_encashed", "new_leaves_allocated"],
+        order_by="leave_type asc")
+    # Get used leaves
+    result = []
+    for bal in balances:
+        used = frappe.db.sql("""
+            SELECT SUM(total_leave_days) FROM `tabLeave Application`
+            WHERE employee=%s AND leave_type=%s AND status='Approved' AND docstatus=1
+        """, (emp.name, bal.leave_type))[0][0] or 0
+        remaining = bal.total_leaves_allocated - used
+        result.append({"leave_type": bal.leave_type, "remaining": remaining})
+    return result
+
+
+# ── Pending Expenses ─────────────────────────────────────────
+
+@frappe.whitelist()
+def get_pending_expenses():
+    """Get count and total of pending expense claims."""
+    emp = _get_employee()
+    claims = frappe.get_list("Expense Claim",
+        filters={"employee": emp.name, "status": ["in", ["Unpaid", "Draft"]], "docstatus": ["<", 2]},
+        fields=["grand_total"])
+    total = sum(c.grand_total or 0 for c in claims)
+    return {"count": len(claims), "total": total}
+
+
 # ── Items (for quotation picker) ─────────────────────────────
 
 @frappe.whitelist()

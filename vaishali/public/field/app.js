@@ -438,4 +438,50 @@
     _startup();
   }
 
+  // Pull-to-refresh
+  (function initPTR() {
+    var startY = 0;
+    var pulling = false;
+    var indicator = null;
+
+    appEl.addEventListener('touchstart', function(e) {
+      if (appEl.scrollTop <= 0) {
+        startY = e.touches[0].pageY;
+        pulling = true;
+      }
+    }, { passive: true });
+
+    appEl.addEventListener('touchmove', function(e) {
+      if (!pulling) return;
+      var diff = e.touches[0].pageY - startY;
+      if (diff > 60 && appEl.scrollTop <= 0) {
+        if (!indicator) {
+          var spinner = document.createElement('div');
+          spinner.className = 'ptr-spinner';
+          indicator = document.createElement('div');
+          indicator.className = 'ptr-indicator visible';
+          indicator.appendChild(spinner);
+          indicator.appendChild(document.createTextNode('Refreshing...'));
+          appEl.insertBefore(indicator, appEl.firstChild);
+        }
+      }
+    }, { passive: true });
+
+    appEl.addEventListener('touchend', function() {
+      if (indicator) {
+        // Re-trigger current route
+        setTimeout(function() {
+          if (indicator && indicator.parentNode) {
+            indicator.parentNode.removeChild(indicator);
+          }
+          indicator = null;
+          // Re-navigate to same hash to refresh
+          onRouteChange();
+        }, 300);
+      }
+      pulling = false;
+      startY = 0;
+    }, { passive: true });
+  })();
+
 })();

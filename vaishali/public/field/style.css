@@ -2585,6 +2585,28 @@ textarea {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Pull-to-refresh indicator */
+.ptr-indicator {
+  text-align: center;
+  padding: 12px 0;
+  color: var(--ink-tertiary);
+  font-size: 13px;
+  font-weight: 500;
+  display: none;
+}
+.ptr-indicator.visible {
+  display: block;
+}
+.ptr-indicator .ptr-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--surface-2);
+  border-top-color: var(--dspl-red);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto 4px;
+}
+
 @keyframes shimmer {
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
