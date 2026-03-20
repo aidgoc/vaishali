@@ -361,11 +361,14 @@
       });
 
       var form = el('div', { className: 'login-container' }, [
-        el('h1', { textContent: 'DSPL Field', style: { marginBottom: '0.5rem' } }),
+        el('img', { src: '/files/Dyamic Logo - Colour.png', className: 'login-logo', alt: 'DSPL' }),
+        el('h1', { textContent: 'DSPL Field' }),
+        el('p', { className: 'login-subtitle', textContent: 'Dynamic Servitech Private Limited' }),
         el('div', { className: 'field-group', style: { width: '100%', maxWidth: '320px' } }, [emailInput]),
         el('div', { className: 'field-group', style: { width: '100%', maxWidth: '320px' } }, [passInput]),
         errorBox,
-        el('div', { style: { width: '100%', maxWidth: '320px' } }, [submitBtn])
+        el('div', { style: { width: '100%', maxWidth: '320px' } }, [submitBtn]),
+        el('div', { className: 'login-footer', textContent: 'Powered by Vaishali' })
       ]);
 
       appEl.textContent = '';
