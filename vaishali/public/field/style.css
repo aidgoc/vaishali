@@ -1793,6 +1793,84 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SALES FUNNEL (conversion bar above pipeline board)
+   ═══════════════════════════════════════════════════════════════ */
+.funnel-section {
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: 14px 16px 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.funnel-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #888);
+  margin-bottom: 10px;
+}
+.funnel-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.funnel-row::-webkit-scrollbar { display: none; }
+.funnel-stage {
+  flex: 1;
+  min-width: 56px;
+  text-align: center;
+}
+.funnel-stage-count {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  line-height: 1;
+}
+.funnel-stage-label {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 3px;
+}
+.funnel-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 4px;
+  min-width: 48px;
+}
+.funnel-arrow-icon {
+  font-size: 16px;
+  color: var(--text-muted, #bbb);
+  line-height: 1;
+}
+.funnel-conv-pct {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+  line-height: 1;
+}
+.funnel-conv-pct.on-target  { color: var(--success, #22c55e); }
+.funnel-conv-pct.below-target { color: var(--danger, #ef4444); }
+.funnel-conv-tgt {
+  font-size: 10px;
+  color: var(--text-muted, #aaa);
+  margin-top: 1px;
+}
+.funnel-revenue {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #777);
+  border-top: 1px solid var(--border, #f0f0f0);
+  padding-top: 8px;
+  text-align: center;
+}
+.funnel-revenue-sep { color: var(--border, #ccc); }
+
+/* ═══════════════════════════════════════════════════════════════
    PIPELINE (Sales Kanban Board)
    ═══════════════════════════════════════════════════════════════ */
 .pipeline-board {

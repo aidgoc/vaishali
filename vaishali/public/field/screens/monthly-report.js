@@ -47,7 +47,6 @@
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderMonthlyReport(appEl) {
-    appEl.appendChild(UI.page('Monthly Report', '#/home'));
 
     if (!Auth.isManager()) {
       appEl.appendChild(UI.error('Manager access required to view this report.'));

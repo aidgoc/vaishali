@@ -82,7 +82,6 @@
   window.Screens = window.Screens || {};
   window.Screens.salesTargets = function (appEl) {
     appEl.textContent = '';
-    appEl.appendChild(UI.page('Sales Targets', '#/home'));
     var skels = UI.skeleton(4);
     appEl.appendChild(skels);
 
