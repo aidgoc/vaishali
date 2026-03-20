@@ -82,6 +82,81 @@
         }
       }));
 
+      appEl.appendChild(UI.divider());
+
+      // ─── Telegram section ─────────────────────────────────────
+      var telegramSection = el('div', { className: 'telegram-section' });
+      appEl.appendChild(telegramSection);
+
+      function renderTelegramSection(isConnected) {
+        telegramSection.textContent = '';
+        if (isConnected) {
+          telegramSection.appendChild(UI.card([
+            el('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } }, [
+              el('div', {
+                style: {
+                  width: '40px', height: '40px', borderRadius: '50%',
+                  background: '#2AABEE', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', flexShrink: '0'
+                },
+                textContent: '\u2708\uFE0F'
+              }),
+              el('div', {}, [
+                el('div', { textContent: 'Telegram Connected', style: { fontWeight: '600', fontSize: '15px' } }),
+                el('div', { textContent: 'Notifications enabled', className: 'ink-tertiary', style: { fontSize: '13px', marginTop: '2px' } })
+              ])
+            ])
+          ]));
+        } else {
+          var connectBtn = UI.btn('Connect Telegram', {
+            type: 'outline',
+            block: true,
+            onClick: function () {
+              connectBtn.disabled = true;
+              connectBtn.textContent = 'Connecting\u2026';
+
+              window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.generate_telegram_token')
+                .then(function (resp) {
+                  var botUrl = resp.data && (resp.data.bot_url || (resp.data.data && resp.data.data.bot_url));
+                  if (!botUrl) {
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = 'Connect Telegram';
+                    window.fieldAPI.showToast('Could not get Telegram link. Please try again.', 'danger');
+                    return;
+                  }
+                  window.open(botUrl, '_blank');
+
+                  // Poll every 3 s to check if telegram_chat_id has appeared
+                  var pollTimer = setInterval(function () {
+                    window.fieldAPI.apiCall('GET', '/api/method/vaishali.api.field.get_me')
+                      .then(function (meResp) {
+                        var me = (meResp.data && meResp.data.data) ||
+                                 (meResp.data && meResp.data.message) ||
+                                 (meResp.data) || {};
+                        if (me.telegram_chat_id) {
+                          clearInterval(pollTimer);
+                          window.fieldAPI.showToast('Telegram connected!', 'success');
+                          renderTelegramSection(true);
+                        }
+                      })
+                      .catch(function () {
+                        // silently ignore poll errors
+                      });
+                  }, 3000);
+                })
+                .catch(function () {
+                  connectBtn.disabled = false;
+                  connectBtn.textContent = 'Connect Telegram';
+                  window.fieldAPI.showToast('Failed to connect Telegram. Please try again.', 'danger');
+                });
+            }
+          });
+          telegramSection.appendChild(connectBtn);
+        }
+      }
+
+      renderTelegramSection(!!profile.telegram_chat_id);
+
       // App version footer
       appEl.appendChild(el('div', {
         className: 'ink-tertiary',

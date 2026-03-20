@@ -5,10 +5,19 @@
   var api = window.fieldAPI;
   var el = UI.el;
 
-  // Chat API call — uses apiCall which handles auth (cookie or token)
-  // and path translation (/api/field/chat/* → Frappe method paths)
+  // Chat API call — calls /api/ai/* directly (nginx proxies to FastAPI).
+  // Uses apiCall so cookie auth and CSRF headers are still handled correctly.
   function chatCall(method, path, body) {
     return api.apiCall(method, path, body);
+  }
+
+  // ─── Session ID ─────────────────────────────────────────────────
+  // Persisted in localStorage so chat history survives page reloads.
+  var _SESSION_KEY = 'vaishali_chat_session_id';
+  var _sessionId = localStorage.getItem(_SESSION_KEY);
+  if (!_sessionId) {
+    _sessionId = api.generateId();
+    localStorage.setItem(_SESSION_KEY, _sessionId);
   }
 
   // ─── State ──────────────────────────────────────────────────────
@@ -138,8 +147,8 @@
     scrollToBottom();
     _updateInputState();
 
-    // Call API
-    chatCall('POST', '/api/field/chat', { message: text })
+    // Call API — POST directly to /api/ai/chat (proxied by nginx to FastAPI)
+    chatCall('POST', '/api/ai/chat', { message: text, session_id: _sessionId })
       .then(function (resp) {
         // Remove typing indicator
         var typing = document.getElementById('chat-typing');
@@ -185,7 +194,7 @@
 
   // ─── Load history ──────────────────────────────────────────────
   function loadHistory() {
-    return chatCall('GET', '/api/field/chat/history').then(function (resp) {
+    return chatCall('GET', '/api/ai/history').then(function (resp) {
       if (resp.data && resp.data.history) {
         _messages = resp.data.history;
       }
@@ -196,7 +205,7 @@
 
   // ─── Clear history ─────────────────────────────────────────────
   function clearHistory() {
-    chatCall('DELETE', '/api/field/chat/history').then(function () {
+    chatCall('DELETE', '/api/ai/history').then(function () {
       _messages = [];
       var appEl = document.getElementById('app');
       if (appEl) renderChat(appEl);
