@@ -2661,3 +2661,54 @@ textarea {
   from { transform: translateY(0); }
   to { transform: translateY(100%); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN TRANSITIONS
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+#app.transition-forward {
+  animation: slideInRight 0.2s ease-out;
+}
+#app.transition-back {
+  animation: slideInLeft 0.2s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIVERSAL TAP FEEDBACK
+   ═══════════════════════════════════════════════════════════════ */
+.tab-item:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+  transition: all 0.1s ease;
+}
+
+.nav-item:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+  transition: all 0.1s ease;
+}
+
+.search-result-item:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+  transition: all 0.1s ease;
+}
+
+.customer-chip:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+  transition: all 0.1s ease;
+}
+
+/* Ensure consistent button active feedback */
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}

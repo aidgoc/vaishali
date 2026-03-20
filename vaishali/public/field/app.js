@@ -45,6 +45,8 @@
   var appEl  = document.getElementById('app');
   var navEl  = document.getElementById('bottom-nav');
 
+  var _navigatingBack = false;
+
   // ─── Helpers ────────────────────────────────────────────────────────
 
   function navigate(hash) {
@@ -244,7 +246,7 @@
     var headerEl = document.getElementById('app-header');
     headerEl.textContent = '';
     if (matched.back) {
-      var backBtn = el('button', { className: 'header-back', onClick: function () { location.hash = matched.back; } });
+      var backBtn = el('button', { className: 'header-back', onClick: function () { _navigatingBack = true; location.hash = matched.back; } });
       if (window.icon) backBtn.appendChild(window.icon('back'));
       headerEl.appendChild(backBtn);
     }
@@ -255,6 +257,12 @@
     // 2. Render content
     appEl.textContent = '';
     appEl.scrollTop = 0;
+
+    // 2a. Apply slide transition
+    appEl.className = '';
+    void appEl.offsetWidth; // force reflow
+    appEl.classList.add(_navigatingBack ? 'transition-back' : 'transition-forward');
+    _navigatingBack = false;
 
     // 3. Update nav highlight
     if (matched.tab !== null) {
