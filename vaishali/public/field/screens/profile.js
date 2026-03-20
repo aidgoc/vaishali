@@ -77,7 +77,26 @@
         block: true,
         icon: 'logOut',
         onClick: function () {
-          Auth.clearSession();
+          // 1. Call Frappe logout to invalidate server session cookie
+          window.fieldAPI.apiCall('GET', '/api/method/logout').then(function () {
+            // 2. Unregister service worker and clear caches
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                for (var i = 0; i < regs.length; i++) regs[i].unregister();
+              });
+              caches.keys().then(function (names) {
+                for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+              });
+            }
+            // 3. Clear localStorage
+            localStorage.clear();
+            // 4. Clear IDB session and redirect to login
+            Auth.clearSession();
+          }).catch(function () {
+            // Even if logout API fails, clear local state
+            localStorage.clear();
+            Auth.clearSession();
+          });
         }
       }));
 
