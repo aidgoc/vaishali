@@ -81,7 +81,7 @@
       var advances = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
 
       if (advances.length === 0) {
-        listArea.appendChild(UI.empty('banknote', 'No advances yet'));
+        listArea.appendChild(UI.empty('banknote', 'No advances yet', { text: '+ Request Advance', onClick: function() { location.hash = '#/advance/new'; } }));
         return;
       }
 

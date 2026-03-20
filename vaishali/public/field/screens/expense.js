@@ -119,7 +119,7 @@
       appEl.appendChild(UI.sectionHeading('CLAIMS'));
 
       if (claims.length === 0) {
-        appEl.appendChild(UI.empty('receipt', 'No expense claims yet.'));
+        appEl.appendChild(UI.empty('receipt', 'No expense claims yet', { text: '+ New Expense', onClick: function() { location.hash = '#/expense/new'; } }));
         return;
       }
 

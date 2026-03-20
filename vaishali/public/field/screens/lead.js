@@ -69,7 +69,7 @@
         }
 
         if (items.length === 0) {
-          listContainer.appendChild(UI.empty('clip', 'No leads yet'));
+          listContainer.appendChild(UI.empty('user', 'No leads yet. Start building your pipeline!', { text: '+ New Lead', onClick: function() { location.hash = '#/lead/new'; } }));
           return;
         }
 

@@ -99,7 +99,7 @@
       }
 
       if (filtered.length === 0) {
-        listArea.appendChild(UI.empty('check', 'No pending approvals'));
+        listArea.appendChild(UI.empty('check', 'All caught up! No pending approvals.'));
         return;
       }
 

@@ -144,7 +144,7 @@
         }
       } else {
         content.appendChild(UI.sectionHeading('APPLICATIONS'));
-        content.appendChild(UI.empty('umbrella', 'No leave applications yet'));
+        content.appendChild(UI.empty('umbrella', 'No leave applications yet', { text: '+ Apply Leave', onClick: function() { location.hash = '#/leave/apply'; } }));
       }
 
     }).catch(function (err) {

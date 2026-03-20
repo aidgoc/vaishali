@@ -78,7 +78,7 @@
       // -- Pending Orders --
       appEl.appendChild(UI.sectionHeading('PENDING ORDERS'));
       if (pendingOrders.length === 0) {
-        appEl.appendChild(UI.empty('empty', 'No pending orders'));
+        appEl.appendChild(UI.empty('refresh', 'No pending orders. Production is clear.'));
       } else {
         for (var i = 0; i < pendingOrders.length; i++) {
           (function (o) {

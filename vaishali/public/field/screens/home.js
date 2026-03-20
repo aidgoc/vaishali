@@ -283,7 +283,7 @@
       // 3. Today's visits
       appEl.appendChild(UI.sectionHeading("TODAY'S VISITS"));
       if (dcrs.length === 0) {
-        appEl.appendChild(UI.empty('empty', 'No visits today'));
+        appEl.appendChild(UI.empty('mapPin', 'No visits today. Ready to head out?', { text: '+ Start Visit', onClick: function() { location.hash = '#/dcr/new'; } }));
       } else {
         for (var j = 0; j < dcrs.length; j++) {
           appEl.appendChild(visitCard(dcrs[j]));

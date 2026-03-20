@@ -2712,3 +2712,6 @@ textarea {
 .btn:active:not(:disabled) {
   transform: scale(0.96);
 }
+
+.empty-state .empty-text { font-size: 15px; line-height: 1.5; max-width: 260px; margin: 0 auto; }
+.empty-state .empty-cta { margin-top: 16px; }

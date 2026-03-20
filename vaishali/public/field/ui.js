@@ -86,7 +86,7 @@
      4. statCard(value, label)
      ────────────────────────────────────────────────────────────── */
   function statCard(value, label) {
-    return el('div', { className: 'stat-card' }, [
+    return el('div', { className: 'stat-card', 'aria-label': String(value) + ' ' + label }, [
       el('div', { className: 'stat-value', textContent: String(value) }),
       el('div', { className: 'stat-label', textContent: label })
     ]);
@@ -120,7 +120,11 @@
     }
 
     var attrs = { className: 'list-card' };
-    if (opts.onClick) attrs.onClick = opts.onClick;
+    if (opts.onClick) {
+      attrs.onClick = opts.onClick;
+      attrs.role = 'button';
+      attrs.tabIndex = '0';
+    }
     return el('div', attrs, parts);
   }
 
@@ -209,11 +213,15 @@
     }
     children.push(el('span', { className: 'btn-text', textContent: text }));
 
-    var button = el('button', {
+    var btnAttrs = {
       className: cls,
       disabled: opts.disabled || false,
       onClick: opts.onClick || null
-    }, children);
+    };
+    if (opts.icon && (!text || text === '')) {
+      btnAttrs['aria-label'] = text || opts.icon;
+    }
+    var button = el('button', btnAttrs, children);
 
     /* _setLoading method */
     button._setLoading = function (isLoading, loadingText) {
@@ -428,26 +436,29 @@
     for (var i = 0; i < count; i++) {
       items.push(el('div', { className: 'skeleton skeleton-card' }));
     }
-    return el('div', null, items);
+    return el('div', { 'aria-busy': 'true', 'aria-label': 'Loading' }, items);
   }
 
   /* ──────────────────────────────────────────────────────────────
      25. empty(iconName, text)
      ────────────────────────────────────────────────────────────── */
-  function empty(iconName, text) {
+  function empty(iconName, text, ctaOpts) {
     var ic = el('div', { className: 'empty-icon' });
     setIconHTML(ic, iconName);
-    return el('div', { className: 'empty-state' }, [
-      ic,
-      el('div', { textContent: text })
-    ]);
+    var children = [ic, el('div', { className: 'empty-text', textContent: text })];
+    if (ctaOpts) {
+      children.push(el('div', { className: 'empty-cta', style: { marginTop: '16px' } }, [
+        btn(ctaOpts.text, { type: ctaOpts.type || 'primary', onClick: ctaOpts.onClick })
+      ]));
+    }
+    return el('div', { className: 'empty-state', role: 'status' }, children);
   }
 
   /* ──────────────────────────────────────────────────────────────
      26. error(text)
      ────────────────────────────────────────────────────────────── */
   function error(text) {
-    return el('div', { className: 'error-box', textContent: text });
+    return el('div', { className: 'error-box', textContent: text, role: 'alert' });
   }
 
   /* ──────────────────────────────────────────────────────────────
@@ -456,7 +467,7 @@
   function toast(text, type) {
     var cls = 'toast-fallback';
     if (type) cls += ' ' + type;
-    var t = el('div', { className: cls, textContent: text });
+    var t = el('div', { className: cls, textContent: text, role: 'alert', 'aria-live': 'polite' });
     document.body.appendChild(t);
     setTimeout(function () {
       if (t.parentNode) t.parentNode.removeChild(t);
@@ -482,6 +493,8 @@
         var navItem = el('a', {
           className: cls,
           'data-tab': item.tab,
+          'aria-label': item.label,
+          'aria-current': item.tab === activeTab ? 'page' : null,
           onClick: function (e) {
             e.preventDefault();
             location.hash = item.hash;
@@ -509,8 +522,10 @@
     for (var i = 0; i < items.length; i++) {
       if (items[i].getAttribute('data-tab') === tabName) {
         items[i].classList.add('active');
+        items[i].setAttribute('aria-current', 'page');
       } else {
         items[i].classList.remove('active');
+        items[i].removeAttribute('aria-current');
       }
     }
   }
@@ -590,10 +605,14 @@
       children.push(el('div', { className: 'action-sub', textContent: opts.sub }));
     }
 
-    return el('div', {
+    var acAttrs = {
       className: cls,
-      onClick: opts.onClick || null
-    }, children);
+      onClick: opts.onClick || null,
+      role: 'button',
+      tabIndex: '0',
+      'aria-label': (opts.label || '') + (opts.value != null ? ' ' + String(opts.value) : '')
+    };
+    return el('div', acAttrs, children);
   }
 
   /* ──────────────────────────────────────────────────────────────
