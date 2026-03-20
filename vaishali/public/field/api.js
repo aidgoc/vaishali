@@ -272,6 +272,18 @@
         path = '/api/method/vaishali.api.field.get_leads' + leadQS;
       }
       else if (path === '/api/field/lead' && method === 'POST') path = '/api/method/vaishali.api.field.create_lead';
+      else if (path === '/api/field/quotations' || path.indexOf('/api/field/quotations?') === 0) {
+        if (method === 'POST') { path = '/api/method/vaishali.api.field.create_quotation'; }
+        else { var qQS = ''; var qQI = path.indexOf('?'); if (qQI !== -1) qQS = path.substring(qQI); path = '/api/method/vaishali.api.field.get_my_quotations' + qQS; }
+      }
+      else if (path === '/api/field/items' || path.indexOf('/api/field/items?') === 0) {
+        var iQS = ''; var iQI = path.indexOf('?'); if (iQI !== -1) iQS = path.substring(iQI); path = '/api/method/vaishali.api.field.get_items' + iQS;
+      }
+      else if (path === '/api/field/stock' || path.indexOf('/api/field/stock?') === 0) {
+        var sQS = ''; var sQI = path.indexOf('?'); if (sQI !== -1) sQS = path.substring(sQI); path = '/api/method/vaishali.api.field.get_stock_items' + sQS;
+      }
+      else if (path === '/api/field/stock/entry' && method === 'POST') path = '/api/method/vaishali.api.field.create_stock_entry';
+      else if (path === '/api/field/warehouses') path = '/api/method/vaishali.api.field.get_warehouses';
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';

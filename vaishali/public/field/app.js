@@ -140,6 +140,12 @@
     // Leads
     { pattern: '#/lead/new',    handler: function () { S().leadNew(appEl); },          tab: 'home' },
     { pattern: '#/leads',       handler: function () { S().leadList(appEl); },         tab: 'home' },
+    // Quotations
+    { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },     tab: 'home' },
+    { pattern: '#/quotations',     handler: function () { S().quotationList(appEl); },    tab: 'home' },
+    // Stock
+    { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },        tab: 'home' },
+    { pattern: '#/stock',        handler: function () { S().stockList(appEl); },          tab: 'home' },
     // Sales
     { pattern: '#/pipeline',      handler: function () { S().pipeline(appEl); },         tab: 'home' },
     { pattern: '#/targets',       handler: function () { S().myTargets(appEl); },        tab: 'home' },
