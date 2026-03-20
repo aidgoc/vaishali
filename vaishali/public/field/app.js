@@ -190,6 +190,9 @@
     { pattern: '#/approvals/:type/:id',  handler: function (p) { S().approvalDetail(appEl, p); },   tab: 'home', title: 'Approval',  back: '#/approvals' },
     { pattern: '#/team',                 handler: function () { S().teamOverview(appEl); },          tab: 'home', title: 'Team',      back: null },
 
+    // Reports
+    { pattern: '#/monthly-report', handler: function () { S().monthlyReport(appEl); }, tab: 'home', title: 'Monthly Report', back: '#/home' },
+
     // AI Chat
     { pattern: '#/chat', handler: function () { S().chat(appEl); }, tab: 'chat', title: 'AI Chat', back: null },
 

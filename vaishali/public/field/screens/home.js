@@ -119,7 +119,8 @@
         { label: 'Receivables', ic: 'receipt', hash: '#/debtors' },
         { label: 'Projects', ic: 'clip', hash: '#/projects' },
         { label: 'Team', ic: 'users', hash: '#/team' },
-        { label: 'Approvals', ic: 'check', hash: '#/approvals' }
+        { label: 'Approvals', ic: 'check', hash: '#/approvals' },
+        { label: 'Report Card', ic: 'calendar', hash: '#/monthly-report' }
       ];
     }
 

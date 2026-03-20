@@ -337,6 +337,7 @@
       else if (path === '/api/field/sales-targets') path = '/api/method/vaishali.api.field.get_sales_targets';
       else if (path === '/api/field/my-performance') path = '/api/method/vaishali.api.field.get_my_sales_performance';
       else if (path === '/api/field/sales-funnel') path = '/api/method/vaishali.api.field.get_sales_funnel';
+      else if (path === '/api/field/monthly-report') path = '/api/method/vaishali.api.field.get_monthly_report';
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);

@@ -33,7 +33,8 @@
     'breakdown-new': 'all',
     'breakdown-detail': 'all',
     production: 'all',
-    dispatch: 'all'
+    dispatch: 'all',
+    'monthly-report': 'manager'
   };
 
   var FIELD_TABS = [
