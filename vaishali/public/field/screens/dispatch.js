@@ -43,7 +43,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.dispatchTracker = function (appEl) {
-    appEl.appendChild(UI.page('Dispatch', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/dispatch_tracker').then(function (res) {

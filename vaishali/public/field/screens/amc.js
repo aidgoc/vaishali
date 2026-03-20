@@ -41,7 +41,6 @@
 
   function amcTracker(appEl) {
     appEl.textContent = '';
-    appEl.appendChild(UI.page('AMC Tracker', '#/home'));
 
     var content = el('div');
     content.appendChild(UI.skeleton(3));

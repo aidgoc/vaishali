@@ -117,7 +117,6 @@
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderMyTargets(appEl) {
-    appEl.appendChild(UI.page('My Targets', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/my_targets').then(function (res) {

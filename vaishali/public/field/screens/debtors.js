@@ -8,9 +8,6 @@
     var el = UI.el;
     var api = window.fieldAPI;
 
-    // Page header
-    appEl.appendChild(UI.page('Receivables', '#/home'));
-
     // Skeleton while loading
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);

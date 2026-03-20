@@ -6,9 +6,6 @@
   window.Screens.profile = function (appEl) {
     var el = UI.el;
 
-    // Page header (no back button — main tab)
-    appEl.appendChild(UI.page('Profile'));
-
     // Show skeleton while loading
     var loader = UI.skeleton(2);
     appEl.appendChild(loader);

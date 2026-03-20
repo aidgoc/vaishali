@@ -39,8 +39,6 @@
 
   window.Screens = window.Screens || {};
   window.Screens.advanceList = function (appEl) {
-    appEl.appendChild(UI.page('Advances', '#/hr'));
-
     var emp = Auth.getEmployee() || {};
     var empName = emp.name || emp.employee_id || '';
 
@@ -113,8 +111,6 @@
   // ── Screen: Advance New ──────────────────────────────────────────────
 
   window.Screens.advanceNew = function (appEl) {
-    appEl.appendChild(UI.page('Request Advance', '#/advance'));
-
     var emp = Auth.getEmployee() || {};
     var empName = emp.name || emp.employee_id || '';
 
@@ -186,8 +182,6 @@
   // ── Screen: Advance Detail ───────────────────────────────────────────
 
   window.Screens.advanceDetail = function (appEl, params) {
-    appEl.appendChild(UI.page('Advance Detail', '#/advance'));
-
     var contentArea = UI.el('div');
     contentArea.appendChild(UI.skeleton(2));
     appEl.appendChild(contentArea);

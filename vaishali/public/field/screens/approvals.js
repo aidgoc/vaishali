@@ -62,8 +62,6 @@
 
   window.Screens.approvalsList = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('Approvals'));
-
     var activeTab = 'all';
     var allItems = [];
 
@@ -144,8 +142,6 @@
     var type = params.type || '';
     var name = params.id || '';
     var doctype = typeToDoctype(type);
-
-    appEl.appendChild(UI.page('Approval', '#/approvals'));
 
     var content = el('div', { style: { padding: '0 16px' } });
     appEl.appendChild(content);

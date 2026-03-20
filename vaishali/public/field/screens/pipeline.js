@@ -110,7 +110,6 @@
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderPipeline(appEl) {
-    appEl.appendChild(UI.page('Pipeline', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/sales_pipeline').then(function (res) {

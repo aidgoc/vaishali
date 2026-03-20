@@ -9,9 +9,6 @@
     var api = window.fieldAPI;
     var customerId = params.id;
 
-    // Page header with back navigation
-    appEl.appendChild(UI.page('Customer', '#/customers'));
-
     // Skeleton while loading
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);
@@ -42,8 +39,6 @@
 
       // Update page title
       appEl.textContent = '';
-      appEl.appendChild(UI.page(customerName, '#/customers'));
-
       if (subtitle) {
         appEl.appendChild(el('div', {
           className: 'ink-tertiary',

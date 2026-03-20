@@ -121,7 +121,6 @@
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderRevenueDashboard(appEl) {
-    appEl.appendChild(UI.page('Revenue', '#/home'));
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);
 

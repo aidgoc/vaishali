@@ -87,9 +87,6 @@
 
     var el = UI.el;
 
-    // Header
-    appEl.appendChild(UI.page('Attendance', '#/home'));
-
     // GPS display card
     var gpsBox = UI.card([
       el('div', { className: 'coords', textContent: 'Locating...' })

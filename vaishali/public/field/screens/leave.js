@@ -45,8 +45,6 @@
 
   window.Screens.leaveHome = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('Leave', '#/hr'));
-
     var content = el('div', { style: { padding: '0 16px 16px' } });
     appEl.appendChild(content);
     content.appendChild(UI.skeleton(3));
@@ -159,8 +157,6 @@
 
   window.Screens.leaveApply = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('Apply Leave', '#/leave'));
-
     var empName = getEmployeeName();
     if (!empName) {
       appEl.appendChild(UI.error('Employee not linked. Please contact HR.'));
@@ -277,8 +273,6 @@
   window.Screens.leaveDetail = function (appEl, params) {
     var el = UI.el;
     var name = params.id || params.name;
-    appEl.appendChild(UI.page('Leave Detail', '#/leave'));
-
     var content = el('div', { style: { padding: '0 16px' } });
     appEl.appendChild(content);
     content.appendChild(UI.skeleton(3));

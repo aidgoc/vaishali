@@ -43,7 +43,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.productionDashboard = function (appEl) {
-    appEl.appendChild(UI.page('Production', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/production_dashboard').then(function (res) {

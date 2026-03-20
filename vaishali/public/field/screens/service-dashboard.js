@@ -36,7 +36,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.serviceDashboard = function (appEl) {
-    appEl.appendChild(UI.page('Service', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/service_dashboard').then(function (res) {

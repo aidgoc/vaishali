@@ -73,8 +73,6 @@
   // ─── Main render ─────────────────────────────────────────────────
 
   function renderCustomerSearch(appEl) {
-    appEl.appendChild(UI.page('Customers', '#/home'));
-
     // Search box
     var searchInput = el('input', {
       type: 'text',

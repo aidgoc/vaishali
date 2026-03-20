@@ -49,8 +49,6 @@
   // ── Screen 1: Expense List ──────────────────────────────────────────
 
   window.Screens.expenseList = function (appEl) {
-    appEl.appendChild(UI.page('Expenses', '#/hr'));
-
     var loadingEl = UI.skeleton(3);
     appEl.appendChild(loadingEl);
 
@@ -147,8 +145,6 @@
   // ── Screen 2: Expense New ───────────────────────────────────────────
 
   window.Screens.expenseNew = function (appEl) {
-    appEl.appendChild(UI.page('New Expense', '#/expense'));
-
     var el = UI.el;
     var lines = [];
     var linesContainer = el('div', { className: 'expense-lines' });
@@ -334,8 +330,6 @@
   // ── Screen 3: Expense Detail ────────────────────────────────────────
 
   window.Screens.expenseDetail = function (appEl, params) {
-    appEl.appendChild(UI.page('Expense Detail', '#/expense'));
-
     var loadingEl = UI.skeleton(3);
     appEl.appendChild(loadingEl);
 

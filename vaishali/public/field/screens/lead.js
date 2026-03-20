@@ -30,8 +30,6 @@
   window.Screens.leadList = function (appEl) {
     var el = UI.el;
 
-    appEl.appendChild(UI.page('Leads'));
-
     var listContainer = el('div');
     var searchQuery = '';
 
@@ -105,8 +103,6 @@
 
   window.Screens.leadNew = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('New Lead', '#/leads'));
-
     // Form fields
     var leadNameInput = UI.textInput('Lead name');
     var companyNameInput = UI.textInput('Company name');

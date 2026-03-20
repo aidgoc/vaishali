@@ -25,8 +25,6 @@
 
   window.Screens = window.Screens || {};
   window.Screens.salaryList = function (appEl) {
-    appEl.appendChild(UI.page('Salary Slips', '#/hr'));
-
     var emp = Auth.getEmployee() || {};
     // emp.name is the ERPNext Employee ID (e.g. HR-EMP-00001)
     // emp.employee_name is the human-readable name
@@ -97,8 +95,6 @@
   // ── Screen: Salary Detail ────────────────────────────────────────────
 
   window.Screens.salaryDetail = function (appEl, params) {
-    appEl.appendChild(UI.page('Salary Slip', '#/salary'));
-
     var contentArea = UI.el('div');
     contentArea.appendChild(UI.skeleton(3));
     appEl.appendChild(contentArea);

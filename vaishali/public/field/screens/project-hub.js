@@ -46,7 +46,6 @@
 
   function projectList(appEl) {
     appEl.textContent = '';
-    appEl.appendChild(UI.page('Projects', '#/home'));
 
     var content = el('div');
     content.appendChild(UI.skeleton(3));
@@ -107,9 +106,6 @@
   function projectDetail(appEl, params) {
     appEl.textContent = '';
     var projectId = params.id;
-
-    var header = UI.page('Project', '#/projects');
-    appEl.appendChild(header);
 
     var content = el('div');
     content.appendChild(UI.skeleton(4));

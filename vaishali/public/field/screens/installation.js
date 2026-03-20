@@ -36,8 +36,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.installationList = function (appEl) {
-    appEl.appendChild(UI.page('Installations', '#/service'));
-
     var activeTab = 'pending';
     var listContainer = el('div');
 
@@ -133,8 +131,6 @@
 
   window.Screens.installationDetail = function (appEl, params) {
     var visitId = params.id || params.name;
-
-    appEl.appendChild(UI.page('Installation', '#/installations'));
 
     var content = el('div', { style: { padding: '0 16px' } });
     appEl.appendChild(content);

@@ -47,8 +47,6 @@
   window.Screens.quotationList = function (appEl) {
     var el = UI.el;
 
-    appEl.appendChild(UI.page('Quotations', '#/home'));
-
     var activeTab = 'Draft';
     var listContainer = el('div');
 
@@ -124,8 +122,6 @@
 
   window.Screens.quotationNew = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('New Quotation', '#/quotations'));
-
     // ── State ──
     var selectedCustomer = null;
     var itemRows = []; // {item_code, item_name, qty, rate, stock_uom}

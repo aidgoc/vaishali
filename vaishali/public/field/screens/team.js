@@ -25,8 +25,6 @@
 
   window.Screens.teamOverview = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('Team'));
-
     var content = el('div', { style: { padding: '0 16px 16px' } });
     appEl.appendChild(content);
     content.appendChild(UI.skeleton(3));

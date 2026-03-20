@@ -2,8 +2,6 @@
   'use strict';
   window.Screens = window.Screens || {};
   window.Screens.hrHub = function (appEl) {
-    appEl.appendChild(UI.page('HR Services', '#/home'));
-
     var tiles = [
       { label: 'Leave', ic: 'umbrella', hash: '#/leave', color: 'tile-green' },
       { label: 'Expenses', ic: 'receipt', hash: '#/expense', color: 'tile-blue' },

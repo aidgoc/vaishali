@@ -52,8 +52,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.breakdownList = function (appEl) {
-    appEl.appendChild(UI.page('Breakdowns', '#/service'));
-
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
       UI.btn('+ Log Breakdown', {
         type: 'primary',
@@ -137,8 +135,6 @@
   // ── Screen: New Breakdown ───────────────────────────────────────
 
   window.Screens.breakdownNew = function (appEl) {
-    appEl.appendChild(UI.page('Log Breakdown', '#/breakdowns'));
-
     // Customer search
     var selectedCustomer = null;
     var customerDisplay = el('div', { style: { display: 'none', marginTop: '8px' } });
@@ -279,8 +275,6 @@
 
   window.Screens.breakdownDetail = function (appEl, params) {
     var claimId = params.id || params.name;
-
-    appEl.appendChild(UI.page('Breakdown', '#/breakdowns'));
 
     var content = el('div', { style: { padding: '0 16px' } });
     appEl.appendChild(content);

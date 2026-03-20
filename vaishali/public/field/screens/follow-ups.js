@@ -107,7 +107,6 @@
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderFollowUps(appEl) {
-    appEl.appendChild(UI.page('Follow Ups', '#/home'));
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/follow_ups').then(function (res) {

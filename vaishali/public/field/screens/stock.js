@@ -35,8 +35,6 @@
   window.Screens = window.Screens || {};
 
   window.Screens.stockList = function (appEl) {
-    appEl.appendChild(UI.page('Stock Levels', '#/home'));
-
     // Add Stock button
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
       UI.btn('+ Add Stock', {
@@ -148,8 +146,6 @@
   // ── Screen: Stock Update ──────────────────────────────────────────
 
   window.Screens.stockUpdate = function (appEl) {
-    appEl.appendChild(UI.page('Add Stock', '#/stock'));
-
     // Warehouse selector
     var warehouseSelect = el('select', { className: 'form-control' }, [
       el('option', { value: '', textContent: '-- Select Warehouse --' })

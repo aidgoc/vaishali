@@ -68,24 +68,7 @@
   }
 
   /* ──────────────────────────────────────────────────────────────
-     2. page(title, backHash)
-     ────────────────────────────────────────────────────────────── */
-  function page(title, backHash) {
-    var children = [];
-    if (backHash) {
-      var backBtn = el('button', {
-        className: 'back-btn',
-        onClick: function () { location.hash = backHash; }
-      });
-      setIconHTML(backBtn, 'back');
-      children.push(backBtn);
-    }
-    children.push(el('h2', { textContent: title }));
-    return el('div', { className: 'screen-header' }, children);
-  }
-
-  /* ──────────────────────────────────────────────────────────────
-     3. card(children, opts)
+     2. card(children, opts)
      ────────────────────────────────────────────────────────────── */
   function card(children, opts) {
     opts = opts || {};
@@ -581,7 +564,6 @@
      ────────────────────────────────────────────────────────────── */
   window.UI = {
     el: el,
-    page: page,
     card: card,
     statCard: statCard,
     listCard: listCard,

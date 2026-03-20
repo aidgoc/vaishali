@@ -103,8 +103,6 @@
   window.Screens.visitsList = function (appEl) {
     var el = UI.el;
 
-    appEl.appendChild(UI.page('Visits'));
-
     var activeTab = 'today';
     var listContainer = el('div');
 
@@ -189,8 +187,6 @@
 
   window.Screens.visitNew = function (appEl) {
     var el = UI.el;
-    appEl.appendChild(UI.page('New Visit', '#/dcr'));
-
     var emp = Auth.getEmployee() || {};
     var empDept = (emp.department || '').toLowerCase();
 
@@ -485,8 +481,6 @@
   window.Screens.visitDetail = function (appEl, params) {
     var el = UI.el;
     var dcrName = params.id || params.name;
-
-    appEl.appendChild(UI.page('Visit', '#/dcr'));
 
     var content = el('div', { style: { padding: '0 16px' } });
     appEl.appendChild(content);
