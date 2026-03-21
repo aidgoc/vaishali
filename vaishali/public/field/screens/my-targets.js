@@ -126,9 +126,9 @@
 
       // KPI row
       appEl.appendChild(UI.kpiRow([
-        { value: formatIndianAmount(totalQuoted), label: 'QUOTED' },
-        { value: formatIndianAmount(totalOrdered), label: 'ORDERED' },
-        { value: String(visits.length), label: 'VISITS' }
+        { value: formatIndianAmount(totalQuoted), label: 'Quoted' },
+        { value: formatIndianAmount(totalOrdered), label: 'Ordered' },
+        { value: String(visits.length), label: 'Visits' }
       ]));
 
       // Target progress bar

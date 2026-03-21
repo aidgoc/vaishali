@@ -148,7 +148,7 @@
       }
     }
 
-    var heading = el('div', { className: 'funnel-heading', textContent: 'SALES FUNNEL \u2014 This FY' });
+    var heading = el('div', { className: 'funnel-heading', textContent: 'Sales funnel \u2014 This FY' });
     var row = el('div', { className: 'funnel-row' }, stageEls);
 
     // Revenue sub-line

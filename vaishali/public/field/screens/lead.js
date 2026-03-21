@@ -69,7 +69,7 @@
         }
 
         if (items.length === 0) {
-          listContainer.appendChild(UI.empty('user', 'No leads yet. Start building your pipeline!', { text: '+ New Lead', onClick: function() { location.hash = '#/lead/new'; } }));
+          listContainer.appendChild(UI.empty('user', 'No leads found', { text: '+ New lead', onClick: function() { location.hash = '#/lead/new'; } }));
           return;
         }
 
@@ -134,7 +134,7 @@
     var errorBox = el('div', { style: { display: 'none' } });
 
     // Submit button
-    var submitBtn = UI.btn('CREATE LEAD', {
+    var submitBtn = UI.btn('Create lead', {
       type: 'success',
       block: true,
       icon: 'plus',

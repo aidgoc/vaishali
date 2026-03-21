@@ -388,7 +388,7 @@
     }
 
     // ── Submit ──
-    var submitBtn = UI.btn('CREATE QUOTATION', {
+    var submitBtn = UI.btn('Create quotation', {
       type: 'primary',
       block: true,
       icon: 'plus',

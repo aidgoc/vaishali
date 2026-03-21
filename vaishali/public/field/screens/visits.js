@@ -253,7 +253,7 @@
       var salesBtn = UI.btn('Sales Visit', { type: 'outline', onClick: function () { setVisitType('sales'); } });
       var serviceBtn = UI.btn('Service Visit', { type: 'outline', onClick: function () { setVisitType('service'); } });
       typePickerEl = el('div', { style: { marginBottom: '16px' } }, [
-        el('div', { className: 'section-heading', textContent: 'VISIT TYPE' }),
+        el('div', { className: 'section-heading', textContent: 'Visit type' }),
         el('div', { style: { display: 'flex', gap: '8px' } }, [salesBtn, serviceBtn])
       ]);
     }
@@ -265,14 +265,14 @@
         servicePurposeField.style.display = 'none';
         serviceFields.style.display = 'none';
         if (typePickerEl) {
-          typePickerEl.querySelector('.section-heading').textContent = 'SALES VISIT';
+          typePickerEl.querySelector('.section-heading').textContent = 'Sales visit';
         }
       } else {
         visitPurposeField.style.display = 'none';
         servicePurposeField.style.display = 'block';
         serviceFields.style.display = 'block';
         if (typePickerEl) {
-          typePickerEl.querySelector('.section-heading').textContent = 'SERVICE VISIT';
+          typePickerEl.querySelector('.section-heading').textContent = 'Service visit';
         }
       }
     }
@@ -417,7 +417,7 @@
     var errorBox = el('div', { style: { display: 'none' } });
 
     // Submit button
-    var submitBtn = UI.btn('CHECK IN & START', {
+    var submitBtn = UI.btn('Check in & start', {
       type: 'success',
       block: true,
       icon: 'mapPin',
@@ -676,7 +676,7 @@
         content.appendChild(el('div', { style: { marginTop: '12px' } }, [saveRemarksBtn]));
 
         // Checkout button
-        var checkoutBtn = UI.btn('CHECK OUT', {
+        var checkoutBtn = UI.btn('Check out', {
           type: 'primary',
           block: true,
           icon: 'mapPin',

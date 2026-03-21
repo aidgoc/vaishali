@@ -115,7 +115,7 @@
       ]));
 
       // Expiring Soon
-      flatSection(appEl, 'EXPIRING SOON', expiring, function (item) {
+      flatSection(appEl, 'Expiring soon', expiring, function (item) {
         return expiryLabel(item.valid_till);
       });
 
@@ -125,12 +125,12 @@
         var db = new Date(b.transaction_date || 0);
         return da.getTime() - db.getTime();
       });
-      flatSection(appEl, 'OPEN QUOTATIONS', sortedOpen, function (item) {
+      flatSection(appEl, 'Open quotations', sortedOpen, function (item) {
         return daysSince(item.transaction_date);
       });
 
       // Lost
-      flatSection(appEl, 'LOST', lost, function () {
+      flatSection(appEl, 'Lost', lost, function () {
         return '';
       });
     }).catch(function () {
