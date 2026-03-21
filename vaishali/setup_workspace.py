@@ -352,12 +352,40 @@ def _build_sales_workspace_content():
     ])
 
 
+def _set_workspace_children(workspace, number_card_names, chart_names):
+    """Populate the number_cards and charts child tables on a workspace."""
+    workspace.set("number_cards", [])
+    for nc_name in number_card_names:
+        workspace.append("number_cards", {
+            "number_card_name": nc_name,
+            "label": nc_name.replace("DSPL ", ""),
+        })
+
+    workspace.set("charts", [])
+    for ch_name in chart_names:
+        workspace.append("charts", {
+            "chart_name": ch_name,
+            "label": ch_name.replace("DSPL ", ""),
+        })
+
+
 def update_dspl_sales_workspace():
     """Update the existing DSPL Sales workspace with number cards, charts, and shortcuts."""
     ws_name = "DSPL Sales"
 
+    sales_number_cards = [
+        "DSPL Open Quotations",
+        "DSPL Orders This Month",
+        "DSPL Outstanding Receivables",
+        "DSPL Active Leads",
+    ]
+    sales_charts = [
+        "DSPL Monthly Revenue",
+        "DSPL Quotation Pipeline",
+        "DSPL Lead Source Breakdown",
+    ]
+
     if not frappe.db.exists("Workspace", ws_name):
-        # Create the workspace if it doesn't exist
         workspace = frappe.get_doc({
             "doctype": "Workspace",
             "name": ws_name,
@@ -369,11 +397,13 @@ def update_dspl_sales_workspace():
             "public": 1,
             "content": _build_sales_workspace_content(),
         })
+        _set_workspace_children(workspace, sales_number_cards, sales_charts)
         workspace.insert(ignore_permissions=True)
         print(f"  Created workspace: {ws_name}")
     else:
         workspace = frappe.get_doc("Workspace", ws_name)
         workspace.content = _build_sales_workspace_content()
+        _set_workspace_children(workspace, sales_number_cards, sales_charts)
         workspace.save(ignore_permissions=True)
         print(f"  Updated workspace: {ws_name}")
 
@@ -411,6 +441,17 @@ def create_dspl_operations_workspace():
     """Create or update the DSPL Operations workspace."""
     ws_name = "DSPL Operations"
 
+    ops_number_cards = [
+        "DSPL Active Work Orders",
+        "DSPL Pending Deliveries",
+        "DSPL Stock Below Reorder",
+        "DSPL Team Present Today",
+        "DSPL Pending Approvals",
+    ]
+    ops_charts = [
+        "DSPL Monthly Orders",
+    ]
+
     if not frappe.db.exists("Workspace", ws_name):
         workspace = frappe.get_doc({
             "doctype": "Workspace",
@@ -424,10 +465,12 @@ def create_dspl_operations_workspace():
             "public": 1,
             "content": _build_operations_workspace_content(),
         })
+        _set_workspace_children(workspace, ops_number_cards, ops_charts)
         workspace.insert(ignore_permissions=True)
         print(f"  Created workspace: {ws_name}")
     else:
         workspace = frappe.get_doc("Workspace", ws_name)
         workspace.content = _build_operations_workspace_content()
+        _set_workspace_children(workspace, ops_number_cards, ops_charts)
         workspace.save(ignore_permissions=True)
         print(f"  Updated workspace: {ws_name}")
