@@ -9,7 +9,6 @@
     var api = window.fieldAPI;
     var customerId = params.id;
 
-    // Skeleton while loading
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);
 
@@ -25,51 +24,125 @@
       var allSections = data.sections || data;
       var overview = allSections.overview || {};
       var sections = {};
-      // Separate overview from tab sections
       var allKeys = Object.keys(allSections);
       for (var k = 0; k < allKeys.length; k++) {
         if (allKeys[k] !== 'overview') sections[allKeys[k]] = allSections[allKeys[k]];
       }
 
-      // ── Customer header ──────────────────────────────────────
-      var customerName = overview.customer_name || customerId;
-      var territory = overview.territory || '';
-      var customerGroup = overview.customer_group || '';
-      var subtitle = [territory, customerGroup].filter(Boolean).join(' \u00B7 ');
-
-      // Update page title
       appEl.textContent = '';
-      if (subtitle) {
-        appEl.appendChild(el('div', {
-          className: 'ink-tertiary',
-          textContent: subtitle,
-          style: { fontSize: '13px', marginBottom: '16px', marginTop: '-8px' }
-        }));
+
+      // ── Customer info card ───────────────────────────────────
+      var infoRows = [];
+
+      // Type & industry
+      var typeParts = [overview.customer_type, overview.industry].filter(Boolean);
+      if (typeParts.length) infoRows.push({ label: 'Type', value: typeParts.join(' \u00B7 ') });
+
+      // Territory & group
+      var geoParts = [overview.territory, overview.customer_group].filter(Boolean);
+      if (geoParts.length) infoRows.push({ label: 'Segment', value: geoParts.join(' \u00B7 ') });
+
+      // GSTIN
+      if (overview.gstin) infoRows.push({ label: 'GSTIN', value: overview.gstin });
+      else if (overview.tax_id) infoRows.push({ label: 'Tax ID', value: overview.tax_id });
+
+      // Website
+      if (overview.website) infoRows.push({ label: 'Website', value: overview.website });
+
+      if (infoRows.length) {
+        appEl.appendChild(UI.detailCard(infoRows));
+      }
+
+      // ── Primary contact ──────────────────────────────────────
+      var contactName = overview.customer_primary_contact || '';
+      var mobile = overview.mobile_no || '';
+      var email = overview.email_id || '';
+
+      if (contactName || mobile || email) {
+        appEl.appendChild(UI.sectionHeading('PRIMARY CONTACT'));
+        var contactCard = el('div', { className: 'card-surface' });
+        if (contactName) {
+          contactCard.appendChild(el('div', {
+            style: { fontSize: '15px', fontWeight: '600', color: 'var(--ink-primary)', marginBottom: '4px' },
+            textContent: contactName
+          }));
+        }
+        var contactActions = el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } });
+        if (mobile) {
+          contactActions.appendChild(UI.btn(mobile, {
+            type: 'outline',
+            icon: 'phone',
+            onClick: function () { window.open('tel:' + mobile); }
+          }));
+        }
+        if (email) {
+          contactActions.appendChild(UI.btn('Email', {
+            type: 'outline',
+            icon: 'mail',
+            onClick: function () { window.open('mailto:' + email); }
+          }));
+        }
+        contactCard.appendChild(contactActions);
+        appEl.appendChild(contactCard);
+      }
+
+      // ── Address ──────────────────────────────────────────────
+      var addresses = overview.addresses || [];
+      if (addresses.length > 0) {
+        appEl.appendChild(UI.sectionHeading('ADDRESS' + (addresses.length > 1 ? 'ES' : '')));
+        for (var ai = 0; ai < addresses.length; ai++) {
+          var addr = addresses[ai];
+          var addrParts = [addr.address_line1, addr.address_line2,
+            [addr.city, addr.state].filter(Boolean).join(', '),
+            addr.pincode ? 'PIN ' + addr.pincode : ''].filter(Boolean);
+          var addrRows = [
+            { label: addr.address_type || 'Address', value: addrParts.join('\n') }
+          ];
+          if (addr.gstin) addrRows.push({ label: 'GSTIN', value: addr.gstin });
+          if (addr.phone) addrRows.push({ label: 'Phone', value: addr.phone });
+          appEl.appendChild(UI.detailCard(addrRows));
+        }
+      }
+
+      // ── All contacts ─────────────────────────────────────────
+      var contacts = overview.contacts || [];
+      if (contacts.length > 1) {
+        appEl.appendChild(UI.sectionHeading('CONTACTS (' + contacts.length + ')'));
+        for (var ci = 0; ci < contacts.length; ci++) {
+          var c = contacts[ci];
+          var cName = [c.first_name, c.last_name].filter(Boolean).join(' ');
+          var cSub = [c.designation, c.department].filter(Boolean).join(' \u00B7 ');
+          var cRight = null;
+          if (c.mobile_no) {
+            cRight = el('a', {
+              href: 'tel:' + c.mobile_no,
+              textContent: c.mobile_no,
+              style: { fontSize: '13px', color: 'var(--ink-secondary)', textDecoration: 'none' }
+            });
+          }
+          appEl.appendChild(UI.listCard({
+            title: cName || c.name,
+            sub: cSub || (c.email_id || ''),
+            right: cRight,
+            onClick: c.mobile_no ? function (num) { return function () { window.open('tel:' + num); }; }(c.mobile_no) : null
+          }));
+        }
       }
 
       // ── Overview stats ───────────────────────────────────────
       if (overview.total_revenue != null || overview.outstanding != null) {
-        var stats = [];
-        if (overview.total_revenue != null) {
-          stats.push(UI.statCard(formatCurrency(overview.total_revenue), 'Revenue'));
-        }
-        if (overview.outstanding != null) {
-          stats.push(UI.statCard(formatCurrency(overview.outstanding), 'Outstanding'));
-        }
-        if (overview.total_orders != null) {
-          stats.push(UI.statCard(String(overview.total_orders), 'Orders'));
-        }
-        if (stats.length > 0) {
-          appEl.appendChild(UI.grid(stats, stats.length > 2 ? 3 : 2));
+        var kpiItems = [];
+        if (overview.total_revenue != null) kpiItems.push({ value: formatCurrency(overview.total_revenue), label: 'Revenue' });
+        if (overview.outstanding != null) kpiItems.push({ value: formatCurrency(overview.outstanding), label: 'Outstanding' });
+        if (overview.total_orders != null) kpiItems.push({ value: String(overview.total_orders), label: 'Orders' });
+        if (kpiItems.length > 0) {
+          appEl.appendChild(UI.kpiRow(kpiItems));
         }
       }
 
-      // ── Build section keys & tab items ───────────────────────
+      // ── Transaction tabs ─────────────────────────────────────
       var sectionKeys = Object.keys(sections);
-      if (sectionKeys.length === 0) {
-        appEl.appendChild(UI.empty('clip', 'No transaction data found'));
-        return;
-      }
+      if (sectionKeys.length === 0) return;
 
       var tabItems = [];
       for (var i = 0; i < sectionKeys.length; i++) {
@@ -79,22 +152,16 @@
         tabItems.push({ label: label, value: key });
       }
 
-      // Section content container
       var contentArea = el('div', { className: 'customer-section' });
-
-      // Active tab state
       var activeTab = sectionKeys[0];
 
-      // Render tabs
       var tabBar = UI.tabs(tabItems, activeTab, function (value) {
         activeTab = value;
         renderSection(contentArea, sections[value] || [], value);
       });
-      tabBar.classList.add('customer-tabs');
       appEl.appendChild(tabBar);
       appEl.appendChild(contentArea);
 
-      // Render initial section
       renderSection(contentArea, sections[activeTab] || [], activeTab);
 
     }).catch(function () {
@@ -106,60 +173,42 @@
 
     function renderSection(container, items, sectionKey) {
       container.textContent = '';
-
       if (!items || items.length === 0) {
         container.appendChild(UI.empty('clip', 'No ' + formatSectionLabel(sectionKey).toLowerCase() + ' found'));
         return;
       }
-
       for (var i = 0; i < items.length; i++) {
-        var item = items[i];
-        container.appendChild(buildRecordCard(item, sectionKey));
+        container.appendChild(buildRecordCard(items[i], sectionKey));
       }
     }
 
     function buildRecordCard(item, sectionKey) {
       var name = item.name || '';
       var date = item.date || item.posting_date || item.transaction_date || '';
-      var amt = item.grand_total || item.total || item.amount || 0;
-      var status = item.status || item.docstatus_label || '';
+      var amt = item.grand_total || item.total || item.amount || item.paid_amount || 0;
+      var status = item.status || '';
 
-      var statusColor = getStatusColor(status);
-
-      var rightContent = el('div', { style: { textAlign: 'right' } }, [
-        UI.amount(amt),
-        status ? UI.pill(status, statusColor) : null
-      ].filter(Boolean));
-
-      var sub = date ? formatDateShort(date) : '';
+      var rightChildren = [];
+      if (amt) rightChildren.push(UI.amount(amt));
+      if (status) rightChildren.push(UI.pill(status, getStatusColor(status)));
+      var rightContent = rightChildren.length ? el('div', { style: { textAlign: 'right' } }, rightChildren) : null;
 
       return UI.listCard({
         title: name,
-        sub: sub,
-        right: rightContent,
-        onClick: function () {
-          // Navigate to ERPNext desk URL if available
-          if (item.doctype && item.name) {
-            var deskUrl = '/app/' + item.doctype.toLowerCase().replace(/ /g, '-') + '/' + item.name;
-            window.open(deskUrl, '_blank');
-          }
-        }
+        sub: date ? formatDateShort(date) : (item.visit_purpose || item.service_purpose || ''),
+        right: rightContent
       });
     }
 
     function formatSectionLabel(key) {
-      // Convert snake_case or lowercase to Title Case
       return key.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     }
 
     function formatCurrency(val) {
       var num = Number(val) || 0;
-      if (num >= 100000) {
-        return '\u20B9' + (num / 100000).toFixed(1) + 'L';
-      }
-      if (num >= 1000) {
-        return '\u20B9' + (num / 1000).toFixed(1) + 'K';
-      }
+      if (num >= 10000000) return '\u20B9' + (num / 10000000).toFixed(1) + 'Cr';
+      if (num >= 100000) return '\u20B9' + (num / 100000).toFixed(1) + 'L';
+      if (num >= 1000) return '\u20B9' + (num / 1000).toFixed(1) + 'K';
       return '\u20B9' + num.toLocaleString('en-IN');
     }
 
@@ -168,8 +217,7 @@
       var parts = dateStr.split('-');
       if (parts.length < 3) return dateStr;
       var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      var m = parseInt(parts[1], 10) - 1;
-      return parseInt(parts[2], 10) + ' ' + (months[m] || '') + ' ' + parts[0];
+      return parseInt(parts[2], 10) + ' ' + (months[parseInt(parts[1], 10) - 1] || '') + ' ' + parts[0];
     }
 
     function getStatusColor(status) {

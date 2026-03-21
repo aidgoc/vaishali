@@ -126,6 +126,28 @@ def fetch_view(view_name, context_id=None, role=None):
                         sections[section_name] = {f: doc.get(f) for f in fields}
                     else:
                         sections[section_name] = doc.as_dict()
+
+                    # Enrich with linked addresses and contacts for Customer
+                    if sdef["doctype"] == "Customer":
+                        sections[section_name]["addresses"] = frappe.get_all(
+                            "Address",
+                            filters=[["Dynamic Link", "link_doctype", "=", "Customer"],
+                                     ["Dynamic Link", "link_name", "=", context_id]],
+                            fields=["name", "address_title", "address_line1", "address_line2",
+                                    "city", "state", "pincode", "country", "phone", "gstin",
+                                    "address_type"],
+                            limit_page_length=10,
+                        )
+                        sections[section_name]["contacts"] = frappe.get_all(
+                            "Contact",
+                            filters=[["Dynamic Link", "link_doctype", "=", "Customer"],
+                                     ["Dynamic Link", "link_name", "=", context_id]],
+                            fields=["name", "first_name", "last_name", "email_id",
+                                    "mobile_no", "phone", "designation", "department",
+                                    "is_primary_contact"],
+                            order_by="is_primary_contact desc",
+                            limit_page_length=20,
+                        )
                 else:
                     sections[section_name] = {}
 

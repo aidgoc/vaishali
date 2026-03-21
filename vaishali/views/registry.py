@@ -77,7 +77,9 @@ VIEWS = {
             "overview": {
                 "doctype": "Customer",
                 "fields": ["name", "customer_name", "territory", "customer_group",
-                           "customer_primary_contact", "mobile_no", "email_id"],
+                           "customer_primary_contact", "mobile_no", "email_id",
+                           "customer_type", "industry", "website", "gstin",
+                           "customer_primary_address", "primary_address", "tax_id"],
                 "single": True,
             },
             "quotations": {
