@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v17';
+var CACHE_NAME = 'dspl-field-v18';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',
@@ -45,10 +45,11 @@ self.addEventListener('fetch', function(event) {
   }
 
   // Assets — stale-while-revalidate (serve from cache, update in background)
+  // ignoreSearch: true so ?v=XXX cache-busting params don't cause misses
   if (url.pathname.indexOf('/assets/') === 0) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function(cache) {
-        return cache.match(event.request).then(function(cached) {
+        return cache.match(event.request, { ignoreSearch: true }).then(function(cached) {
           var fetchPromise = fetch(event.request).then(function(response) {
             if (response.ok) {
               cache.put(event.request, response.clone());

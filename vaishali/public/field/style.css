@@ -2984,23 +2984,23 @@ textarea {
   transition: opacity 0.05s ease;
 }
 
-/* Primary CTA gets a subtle shrink for premium feel */
+/* Primary CTA press feedback — no scale per design convention */
 .btn.btn-primary:active:not(:disabled),
 .checkin-btn:active:not(:disabled) {
   opacity: 0.85;
-  transform: scale(0.98);
-  transition: all 0.08s ease;
+  transition: opacity 0.08s ease;
 }
 
-/* Smooth scroll everywhere — feel native */
-#app {
-  scroll-behavior: smooth;
-}
+/* scroll-behavior: auto (smooth conflicts with scrollTop=0 reset on route change) */
 
 /* Staggered content reveal — each child cascades in */
 #app > * {
   animation: contentReveal 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
+/* Exclude PTR and transition elements from content reveal */
+#app > .ptr-container { animation: none !important; }
+/* Suppress stagger during PTR refresh */
+#app.ptr-refreshing > * { animation: none !important; }
 #app > *:nth-child(1) { animation-delay: 0.02s; }
 #app > *:nth-child(2) { animation-delay: 0.06s; }
 #app > *:nth-child(3) { animation-delay: 0.10s; }

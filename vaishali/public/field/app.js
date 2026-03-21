@@ -318,6 +318,7 @@
     appEl.style.flexDirection = '';
     appEl.style.transform = '';
     appEl.style.transition = '';
+    appEl.style.position = '';
 
     // Apply transition class
     appEl.className = '';
@@ -526,15 +527,7 @@
     var indicator = null;
 
     function getCurrentBack() {
-      var hash = location.hash || '#/home';
-      for (var i = 0; i < routes.length; i++) {
-        var r = routes[i];
-        if (r.pattern.indexOf(':') === -1 && hash === r.pattern && r.back) {
-          return r.back;
-        }
-      }
-      // Check parameterized routes
-      var matched = matchRoute(hash);
+      var matched = matchRoute(location.hash || '#/home');
       return matched && matched.back ? matched.back : null;
     }
 
@@ -682,6 +675,9 @@
       circleEl.classList.add('ptr-spinning');
       circleEl.style.transform = '';
 
+      // Suppress staggered content reveal during refresh
+      appEl.classList.add('ptr-refreshing');
+
       // Hold at threshold position during refresh
       ptrEl.style.transform = 'translateY(' + (THRESHOLD * RESISTANCE - 48) + 'px)';
       ptrEl.classList.add('ptr-settling');
@@ -691,7 +687,7 @@
       // Re-invoke current screen handler (no ghost transition)
       var hash = location.hash || '#/home';
       var matched = matchRoute(hash);
-      if (!matched) { resetPTR(function () { refreshing = false; }); return; }
+      if (!matched) { resetPTR(function () { refreshing = false; appEl.classList.remove('ptr-refreshing'); }); return; }
 
       // Clear and re-render content only (keep PTR element)
       var children = Array.prototype.slice.call(appEl.childNodes);
@@ -707,7 +703,10 @@
         circleEl.classList.remove('ptr-spinning');
         circleEl.classList.add('ptr-done');
         setTimeout(function () {
-          resetPTR(function () { refreshing = false; });
+          resetPTR(function () {
+            refreshing = false;
+            appEl.classList.remove('ptr-refreshing');
+          });
         }, 250);
       }, 600);
     }
