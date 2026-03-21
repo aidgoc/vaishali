@@ -373,19 +373,23 @@ def _build_sales_workspace_content():
 
 
 def _set_workspace_children(workspace, number_card_names, chart_names):
-    """Populate the number_cards and charts child tables on a workspace."""
+    """Populate the number_cards and charts child tables on a workspace.
+
+    IMPORTANT: Frappe's block.js matches widgets by label == block_name,
+    so label must exactly match the name used in the content JSON.
+    """
     workspace.set("number_cards", [])
     for nc_name in number_card_names:
         workspace.append("number_cards", {
             "number_card_name": nc_name,
-            "label": nc_name.replace("DSPL ", ""),
+            "label": nc_name,
         })
 
     workspace.set("charts", [])
     for ch_name in chart_names:
         workspace.append("charts", {
             "chart_name": ch_name,
-            "label": ch_name.replace("DSPL ", ""),
+            "label": ch_name,
         })
 
 
