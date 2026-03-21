@@ -15,7 +15,6 @@ def setup():
     """Main entry point."""
     create_number_cards()
     create_charts()
-    create_shortcuts()
     update_dspl_sales_workspace()
     create_dspl_operations_workspace()
     frappe.db.commit()
@@ -343,14 +342,6 @@ def _build_sales_workspace_content():
         {"type": "chart", "data": {"chart_name": "DSPL Lead Source Breakdown", "col": 6}},
         {"type": "spacer", "data": {"col": 12}},
 
-        # --- Shortcuts ---
-        {"type": "header", "data": {"text": "<b>Quick Access</b>", "level": 4, "col": 12}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Quotation", "col": 4}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Sales Order", "col": 4}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Sales Invoice", "col": 4}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Lead", "col": 4}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Customer", "col": 4}},
-        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Item", "col": 4}},
     ])
 
 
