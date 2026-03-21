@@ -61,6 +61,15 @@
     navEl.style.display = '';
   }
 
+  // ─── Dismiss splash screen ────────────────────────────────────────
+  function dismissSplash() {
+    var splash = document.getElementById('splash');
+    if (splash) {
+      splash.classList.add('splash-hide');
+      setTimeout(function () { splash.remove(); }, 500);
+    }
+  }
+
   // ─── Bottom Nav — 3 tabs ──────────────────────────────────────────
 
   function buildBottomNav() {
@@ -455,18 +464,22 @@
                 Auth.setEmployee(info.employee);
                 Auth.setNavTier(info.nav_tier);
                 buildBottomNav();
+                dismissSplash();
                 navigate('#/home');
               });
             }
+            dismissSplash();
             navigate('#/login');
-          }).catch(function () { navigate('#/login'); });
+          }).catch(function () { dismissSplash(); navigate('#/login'); });
         }
+        dismissSplash();
         navigate('#/login');
         return;
       }
 
       // Session exists — build nav and route
       buildBottomNav();
+      dismissSplash();
 
       if (typeof api.ensureApiKeys === 'function') {
         api.ensureApiKeys();
@@ -501,6 +514,90 @@
   } else {
     _startup();
   }
+
+  // ─── Edge-Swipe Back Gesture (iOS-style) ─────────────────────────────
+
+  (function initEdgeSwipe() {
+    var EDGE_ZONE = 24;      // px from left edge to trigger
+    var TRIGGER_DIST = 80;   // px to swipe before triggering back
+    var startX = 0;
+    var startY = 0;
+    var swiping = false;
+    var indicator = null;
+
+    function getCurrentBack() {
+      var hash = location.hash || '#/home';
+      for (var i = 0; i < routes.length; i++) {
+        var r = routes[i];
+        if (r.pattern.indexOf(':') === -1 && hash === r.pattern && r.back) {
+          return r.back;
+        }
+      }
+      // Check parameterized routes
+      var matched = matchRoute(hash);
+      return matched && matched.back ? matched.back : null;
+    }
+
+    function createIndicator() {
+      var el = document.createElement('div');
+      el.className = 'edge-swipe-indicator';
+      document.body.appendChild(el);
+      return el;
+    }
+
+    appEl.addEventListener('touchstart', function (e) {
+      var touch = e.touches[0];
+      if (touch.pageX <= EDGE_ZONE && getCurrentBack()) {
+        startX = touch.pageX;
+        startY = touch.pageY;
+        swiping = true;
+      }
+    }, { passive: true });
+
+    appEl.addEventListener('touchmove', function (e) {
+      if (!swiping) return;
+      var dx = e.touches[0].pageX - startX;
+      var dy = Math.abs(e.touches[0].pageY - startY);
+
+      // Cancel if swiping more vertically than horizontally
+      if (dy > dx * 1.2) { swiping = false; return; }
+
+      if (dx > 10) {
+        if (!indicator) indicator = createIndicator();
+        var progress = Math.min(dx / TRIGGER_DIST, 1);
+        indicator.style.opacity = String(progress);
+        indicator.style.transform = 'translateY(-50%) scale(' + (0.5 + progress * 0.5) + ')';
+      }
+    }, { passive: true });
+
+    appEl.addEventListener('touchend', function (e) {
+      if (!swiping) return;
+      swiping = false;
+
+      var finalX = e.changedTouches[0].pageX;
+      var dx = finalX - startX;
+
+      if (indicator) {
+        indicator.style.transition = 'all 0.2s ease';
+        indicator.style.opacity = '0';
+        indicator.style.transform = 'translateY(-50%) scale(0)';
+        var ind = indicator;
+        setTimeout(function () { ind.remove(); }, 200);
+        indicator = null;
+      }
+
+      if (dx >= TRIGGER_DIST) {
+        var backHash = getCurrentBack();
+        if (backHash) {
+          _navigatingBack = true;
+          location.hash = backHash;
+        }
+      }
+
+      startX = 0;
+      startY = 0;
+    }, { passive: true });
+  })();
 
   // ─── Pull-to-Refresh — iOS-style with circular progress ──────────────
 

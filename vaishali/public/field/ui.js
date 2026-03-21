@@ -161,6 +161,18 @@
   /* ──────────────────────────────────────────────────────────────
      9. avatar(name, size)
      ────────────────────────────────────────────────────────────── */
+  // Notion-style avatar palette — soft tinted backgrounds with matching text
+  var _avatarPalette = [
+    { bg: '#F3E8FF', fg: '#7C3AED' }, // purple
+    { bg: '#DBEAFE', fg: '#2563EB' }, // blue
+    { bg: '#D1FAE5', fg: '#059669' }, // green
+    { bg: '#FEF3C7', fg: '#D97706' }, // amber
+    { bg: '#FFE4E6', fg: '#E11D48' }, // rose
+    { bg: '#E0E7FF', fg: '#4F46E5' }, // indigo
+    { bg: '#CCFBF1', fg: '#0D9488' }, // teal
+    { bg: '#FDE68A', fg: '#92400E' }, // yellow
+  ];
+
   function avatar(name, size) {
     size = size || 36;
     var words = (name || '').trim().split(/\s+/);
@@ -168,13 +180,21 @@
     for (var i = 0; i < Math.min(words.length, 2); i++) {
       if (words[i]) initials += words[i][0].toUpperCase();
     }
+    // Deterministic color from name hash
+    var hash = 0;
+    var str = name || '';
+    for (var j = 0; j < str.length; j++) hash = ((hash << 5) - hash) + str.charCodeAt(j);
+    var palette = _avatarPalette[Math.abs(hash) % _avatarPalette.length];
+
     return el('div', {
       className: 'list-avatar',
       textContent: initials,
       style: {
         width: size + 'px',
         height: size + 'px',
-        fontSize: Math.round(size * 0.36) + 'px'
+        fontSize: Math.round(size * 0.36) + 'px',
+        background: palette.bg,
+        color: palette.fg
       }
     });
   }
