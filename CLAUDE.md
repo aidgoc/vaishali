@@ -143,15 +143,22 @@ vaishali/
 ├── views/
 │   ├── registry.py        # 14+ view definitions
 │   └── engine.py          # Role-filtered fetcher + linked doc enrichment
-├── public/field/
-│   ├── app.js             # Router (49 routes), transitions, PTR, edge-swipe, splash
-│   ├── ui.js              # 34 components with ARIA accessibility
-│   ├── api.js             # API path translation + IDB caching
-│   ├── auth.js            # Session, roles, nav tiers
-│   ├── style.css          # Notion-inspired design system + transitions
-│   ├── icons.js           # SVG sprites (aria-hidden)
-│   ├── sw.js              # Service worker v19 (stale-while-revalidate, ignoreSearch)
-│   ├── manifest.json      # PWA manifest (standalone, scope: /)
+├── public/
+│   ├── css/
+│   │   └── vaishali.css   # Desk theme (571 lines, Notion-inspired, scoped to light mode)
+│   ├── js/
+│   │   ├── quotation.js   # Mark as Lost dialog, auto valid_till, customer count
+│   │   ├── lead.js        # Lead age indicator, Convert to Customer, auto lead_name
+│   │   └── customer.js    # Lifetime value, outstanding amount indicators
+│   └── field/
+│       ├── app.js             # Router (49 routes), transitions, PTR, edge-swipe, splash
+│       ├── ui.js              # 34 components with ARIA accessibility
+│       ├── api.js             # API path translation + IDB caching
+│       ├── auth.js            # Session, roles, nav tiers
+│       ├── style.css          # Notion-inspired design system + transitions
+│       ├── icons.js           # SVG sprites (aria-hidden)
+│       ├── sw.js              # Service worker v19 (stale-while-revalidate, ignoreSearch)
+│       ├── manifest.json      # PWA manifest (standalone, scope: /)
 │   └── screens/           # 31 screen modules
 │       ├── home.js        # KPI row + action cards + tabbed department nav
 │       ├── attendance.js  # GPS "Location captured" + check-in/check-out
@@ -170,7 +177,8 @@ vaishali/
 │       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
 │       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
 │       └── ... (leave, expense, advance, salary, approvals, team, etc.)
-├── hooks.py               # Doc events, fixtures, website routes
+├── setup_workspace.py     # Creates Number Cards, Charts, updates DSPL Sales/Operations workspaces
+├── hooks.py               # Doc events, fixtures, website routes, app_include_css, doctype_js
 ├── notifications.py       # Telegram notification handlers
 ├── fixtures/
 │   └── custom_field.json  # telegram_chat_id on Employee
@@ -216,6 +224,26 @@ UI.fab(onClick)                   // Floating action button (aria-label)
 UI.bottomSheet(title, content)    // Modal sheet (role=dialog, Escape key, focus trap)
 UI.fieldError(inputEl, message)   // Inline form validation (red border + error text)
 ```
+
+## ERPNext Desk Customization
+
+### Theme (`public/css/vaishali.css`)
+Loaded via `app_include_css` in hooks.py. 571-line CSS override scoped to `body[data-theme="light"]`:
+- White page, `rgba(0,0,0,0.04)` borders, 10px card radius, `-0.04em` headings
+- Red primary (`#E60005`), 8px button radius, sentence-case everywhere
+- Covers: navbar, sidebar, workspace, cards, list view, form view, buttons, pills, modals, kanban
+
+### Client Scripts (`public/js/`)
+Registered via `doctype_js` in hooks.py:
+- **Quotation:** "Mark as Lost" dialog (captures reason + competitor), auto `valid_till` (30 days), customer quotation count indicator
+- **Lead:** Age indicator (days, color-coded), "Convert to Customer" button, auto `lead_name` from company
+- **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator
+
+### Workspaces
+Created via `bench execute vaishali.setup_workspace.setup`:
+- **DSPL Sales:** 4 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads) + Monthly Revenue chart + Quotation Pipeline donut
+- **DSPL Operations:** 3 ops cards (Work Orders, Deliveries, Stock Below Reorder) + 2 HR cards (Team Present, Pending Approvals) + Monthly Orders chart
+- 9 Number Cards + 4 Dashboard Charts total, all prefixed "DSPL"
 
 ## API Security Model
 
