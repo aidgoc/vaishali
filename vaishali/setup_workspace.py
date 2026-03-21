@@ -400,12 +400,14 @@ def update_dspl_sales_workspace():
             "content": _build_sales_workspace_content(),
         })
         _set_workspace_children(workspace, sales_number_cards, sales_charts)
+        workspace.flags.ignore_links = True
         workspace.insert(ignore_permissions=True)
         print(f"  Created workspace: {ws_name}")
     else:
         workspace = frappe.get_doc("Workspace", ws_name)
         workspace.content = _build_sales_workspace_content()
         _set_workspace_children(workspace, sales_number_cards, sales_charts)
+        workspace.flags.ignore_links = True
         workspace.save(ignore_permissions=True)
         print(f"  Updated workspace: {ws_name}")
 
@@ -468,11 +470,13 @@ def create_dspl_operations_workspace():
             "content": _build_operations_workspace_content(),
         })
         _set_workspace_children(workspace, ops_number_cards, ops_charts)
+        workspace.flags.ignore_links = True
         workspace.insert(ignore_permissions=True)
         print(f"  Created workspace: {ws_name}")
     else:
         workspace = frappe.get_doc("Workspace", ws_name)
         workspace.content = _build_operations_workspace_content()
         _set_workspace_children(workspace, ops_number_cards, ops_charts)
+        workspace.flags.ignore_links = True
         workspace.save(ignore_permissions=True)
         print(f"  Updated workspace: {ws_name}")
