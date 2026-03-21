@@ -73,7 +73,7 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/assets/vaishali/field/sw.js')
+      navigator.serviceWorker.register('/assets/vaishali/field/sw.js', { scope: '/' })
         .catch(function(err) { console.warn('SW registration failed:', err); });
     }
   </script>

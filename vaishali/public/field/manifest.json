@@ -3,7 +3,7 @@
   "short_name": "Field",
   "description": "DSPL field staff attendance and customer visit tracking",
   "start_url": "/field",
-  "scope": "/field",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F7F7F8",
   "theme_color": "#ffffff",
