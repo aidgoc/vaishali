@@ -30,9 +30,9 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 31 screen modules, 49 routes, hash router, standalone HTML |
-| **Field API** | `@frappe.whitelist` in `api/field.py` | 32 endpoints: Attendance, DCR, Customers, Leads, Quotations, Stock, Sales Targets, Funnel, Monthly Report |
-| **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment (Address/Contact via Dynamic Link) |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 31 screen modules, 49 routes, hash router, standalone PWA |
+| **Field API** | `@frappe.whitelist` in `api/field.py` | 32 endpoints with ownership/role checks |
+| **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment |
 | **AI Agent** | `agent/runner.py` (AsyncAnthropic) | Claude with 101 ERPNext tools, knows full ABP |
 | **FastAPI slim** | `~/dspl_erp/` on EC2 | Async AI chat + Telegram notifications |
 
@@ -49,34 +49,55 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - **Currency:** INR only, format ₹X,XX,XXX (en-IN locale)
 - **Data:** 1,879 customers, 1,807 suppliers, 6,456 items, 8,242 contacts, 189 employees
 
-## PWA Structure (Standalone HTML — HRMS Pattern)
+## PWA Structure (Installable Standalone App)
 
 The PWA at `/field` uses a **standalone HTML document** (not `{%- extends "templates/web.html" -%}`). Frappe renders `www/field.html` via `www/field.py` which injects CSRF token and boot context via Jinja.
+
+### Installability
+- **Manifest:** `/assets/vaishali/field/manifest.json` with `display: standalone`, `scope: /`, `start_url: /field`
+- **Service Worker:** `/assets/vaishali/field/sw.js` registered with `{ scope: '/' }` — nginx sends `Service-Worker-Allowed: /` header
+- **SW version:** v19, precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true` for cache-busted URLs
+- **Apple PWA:** `apple-mobile-web-app-capable`, `apple-touch-icon`, safe-area insets on header/nav
+- **Splash screen:** Branded loading with animated progress bar, dismisses on boot
+- **All scripts use `defer`** — non-blocking HTML parsing
 
 ### Three-Zone Flexbox Layout
 ```
 body { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-#app-header  — fixed 56px, router renders back button + title
-#app         — flex: 1, overflow-y: auto, 16px 20px padding, scrollable content
-#bottom-nav  — fixed 64px, 3 tabs: Home, AI, Me
+#app-header  — fixed 56px + safe-area-inset-top, router renders back button + title
+#app         — flex: 1, overflow-y: auto, 20px 16px padding, scrollable content
+#bottom-nav  — fixed 64px + safe-area-inset-bottom, 3 tabs: Home, AI, Me
 ```
 
-### Design System — "Notion-Inspired Flat"
-- **Zero decorative shadows** — only input focus ring and toggle thumb
-- **No scale transforms** on `:active` — use `opacity: 0.9` or background change
-- **Typography hierarchy:** 24px/700 page title, 20px/700 data callout, 15px/600 card primary, 14px/500 body, 13px/400 secondary, 11px/600 section heading
-- **Surface hierarchy:** Page (#F7F7F8), Surface (#FFF + 1px border), Inline (transparent)
-- **Color discipline:** monochrome by default, `--dspl-red` for primary CTA + nav only, status colors in pills only
+### Design System — "Notion-Inspired Clean"
+- **White page background** (`#FFFFFF`), cards use `--surface-1` (`#F8F8F8`) for contrast
+- **No card borders** — whitespace separation; when borders exist: `rgba(0,0,0,0.04)`
+- **No decorative shadows** — only input focus ring and toggle thumb
+- **No scale transforms on `:active`** — use `background: rgba(0,0,0,0.04)` or `filter: brightness()`
+- **Typography:** `-0.04em` letter-spacing on headings, `15px` body text, `12px/500` sentence-case section labels (NOT uppercase)
+- **Button radius:** `8px` (not 12px — less bubbly)
 - **Tab bar:** underline-style (2px bottom border), not pill-shaped
-- **HR grid:** Notion sidebar-style 2-column list (icon + text horizontal), not centered tile grid
-- **Toasts:** bottom-center (80px up), white surface with colored left border
+- **Toasts:** dark floating pill (no colored left border)
+- **Avatars:** Notion-style tinted color palette (8 pastels), rounded-square shape, deterministic from name
+- **Skeletons:** thin horizontal bars at varying widths (80%, 60%, 40%), not card-shaped blocks
+- **Focus indicators:** `:focus-visible` red outline (2px, 2px offset) for keyboard users
+- **Contrast:** `--ink-tertiary: #6B6B70` (WCAG AA 4.5:1 on white)
+
+### Transitions & Gestures
+- **iOS-style navigation:** two-layer ghost transition (old screen parallax-slides left 30% while new slides in from right), Apple ease-out curve
+- **Edge-swipe back:** swipe from left 24px edge, circular chevron indicator, 80px threshold
+- **Pull-to-refresh:** SVG circular arc progress, rubber-band resistance (0.45x), spinning/done states, spring-back
+- **Header crossfade** on route changes
+- **Staggered content reveal:** each child cascades in with 40ms delay (excluded for `.ptr-container`)
+- **Nav dot:** spring-animated active indicator
+- **`prefers-reduced-motion`** disables all animations
 
 ### Router Owns the Header
 Screens do NOT render their own headers. Each route has `title` and `back`:
 ```js
 { pattern: '#/attendance', title: 'Attendance', back: '#/home', handler: ... }
 ```
-`_renderRoute()` renders the header, clears `#app`, resets inline styles (for chat layout), and calls the screen handler.
+`_renderRoute()` renders the header with crossfade, creates ghost snapshot for transitions, clears `#app`, resets inline styles, and calls the screen handler.
 
 ### Screen Pattern
 ```js
@@ -99,12 +120,12 @@ Screens do NOT render their own headers. Each route has `title` and `back`:
 
 ### Home Screen Layout (Manager)
 ```
-[Greeting (24px/700, no underline)]
-[KPI Row: Team Present | Approvals | In Field (single flat card with dividers)]
-[2x2 Action Cards: Check In/Out, New Visit, Leave, Expenses (flat, no shadow, no accent)]
-[HR Services (Notion sidebar-style 2-col list): Leave, Salary, Expenses, Advances]
-[Pending Approvals list]
-[Tabbed Department Nav: Sales | Operations | Finance (underline tabs)]
+[Greeting (28px/700) with time + date + department]
+[KPI Row: Team Present | Approvals | Visits Today]
+[2x2 Action Cards: Check In/Out, New Visit, Leave, Expenses]
+[HR services (sentence-case heading): Leave, Salary, Expenses, Advances grid]
+[Pending approvals: list cards with tinted avatars]
+[Departments: Sales | Operations | Finance (underline tabs)]
 ```
 
 ### Chat Screen
@@ -115,7 +136,7 @@ Chat uses a special flex layout — sets `#app` to `display: flex; flex-directio
 ```
 vaishali/
 ├── api/
-│   ├── field.py          # 32 whitelist endpoints
+│   ├── field.py          # 32 whitelist endpoints (with ownership/role checks)
 │   ├── views.py          # View Engine API
 │   └── chat.py           # AI chat endpoints
 ├── agent/                 # AI agent (101 tools)
@@ -123,16 +144,17 @@ vaishali/
 │   ├── registry.py        # 14+ view definitions
 │   └── engine.py          # Role-filtered fetcher + linked doc enrichment
 ├── public/field/
-│   ├── app.js             # Router (49 routes), login, 3-tab nav, pull-to-refresh
-│   ├── ui.js              # 34 components (see UI Kit below)
+│   ├── app.js             # Router (49 routes), transitions, PTR, edge-swipe, splash
+│   ├── ui.js              # 34 components with ARIA accessibility
 │   ├── api.js             # API path translation + IDB caching
 │   ├── auth.js            # Session, roles, nav tiers
-│   ├── style.css          # Three-zone layout + Notion-flat design system
-│   ├── icons.js           # SVG sprites
-│   ├── sw.js              # Service worker v17
+│   ├── style.css          # Notion-inspired design system + transitions
+│   ├── icons.js           # SVG sprites (aria-hidden)
+│   ├── sw.js              # Service worker v19 (stale-while-revalidate, ignoreSearch)
+│   ├── manifest.json      # PWA manifest (standalone, scope: /)
 │   └── screens/           # 31 screen modules
 │       ├── home.js        # KPI row + action cards + tabbed department nav
-│       ├── attendance.js  # GPS check-in/check-out
+│       ├── attendance.js  # GPS "Location captured" + check-in/check-out
 │       ├── visits.js      # DCR with department-aware form + inline validation
 │       ├── lead.js        # Lead list + creation + inline validation
 │       ├── quotation.js   # Quotation with item picker + inline validation
@@ -140,18 +162,20 @@ vaishali/
 │       ├── sales-target.js # Personal performance + product targets + progress bars
 │       ├── monthly-report.js # Revenue, orders, visits, YTD progress
 │       ├── pipeline.js    # Sales funnel + pipeline board
-│       ├── follow-ups.js  # Quotation expiry tracking (flat sections, standard listCards)
+│       ├── follow-ups.js  # Quotation expiry tracking
 │       ├── my-targets.js  # Personal targets with progress bars + kpiRow
 │       ├── customer-search.js # Full customer list (1,879) with search
-│       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call, transactions
+│       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call
 │       ├── chat.js        # Vaishali AI (120s timeout)
+│       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
+│       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
 │       └── ... (leave, expense, advance, salary, approvals, team, etc.)
 ├── hooks.py               # Doc events, fixtures, website routes
 ├── notifications.py       # Telegram notification handlers
 ├── fixtures/
 │   └── custom_field.json  # telegram_chat_id on Employee
 └── www/
-    ├── field.html         # Standalone HTML (HRMS pattern), Jinja cache-busting
+    ├── field.html         # Standalone HTML, defer scripts, Jinja cache-busting
     └── field.py           # CSRF + boot context
 ```
 
@@ -159,39 +183,48 @@ vaishali/
 
 ```js
 UI.el(tag, attrs, children)       // Core DOM builder
-UI.card(children, opts)           // Surface card with border (flat, no shadow)
-UI.statCard(value, label)         // KPI stat (20px/700 value)
-UI.kpiRow(items)                  // Horizontal stats card with vertical dividers [{value, label}, ...]
-UI.actionCard(opts)               // Flat card (icon, label, value, sub — no shadow, no accent)
+UI.card(children, opts)           // Surface card (borderless on white page)
+UI.statCard(value, label)         // KPI stat (22px/700 value, 12px sentence-case label)
+UI.kpiRow(items)                  // Horizontal stats card with vertical dividers
+UI.actionCard(opts)               // Card with 32px icon container + label + value
 UI.listCard(opts)                 // Full-width row with dividers
 UI.detailRow(label, value)        // Label-value pair
 UI.detailCard(rows)               // Card of label-value rows
 UI.pill(text, color)              // Status badge (green/yellow/red/blue/gray)
-UI.avatar(name, size)             // Initial circle (36px default)
+UI.avatar(name, size)             // Tinted rounded-square initials (8-color palette)
 UI.amount(value)                  // ₹ formatted currency
-UI.btn(text, opts)                // Button (primary/success/danger/outline, no shadow)
+UI.btn(text, opts)                // Button (8px radius, primary/success/danger/outline)
 UI.actionBar(buttons)             // Button row
-UI.field(label, inputEl)          // Form field wrapper
+UI.field(label, inputEl)          // Form field wrapper with <label>
 UI.textInput(placeholder, opts)   // Text input
 UI.dateInput(label, value)        // Date input
 UI.textarea(placeholder, opts)    // Textarea
 UI.select(label, options, value)  // Dropdown select
 UI.searchInput(placeholder, fn)   // Debounced search
-UI.toggle(label, checked, fn)     // Toggle switch
+UI.toggle(label, checked, fn)     // Toggle switch (role=switch, aria-checked, keyboard)
 UI.grid(children, cols)           // CSS grid
 UI.divider()                      // Horizontal line
-UI.sectionHeading(text)           // 11px uppercase section divider
+UI.sectionHeading(text)           // 12px sentence-case section label (NOT uppercase)
 UI.tabs(items, active, onChange)   // Underline-style tab bar
-UI.skeleton(count)                // Shimmer loading placeholder
-UI.empty(icon, text, ctaOpts)     // Empty state (32px muted icon)
+UI.skeleton(count)                // Thin shimmer bars at varying widths
+UI.empty(icon, text, ctaOpts)     // Empty state (minimal text, optional CTA)
 UI.error(text)                    // Error box
-UI.toast(text, type)              // Bottom toast (white + colored left border)
+UI.toast(text, type)              // Dark floating pill (role=alert)
 UI.nav(tabs, active)              // Bottom navigation
 UI.updateNavActive(tab)           // Update nav highlight
-UI.fab(onClick)                   // Floating action button
-UI.bottomSheet(title, content)    // Modal sheet
+UI.fab(onClick)                   // Floating action button (aria-label)
+UI.bottomSheet(title, content)    // Modal sheet (role=dialog, Escape key, focus trap)
 UI.fieldError(inputEl, message)   // Inline form validation (red border + error text)
 ```
+
+## API Security Model
+
+All endpoints in `field.py` enforce:
+- **Ownership checks:** `get_dcr()`, `checkout_dcr()` verify `doc.employee == current_employee`
+- **Role gates:** `create_stock_entry()` blocked for field tier; `create_quotation()` requires sales/marketing dept or manager+
+- **Approver verification:** `process_approval()` checks `doc.leave_approver`/`doc.expense_approver`/reporting hierarchy
+- **Data scoping:** `get_approvals()` Employee Advances filtered by direct reports only
+- **Service-only endpoints:** `verify_telegram_token()` restricted to service account
 
 ## API Path Translation (`api.js`)
 
@@ -256,21 +289,26 @@ Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Activ
 - **No jQuery, no React** — vanilla JS with `el()` builder only
 - **No innerHTML** — always use `el()` or `textContent`
 - **No UI.page()** — router handles all headers
-- **No decorative shadows** — flat surfaces with 1px borders only
-- **No scale transforms on :active** — use opacity or background change
+- **No card borders** — whitespace separation on white page
+- **No decorative shadows** — flat surfaces only
+- **No scale transforms on :active** — use `background: rgba(0,0,0,0.04)` or `filter: brightness()`
+- **No UPPERCASE section headings** — always sentence case ("Pending approvals" not "PENDING APPROVALS")
 - **Status colors:** green=completed, orange=in-progress, red=open/overdue, blue=default (pills only)
 - **Currency:** Always `₹` + `toLocaleString('en-IN')`
-- **Icons:** Use `icon('name')` from icons.js
+- **Icons:** Use `icon('name')` from icons.js — all icons have `aria-hidden="true"`
 - **Form validation:** Use `UI.fieldError(input, message)` for inline validation
 - **Chat layout:** Overrides `#app` inline styles — must reset on navigation away
 - **Cache busting:** Jinja `?v={{ _v }}` on all script/CSS tags (minute-level timestamp)
 - **API limits:** Use `limit_page_length=0` for full lists (customers, quotations), reasonable caps for search endpoints
+- **Accessibility:** `:focus-visible` outlines, ARIA roles on interactive components, `prefers-reduced-motion` support
+- **Timer cleanup:** All `setInterval` calls must track timers and clear on `hashchange` navigation
 
 ## Infrastructure
 
 - **EC2 instance:** `dspl-erp-server` (use `aws ec2 describe-instances` to get current IP)
 - **SSH key:** `~/.ssh/heft-erp-key.pem`, user `ubuntu`
 - **Frappe Cloud:** `dcepl.logstop.com` (source of truth for data, synced to EC2)
+- **nginx:** `Service-Worker-Allowed: /` header on sw.js, gzip enabled
 
 ## Development
 
