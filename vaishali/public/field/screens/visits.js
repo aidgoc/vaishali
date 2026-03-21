@@ -277,6 +277,22 @@
       }
     }
 
+    // Blur validation on purpose selects
+    visitPurposeSelect.addEventListener('blur', function () {
+      if (visitType === 'sales' && !visitPurposeSelect.value) {
+        UI.fieldError(visitPurposeSelect, 'Required');
+      } else {
+        UI.fieldError(visitPurposeSelect, null);
+      }
+    });
+    servicePurposeSelect.addEventListener('blur', function () {
+      if (visitType === 'service' && !servicePurposeSelect.value) {
+        UI.fieldError(servicePurposeSelect, 'Required');
+      } else {
+        UI.fieldError(servicePurposeSelect, null);
+      }
+    });
+
     // Auto-hide based on detected department
     if (isSales) {
       servicePurposeField.style.display = 'none';
@@ -328,8 +344,22 @@
     });
 
     var customerField = UI.field('Customer', el('div', null, [customerSearch, searchResults, customerDisplay]));
+    var customerSearchInput = customerSearch.querySelector('input');
+
+    // Blur validation on customer search — check if customer selected
+    customerSearchInput.addEventListener('blur', function () {
+      // Delay slightly so click-to-select can fire first
+      setTimeout(function () {
+        if (!selectedCustomer && !isProspect) {
+          UI.fieldError(customerSearchInput, 'Required');
+        } else {
+          UI.fieldError(customerSearchInput, null);
+        }
+      }, 200);
+    });
 
     function showCustomerChip(label) {
+      UI.fieldError(customerSearchInput, null);
       customerDisplay.textContent = '';
       customerDisplay.style.display = 'block';
       var removeBtn = el('button', {
@@ -354,6 +384,13 @@
     // Prospect toggle + fields
     var prospectFields = el('div', { style: { display: 'none' } });
     var prospectNameInput = UI.textInput('Prospect name');
+    prospectNameInput.addEventListener('blur', function () {
+      if (isProspect && !prospectNameInput.value.trim()) {
+        UI.fieldError(prospectNameInput, 'Required');
+      } else {
+        UI.fieldError(prospectNameInput, null);
+      }
+    });
     var prospectCompanyInput = UI.textInput('Company');
     var prospectPhoneInput = UI.textInput('Phone', { type: 'tel' });
     var prospectAddressInput = UI.textarea('Address', { rows: 2 });
@@ -409,6 +446,7 @@
 
     function handleSubmit() {
       errorBox.style.display = 'none';
+      var valid = true;
 
       // For other departments, must pick visit type first
       if (isOther && !visitType) {
@@ -416,12 +454,38 @@
         return;
       }
 
+      // Validate customer or prospect
       if (!isProspect && !selectedCustomer) {
-        showError('Please select a customer or add a prospect.');
-        return;
+        UI.fieldError(customerSearchInput, 'Customer is required');
+        valid = false;
+      } else {
+        UI.fieldError(customerSearchInput, null);
       }
+
       if (isProspect && !prospectNameInput.value.trim()) {
-        showError('Please enter a prospect name.');
+        UI.fieldError(prospectNameInput, 'Prospect name is required');
+        valid = false;
+      } else if (isProspect) {
+        UI.fieldError(prospectNameInput, null);
+      }
+
+      // Validate purpose
+      if (visitType === 'sales' && !visitPurposeSelect.value) {
+        UI.fieldError(visitPurposeSelect, 'Visit purpose is required');
+        valid = false;
+      } else if (visitType === 'sales') {
+        UI.fieldError(visitPurposeSelect, null);
+      }
+      if (visitType === 'service' && !servicePurposeSelect.value) {
+        UI.fieldError(servicePurposeSelect, 'Service purpose is required');
+        valid = false;
+      } else if (visitType === 'service') {
+        UI.fieldError(servicePurposeSelect, null);
+      }
+
+      if (!valid) {
+        var firstError = appEl.querySelector('.field-error-text');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
 

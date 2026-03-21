@@ -105,7 +105,21 @@
     var el = UI.el;
     // Form fields
     var leadNameInput = UI.textInput('Lead name');
+    leadNameInput.addEventListener('blur', function () {
+      if (!leadNameInput.value.trim()) {
+        UI.fieldError(leadNameInput, 'Required');
+      } else {
+        UI.fieldError(leadNameInput, null);
+      }
+    });
     var companyNameInput = UI.textInput('Company name');
+    companyNameInput.addEventListener('blur', function () {
+      if (!companyNameInput.value.trim()) {
+        UI.fieldError(companyNameInput, 'Required');
+      } else {
+        UI.fieldError(companyNameInput, null);
+      }
+    });
     var mobileInput = UI.textInput('Mobile number', { type: 'tel' });
     var emailInput = UI.textInput('Email address', { type: 'email' });
 
@@ -150,9 +164,25 @@
 
     function handleSubmit() {
       errorBox.style.display = 'none';
+      var valid = true;
 
       if (!leadNameInput.value.trim()) {
-        showError('Please enter a lead name.');
+        UI.fieldError(leadNameInput, 'Lead name is required');
+        valid = false;
+      } else {
+        UI.fieldError(leadNameInput, null);
+      }
+
+      if (!companyNameInput.value.trim()) {
+        UI.fieldError(companyNameInput, 'Company name is required');
+        valid = false;
+      } else {
+        UI.fieldError(companyNameInput, null);
+      }
+
+      if (!valid) {
+        var firstError = appEl.querySelector('.field-error-text');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
 

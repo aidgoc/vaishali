@@ -166,8 +166,21 @@
     });
 
     var customerField = UI.field('Customer', el('div', null, [customerSearch, searchResults, customerDisplay]));
+    var customerSearchInput = customerSearch.querySelector('input');
+
+    // Blur validation on customer search
+    customerSearchInput.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!selectedCustomer) {
+          UI.fieldError(customerSearchInput, 'Required');
+        } else {
+          UI.fieldError(customerSearchInput, null);
+        }
+      }, 200);
+    });
 
     function showCustomerChip(label) {
+      UI.fieldError(customerSearchInput, null);
       customerDisplay.textContent = '';
       customerDisplay.style.display = 'block';
       var removeBtn = el('button', {
@@ -384,21 +397,33 @@
 
     function handleSubmit() {
       errorBox.style.display = 'none';
+      var valid = true;
 
       if (!selectedCustomer) {
-        showError('Please select a customer.');
-        return;
+        UI.fieldError(customerSearchInput, 'Customer is required');
+        valid = false;
+      } else {
+        UI.fieldError(customerSearchInput, null);
       }
+
       if (itemRows.length === 0) {
         showError('Please add at least one item.');
-        return;
+        valid = false;
       }
+
       // Validate all rows have qty > 0
       for (var i = 0; i < itemRows.length; i++) {
         if (!itemRows[i].qty || itemRows[i].qty <= 0) {
           showError('Item "' + itemRows[i].item_name + '" must have a quantity greater than 0.');
-          return;
+          valid = false;
+          break;
         }
+      }
+
+      if (!valid) {
+        var firstError = appEl.querySelector('.field-error-text');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
       }
 
       submitBtn._setLoading(true, 'Creating...');
