@@ -239,11 +239,20 @@ Registered via `doctype_js` in hooks.py:
 - **Lead:** Age indicator (days, color-coded), "Convert to Customer" button, auto `lead_name` from company
 - **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator
 
-### Workspaces
-Created via `bench execute vaishali.setup_workspace.setup`:
-- **DSPL Sales:** 4 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads) + Monthly Revenue chart + Quotation Pipeline donut
-- **DSPL Operations:** 3 ops cards (Work Orders, Deliveries, Stock Below Reorder) + 2 HR cards (Team Present, Pending Approvals) + Monthly Orders chart
+### Workspaces (`setup_workspace.py`)
+Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent):
+- **DSPL Sales:** 4 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads) + Monthly Revenue bar chart + Quotation Pipeline donut + Lead Source Breakdown pie
+- **DSPL Operations:** 3 ops cards (Work Orders, Deliveries, Stock Below Reorder) + 2 HR cards (Team Present, Pending Approvals) + Monthly Orders line chart
 - 9 Number Cards + 4 Dashboard Charts total, all prefixed "DSPL"
+
+#### Frappe v15 Workspace Gotchas (CRITICAL for programmatic creation)
+1. **Number Card autonames from `label`** — the explicit `name` field is ignored; set `label` to desired doc name
+2. **Dashboard Chart autonames from `chart_name`** — same pattern; `name` is ignored
+3. **Content JSON blocks need `id` fields** — random 10-char alphanumeric strings (Editor.js requirement)
+4. **Content JSON headers use `<span class="h4"><b>...</b></span>`** format (not raw `<b>` tags)
+5. **Child tables required alongside content JSON** — workspace has both `content` (layout positioning) and child tables (`number_cards`, `charts`, `shortcuts`) that register widgets; content alone = blank
+6. **Child table `label` must exactly match content JSON `block_name`** — `block.js` looks up widgets via `obj.label == __(block_name)`; mismatched labels silently skip the widget
+7. **Commit between card creation and workspace save** — `frappe.db.commit()` needed so link validation can find newly created cards; also use `workspace.flags.ignore_links = True` as safety
 
 ## API Security Model
 
@@ -353,4 +362,8 @@ ssh -i ~/.ssh/heft-erp-key.pem ubuntu@$EC2_IP
 sudo -u frappe bash -c 'cd /home/frappe/frappe-bench/apps/vaishali && git pull upstream main'
 redis-cli FLUSHALL
 sudo supervisorctl restart frappe-bench-web:frappe-bench-frappe-web dspl-fastapi
+
+# After workspace/number card/chart changes:
+sudo -u frappe bash -c 'cd /home/frappe/frappe-bench && bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup'
+redis-cli FLUSHALL
 ```
