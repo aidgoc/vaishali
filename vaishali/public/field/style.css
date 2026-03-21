@@ -1051,30 +1051,34 @@ textarea {
   margin-bottom: 12px;
 }
 
-/* ── HR Grid (quick action tiles) ────────────────────────────── */
+/* ── HR Grid (Notion sidebar-style list) ─────────────────────── */
 .hr-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin: 10px 0 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin: 8px 0 16px;
+  background: var(--surface-0);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 4px;
 }
 
 .hr-tile {
-  background: var(--surface-0);
-  border-radius: var(--radius-md);
-  padding: 10px 4px 8px;
-  text-align: center;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: left;
   cursor: pointer;
   box-shadow: none;
-  border: 1px solid var(--border-subtle);
+  border: none;
   transition: background 0.12s var(--ease-smooth);
   -webkit-tap-highlight-color: transparent;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 64px;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 40px;
 }
 
 .hr-tile:active {
@@ -1084,31 +1088,31 @@ textarea {
 .hr-tile > span:first-child,
 .hr-tile > svg,
 .hr-tile > span:first-child svg {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  color: var(--ink-secondary);
+  color: var(--ink-tertiary);
 }
 
 .hr-tile > span:last-child {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-secondary);
-  letter-spacing: 0.01em;
-  line-height: 1.1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-primary);
+  letter-spacing: normal;
+  line-height: 1.3;
 }
 
 .hr-tile .tile-emoji {
-  font-size: 22px;
+  font-size: 18px;
   margin-bottom: 0;
   line-height: 1;
 }
 
 .hr-tile .tile-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-secondary);
-  letter-spacing: 0.01em;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-primary);
+  letter-spacing: normal;
 }
 
 /* ── Quick Actions Grid (legacy) ─────────────────────────────── */
