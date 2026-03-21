@@ -251,10 +251,47 @@
     _renderRoute(matched, hash);
   }
 
+  var _lastRouteHash = null;
+
   function _renderRoute(matched, hash) {
-    // 1. Render header
     var headerEl = document.getElementById('app-header');
+    var isBack = _navigatingBack;
+    _navigatingBack = false;
+
+    // Determine if we should animate (skip for initial load or same-tab root nav)
+    var shouldAnimate = _lastRouteHash !== null && _lastRouteHash !== hash;
+    _lastRouteHash = hash;
+
+    // ── 1. Snapshot old screen as ghost layer for layered transition ──
+    if (shouldAnimate && appEl.firstChild) {
+      var ghost = document.createElement('div');
+      ghost.className = 'transition-ghost ' + (isBack ? 'ghost-back' : 'ghost-forward');
+
+      // Clone content into ghost
+      var children = appEl.childNodes;
+      for (var i = 0; i < children.length; i++) {
+        ghost.appendChild(children[i].cloneNode(true));
+      }
+      // Match scroll position and padding
+      ghost.style.padding = getComputedStyle(appEl).padding;
+      ghost.scrollTop = appEl.scrollTop;
+
+      document.body.appendChild(ghost);
+
+      // Clean up ghost after animation
+      ghost.addEventListener('animationend', function () { ghost.remove(); });
+      // Safety fallback
+      setTimeout(function () { if (ghost.parentNode) ghost.remove(); }, 500);
+    }
+
+    // ── 2. Render header with crossfade ──
     headerEl.textContent = '';
+    headerEl.classList.remove('header-transition');
+    if (shouldAnimate) {
+      void headerEl.offsetWidth;
+      headerEl.classList.add('header-transition');
+    }
+
     if (matched.back) {
       var backBtn = el('button', { className: 'header-back', 'aria-label': 'Go back', onClick: function () { _navigatingBack = true; location.hash = matched.back; } });
       if (window.icon) backBtn.appendChild(window.icon('back'));
@@ -264,25 +301,28 @@
       headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title, role: 'heading', 'aria-level': '1' }));
     }
 
-    // 2. Render content — reset any screen-specific overrides (e.g. chat layout)
+    // ── 3. Render content ──
     appEl.textContent = '';
     appEl.scrollTop = 0;
     appEl.style.padding = '';
     appEl.style.display = '';
     appEl.style.flexDirection = '';
+    appEl.style.transform = '';
+    appEl.style.transition = '';
 
-    // 2a. Apply slide transition
+    // Apply transition class
     appEl.className = '';
-    void appEl.offsetWidth; // force reflow
-    appEl.classList.add(_navigatingBack ? 'transition-back' : 'transition-forward');
-    _navigatingBack = false;
+    if (shouldAnimate) {
+      void appEl.offsetWidth;
+      appEl.classList.add(isBack ? 'transition-back' : 'transition-forward');
+    }
 
-    // 3. Update nav highlight
+    // ── 4. Update nav highlight ──
     if (matched.tab !== null) {
       updateNavActive(matched.tab);
     }
 
-    // 4. Call screen handler
+    // ── 5. Call screen handler ──
     matched.handler(matched.params);
   }
 
@@ -462,48 +502,159 @@
     _startup();
   }
 
-  // Pull-to-refresh
+  // ─── Pull-to-Refresh — iOS-style with circular progress ──────────────
+
   (function initPTR() {
+    var THRESHOLD = 70;      // px to pull before triggering
+    var MAX_PULL = 120;      // max visual displacement
+    var RESISTANCE = 0.45;   // rubber-band resistance factor
+
     var startY = 0;
     var pulling = false;
-    var indicator = null;
+    var refreshing = false;
+    var ptrEl = null;
+    var circleEl = null;
+    var arcEl = null;
 
-    appEl.addEventListener('touchstart', function(e) {
+    // Build the PTR indicator (stays in DOM, hidden above #app via transform)
+    function ensurePTR() {
+      // If ptrEl was orphaned by a route change, reset references
+      if (ptrEl && !ptrEl.parentNode) {
+        ptrEl = null; circleEl = null; arcEl = null;
+      }
+      if (ptrEl) return;
+      // SVG circle arc — circumference = 2πr = 2π*8 ≈ 50.3
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 20 20');
+      arcEl = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      arcEl.setAttribute('cx', '10');
+      arcEl.setAttribute('cy', '10');
+      arcEl.setAttribute('r', '8');
+      arcEl.setAttribute('class', 'ptr-arc');
+      arcEl.setAttribute('stroke-dasharray', '0 50.3');
+      arcEl.setAttribute('transform', 'rotate(-90 10 10)');
+      svg.appendChild(arcEl);
+
+      circleEl = document.createElement('div');
+      circleEl.className = 'ptr-circle';
+      circleEl.appendChild(svg);
+
+      ptrEl = document.createElement('div');
+      ptrEl.className = 'ptr-container';
+      ptrEl.appendChild(circleEl);
+
+      // Insert as first child of #app so it scrolls with content area
+      appEl.style.position = 'relative';
+      appEl.insertBefore(ptrEl, appEl.firstChild);
+    }
+
+    function setPullProgress(pullDist) {
+      // pullDist is the rubber-banded distance (0 to MAX_PULL)
+      var progress = Math.min(pullDist / THRESHOLD, 1);
+      var arcLen = progress * 50.3;
+
+      // Move indicator down
+      ptrEl.style.transform = 'translateY(' + (pullDist - 48) + 'px)';
+
+      // Fill arc
+      arcEl.setAttribute('stroke-dasharray', arcLen + ' 50.3');
+
+      // Rotate arrow as you pull for extra juice
+      circleEl.style.transform = 'rotate(' + (progress * 270) + 'deg)';
+    }
+
+    function resetPTR(callback) {
+      if (!ptrEl) { if (callback) callback(); return; }
+      ptrEl.classList.add('ptr-settling');
+      ptrEl.style.transform = 'translateY(-48px)';
+      appEl.style.transform = '';
+      appEl.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+
+      setTimeout(function () {
+        ptrEl.classList.remove('ptr-settling');
+        circleEl.classList.remove('ptr-spinning', 'ptr-done');
+        circleEl.style.transform = '';
+        arcEl.setAttribute('stroke-dasharray', '0 50.3');
+        appEl.style.transition = '';
+        if (callback) callback();
+      }, 350);
+    }
+
+    function doRefresh() {
+      refreshing = true;
+      circleEl.classList.add('ptr-spinning');
+      circleEl.style.transform = '';
+
+      // Hold at threshold position during refresh
+      ptrEl.style.transform = 'translateY(' + (THRESHOLD * RESISTANCE - 48) + 'px)';
+      ptrEl.classList.add('ptr-settling');
+      appEl.style.transform = 'translateY(' + (THRESHOLD * RESISTANCE) + 'px)';
+      appEl.style.transition = 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1)';
+
+      // Re-invoke current screen handler (no ghost transition)
+      var hash = location.hash || '#/home';
+      var matched = matchRoute(hash);
+      if (!matched) { resetPTR(function () { refreshing = false; }); return; }
+
+      // Clear and re-render content only (keep PTR element)
+      var children = Array.prototype.slice.call(appEl.childNodes);
+      for (var i = 0; i < children.length; i++) {
+        if (children[i] !== ptrEl) appEl.removeChild(children[i]);
+      }
+
+      // Call screen handler — it will populate appEl
+      matched.handler(matched.params);
+
+      // Give the handler time to render + any async fetch
+      setTimeout(function () {
+        circleEl.classList.remove('ptr-spinning');
+        circleEl.classList.add('ptr-done');
+        setTimeout(function () {
+          resetPTR(function () { refreshing = false; });
+        }, 250);
+      }, 600);
+    }
+
+    // ── Touch handlers ──
+
+    appEl.addEventListener('touchstart', function (e) {
+      if (refreshing) return;
       if (appEl.scrollTop <= 0) {
         startY = e.touches[0].pageY;
         pulling = true;
+        ensurePTR();
       }
     }, { passive: true });
 
-    appEl.addEventListener('touchmove', function(e) {
-      if (!pulling) return;
-      var diff = e.touches[0].pageY - startY;
-      if (diff > 60 && appEl.scrollTop <= 0) {
-        if (!indicator) {
-          var spinner = document.createElement('div');
-          spinner.className = 'ptr-spinner';
-          indicator = document.createElement('div');
-          indicator.className = 'ptr-indicator visible';
-          indicator.appendChild(spinner);
-          indicator.appendChild(document.createTextNode('Refreshing...'));
-          appEl.insertBefore(indicator, appEl.firstChild);
-        }
+    appEl.addEventListener('touchmove', function (e) {
+      if (!pulling || refreshing) return;
+      var rawDist = e.touches[0].pageY - startY;
+      if (rawDist <= 0 || appEl.scrollTop > 0) {
+        pulling = false;
+        return;
       }
+
+      // Apply rubber-band resistance — diminishing returns past threshold
+      var pullDist = rawDist * RESISTANCE;
+      if (pullDist > MAX_PULL) pullDist = MAX_PULL;
+
+      setPullProgress(pullDist);
+
+      // Translate content down to follow the pull
+      appEl.style.transition = 'none';
+      appEl.style.transform = 'translateY(' + pullDist + 'px)';
     }, { passive: true });
 
-    appEl.addEventListener('touchend', function() {
-      if (indicator) {
-        // Re-trigger current route
-        setTimeout(function() {
-          if (indicator && indicator.parentNode) {
-            indicator.parentNode.removeChild(indicator);
-          }
-          indicator = null;
-          // Re-navigate to same hash to refresh
-          onRouteChange();
-        }, 300);
-      }
+    appEl.addEventListener('touchend', function () {
+      if (!pulling || refreshing) { pulling = false; return; }
       pulling = false;
+
+      var rawDist = parseFloat(appEl.style.transform.replace(/[^0-9.-]/g, '')) || 0;
+      if (rawDist >= THRESHOLD * RESISTANCE) {
+        doRefresh();
+      } else {
+        resetPTR();
+      }
       startY = 0;
     }, { passive: true });
   })();

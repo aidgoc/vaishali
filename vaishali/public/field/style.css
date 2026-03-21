@@ -65,13 +65,15 @@ body {
 }
 
 #app-header {
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   flex-shrink: 0;
   background: #FFFFFF;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding-left: 20px;
+  padding-right: 20px;
   gap: 12px;
   z-index: 50;
 }
@@ -167,11 +169,17 @@ body {
   position: absolute;
   bottom: 2px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(1);
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background: var(--dspl-red);
+  animation: navDotIn 0.3s var(--ease-spring) both;
+}
+
+@keyframes navDotIn {
+  from { transform: translateX(-50%) scale(0); opacity: 0; }
+  to   { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
 .nav-icon {
@@ -2654,26 +2662,62 @@ textarea {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Pull-to-refresh indicator */
-.ptr-indicator {
-  text-align: center;
-  padding: 12px 0;
-  color: var(--ink-tertiary);
-  font-size: 12px;
-  font-weight: 500;
-  display: none;
+/* Pull-to-refresh — iOS-style circular indicator */
+.ptr-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+  padding-top: 8px;
+  transform: translateY(-48px);
+  transition: none;
 }
-.ptr-indicator.visible {
-  display: block;
+
+.ptr-container.ptr-settling {
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.ptr-indicator .ptr-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--surface-2);
-  border-top-color: var(--ink-tertiary);
+
+.ptr-circle {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  margin: 0 auto 4px;
+  background: var(--surface-0);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ptr-circle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* SVG arc that fills as you pull */
+.ptr-circle .ptr-arc {
+  fill: none;
+  stroke: var(--ink-tertiary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: none;
+}
+
+/* Spinning state */
+.ptr-circle.ptr-spinning {
+  animation: spin 0.65s linear infinite;
+}
+.ptr-circle.ptr-spinning .ptr-arc {
+  stroke-dasharray: 40 60;
+  stroke: var(--dspl-red);
+}
+
+/* Done checkmark flash */
+.ptr-circle.ptr-done .ptr-arc {
+  stroke: var(--green-500);
 }
 
 @keyframes shimmer {
@@ -2712,50 +2756,147 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SCREEN TRANSITIONS
+   SCREEN TRANSITIONS — iOS-style layered nav
    ═══════════════════════════════════════════════════════════════ */
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
+
+/* Ghost = snapshot of the previous screen, sits behind #app during transition */
+.transition-ghost {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  pointer-events: none;
+  will-change: transform, opacity;
+  overflow: hidden;
+  background: var(--surface-1);
 }
 
+/* Forward nav: ghost slides left 30% + dims, new screen slides in from right */
+.transition-ghost.ghost-forward {
+  animation: ghostSlideLeft 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
 #app.transition-forward {
-  animation: slideInRight 0.2s ease-out;
+  animation: screenSlideInRight 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Back nav: ghost slides right to exit, old screen was beneath */
+.transition-ghost.ghost-back {
+  animation: ghostSlideRight 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 #app.transition-back {
-  animation: slideInLeft 0.2s ease-out;
+  animation: screenSlideInLeft 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Forward: old screen parallax-slides left 30% and fades to 60% */
+@keyframes ghostSlideLeft {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-30%); opacity: 0.4; }
+}
+
+/* Forward: new screen enters from 100% right */
+@keyframes screenSlideInRight {
+  from { transform: translateX(100%); opacity: 1; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Back: "top" screen (ghost) slides out to the right */
+@keyframes ghostSlideRight {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 1; }
+}
+
+/* Back: underlying screen fades up from -30% left position */
+@keyframes screenSlideInLeft {
+  from { transform: translateX(-30%); opacity: 0.6; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Header crossfade */
+#app-header {
+  transition: none;
+}
+#app-header.header-transition {
+  animation: headerFade 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes headerFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .transition-ghost,
+  #app.transition-forward,
+  #app.transition-back,
+  #app-header.header-transition {
+    animation: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   UNIVERSAL TAP FEEDBACK
+   UNIVERSAL TAP FEEDBACK — iOS-grade
    ═══════════════════════════════════════════════════════════════ */
-.tab-item:active {
-  opacity: 0.7;
-  transition: all 0.1s ease;
+
+/* Tappable elements get a fast, smooth dim on press */
+.tab-item,
+.nav-item,
+.search-result-item,
+.customer-chip,
+.card-surface.tappable,
+.card-tappable,
+.list-card,
+.action-card,
+.att-card,
+.visit-card {
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.08s ease, background 0.15s var(--ease-smooth);
 }
 
-.nav-item:active {
-  opacity: 0.7;
-  transition: all 0.1s ease;
-}
-
-.search-result-item:active {
-  opacity: 0.7;
-  transition: all 0.1s ease;
-}
-
+.tab-item:active,
+.search-result-item:active,
 .customer-chip:active {
-  opacity: 0.7;
-  transition: all 0.1s ease;
+  opacity: 0.6;
 }
 
-/* Ensure consistent button active feedback */
+/* Nav items: scale the icon subtly */
+.nav-item:active {
+  opacity: 0.6;
+}
+
+/* Buttons: slightly deeper press feel */
 .btn:active:not(:disabled) {
-  opacity: 0.9;
+  opacity: 0.85;
+  transition: opacity 0.05s ease;
+}
+
+/* Primary CTA gets a subtle shrink for premium feel */
+.btn.btn-primary:active:not(:disabled),
+.checkin-btn:active:not(:disabled) {
+  opacity: 0.85;
+  transform: scale(0.98);
+  transition: all 0.08s ease;
+}
+
+/* Smooth scroll everywhere — feel native */
+#app {
+  scroll-behavior: smooth;
+}
+
+/* Content entry animation for screen content */
+#app > *:first-child {
+  animation: contentReady 0.25s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation-delay: 0.05s;
+}
+@keyframes contentReady {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app > *:first-child { animation: none !important; }
+  #app { scroll-behavior: auto; }
 }
 
 .empty-state .empty-text { font-size: 15px; line-height: 1.5; max-width: 260px; margin: 0 auto; }
