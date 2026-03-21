@@ -22,6 +22,8 @@ def setup():
     """Main entry point."""
     create_number_cards()
     create_charts()
+    # Commit so link validation finds the newly created cards/charts
+    frappe.db.commit()
     update_dspl_sales_workspace()
     create_dspl_operations_workspace()
     frappe.db.commit()
