@@ -167,7 +167,7 @@ def get_customers(search=None):
         filters=filters,
         fields=["name", "customer_name", "territory"],
         order_by="customer_name asc",
-        limit_page_length=200)
+        limit_page_length=0)
 
 
 # ── Stats ─────────────────────────────────────────────────────────
@@ -534,7 +534,7 @@ def get_items(search=None):
         fields=["name", "item_name", "item_group", "stock_uom",
                 "standard_rate", "image"],
         order_by="item_name asc",
-        limit_page_length=50)
+        limit_page_length=200)
 
 
 # ── Quotations ───────────────────────────────────────────────
@@ -551,7 +551,7 @@ def get_my_quotations(status=None):
         fields=["name", "party_name", "grand_total", "status",
                 "transaction_date", "valid_till"],
         order_by="transaction_date desc",
-        limit_page_length=50)
+        limit_page_length=0)
 
 
 @frappe.whitelist(methods=["POST"])
