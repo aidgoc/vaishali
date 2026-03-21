@@ -7,6 +7,16 @@ app_license = "MIT"
 app_icon = "octicon octicon-robot"
 app_color = "#E60005"
 
+# Desk theme
+app_include_css = "/assets/vaishali/css/vaishali.css"
+
+# Client scripts for desk forms
+doctype_js = {
+    "Quotation": "public/js/quotation.js",
+    "Lead": "public/js/lead.js",
+    "Customer": "public/js/customer.js",
+}
+
 # SPA catch-all: /field/* → www/field.py (same pattern as HRMS, CRM, Helpdesk)
 website_route_rules = [
     {"from_route": "/field/<path:app_path>", "to_route": "field"},

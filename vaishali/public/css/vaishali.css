@@ -1,0 +1,571 @@
+/* vaishali.css — DSPL Desk Theme (Notion-Inspired Flat)
+ *
+ * Matches the Field PWA design system: flat surfaces, subtle borders,
+ * tight letter-spacing on headings, DSPL red primary, sentence-case labels.
+ *
+ * Scoped to light theme to avoid breaking dark mode.
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] {
+  --dspl-red: #E60005;
+  --dspl-red-dark: #B80004;
+  --dspl-red-glow: rgba(230, 0, 5, 0.12);
+  --dspl-red-faint: rgba(230, 0, 5, 0.06);
+
+  --surface-page: #FFFFFF;
+  --surface-subtle: #F8F8F8;
+  --ink-primary: #1C1C1E;
+  --ink-secondary: #636366;
+  --ink-tertiary: #6B6B70;
+
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-default: rgba(0, 0, 0, 0.08);
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. GLOBAL TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] {
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body[data-theme="light"] .page-title,
+body[data-theme="light"] h3,
+body[data-theme="light"] .head-title,
+body[data-theme="light"] .title-text,
+body[data-theme="light"] .ellipsis.title-text {
+  letter-spacing: -0.04em !important;
+}
+
+/* Kill uppercase transforms throughout desk */
+body[data-theme="light"] .section-head,
+body[data-theme="light"] .form-section .head,
+body[data-theme="light"] .head .head-title,
+body[data-theme="light"] .uppercase,
+body[data-theme="light"] .list-row-col .text-uppercase,
+body[data-theme="light"] .sidebar-label,
+body[data-theme="light"] .widget-head .widget-title,
+body[data-theme="light"] .report-summary .summary-label,
+body[data-theme="light"] .control-label,
+body[data-theme="light"] .section-head .collapse-indicator + span,
+body[data-theme="light"] .desk-sidebar .sidebar-section .sidebar-label {
+  text-transform: none !important;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. NAVBAR
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .navbar {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="light"] .navbar .navbar-brand,
+body[data-theme="light"] .navbar .nav-link {
+  color: var(--ink-primary) !important;
+}
+
+body[data-theme="light"] .navbar .search-bar,
+body[data-theme="light"] .navbar .search-bar .input-group {
+  border-radius: var(--radius-sm) !important;
+}
+
+body[data-theme="light"] .navbar .search-bar input {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="light"] .navbar .search-bar input:focus {
+  border-color: var(--dspl-red) !important;
+  box-shadow: 0 0 0 2px var(--dspl-red-faint) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. SIDEBAR
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .desk-sidebar,
+body[data-theme="light"] .desk-sidebar .sidebar-menu {
+  background: #FFFFFF !important;
+}
+
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em;
+  border-radius: 6px;
+  margin: 1px 0;
+  color: var(--ink-primary);
+}
+
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item.selected,
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item.active {
+  background: var(--dspl-red-faint) !important;
+  color: var(--dspl-red) !important;
+  font-weight: 500 !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item.selected a,
+body[data-theme="light"] .desk-sidebar .sidebar-menu .sidebar-menu-item.active a {
+  color: var(--dspl-red) !important;
+}
+
+body[data-theme="light"] .desk-sidebar .sidebar-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ink-tertiary) !important;
+  text-transform: none !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. PAGE CONTAINER & PAGE HEAD
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .page-container,
+body[data-theme="light"] .main-section {
+  background: var(--surface-page) !important;
+}
+
+body[data-theme="light"] .container.page-body {
+  padding: 24px;
+}
+
+body[data-theme="light"] .page-head {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="light"] .page-head .page-head-content {
+  padding: 12px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. WORKSPACE / HOME
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .codex-editor,
+body[data-theme="light"] .workspace-container {
+  background: #FFFFFF !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. CARDS & WIDGETS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .widget,
+body[data-theme="light"] .number-card,
+body[data-theme="light"] .shortcut-widget-box,
+body[data-theme="light"] .onboarding-widget-box,
+body[data-theme="light"] .chart-widget {
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  padding: 16px;
+  background: #FFFFFF;
+}
+
+body[data-theme="light"] .number-card .widget-head .widget-title {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ink-tertiary) !important;
+  text-transform: none !important;
+}
+
+body[data-theme="light"] .number-card .widget-body .number {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.04em !important;
+  color: var(--ink-primary) !important;
+}
+
+body[data-theme="light"] .shortcut-widget-box .widget-head .widget-title,
+body[data-theme="light"] .shortcut-widget-box .shortcut-widget-box a {
+  font-size: 14px !important;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. LIST VIEW
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .list-row {
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+body[data-theme="light"] .list-row:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body[data-theme="light"] .list-row-container {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="light"] .list-row .list-row--col .text-muted,
+body[data-theme="light"] .list-row-head .list-header-subject .list-row--col {
+  font-size: 12px !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  color: var(--ink-tertiary) !important;
+  letter-spacing: -0.01em;
+}
+
+body[data-theme="light"] .frappe-list .result {
+  border-radius: var(--radius-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9. FORM VIEW
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .form-layout {
+  background: #FFFFFF;
+}
+
+body[data-theme="light"] .control-label,
+body[data-theme="light"] .form-group label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ink-tertiary) !important;
+  text-transform: none !important;
+  letter-spacing: -0.01em;
+}
+
+body[data-theme="light"] .form-control,
+body[data-theme="light"] .frappe-control input[type="text"],
+body[data-theme="light"] .frappe-control input[type="password"],
+body[data-theme="light"] .frappe-control input[type="number"],
+body[data-theme="light"] .frappe-control select,
+body[data-theme="light"] .frappe-control textarea {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+  font-size: 14px;
+  color: var(--ink-primary);
+}
+
+body[data-theme="light"] .form-control:focus,
+body[data-theme="light"] .frappe-control input:focus,
+body[data-theme="light"] .frappe-control select:focus,
+body[data-theme="light"] .frappe-control textarea:focus {
+  border-color: var(--dspl-red) !important;
+  box-shadow: 0 0 0 3px var(--dspl-red-faint) !important;
+  outline: none !important;
+}
+
+body[data-theme="light"] .frappe-control .like-disabled-input {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--surface-subtle) !important;
+  box-shadow: none !important;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+body[data-theme="light"] .section-head,
+body[data-theme="light"] .form-section .head {
+  text-transform: none !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ink-tertiary) !important;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+body[data-theme="light"] .form-section .section-body {
+  padding: 16px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .btn {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  box-shadow: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+body[data-theme="light"] .btn-primary,
+body[data-theme="light"] .btn-primary-dark {
+  background-color: var(--dspl-red) !important;
+  border-color: var(--dspl-red) !important;
+  color: #FFFFFF !important;
+}
+
+body[data-theme="light"] .btn-primary:hover,
+body[data-theme="light"] .btn-primary-dark:hover {
+  background-color: var(--dspl-red-dark) !important;
+  border-color: var(--dspl-red-dark) !important;
+}
+
+body[data-theme="light"] .btn-primary:focus,
+body[data-theme="light"] .btn-primary-dark:focus {
+  box-shadow: 0 0 0 3px var(--dspl-red-faint) !important;
+}
+
+body[data-theme="light"] .btn-primary:active,
+body[data-theme="light"] .btn-primary-dark:active {
+  background-color: var(--dspl-red-dark) !important;
+}
+
+body[data-theme="light"] .btn-default,
+body[data-theme="light"] .btn-secondary {
+  background: transparent !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--ink-primary) !important;
+}
+
+body[data-theme="light"] .btn-default:hover,
+body[data-theme="light"] .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body[data-theme="light"] .btn-default:active,
+body[data-theme="light"] .btn-secondary:active {
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. INDICATOR PILLS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .indicator-pill {
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+body[data-theme="light"] .indicator-pill.green {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #059669 !important;
+}
+
+body[data-theme="light"] .indicator-pill.red {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #DC2626 !important;
+}
+
+body[data-theme="light"] .indicator-pill.orange,
+body[data-theme="light"] .indicator-pill.yellow {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #D97706 !important;
+}
+
+body[data-theme="light"] .indicator-pill.blue {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #2563EB !important;
+}
+
+body[data-theme="light"] .indicator-pill.gray,
+body[data-theme="light"] .indicator-pill.grey {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--ink-secondary) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. DROPDOWNS & MODALS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .dropdown-menu {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  padding: 4px;
+}
+
+body[data-theme="light"] .dropdown-menu .dropdown-item {
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+body[data-theme="light"] .dropdown-menu .dropdown-item:hover,
+body[data-theme="light"] .dropdown-menu .dropdown-item:focus {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body[data-theme="light"] .modal-content {
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+body[data-theme="light"] .modal-dialog {
+  border-radius: var(--radius-md) !important;
+}
+
+body[data-theme="light"] .modal-header {
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+body[data-theme="light"] .modal-footer {
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. ALERTS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .alert {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   14. REPORT VIEW
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .report-summary .summary-label {
+  font-size: 12px !important;
+  text-transform: none !important;
+  color: var(--ink-tertiary) !important;
+}
+
+body[data-theme="light"] .report-summary .summary-value {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.04em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   15. AWESOMEBAR (Global Search)
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .awesomebar-container,
+body[data-theme="light"] #navbar-search {
+  border-radius: var(--radius-sm) !important;
+}
+
+body[data-theme="light"] .awesomebar-container input {
+  border-radius: var(--radius-sm) !important;
+}
+
+body[data-theme="light"] .search-dialog .modal-content {
+  border-radius: var(--radius-md) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   16. FRAPPE PRIMARY COLOR OVERRIDE
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] {
+  --primary: #E60005;
+  --primary-color: #E60005;
+}
+
+body[data-theme="light"] a {
+  color: var(--dspl-red);
+}
+
+body[data-theme="light"] a:hover {
+  color: var(--dspl-red-dark);
+}
+
+/* Keep breadcrumb and muted links neutral */
+body[data-theme="light"] .breadcrumb a,
+body[data-theme="light"] .text-muted a {
+  color: var(--ink-secondary);
+}
+
+body[data-theme="light"] .breadcrumb a:hover,
+body[data-theme="light"] .text-muted a:hover {
+  color: var(--ink-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   17. COMMENT & TIMELINE
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .timeline-item {
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+body[data-theme="light"] .comment-box .ql-editor {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+body[data-theme="light"] .comment-box .ql-editor:focus {
+  border-color: var(--dspl-red) !important;
+  box-shadow: 0 0 0 3px var(--dspl-red-faint) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   18. PRINT & LIKE BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .like-active-item .like-action {
+  color: var(--dspl-red) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   19. SCROLLBAR (subtle)
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+body[data-theme="light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+
+body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   20. KANBAN VIEW
+   ═══════════════════════════════════════════════════════════════ */
+
+body[data-theme="light"] .kanban-column {
+  background: var(--surface-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+body[data-theme="light"] .kanban-card {
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+  background: #FFFFFF;
+}
+
+body[data-theme="light"] .kanban-card:hover {
+  background: rgba(0, 0, 0, 0.02);
+}

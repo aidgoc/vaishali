@@ -1,0 +1,434 @@
+"""
+DSPL Workspace Setup — Number Cards, Dashboard Charts, and Workspaces.
+
+Run via:
+    bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup
+
+Idempotent — safe to run multiple times.
+"""
+
+import frappe
+import json
+
+
+def setup():
+    """Main entry point."""
+    create_number_cards()
+    create_charts()
+    create_shortcuts()
+    update_dspl_sales_workspace()
+    create_dspl_operations_workspace()
+    frappe.db.commit()
+    print("DSPL workspace setup complete!")
+
+
+# ---------------------------------------------------------------------------
+# Number Cards
+# ---------------------------------------------------------------------------
+
+def create_number_cards():
+    cards = [
+        # --- Sales ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Open Quotations",
+            "label": "Open Quotations",
+            "document_type": "Quotation",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Quotation", "docstatus", "=", 1],
+                ["Quotation", "status", "=", "Open"],
+            ]),
+            "color": "#3B82F6",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Orders This Month",
+            "label": "Orders This Month",
+            "document_type": "Sales Order",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Sales Order", "docstatus", "=", 1],
+                ["Sales Order", "transaction_date", "Timespan", "this month"],
+            ]),
+            "color": "#22C55E",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Outstanding Receivables",
+            "label": "Outstanding Receivables",
+            "document_type": "Sales Invoice",
+            "function": "Sum",
+            "aggregate_function_based_on": "outstanding_amount",
+            "filters_json": json.dumps([
+                ["Sales Invoice", "docstatus", "=", 1],
+                ["Sales Invoice", "outstanding_amount", ">", 0],
+            ]),
+            "color": "#F97316",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Active Leads",
+            "label": "Active Leads",
+            "document_type": "Lead",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Lead", "status", "in", ["Open", "Replied"]],
+            ]),
+            "color": "#A855F7",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        # --- HR / Operations ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Team Present Today",
+            "label": "Team Present Today",
+            "document_type": "Employee Checkin",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Employee Checkin", "time", "Timespan", "today"],
+            ]),
+            "color": "#22C55E",
+            "show_percentage_stats": 0,
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Pending Approvals",
+            "label": "Pending Approvals",
+            "document_type": "Leave Application",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Leave Application", "docstatus", "=", 0],
+                ["Leave Application", "status", "=", "Open"],
+            ]),
+            "color": "#EF4444",
+            "show_percentage_stats": 0,
+            "is_standard": 0,
+        },
+        # --- Operations ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Active Work Orders",
+            "label": "Active Work Orders",
+            "document_type": "Work Order",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Work Order", "docstatus", "=", 1],
+                ["Work Order", "status", "in", ["Not Started", "In Process"]],
+            ]),
+            "color": "#3B82F6",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Pending Deliveries",
+            "label": "Pending Deliveries",
+            "document_type": "Delivery Note",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Delivery Note", "docstatus", "=", 0],
+            ]),
+            "color": "#F97316",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Stock Below Reorder",
+            "label": "Stock Below Reorder",
+            "document_type": "Bin",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Bin", "projected_qty", "<", 0],
+            ]),
+            "color": "#EF4444",
+            "show_percentage_stats": 0,
+            "is_standard": 0,
+        },
+    ]
+
+    for card in cards:
+        if not frappe.db.exists("Number Card", card["name"]):
+            doc = frappe.get_doc(card)
+            doc.insert(ignore_permissions=True)
+            print(f"  Created number card: {card['name']}")
+        else:
+            print(f"  Exists: {card['name']}")
+
+
+# ---------------------------------------------------------------------------
+# Dashboard Charts
+# ---------------------------------------------------------------------------
+
+def create_charts():
+    charts = [
+        {
+            "doctype": "Dashboard Chart",
+            "name": "DSPL Monthly Revenue",
+            "chart_name": "Monthly Revenue",
+            "chart_type": "Sum",
+            "document_type": "Sales Invoice",
+            "based_on": "posting_date",
+            "value_based_on": "grand_total",
+            "timespan": "Last Year",
+            "time_interval": "Monthly",
+            "filters_json": json.dumps([
+                ["Sales Invoice", "docstatus", "=", 1],
+            ]),
+            "type": "Bar",
+            "color": "#E60005",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "name": "DSPL Quotation Pipeline",
+            "chart_name": "Quotation Pipeline",
+            "chart_type": "Group By",
+            "document_type": "Quotation",
+            "group_by_type": "Count",
+            "group_by_based_on": "status",
+            "filters_json": json.dumps([
+                ["Quotation", "docstatus", "=", 1],
+            ]),
+            "type": "Donut",
+            "color": "#3B82F6",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "name": "DSPL Lead Source Breakdown",
+            "chart_name": "Lead Source Breakdown",
+            "chart_type": "Group By",
+            "document_type": "Lead",
+            "group_by_type": "Count",
+            "group_by_based_on": "source",
+            "filters_json": json.dumps([
+                ["Lead", "status", "in", ["Open", "Replied"]],
+            ]),
+            "type": "Pie",
+            "color": "#A855F7",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "name": "DSPL Monthly Orders",
+            "chart_name": "Monthly Orders",
+            "chart_type": "Count",
+            "document_type": "Sales Order",
+            "based_on": "transaction_date",
+            "timespan": "Last Year",
+            "time_interval": "Monthly",
+            "filters_json": json.dumps([
+                ["Sales Order", "docstatus", "=", 1],
+            ]),
+            "type": "Line",
+            "color": "#22C55E",
+            "is_standard": 0,
+        },
+    ]
+
+    for chart in charts:
+        if not frappe.db.exists("Dashboard Chart", chart["name"]):
+            doc = frappe.get_doc(chart)
+            doc.insert(ignore_permissions=True)
+            print(f"  Created chart: {chart['name']}")
+        else:
+            print(f"  Exists: {chart['name']}")
+
+
+# ---------------------------------------------------------------------------
+# Shortcuts
+# ---------------------------------------------------------------------------
+
+def create_shortcuts():
+    """Create workspace shortcuts for quick access links."""
+    shortcuts = [
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Quotation",
+            "label": "Quotation",
+            "link_to": "Quotation",
+            "type": "DocType",
+            "color": "#3B82F6",
+        },
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Sales Order",
+            "label": "Sales Order",
+            "link_to": "Sales Order",
+            "type": "DocType",
+            "color": "#22C55E",
+        },
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Sales Invoice",
+            "label": "Sales Invoice",
+            "link_to": "Sales Invoice",
+            "type": "DocType",
+            "color": "#F97316",
+        },
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Lead",
+            "label": "Lead",
+            "link_to": "Lead",
+            "type": "DocType",
+            "color": "#A855F7",
+        },
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Customer",
+            "label": "Customer",
+            "link_to": "Customer",
+            "type": "DocType",
+            "color": "#6B7280",
+        },
+        {
+            "doctype": "Workspace Shortcut",
+            "name": "DSPL Shortcut Item",
+            "label": "Item",
+            "link_to": "Item",
+            "type": "DocType",
+            "color": "#6B7280",
+        },
+    ]
+
+    for sc in shortcuts:
+        if not frappe.db.exists("Workspace Shortcut", sc["name"]):
+            doc = frappe.get_doc(sc)
+            doc.insert(ignore_permissions=True)
+            print(f"  Created shortcut: {sc['name']}")
+        else:
+            print(f"  Exists: {sc['name']}")
+
+
+# ---------------------------------------------------------------------------
+# Workspace: DSPL Sales
+# ---------------------------------------------------------------------------
+
+def _build_sales_workspace_content():
+    """Build the JSON content blocks for the DSPL Sales workspace."""
+    return json.dumps([
+        # --- Header: Overview ---
+        {"type": "header", "data": {"text": "<b>Overview</b>", "level": 4, "col": 12}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- Number Cards Row ---
+        {"type": "number_card", "data": {"number_card_name": "DSPL Open Quotations", "col": 3}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Orders This Month", "col": 3}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Outstanding Receivables", "col": 3}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Active Leads", "col": 3}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- Charts ---
+        {"type": "header", "data": {"text": "<b>Revenue & Pipeline</b>", "level": 4, "col": 12}},
+        {"type": "chart", "data": {"chart_name": "DSPL Monthly Revenue", "col": 12}},
+        {"type": "spacer", "data": {"col": 12}},
+        {"type": "chart", "data": {"chart_name": "DSPL Quotation Pipeline", "col": 6}},
+        {"type": "chart", "data": {"chart_name": "DSPL Lead Source Breakdown", "col": 6}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- Shortcuts ---
+        {"type": "header", "data": {"text": "<b>Quick Access</b>", "level": 4, "col": 12}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Quotation", "col": 4}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Sales Order", "col": 4}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Sales Invoice", "col": 4}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Lead", "col": 4}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Customer", "col": 4}},
+        {"type": "shortcut", "data": {"shortcut_name": "DSPL Shortcut Item", "col": 4}},
+    ])
+
+
+def update_dspl_sales_workspace():
+    """Update the existing DSPL Sales workspace with number cards, charts, and shortcuts."""
+    ws_name = "DSPL Sales"
+
+    if not frappe.db.exists("Workspace", ws_name):
+        # Create the workspace if it doesn't exist
+        workspace = frappe.get_doc({
+            "doctype": "Workspace",
+            "name": ws_name,
+            "label": "DSPL Sales",
+            "module": "Vaishali",
+            "category": "Modules",
+            "icon": "chart-line",
+            "is_standard": 0,
+            "public": 1,
+            "content": _build_sales_workspace_content(),
+        })
+        workspace.insert(ignore_permissions=True)
+        print(f"  Created workspace: {ws_name}")
+    else:
+        workspace = frappe.get_doc("Workspace", ws_name)
+        workspace.content = _build_sales_workspace_content()
+        workspace.save(ignore_permissions=True)
+        print(f"  Updated workspace: {ws_name}")
+
+
+# ---------------------------------------------------------------------------
+# Workspace: DSPL Operations
+# ---------------------------------------------------------------------------
+
+def _build_operations_workspace_content():
+    """Build the JSON content blocks for the DSPL Operations workspace."""
+    return json.dumps([
+        # --- Header: Overview ---
+        {"type": "header", "data": {"text": "<b>Operations Overview</b>", "level": 4, "col": 12}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- Number Cards Row ---
+        {"type": "number_card", "data": {"number_card_name": "DSPL Active Work Orders", "col": 4}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Pending Deliveries", "col": 4}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Stock Below Reorder", "col": 4}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- HR Cards ---
+        {"type": "header", "data": {"text": "<b>Team</b>", "level": 4, "col": 12}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Team Present Today", "col": 4}},
+        {"type": "number_card", "data": {"number_card_name": "DSPL Pending Approvals", "col": 4}},
+        {"type": "spacer", "data": {"col": 12}},
+
+        # --- Chart ---
+        {"type": "header", "data": {"text": "<b>Order Trends</b>", "level": 4, "col": 12}},
+        {"type": "chart", "data": {"chart_name": "DSPL Monthly Orders", "col": 12}},
+    ])
+
+
+def create_dspl_operations_workspace():
+    """Create or update the DSPL Operations workspace."""
+    ws_name = "DSPL Operations"
+
+    if not frappe.db.exists("Workspace", ws_name):
+        workspace = frappe.get_doc({
+            "doctype": "Workspace",
+            "name": ws_name,
+            "label": "DSPL Operations",
+            "module": "Vaishali",
+            "category": "Modules",
+            "icon": "tool",
+            "is_standard": 0,
+            "public": 1,
+            "content": _build_operations_workspace_content(),
+        })
+        workspace.insert(ignore_permissions=True)
+        print(f"  Created workspace: {ws_name}")
+    else:
+        workspace = frappe.get_doc("Workspace", ws_name)
+        workspace.content = _build_operations_workspace_content()
+        workspace.save(ignore_permissions=True)
+        print(f"  Updated workspace: {ws_name}")
