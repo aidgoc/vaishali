@@ -20,6 +20,7 @@ def _block_id():
 
 def setup():
     """Main entry point."""
+    cleanup_old_number_cards()
     create_number_cards()
     create_charts()
     # Commit so link validation finds the newly created cards/charts
@@ -28,6 +29,22 @@ def setup():
     create_dspl_operations_workspace()
     frappe.db.commit()
     print("DSPL workspace setup complete!")
+
+
+def cleanup_old_number_cards():
+    """Remove duplicate number cards from previous failed runs."""
+    # Previous runs created cards with wrong labels (without DSPL prefix),
+    # causing autoname duplicates like "Open Quotations-1", etc.
+    old_labels = [
+        "Open Quotations", "Orders This Month", "Outstanding Receivables",
+        "Active Leads", "Team Present Today", "Pending Approvals",
+        "Active Work Orders", "Pending Deliveries", "Stock Below Reorder",
+    ]
+    for label in old_labels:
+        for nc in frappe.get_all("Number Card", filters={"label": label}, pluck="name"):
+            frappe.delete_doc("Number Card", nc, force=True)
+            print(f"  Cleaned up: {nc}")
+    frappe.db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +57,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Open Quotations",
-            "label": "Open Quotations",
+            "label": "DSPL Open Quotations",
             "document_type": "Quotation",
             "function": "Count",
             "filters_json": json.dumps([
@@ -55,7 +72,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Orders This Month",
-            "label": "Orders This Month",
+            "label": "DSPL Orders This Month",
             "document_type": "Sales Order",
             "function": "Count",
             "filters_json": json.dumps([
@@ -70,7 +87,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Outstanding Receivables",
-            "label": "Outstanding Receivables",
+            "label": "DSPL Outstanding Receivables",
             "document_type": "Sales Invoice",
             "function": "Sum",
             "aggregate_function_based_on": "outstanding_amount",
@@ -86,7 +103,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Active Leads",
-            "label": "Active Leads",
+            "label": "DSPL Active Leads",
             "document_type": "Lead",
             "function": "Count",
             "filters_json": json.dumps([
@@ -101,7 +118,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Team Present Today",
-            "label": "Team Present Today",
+            "label": "DSPL Team Present Today",
             "document_type": "Employee Checkin",
             "function": "Count",
             "filters_json": json.dumps([
@@ -114,7 +131,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Pending Approvals",
-            "label": "Pending Approvals",
+            "label": "DSPL Pending Approvals",
             "document_type": "Leave Application",
             "function": "Count",
             "filters_json": json.dumps([
@@ -129,7 +146,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Active Work Orders",
-            "label": "Active Work Orders",
+            "label": "DSPL Active Work Orders",
             "document_type": "Work Order",
             "function": "Count",
             "filters_json": json.dumps([
@@ -144,7 +161,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Pending Deliveries",
-            "label": "Pending Deliveries",
+            "label": "DSPL Pending Deliveries",
             "document_type": "Delivery Note",
             "function": "Count",
             "filters_json": json.dumps([
@@ -158,7 +175,7 @@ def create_number_cards():
         {
             "doctype": "Number Card",
             "name": "DSPL Stock Below Reorder",
-            "label": "Stock Below Reorder",
+            "label": "DSPL Stock Below Reorder",
             "document_type": "Bin",
             "function": "Count",
             "filters_json": json.dumps([
@@ -171,12 +188,13 @@ def create_number_cards():
     ]
 
     for card in cards:
-        if not frappe.db.exists("Number Card", card["name"]):
+        # Number Card autonames from label, so check by label
+        if not frappe.db.exists("Number Card", card["label"]):
             doc = frappe.get_doc(card)
             doc.insert(ignore_permissions=True)
-            print(f"  Created number card: {card['name']}")
+            print(f"  Created number card: {card['label']}")
         else:
-            print(f"  Exists: {card['name']}")
+            print(f"  Exists: {card['label']}")
 
 
 # ---------------------------------------------------------------------------
