@@ -26,8 +26,8 @@
   --border-default: rgba(0, 0, 0, 0.1);
 
   --shadow-card: none;
-  --shadow-elevated: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-elevated: none;
+  --shadow-float: none;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -81,7 +81,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 20px;
+  padding: 16px 20px;
 }
 
 #bottom-nav {
@@ -789,7 +789,7 @@ body {
   letter-spacing: 0.08em;
   color: var(--ink-tertiary);
   font-weight: 600;
-  margin: 24px 0 10px;
+  margin: 20px 0 8px;
   padding: 0;
   position: relative;
 }
@@ -798,31 +798,29 @@ body {
    GREETING HERO
    ═══════════════════════════════════════════════════════════════ */
 .greeting-hero {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .greeting-hero h2 {
   margin: 0 0 3px;
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--ink-primary);
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 .greeting-hero .greeting-name {
-  background-image: linear-gradient(var(--dspl-red), var(--dspl-red));
-  background-size: 100% 2px;
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  padding-bottom: 2px;
+  background-image: none;
+  background-size: 0;
+  padding-bottom: 0;
 }
 
 .greeting-hero .greeting-meta,
 .greeting-meta {
   font-size: 13px;
   color: var(--ink-tertiary);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* Legacy greeting header */
