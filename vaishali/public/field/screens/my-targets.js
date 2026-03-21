@@ -39,67 +39,32 @@
     return 'gray';
   }
 
-  // ─── Progress gauge ──────────────────────────────────────────────
+  // ─── Progress bar ──────────────────────────────────────────────
 
-  var MONTHLY_TARGET = 8500000 / 12 * 12; // ₹8.5Cr annual = ₹71L/month
   var MONTHLY_TARGET_AMOUNT = 7100000; // ₹71L
 
-  function buildGauge(orderedAmount) {
-    var pct = MONTHLY_TARGET_AMOUNT > 0 ? Math.min((orderedAmount / MONTHLY_TARGET_AMOUNT) * 100, 100) : 0;
-    var colorClass = pct >= 80 ? 'green' : pct >= 50 ? 'amber' : 'red';
+  function progressBar(percent) {
+    var pct = Math.min(100, Math.max(0, percent));
+    return el('div', { className: 'progress-bar-track' }, [
+      el('div', { className: 'progress-bar-fill', style: { width: pct + '%' } })
+    ]);
+  }
 
-    var label = el('div', { className: 'target-gauge-label' }, [
+  function buildTargetProgress(orderedAmount) {
+    var pct = MONTHLY_TARGET_AMOUNT > 0 ? (orderedAmount / MONTHLY_TARGET_AMOUNT) * 100 : 0;
+
+    var label = el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--ink-tertiary)', marginBottom: '4px' } }, [
       el('span', { textContent: formatIndianAmount(orderedAmount) + ' ordered' }),
       el('span', { textContent: 'Target: \u20B971L/mo' })
     ]);
 
-    var fill = el('div', { className: 'target-gauge-fill ' + colorClass });
-    fill.style.width = pct.toFixed(1) + '%';
-
-    var bar = el('div', { className: 'target-gauge' }, [fill]);
-
-    return el('div', {}, [label, bar]);
-  }
-
-  // ─── Quotation / Order card ──────────────────────────────────────
-
-  function quoteCard(item) {
-    var title = item.party_name || item.customer || item.name || 'Untitled';
-    var children = [
-      el('div', { className: 'pipeline-card-title', textContent: title }),
-      el('div', { className: 'pipeline-card-sub', textContent: item.name || '' }),
-      el('div', { className: 'pipeline-card-meta' }, [
-        el('span', { className: 'pipeline-card-amount', textContent: formatIndianAmount(item.grand_total) }),
-        el('span', { className: 'pipeline-card-date', textContent: formatDate(item.transaction_date) })
-      ])
-    ];
-    if (item.status) {
-      children.push(el('div', { className: 'pipeline-card-status' }, [UI.pill(item.status, statusColor(item.status))]));
-    }
-    return el('div', { className: 'pipeline-card' }, children);
-  }
-
-  // ─── Visit card ──────────────────────────────────────────────────
-
-  function visitCard(item) {
-    var title = item.customer_name || item.name || 'Visit';
-    var children = [
-      el('div', { className: 'pipeline-card-title', textContent: title }),
-      el('div', { className: 'pipeline-card-meta' }, [
-        el('span', { className: 'pipeline-card-date', textContent: formatDate(item.date) }),
-        el('span', { textContent: item.visit_purpose || '' })
-      ])
-    ];
-    if (item.status) {
-      children.push(el('div', { className: 'pipeline-card-status' }, [UI.pill(item.status, statusColor(item.status))]));
-    }
-    return el('div', { className: 'pipeline-card' }, children);
+    return el('div', { style: { margin: '16px 0' } }, [label, progressBar(pct)]);
   }
 
   // ─── Section builder ─────────────────────────────────────────────
 
-  function buildSection(title, items, cardFn, maxItems) {
-    var heading = el('div', { className: 'section-label', textContent: title });
+  function buildQuoteList(title, items, maxItems) {
+    var heading = UI.sectionHeading(title);
     var container = el('div', {}, [heading]);
 
     if (!items || items.length === 0) {
@@ -109,7 +74,19 @@
 
     var limit = maxItems || items.length;
     for (var i = 0; i < Math.min(items.length, limit); i++) {
-      container.appendChild(cardFn(items[i]));
+      var item = items[i];
+      var rightContent = el('div', { style: { textAlign: 'right' } }, [
+        el('div', { style: { fontWeight: '600' }, textContent: formatIndianAmount(item.grand_total) }),
+        el('div', { style: { fontSize: '12px', color: 'var(--ink-tertiary)' }, textContent: formatDate(item.transaction_date) })
+      ]);
+      if (item.status) {
+        rightContent.appendChild(UI.pill(item.status, statusColor(item.status)));
+      }
+      container.appendChild(UI.listCard({
+        title: item.party_name || item.customer || item.name || 'Untitled',
+        sub: item.name || '',
+        right: rightContent
+      }));
     }
     return container;
   }
@@ -147,21 +124,21 @@
         totalOrdered += Number(orders[o].grand_total || 0);
       }
 
-      // Stat cards
-      appEl.appendChild(UI.grid([
-        UI.statCard(formatIndianAmount(totalQuoted), 'Total Quoted'),
-        UI.statCard(formatIndianAmount(totalOrdered), 'Total Ordered'),
-        UI.statCard(String(visits.length), 'Visits This Month')
-      ], 3));
+      // KPI row
+      appEl.appendChild(UI.kpiRow([
+        { value: formatIndianAmount(totalQuoted), label: 'QUOTED' },
+        { value: formatIndianAmount(totalOrdered), label: 'ORDERED' },
+        { value: String(visits.length), label: 'VISITS' }
+      ]));
 
-      // Target gauge
-      appEl.appendChild(buildGauge(totalOrdered));
+      // Target progress bar
+      appEl.appendChild(buildTargetProgress(totalOrdered));
 
       // Recent Quotations
-      appEl.appendChild(buildSection('RECENT QUOTATIONS', quotations, quoteCard, 10));
+      appEl.appendChild(buildQuoteList('Recent Quotations', quotations, 10));
 
       // Recent Orders
-      appEl.appendChild(buildSection('RECENT ORDERS', orders, quoteCard, 5));
+      appEl.appendChild(buildQuoteList('Recent Orders', orders, 5));
     }).catch(function () {
       var skeletons = appEl.querySelectorAll('.skeleton');
       for (var i = 0; i < skeletons.length; i++) {
