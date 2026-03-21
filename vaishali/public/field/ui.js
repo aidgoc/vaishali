@@ -162,7 +162,7 @@
      9. avatar(name, size)
      ────────────────────────────────────────────────────────────── */
   function avatar(name, size) {
-    size = size || 42;
+    size = size || 36;
     var words = (name || '').trim().split(/\s+/);
     var initials = '';
     for (var i = 0; i < Math.min(words.length, 2); i++) {
@@ -581,8 +581,6 @@
     // opts: { icon, label, value, sub, onClick, accent }
     // accent: 'green', 'red', or null
     var cls = 'action-card';
-    if (opts.accent) cls += ' accent-' + opts.accent;
-
     var children = [];
 
     // Icon
@@ -613,6 +611,42 @@
       'aria-label': (opts.label || '') + (opts.value != null ? ' ' + String(opts.value) : '')
     };
     return el('div', acAttrs, children);
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     KPI Row — single card with horizontal stats separated by dividers
+     ────────────────────────────────────────────────────────────── */
+  function kpiRow(items) {
+    // items: [{value: '3/5', label: 'Team Present'}, ...]
+    var children = [];
+    for (var i = 0; i < items.length; i++) {
+      if (i > 0) {
+        children.push(el('div', { className: 'kpi-divider' }));
+      }
+      children.push(el('div', { className: 'kpi-item' }, [
+        el('div', { className: 'kpi-value', textContent: String(items[i].value) }),
+        el('div', { className: 'kpi-label', textContent: items[i].label })
+      ]));
+    }
+    return el('div', { className: 'kpi-row' }, children);
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     fieldError — inline validation feedback
+     ────────────────────────────────────────────────────────────── */
+  function fieldError(inputEl, message) {
+    // Remove existing error
+    var parent = inputEl.parentNode;
+    var existing = parent.querySelector('.field-error-text');
+    if (existing) parent.removeChild(existing);
+
+    if (message) {
+      inputEl.classList.add('field-error');
+      var errEl = el('div', { className: 'field-error-text', textContent: message });
+      parent.appendChild(errEl);
+    } else {
+      inputEl.classList.remove('field-error');
+    }
   }
 
   /* ──────────────────────────────────────────────────────────────
@@ -649,7 +683,9 @@
     updateNavActive: updateNavActive,
     fab: fab,
     bottomSheet: bottomSheet,
-    actionCard: actionCard
+    actionCard: actionCard,
+    kpiRow: kpiRow,
+    fieldError: fieldError
   };
 
 })();
