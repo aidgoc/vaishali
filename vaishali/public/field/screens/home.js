@@ -255,7 +255,6 @@
           icon: 'mapPin',
           label: checkedIn ? 'Check Out' : 'Check In',
           sub: checkedIn && att.check_in_time ? 'Since ' + formatTime(att.check_in_time) : 'Not checked in',
-          accent: checkedIn ? 'green' : 'red',
           onClick: function () { location.hash = '#/attendance'; }
         }),
         UI.actionCard({
@@ -373,11 +372,11 @@
       appEl.appendChild(greetingHero(true));
 
       // 2. KPI chips row
-      appEl.appendChild(UI.grid([
-        UI.statCard(presentCount + '/' + totalCount, 'Team Present'),
-        UI.statCard(pendingCount, 'Approvals'),
-        UI.statCard(teamFieldCount, 'In Field')
-      ], 3));
+      appEl.appendChild(UI.kpiRow([
+        { value: presentCount + '/' + totalCount, label: 'Team Present' },
+        { value: pendingCount, label: 'Approvals' },
+        { value: teamFieldCount, label: 'In Field' }
+      ]));
 
       // 3. Action cards 2x2 grid
       var actionGrid = el('div', { className: 'action-grid' }, [
@@ -385,7 +384,6 @@
           icon: 'mapPin',
           label: checkedIn ? 'Check Out' : 'Check In',
           sub: checkedIn && att.check_in_time ? 'Since ' + formatTime(att.check_in_time) : 'Not checked in',
-          accent: checkedIn ? 'green' : 'red',
           onClick: function () { location.hash = '#/attendance'; }
         }),
         UI.actionCard({
