@@ -9,6 +9,13 @@ Idempotent — safe to run multiple times.
 
 import frappe
 import json
+import random
+import string
+
+
+def _block_id():
+    """Generate a 10-char random ID like Frappe's Editor.js blocks."""
+    return "".join(random.choices(string.ascii_letters + string.digits, k=10))
 
 
 def setup():
@@ -324,23 +331,23 @@ def _build_sales_workspace_content():
     """Build the JSON content blocks for the DSPL Sales workspace."""
     return json.dumps([
         # --- Header: Overview ---
-        {"type": "header", "data": {"text": "<b>Overview</b>", "level": 4, "col": 12}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Overview</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
         # --- Number Cards Row ---
-        {"type": "number_card", "data": {"number_card_name": "DSPL Open Quotations", "col": 3}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Orders This Month", "col": 3}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Outstanding Receivables", "col": 3}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Active Leads", "col": 3}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Open Quotations", "col": 3}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Orders This Month", "col": 3}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Outstanding Receivables", "col": 3}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Active Leads", "col": 3}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
         # --- Charts ---
-        {"type": "header", "data": {"text": "<b>Revenue & Pipeline</b>", "level": 4, "col": 12}},
-        {"type": "chart", "data": {"chart_name": "DSPL Monthly Revenue", "col": 12}},
-        {"type": "spacer", "data": {"col": 12}},
-        {"type": "chart", "data": {"chart_name": "DSPL Quotation Pipeline", "col": 6}},
-        {"type": "chart", "data": {"chart_name": "DSPL Lead Source Breakdown", "col": 6}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Revenue & Pipeline</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Monthly Revenue", "col": 12}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Quotation Pipeline", "col": 6}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Lead Source Breakdown", "col": 6}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
     ])
 
@@ -379,24 +386,24 @@ def _build_operations_workspace_content():
     """Build the JSON content blocks for the DSPL Operations workspace."""
     return json.dumps([
         # --- Header: Overview ---
-        {"type": "header", "data": {"text": "<b>Operations Overview</b>", "level": 4, "col": 12}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Operations Overview</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
         # --- Number Cards Row ---
-        {"type": "number_card", "data": {"number_card_name": "DSPL Active Work Orders", "col": 4}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Pending Deliveries", "col": 4}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Stock Below Reorder", "col": 4}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Active Work Orders", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Pending Deliveries", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Stock Below Reorder", "col": 4}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
         # --- HR Cards ---
-        {"type": "header", "data": {"text": "<b>Team</b>", "level": 4, "col": 12}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Team Present Today", "col": 4}},
-        {"type": "number_card", "data": {"number_card_name": "DSPL Pending Approvals", "col": 4}},
-        {"type": "spacer", "data": {"col": 12}},
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Team</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Team Present Today", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Pending Approvals", "col": 4}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
         # --- Chart ---
-        {"type": "header", "data": {"text": "<b>Order Trends</b>", "level": 4, "col": 12}},
-        {"type": "chart", "data": {"chart_name": "DSPL Monthly Orders", "col": 12}},
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Order Trends</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Monthly Orders", "col": 12}},
     ])
 
 
