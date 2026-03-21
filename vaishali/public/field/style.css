@@ -1414,12 +1414,17 @@ textarea {
 }
 
 .empty-state .empty-icon {
-  font-size: 36px;
+  font-size: 32px;
   margin-bottom: 10px;
-  opacity: 0.25;
+  opacity: 0.2;
   color: var(--ink-tertiary);
   display: flex;
   justify-content: center;
+}
+
+.empty-state .empty-icon svg {
+  width: 32px;
+  height: 32px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1427,28 +1432,37 @@ textarea {
    ═══════════════════════════════════════════════════════════════ */
 .toast-fallback {
   position: fixed;
-  top: 16px;
+  bottom: 80px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(20px);
   padding: 12px 20px;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   z-index: 200;
-  animation: toastIn 0.3s var(--ease-spring) both;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: none;
+  animation: toastSlideUp 0.3s var(--ease-out-expo) forwards;
+  font-size: 13px;
+  font-weight: 500;
   max-width: calc(100vw - 32px);
   text-align: center;
+  background: var(--surface-0);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-subtle);
 }
 
 .toast-fallback.success {
-  background: #065F46;
-  color: var(--ink-inverse);
+  border-left: 3px solid var(--green-500);
+  background: var(--surface-0);
+  color: var(--ink-primary);
 }
 
 .toast-fallback.danger {
-  background: #991B1B;
-  color: var(--ink-inverse);
+  border-left: 3px solid var(--dspl-red);
+  background: var(--surface-0);
+  color: var(--ink-primary);
+}
+
+@keyframes toastSlideUp {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1507,9 +1521,9 @@ textarea {
    SKELETON LOADING
    ═══════════════════════════════════════════════════════════════ */
 .skeleton {
-  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-0) 37%, var(--surface-1) 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.8s ease infinite;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-1) 50%, var(--surface-2) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-md);
 }
 
@@ -2696,10 +2710,6 @@ textarea {
   to { transform: rotate(360deg); }
 }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translate(-50%, -10px) scale(0.97); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
-}
 
 @keyframes chatFadeIn {
   from { opacity: 0; transform: translateY(6px); }
