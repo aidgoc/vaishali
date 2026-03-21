@@ -45,63 +45,47 @@
     return 'Expired ' + Math.abs(diff) + ' days ago';
   }
 
-  // ─── Follow-up card ──────────────────────────────────────────────
-
-  function followUpCard(item, cssClass, sublabel) {
-    var title = item.party_name || item.customer_name || item.name || 'Untitled';
-    var children = [
-      el('div', { className: 'pipeline-card-title', textContent: title }),
-      el('div', { className: 'pipeline-card-sub', textContent: item.name || '' }),
-      el('div', { className: 'pipeline-card-meta' }, [
-        el('span', { className: 'pipeline-card-amount', textContent: formatIndianAmount(item.grand_total) }),
-        el('span', { className: 'pipeline-card-date', textContent: sublabel })
-      ])
-    ];
-
-    var card = el('div', { className: 'pipeline-card ' + cssClass, onClick: function () {
-      var partyName = item.party_name || item.customer_name || '';
-      if (partyName) {
-        location.hash = '#/customer/' + encodeURIComponent(partyName);
-      }
-    } }, children);
-
-    return card;
+  function statusColor(status) {
+    if (!status) return 'blue';
+    var s = status.toLowerCase();
+    if (s === 'expired' || s === 'lost') return 'red';
+    if (s === 'open' || s === 'submitted') return 'blue';
+    if (s === 'ordered' || s === 'converted') return 'green';
+    return 'orange';
   }
 
-  // ─── Collapsible section ─────────────────────────────────────────
+  // ─── Flat section ─────────────────────────────────────────────────
 
-  function collapsibleSection(title, items, cardFn, startCollapsed) {
-    var heading = el('div', { className: 'section-label', textContent: title });
-    var container = el('div', {});
-    var body = el('div', {});
+  function flatSection(appEl, title, items, sublabelFn) {
+    appEl.appendChild(UI.sectionHeading(title + ' (' + items.length + ')'));
 
     if (!items || items.length === 0) {
-      body.appendChild(UI.empty('clip', 'No ' + title.toLowerCase()));
-    } else {
-      for (var i = 0; i < items.length; i++) {
-        body.appendChild(cardFn(items[i]));
-      }
+      appEl.appendChild(UI.empty('clip', 'No ' + title.toLowerCase()));
+      return;
     }
 
-    if (startCollapsed && items && items.length > 0) {
-      body.style.display = 'none';
-      heading.style.cursor = 'pointer';
-      var arrow = el('span', { textContent: ' \u25B6', className: 'collapse-arrow' });
-      heading.appendChild(arrow);
-      heading.addEventListener('click', function () {
-        if (body.style.display === 'none') {
-          body.style.display = '';
-          arrow.textContent = ' \u25BC';
-        } else {
-          body.style.display = 'none';
-          arrow.textContent = ' \u25B6';
-        }
-      });
-    }
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var sub = sublabelFn(item);
+      var amountStr = formatIndianAmount(item.grand_total);
+      var displaySub = item.name ? item.name : '';
+      if (sub) displaySub = displaySub ? displaySub + ' · ' + sub : sub;
+      if (amountStr) displaySub = displaySub ? displaySub + ' · ' + amountStr : amountStr;
 
-    container.appendChild(heading);
-    container.appendChild(body);
-    return container;
+      appEl.appendChild(UI.listCard({
+        title: item.party_name || item.customer_name || item.name || 'Untitled',
+        sub: displaySub,
+        right: UI.pill(item.status || 'Open', statusColor(item.status)),
+        onClick: (function (itm) {
+          return function () {
+            var partyName = itm.party_name || itm.customer_name || '';
+            if (partyName) {
+              location.hash = '#/customer/' + encodeURIComponent(partyName);
+            }
+          };
+        })(item)
+      }));
+    }
   }
 
   // ─── Main render ──────────────────────────────────────────────────
@@ -110,11 +94,7 @@
     appEl.appendChild(UI.skeleton(3));
 
     api.apiCall('GET', '/api/field/view/follow_ups').then(function (res) {
-      // Remove skeletons
-      var skeletons = appEl.querySelectorAll('.skeleton');
-      for (var i = 0; i < skeletons.length; i++) {
-        if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
-      }
+      appEl.textContent = '';
 
       if (res.error || !res.data) {
         appEl.appendChild(UI.error('Could not load follow-up data'));
@@ -127,18 +107,17 @@
       var open = sections.open_quotes || [];
       var lost = sections.lost_quotes || [];
 
-      // Count badges
-      var badges = el('div', { className: 'count-badges' }, [
-        el('span', { className: 'count-badge red', textContent: expiring.length + ' Expiring' }),
-        el('span', { className: 'count-badge blue', textContent: open.length + ' Open' }),
-        el('span', { className: 'count-badge gray', textContent: lost.length + ' Lost' })
-      ]);
-      appEl.appendChild(badges);
+      // Summary chips
+      appEl.appendChild(el('div', { style: 'display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap' }, [
+        UI.pill(expiring.length + ' Expiring', 'red'),
+        UI.pill(open.length + ' Open', 'blue'),
+        UI.pill(lost.length + ' Lost', 'gray')
+      ]));
 
       // Expiring Soon
-      appEl.appendChild(collapsibleSection('EXPIRING SOON', expiring, function (item) {
-        return followUpCard(item, 'followup-card-urgent', expiryLabel(item.valid_till));
-      }, false));
+      flatSection(appEl, 'EXPIRING SOON', expiring, function (item) {
+        return expiryLabel(item.valid_till);
+      });
 
       // Open Quotations — sorted oldest first
       var sortedOpen = open.slice().sort(function (a, b) {
@@ -146,19 +125,16 @@
         var db = new Date(b.transaction_date || 0);
         return da.getTime() - db.getTime();
       });
-      appEl.appendChild(collapsibleSection('OPEN QUOTATIONS', sortedOpen, function (item) {
-        return followUpCard(item, 'followup-card-open', daysSince(item.transaction_date));
-      }, false));
+      flatSection(appEl, 'OPEN QUOTATIONS', sortedOpen, function (item) {
+        return daysSince(item.transaction_date);
+      });
 
-      // Lost — collapsed by default
-      appEl.appendChild(collapsibleSection('LOST', lost, function (item) {
-        return followUpCard(item, 'followup-card-lost', '');
-      }, true));
+      // Lost
+      flatSection(appEl, 'LOST', lost, function () {
+        return '';
+      });
     }).catch(function () {
-      var skeletons = appEl.querySelectorAll('.skeleton');
-      for (var i = 0; i < skeletons.length; i++) {
-        if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
-      }
+      appEl.textContent = '';
       appEl.appendChild(UI.error('Could not load follow-up data'));
     });
   }
