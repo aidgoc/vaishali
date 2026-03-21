@@ -89,25 +89,27 @@
 
     // GPS display card
     var gpsBox = UI.card([
-      el('div', { className: 'coords', textContent: 'Locating...' })
-    ], { className: 'gps-display' });
+      el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+        el('div', { textContent: 'Locating...', style: { fontSize: '14px', color: 'var(--text-muted)' } })
+      ])
+    ]);
     appEl.appendChild(gpsBox);
 
-    // Action area
-    var actionArea = el('div', { style: { marginTop: '20px' } });
+    // Action area — more spacing from GPS card
+    var actionArea = el('div', { style: { marginTop: '32px' } });
     appEl.appendChild(actionArea);
 
     // GPS state
     var gps = { lat: null, lng: null, accuracy: null };
+    var coordsExpanded = false;
 
     // Capture GPS
     getGPS().then(function (result) {
       if (result.error) {
         gpsBox.textContent = '';
-        gpsBox.className = 'card-surface gps-display';
         gpsBox.appendChild(el('div', {
-          textContent: 'GPS error: ' + result.error,
-          style: { color: 'var(--red, #dc3545)' }
+          textContent: 'GPS unavailable: ' + result.error,
+          style: { color: 'var(--red, #dc3545)', fontSize: '14px' }
         }));
         return;
       }
@@ -116,15 +118,27 @@
       gps.accuracy = result.accuracy;
 
       gpsBox.textContent = '';
-      gpsBox.className = 'card-surface gps-display';
-      gpsBox.appendChild(el('div', {
-        className: 'coords',
-        textContent: gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6)
-      }));
-      gpsBox.appendChild(el('div', {
-        textContent: 'Accuracy: ' + gps.accuracy + 'm',
-        style: { marginTop: '4px', fontSize: '13px', color: 'var(--text-muted)' }
-      }));
+      var summaryRow = el('div', {
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' },
+        onClick: function () {
+          coordsExpanded = !coordsExpanded;
+          coordsDetail.style.display = coordsExpanded ? 'block' : 'none';
+        }
+      }, [
+        el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+          el('span', { textContent: 'Location captured', style: { fontSize: '15px', fontWeight: '500' } }),
+          UI.pill(gps.accuracy + 'm accuracy', gps.accuracy <= 20 ? 'green' : 'orange')
+        ]),
+        el('span', { textContent: 'Details', style: { fontSize: '13px', color: 'var(--text-muted)' } })
+      ]);
+      gpsBox.appendChild(summaryRow);
+
+      var coordsDetail = el('div', {
+        style: { display: 'none', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border, #E5E5E5)' }
+      }, [
+        el('div', { textContent: gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6), style: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'monospace' } })
+      ]);
+      gpsBox.appendChild(coordsDetail);
     });
 
     // Show loading while fetching attendance
@@ -188,8 +202,9 @@
       } else if (!att.check_out_time) {
         // State 2: Checked in, not checked out
         container.appendChild(el('div', {
+          className: 'ink-tertiary',
           textContent: 'Checked in at ' + formatTime(att.check_in_time),
-          style: { textAlign: 'center', fontWeight: '500', marginBottom: '12px', color: 'var(--text-muted)', fontSize: '14px' }
+          style: { textAlign: 'center', marginBottom: '12px', fontSize: '14px' }
         }));
 
         var durationEl = el('div', {

@@ -47,18 +47,28 @@
 
   // ─── Greeting hero ────────────────────────────────────────────────
 
+  function formatCurrentTime() {
+    var d = new Date();
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+  }
+
   function greetingHero(showDepartment) {
     var nameSpan = el('span', { className: 'greeting-name' }, [firstName()]);
     var children = [
       el('h2', null, [greetingText() + ', ', nameSpan])
     ];
     var metaParts = [];
+    metaParts.push(formatDate());
+    metaParts.push(formatCurrentTime());
     if (showDepartment) {
       var emp = Auth.getEmployee();
       var dept = emp && emp.department ? emp.department : '';
       if (dept) metaParts.push(dept);
     }
-    metaParts.push(formatDate());
     children.push(el('div', { className: 'greeting-meta' }, [metaParts.join(' \u00b7 ')]));
     return el('div', { className: 'greeting-hero' }, children);
   }
@@ -143,7 +153,7 @@
     var dept = (empData.department || '').toLowerCase();
 
     if (dept.indexOf('sales') >= 0 || dept.indexOf('marketing') >= 0) {
-      container.appendChild(UI.sectionHeading('SALES'));
+      container.appendChild(UI.sectionHeading('Sales'));
       var salesTiles = [
         { label: 'Pipeline', ic: 'shoppingCart', hash: '#/pipeline' },
         { label: 'Targets', ic: 'briefcase', hash: '#/sales-targets' },
@@ -162,7 +172,7 @@
     }
 
     if (dept.indexOf('service') >= 0) {
-      container.appendChild(UI.sectionHeading('SERVICE'));
+      container.appendChild(UI.sectionHeading('Service'));
       var serviceTiles = [
         { label: 'Service', ic: 'settings', hash: '#/service' },
         { label: 'Installations', ic: 'package', hash: '#/installations' },
@@ -180,7 +190,7 @@
     }
 
     if (dept.indexOf('production') >= 0 || dept.indexOf('manufacturing') >= 0) {
-      container.appendChild(UI.sectionHeading('PRODUCTION'));
+      container.appendChild(UI.sectionHeading('Production'));
       var prodTiles = [
         { label: 'Production', ic: 'settings', hash: '#/production' },
         { label: 'Dispatch', ic: 'shoppingCart', hash: '#/dispatch' }
@@ -268,22 +278,20 @@
           icon: 'umbrella',
           label: 'Leave',
           value: plBalance !== null ? String(Math.floor(plBalance)) + ' PL' : null,
-          sub: plBalance !== null ? 'balance' : 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
           icon: 'briefcase',
-          label: 'HR Services',
-          sub: 'Leave, Salary, Expenses',
-          onClick: function () { location.hash = '#/hr'; }
+          label: 'My Targets',
+          onClick: function () { location.hash = '#/my-targets'; }
         })
       ]);
       appEl.appendChild(actionGrid);
 
       // 3. Today's visits
-      appEl.appendChild(UI.sectionHeading("TODAY'S VISITS"));
+      appEl.appendChild(UI.sectionHeading("Today's visits"));
       if (dcrs.length === 0) {
-        appEl.appendChild(UI.empty('mapPin', 'No visits today. Ready to head out?', { text: '+ Start Visit', onClick: function() { location.hash = '#/dcr/new'; } }));
+        appEl.appendChild(UI.empty('mapPin', 'No visits today', { text: '+ New visit', onClick: function() { location.hash = '#/dcr/new'; } }));
       } else {
         for (var j = 0; j < dcrs.length; j++) {
           appEl.appendChild(visitCard(dcrs[j]));
@@ -372,10 +380,18 @@
       appEl.appendChild(greetingHero(true));
 
       // 2. KPI chips row
+      // Count total team visits from DCR data (team members in field)
+      var teamVisitCount = 0;
+      for (var vi = 0; vi < teamMembers.length; vi++) {
+        teamVisitCount += (teamMembers[vi].visit_count || 0);
+      }
+      // Fall back to own visit count if team visit data unavailable
+      if (teamVisitCount === 0) teamVisitCount = myVisitCount;
+
       appEl.appendChild(UI.kpiRow([
         { value: presentCount + '/' + totalCount, label: 'Team Present' },
         { value: pendingCount, label: 'Approvals' },
-        { value: teamFieldCount, label: 'In Field' }
+        { value: teamVisitCount, label: 'Visits Today' }
       ]));
 
       // 3. Action cards 2x2 grid
@@ -397,21 +413,20 @@
           icon: 'umbrella',
           label: 'Leave',
           value: plBalance !== null ? String(Math.floor(plBalance)) + ' PL' : null,
-          sub: plBalance !== null ? 'balance' : 'View balance & apply',
           onClick: function () { location.hash = '#/leave'; }
         }),
         UI.actionCard({
           icon: 'receipt',
           label: 'Expenses',
           value: expenseCount > 0 ? String(expenseCount) : null,
-          sub: expenseCount > 0 ? '\u20b9' + expenseTotal.toLocaleString('en-IN') + ' pending' : 'No pending claims',
+          sub: expenseCount > 0 ? '\u20b9' + expenseTotal.toLocaleString('en-IN') + ' pending' : null,
           onClick: function () { location.hash = '#/expense'; }
         })
       ]);
       appEl.appendChild(actionGrid);
 
       // 3b. HR Services row
-      appEl.appendChild(UI.sectionHeading('HR SERVICES'));
+      appEl.appendChild(UI.sectionHeading('HR services'));
       appEl.appendChild(el('div', { className: 'hr-grid' }, [
         el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/leave'; } }, [
           icon('umbrella'), el('span', { textContent: 'Leave' })
@@ -428,7 +443,7 @@
       ]));
 
       // 4. Pending Approvals section
-      appEl.appendChild(UI.sectionHeading('PENDING APPROVALS'));
+      appEl.appendChild(UI.sectionHeading('Pending approvals'));
       if (approvals.length === 0) {
         appEl.appendChild(UI.empty('check', 'No pending approvals'));
       } else {
@@ -458,7 +473,7 @@
       }
 
       // 5. Tabbed department navigation
-      appEl.appendChild(UI.sectionHeading('DEPARTMENTS'));
+      appEl.appendChild(UI.sectionHeading('Departments'));
       renderDeptTabs(appEl);
 
     }).catch(function () {

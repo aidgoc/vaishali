@@ -59,48 +59,75 @@
 
       appEl.appendChild(UI.divider());
 
-      // Detail card with profile rows
+      // Work section
+      appEl.appendChild(UI.sectionHeading('Work'));
       appEl.appendChild(UI.detailCard([
         { label: 'Department', value: department },
         { label: 'Designation', value: designation },
-        { label: 'Phone', value: phone },
-        { label: 'Email', value: email },
-        { label: 'Date of Joining', value: doj },
         { label: 'Status', value: status }
       ]));
 
-      appEl.appendChild(UI.divider());
+      // Contact section
+      appEl.appendChild(UI.sectionHeading('Contact'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Phone', value: phone },
+        { label: 'Email', value: email },
+        { label: 'Date of Joining', value: doj }
+      ]));
 
-      // Sign Out button
-      appEl.appendChild(UI.btn('Sign Out', {
+      // Sign Out button with confirmation
+      var signOutBtn = UI.btn('Sign Out', {
         type: 'outline-danger',
         block: true,
         icon: 'logOut',
         onClick: function () {
-          // 1. Call Frappe logout to invalidate server session cookie
-          window.fieldAPI.apiCall('GET', '/api/method/logout').then(function () {
-            // 2. Unregister service worker and clear caches
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function (regs) {
-                for (var i = 0; i < regs.length; i++) regs[i].unregister();
-              });
-              caches.keys().then(function (names) {
-                for (var i = 0; i < names.length; i++) caches.delete(names[i]);
-              });
-            }
-            // 3. Clear localStorage
-            localStorage.clear();
-            // 4. Clear IDB session and redirect to login
-            Auth.clearSession();
-          }).catch(function () {
-            // Even if logout API fails, clear local state
-            localStorage.clear();
-            Auth.clearSession();
-          });
-        }
-      }));
+          function doSignOut() {
+            window.fieldAPI.apiCall('GET', '/api/method/logout').then(function () {
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  for (var i = 0; i < regs.length; i++) regs[i].unregister();
+                });
+                caches.keys().then(function (names) {
+                  for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+                });
+              }
+              localStorage.clear();
+              Auth.clearSession();
+            }).catch(function () {
+              localStorage.clear();
+              Auth.clearSession();
+            });
+          }
 
-      appEl.appendChild(UI.divider());
+          var sheetContent = el('div', {}, [
+            el('div', {
+              textContent: 'You will need to sign in again to use DSPL Field.',
+              className: 'ink-tertiary',
+              style: { fontSize: '14px', marginBottom: '20px' }
+            }),
+            UI.btn('Sign Out', {
+              type: 'danger',
+              block: true,
+              onClick: function () {
+                if (sheet._close) sheet._close();
+                doSignOut();
+              }
+            }),
+            el('div', { style: { height: '8px' } }),
+            UI.btn('Cancel', {
+              type: 'outline',
+              block: true,
+              onClick: function () {
+                if (sheet._close) sheet._close();
+              }
+            })
+          ]);
+          var sheet = UI.bottomSheet('Sign out of DSPL Field?', sheetContent);
+          document.body.appendChild(sheet);
+        }
+      });
+      var signOutWrap = el('div', { style: { marginTop: '32px' } }, [signOutBtn]);
+      appEl.appendChild(signOutWrap);
 
       // ─── Telegram section ─────────────────────────────────────
       var telegramSection = el('div', { className: 'telegram-section' });
@@ -178,8 +205,8 @@
       // App version footer
       appEl.appendChild(el('div', {
         className: 'ink-tertiary',
-        textContent: 'DSPL Org OS v1.0',
-        style: { textAlign: 'center', fontSize: '11px', marginTop: '24px' }
+        textContent: 'v1.0',
+        style: { textAlign: 'center', fontSize: '11px', marginTop: '24px', opacity: '0.5' }
       }));
     }).catch(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
