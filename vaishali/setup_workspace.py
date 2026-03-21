@@ -179,7 +179,7 @@ def create_charts():
         {
             "doctype": "Dashboard Chart",
             "name": "DSPL Monthly Revenue",
-            "chart_name": "Monthly Revenue",
+            "chart_name": "DSPL Monthly Revenue",
             "chart_type": "Sum",
             "document_type": "Sales Invoice",
             "based_on": "posting_date",
@@ -196,7 +196,7 @@ def create_charts():
         {
             "doctype": "Dashboard Chart",
             "name": "DSPL Quotation Pipeline",
-            "chart_name": "Quotation Pipeline",
+            "chart_name": "DSPL Quotation Pipeline",
             "chart_type": "Group By",
             "document_type": "Quotation",
             "group_by_type": "Count",
@@ -211,7 +211,7 @@ def create_charts():
         {
             "doctype": "Dashboard Chart",
             "name": "DSPL Lead Source Breakdown",
-            "chart_name": "Lead Source Breakdown",
+            "chart_name": "DSPL Lead Source Breakdown",
             "chart_type": "Group By",
             "document_type": "Lead",
             "group_by_type": "Count",
@@ -226,7 +226,7 @@ def create_charts():
         {
             "doctype": "Dashboard Chart",
             "name": "DSPL Monthly Orders",
-            "chart_name": "Monthly Orders",
+            "chart_name": "DSPL Monthly Orders",
             "chart_type": "Count",
             "document_type": "Sales Order",
             "based_on": "transaction_date",
@@ -242,12 +242,12 @@ def create_charts():
     ]
 
     for chart in charts:
-        if not frappe.db.exists("Dashboard Chart", chart["name"]):
+        if not frappe.db.exists("Dashboard Chart", chart["chart_name"]):
             doc = frappe.get_doc(chart)
             doc.insert(ignore_permissions=True)
-            print(f"  Created chart: {chart['name']}")
+            print(f"  Created chart: {chart['chart_name']}")
         else:
-            print(f"  Exists: {chart['name']}")
+            print(f"  Exists: {chart['chart_name']}")
 
 
 # ---------------------------------------------------------------------------
