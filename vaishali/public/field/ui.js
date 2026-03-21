@@ -403,7 +403,7 @@
   function grid(children, cols) {
     return el('div', {
       className: 'ui-grid',
-      style: { display: 'grid', gridTemplateColumns: 'repeat(' + (cols || 2) + ', 1fr)', gap: '12px' }
+      style: { display: 'grid', gridTemplateColumns: 'repeat(' + (cols || 2) + ', 1fr)', gap: '10px' }
     }, children);
   }
 
@@ -451,19 +451,24 @@
      24. skeleton(count)
      ────────────────────────────────────────────────────────────── */
   function skeleton(count) {
-    count = count || 2;
+    count = count || 3;
+    var widths = ['80%', '60%', '40%', '70%', '50%', '65%', '45%', '55%'];
     var items = [];
     for (var i = 0; i < count; i++) {
-      items.push(el('div', { className: 'skeleton skeleton-card' }));
+      var w = widths[i % widths.length];
+      items.push(el('div', {
+        className: 'skeleton skeleton-card',
+        style: { width: w }
+      }));
     }
-    return el('div', { 'aria-busy': 'true', 'aria-label': 'Loading' }, items);
+    return el('div', { 'aria-busy': 'true', 'aria-label': 'Loading', style: { padding: '8px 0' } }, items);
   }
 
   /* ──────────────────────────────────────────────────────────────
      25. empty(iconName, text)
      ────────────────────────────────────────────────────────────── */
   function empty(iconName, text, ctaOpts) {
-    var ic = el('div', { className: 'empty-icon' });
+    var ic = el('span', { className: 'empty-icon' });
     setIconHTML(ic, iconName);
     var children = [ic, el('div', { className: 'empty-text', textContent: text })];
     if (ctaOpts) {
