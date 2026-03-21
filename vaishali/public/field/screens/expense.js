@@ -116,7 +116,7 @@
         onClick: function () { location.hash = '#/expense/new'; }
       }));
 
-      appEl.appendChild(UI.sectionHeading('CLAIMS'));
+      appEl.appendChild(UI.sectionHeading('Claims'));
 
       if (claims.length === 0) {
         appEl.appendChild(UI.empty('receipt', 'No expense claims yet', { text: '+ New Expense', onClick: function() { location.hash = '#/expense/new'; } }));
@@ -374,7 +374,7 @@
 
       // Expense items
       var expenses = claim.expenses || [];
-      appEl.appendChild(UI.sectionHeading('ITEMS'));
+      appEl.appendChild(UI.sectionHeading('Items'));
 
       if (expenses.length === 0) {
         appEl.appendChild(UI.empty('receipt', 'No expense items.'));

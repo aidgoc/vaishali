@@ -173,7 +173,7 @@
       // ── Top Customers by Revenue ─────────────────────────────────
       // Use monthly_trend (all submitted invoices this FY) for grouping
       var invoicesForGrouping = monthlyTrend.length > 0 ? monthlyTrend : invoicedList;
-      appEl.appendChild(UI.sectionHeading('TOP CUSTOMERS BY REVENUE'));
+      appEl.appendChild(UI.sectionHeading('Top customers by revenue'));
       var topCards = buildTopCustomers(invoicesForGrouping);
       if (topCards.length === 0) {
         appEl.appendChild(UI.empty('clip', 'No invoice data'));
@@ -184,7 +184,7 @@
       }
 
       // ── Recent Payments ──────────────────────────────────────────
-      appEl.appendChild(UI.sectionHeading('RECENT PAYMENTS'));
+      appEl.appendChild(UI.sectionHeading('Recent payments'));
       var recentPayments = collectedList.slice(0, 10);
       if (recentPayments.length === 0) {
         appEl.appendChild(UI.empty('wallet', 'No payments received'));
@@ -216,7 +216,7 @@
         return dA < dB ? -1 : dA > dB ? 1 : 0;
       });
 
-      appEl.appendChild(UI.sectionHeading('OVERDUE INVOICES'));
+      appEl.appendChild(UI.sectionHeading('Overdue invoices'));
       if (overdueInvoices.length === 0) {
         appEl.appendChild(UI.empty('check', 'No overdue invoices'));
       } else {

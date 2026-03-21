@@ -47,7 +47,7 @@
   // ─── My Performance section ───────────────────────────────────────
 
   function renderMyPerformance(appEl, perf) {
-    appEl.appendChild(UI.sectionHeading('MY PERFORMANCE'));
+    appEl.appendChild(UI.sectionHeading('My performance'));
 
     var convPct = perf.conversion ? perf.conversion.quote_to_order : 0;
     var convTarget = perf.conversion ? perf.conversion.target_qo : 75;
@@ -143,7 +143,7 @@
       // Show quotes from DB, estimate visits using funnel ratios (inverse)
       var estVisits = totalQuotes > 0 ? totalQuotes * 4 : 0; // Q→V: ×4 (50%×50% = 25%)
 
-      appEl.appendChild(UI.sectionHeading('SALES FUNNEL'));
+      appEl.appendChild(UI.sectionHeading('Sales funnel'));
       var funnelCard = el('div', { style: { display: 'flex', padding: '16px', background: 'var(--surface-card)', borderRadius: '12px', margin: '0 16px', gap: '8px' } }, [
         funnelRow('Visits (est.)', estVisits, '@ 50% conv.'),
         el('div', { style: { display: 'flex', alignItems: 'center', color: 'var(--ink-tertiary)', fontSize: '16px' }, textContent: '\u203a' }),
@@ -154,7 +154,7 @@
       appEl.appendChild(funnelCard);
 
       // ── Product breakdown ─────────────────────────────────────────
-      appEl.appendChild(UI.sectionHeading('PRODUCT-WISE TARGETS'));
+      appEl.appendChild(UI.sectionHeading('Product-wise targets'));
       var prodSection = el('div', { style: { padding: '16px', background: 'var(--surface-card)', borderRadius: '12px', margin: '0 16px 24px' } });
 
       for (var i = 0; i < products.length; i++) {

@@ -64,7 +64,7 @@
       ], 2));
 
       // -- Pending Delivery --
-      appEl.appendChild(UI.sectionHeading('PENDING DELIVERY'));
+      appEl.appendChild(UI.sectionHeading('Pending delivery'));
       if (pendingDelivery.length === 0) {
         appEl.appendChild(UI.empty('check', 'All orders delivered'));
       } else {
@@ -87,7 +87,7 @@
       }
 
       // -- Recent Deliveries --
-      appEl.appendChild(UI.sectionHeading('RECENT DELIVERIES'));
+      appEl.appendChild(UI.sectionHeading('Recent deliveries'));
       if (recentDeliveries.length === 0) {
         appEl.appendChild(UI.empty('empty', 'No deliveries this month'));
       } else {

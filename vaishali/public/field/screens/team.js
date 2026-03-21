@@ -50,7 +50,7 @@
       ], 2));
 
       // Employee list
-      content.appendChild(UI.sectionHeading('EMPLOYEES'));
+      content.appendChild(UI.sectionHeading('Employees'));
 
       if (employees.length === 0) {
         content.appendChild(UI.empty('users', 'No team members found'));

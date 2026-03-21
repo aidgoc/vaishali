@@ -50,7 +50,7 @@
       onClick: function () { location.hash = '#/advance/new'; }
     }));
 
-    appEl.appendChild(UI.sectionHeading('ADVANCES'));
+    appEl.appendChild(UI.sectionHeading('Advances'));
 
     var listArea = UI.el('div');
     listArea.appendChild(UI.skeleton(3));

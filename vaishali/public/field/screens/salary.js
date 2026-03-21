@@ -131,7 +131,7 @@
       // Earnings
       var earnings = data.earnings || [];
       if (earnings.length > 0) {
-        contentArea.appendChild(UI.sectionHeading('EARNINGS'));
+        contentArea.appendChild(UI.sectionHeading('Earnings'));
         for (var i = 0; i < earnings.length; i++) {
           contentArea.appendChild(UI.detailRow(
             earnings[i].salary_component,
@@ -143,7 +143,7 @@
       // Deductions
       var deductions = data.deductions || [];
       if (deductions.length > 0) {
-        contentArea.appendChild(UI.sectionHeading('DEDUCTIONS'));
+        contentArea.appendChild(UI.sectionHeading('Deductions'));
         for (var j = 0; j < deductions.length; j++) {
           contentArea.appendChild(UI.detailRow(
             deductions[j].salary_component,

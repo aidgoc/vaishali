@@ -59,7 +59,7 @@
       var email = overview.email_id || '';
 
       if (contactName || mobile || email) {
-        appEl.appendChild(UI.sectionHeading('PRIMARY CONTACT'));
+        appEl.appendChild(UI.sectionHeading('Primary contact'));
         var contactCard = el('div', { className: 'card-surface' });
         if (contactName) {
           contactCard.appendChild(el('div', {
@@ -89,7 +89,7 @@
       // ── Address ──────────────────────────────────────────────
       var addresses = overview.addresses || [];
       if (addresses.length > 0) {
-        appEl.appendChild(UI.sectionHeading('ADDRESS' + (addresses.length > 1 ? 'ES' : '')));
+        appEl.appendChild(UI.sectionHeading('Address' + (addresses.length > 1 ? 'es' : '')));
         for (var ai = 0; ai < addresses.length; ai++) {
           var addr = addresses[ai];
           var addrParts = [addr.address_line1, addr.address_line2,
@@ -107,7 +107,7 @@
       // ── All contacts ─────────────────────────────────────────
       var contacts = overview.contacts || [];
       if (contacts.length > 1) {
-        appEl.appendChild(UI.sectionHeading('CONTACTS (' + contacts.length + ')'));
+        appEl.appendChild(UI.sectionHeading('Contacts (' + contacts.length + ')'));
         for (var ci = 0; ci < contacts.length; ci++) {
           var c = contacts[ci];
           var cName = [c.first_name, c.last_name].filter(Boolean).join(' ');

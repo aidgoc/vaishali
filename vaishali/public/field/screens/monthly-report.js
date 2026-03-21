@@ -92,7 +92,7 @@
       ]));
 
       // ── This Month section ────────────────────────────────────────
-      appEl.appendChild(UI.sectionHeading('THIS MONTH'));
+      appEl.appendChild(UI.sectionHeading('This month'));
 
       appEl.appendChild(UI.grid([
         UI.statCard(formatIndianAmount(tm.revenue || 0), 'Revenue'),
@@ -107,7 +107,7 @@
       ], 2));
 
       // ── YTD section ───────────────────────────────────────────────
-      appEl.appendChild(UI.sectionHeading('YEAR TO DATE'));
+      appEl.appendChild(UI.sectionHeading('Year to date'));
 
       appEl.appendChild(UI.grid([
         UI.statCard(formatIndianAmount(ytd.revenue || 0), 'YTD Revenue'),
@@ -117,7 +117,7 @@
       appEl.appendChild(buildYTDProgress(ytd.revenue || 0, ytd.target || 100900000));
 
       // ── Health section ────────────────────────────────────────────
-      appEl.appendChild(UI.sectionHeading('HEALTH'));
+      appEl.appendChild(UI.sectionHeading('Health'));
 
       appEl.appendChild(UI.grid([
         UI.statCard(formatIndianAmount(health.outstanding || 0), 'Outstanding'),

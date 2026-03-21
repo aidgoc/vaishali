@@ -76,7 +76,7 @@
       ]));
 
       // -- Pending Orders --
-      appEl.appendChild(UI.sectionHeading('PENDING ORDERS'));
+      appEl.appendChild(UI.sectionHeading('Pending orders'));
       if (pendingOrders.length === 0) {
         appEl.appendChild(UI.empty('refresh', 'No pending orders. Production is clear.'));
       } else {
@@ -99,7 +99,7 @@
 
       // -- Work Orders --
       if (workOrders.length > 0) {
-        appEl.appendChild(UI.sectionHeading('WORK ORDERS'));
+        appEl.appendChild(UI.sectionHeading('Work orders'));
         for (var j = 0; j < workOrders.length; j++) {
           (function (w) {
             var item = w.production_item || w.name || '';
@@ -117,7 +117,7 @@
 
       // -- Stock Levels --
       if (stockLevels.length > 0) {
-        appEl.appendChild(UI.sectionHeading('STOCK LEVELS'));
+        appEl.appendChild(UI.sectionHeading('Stock levels'));
         for (var k = 0; k < stockLevels.length; k++) {
           (function (s) {
             var itemCode = s.item_code || '';
@@ -136,7 +136,7 @@
 
       // -- Draft BOMs --
       if (bomStatus.length > 0) {
-        appEl.appendChild(UI.sectionHeading('DRAFT BOMs'));
+        appEl.appendChild(UI.sectionHeading('Draft BOMs'));
         var showBoms = Math.min(bomStatus.length, 20);
         for (var m = 0; m < showBoms; m++) {
           (function (b) {

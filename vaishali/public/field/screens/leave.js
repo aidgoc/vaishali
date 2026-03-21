@@ -102,7 +102,7 @@
       }
 
       if (balanceCards.length > 0) {
-        content.appendChild(UI.sectionHeading('BALANCE'));
+        content.appendChild(UI.sectionHeading('Balance'));
         content.appendChild(UI.grid(balanceCards, 2));
       } else {
         content.appendChild(el('div', {
@@ -124,7 +124,7 @@
       // ── Applications list ──
       var applications = (appRes && appRes.data && (appRes.data.data || appRes.data.message)) || [];
       if (applications.length > 0) {
-        content.appendChild(UI.sectionHeading('APPLICATIONS'));
+        content.appendChild(UI.sectionHeading('Applications'));
         for (var k = 0; k < applications.length; k++) {
           (function (app) {
             var dateRange = formatDate(app.from_date);
@@ -143,7 +143,7 @@
           })(applications[k]);
         }
       } else {
-        content.appendChild(UI.sectionHeading('APPLICATIONS'));
+        content.appendChild(UI.sectionHeading('Applications'));
         content.appendChild(UI.empty('umbrella', 'No leave applications yet', { text: '+ Apply Leave', onClick: function() { location.hash = '#/leave/apply'; } }));
       }
 
