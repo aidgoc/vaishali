@@ -19,7 +19,7 @@
 
   --ink-primary: #1C1C1E;
   --ink-secondary: #636366;
-  --ink-tertiary: #8E8E93;
+  --ink-tertiary: #6B6B70;
   --ink-inverse: #FFFFFF;
 
   --border-subtle: rgba(0, 0, 0, 0.04);
@@ -103,6 +103,16 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* ─── Focus Indicators (Accessibility) ────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--dspl-red);
+  outline-offset: 2px;
+}
+/* Remove outline for mouse clicks */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ─── Three-Zone Layout ──────────────────────────────────────── */

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v18';
+var CACHE_NAME = 'dspl-field-v19';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',
@@ -7,7 +7,12 @@ var PRECACHE_URLS = [
   '/assets/vaishali/field/api.js',
   '/assets/vaishali/field/auth.js',
   '/assets/vaishali/field/router.js',
-  '/assets/vaishali/field/app.js'
+  '/assets/vaishali/field/app.js',
+  '/assets/vaishali/field/screens/home.js',
+  '/assets/vaishali/field/screens/attendance.js',
+  '/assets/vaishali/field/screens/chat.js',
+  '/assets/vaishali/field/screens/profile.js',
+  '/assets/vaishali/field/screens/visits.js'
 ];
 
 // Install — precache shell assets
@@ -109,7 +114,7 @@ function updateOutboxEntry(db, entry) {
 }
 
 self.addEventListener('sync', function(event) {
-  if (event.tag !== 'field-sync') {
+  if (event.tag !== 'outbox-sync') {
     return;
   }
 

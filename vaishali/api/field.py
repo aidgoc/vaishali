@@ -119,12 +119,19 @@ def create_dcr(**kwargs):
 
 @frappe.whitelist()
 def get_dcr(dcr_id):
-    return frappe.get_doc("Daily Call Report", dcr_id).as_dict()
+    emp = _get_employee()
+    doc = frappe.get_doc("Daily Call Report", dcr_id)
+    if doc.employee != emp.name:
+        frappe.throw(_("You do not have access to this visit"), frappe.PermissionError)
+    return doc.as_dict()
 
 
 @frappe.whitelist(methods=["POST"])
 def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None, status="Completed"):
+    emp = _get_employee()
     doc = frappe.get_doc("Daily Call Report", dcr_id)
+    if doc.employee != emp.name:
+        frappe.throw(_("You do not have access to this visit"), frappe.PermissionError)
     if doc.status == "Completed":
         frappe.throw(_("DCR already completed"))
     doc.status = status
@@ -309,15 +316,18 @@ def get_approvals():
         e["type"] = "Expense Claim"
         results.append(e)
 
-    # Pending employee advances
-    advances = frappe.get_list("Employee Advance",
-        filters={"docstatus": 0},
-        fields=["name", "employee", "employee_name", "advance_amount", "status"],
-        order_by="creation desc", limit_page_length=20)
-    for a in advances:
-        a["doctype"] = "Employee Advance"
-        a["type"] = "Employee Advance"
-        results.append(a)
+    # Pending employee advances — only those whose employee reports to current user
+    employee = _get_employee()
+    my_reports = frappe.get_all("Employee", filters={"reports_to": employee.name}, pluck="name")
+    if my_reports:
+        advances = frappe.get_list("Employee Advance",
+            filters={"docstatus": 0, "employee": ["in", my_reports]},
+            fields=["name", "employee", "employee_name", "advance_amount", "status"],
+            order_by="creation desc", limit_page_length=20)
+        for a in advances:
+            a["doctype"] = "Employee Advance"
+            a["type"] = "Employee Advance"
+            results.append(a)
 
     return results
 
@@ -355,6 +365,19 @@ def process_approval(doctype, name, action):
         frappe.throw(_("Only managers and admins can process approvals"))
 
     doc = frappe.get_doc(doctype, name)
+
+    # Verify current user is the designated approver
+    if doctype == "Leave Application":
+        if doc.leave_approver != frappe.session.user:
+            frappe.throw(_("You are not the designated approver"), frappe.PermissionError)
+    elif doctype == "Expense Claim":
+        if doc.expense_approver != frappe.session.user:
+            frappe.throw(_("You are not the designated approver"), frappe.PermissionError)
+    elif doctype == "Employee Advance":
+        current_emp = _get_employee()
+        advance_emp = frappe.db.get_value("Employee", doc.employee, "reports_to")
+        if advance_emp != current_emp.name:
+            frappe.throw(_("You are not the designated approver"), frappe.PermissionError)
 
     if action == "approve":
         if doctype == "Leave Application":
@@ -479,6 +502,8 @@ def generate_telegram_token():
 @frappe.whitelist()
 def verify_telegram_token(token):
     """Verify a Telegram linking token. Called by FastAPI via service API key."""
+    if frappe.session.user not in ("vaishali@frappeflo.com", "Administrator"):
+        frappe.throw(_("Only the service account can verify Telegram tokens"), frappe.PermissionError)
     cache_key = f"telegram_link_{token}"
     employee_id = frappe.cache().get_value(cache_key)
     if employee_id:
@@ -556,6 +581,13 @@ def get_my_quotations(status=None):
 
 @frappe.whitelist(methods=["POST"])
 def create_quotation(**kwargs):
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(_("You do not have permission to create quotations"), frappe.PermissionError)
+
     items = kwargs.get("items", [])
     if not items:
         frappe.throw(_("At least one item is required"))
@@ -621,6 +653,9 @@ def get_stock_items(search=None, warehouse=None):
 
 @frappe.whitelist(methods=["POST"])
 def create_stock_entry(**kwargs):
+    if _get_nav_tier() == "field":
+        frappe.throw(_("You do not have permission to create stock entries"), frappe.PermissionError)
+
     items = kwargs.get("items", [])
     if not items:
         frappe.throw(_("At least one item is required"))

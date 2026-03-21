@@ -387,10 +387,24 @@
     var track = el('div', { className: 'toggle-track' + (checked ? ' active' : '') }, [
       el('div', { className: 'toggle-thumb' })
     ]);
-    var wrapper = el('div', { className: 'toggle-wrapper', onClick: function () {
+    function doToggle() {
       var isActive = track.classList.toggle('active');
+      wrapper.setAttribute('aria-checked', String(isActive));
       if (onChange) onChange(isActive);
-    } }, [
+    }
+    var wrapper = el('div', {
+      className: 'toggle-wrapper',
+      role: 'switch',
+      tabIndex: '0',
+      'aria-checked': String(!!checked),
+      onClick: doToggle,
+      onKeydown: function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          doToggle();
+        }
+      }
+    }, [
       el('span', { className: 'toggle-label', textContent: label }),
       track
     ]);
@@ -492,7 +506,7 @@
   function toast(text, type) {
     var cls = 'toast-fallback';
     if (type) cls += ' ' + type;
-    var t = el('div', { className: cls, textContent: text, role: 'alert', 'aria-live': 'polite' });
+    var t = el('div', { className: cls, textContent: text, role: 'alert' });
     document.body.appendChild(t);
     setTimeout(function () {
       if (t.parentNode) t.parentNode.removeChild(t);
@@ -559,7 +573,7 @@
      30. fab(onClick)
      ────────────────────────────────────────────────────────────── */
   function fab(onClick) {
-    var button = el('button', { className: 'fab', onClick: onClick });
+    var button = el('button', { className: 'fab', onClick: onClick, 'aria-label': 'Open AI chat' });
     setIconHTML(button, 'bot');
     return button;
   }
@@ -568,7 +582,7 @@
      31. bottomSheet(title, contentEl)
      ────────────────────────────────────────────────────────────── */
   function bottomSheet(title, contentEl) {
-    var closeBtn = el('button', { className: 'bottom-sheet-close' });
+    var closeBtn = el('button', { className: 'bottom-sheet-close', 'aria-label': 'Close' });
     setIconHTML(closeBtn, 'x');
 
     var header = el('div', { className: 'bottom-sheet-header' }, [
@@ -576,7 +590,12 @@
       closeBtn
     ]);
 
-    var sheet = el('div', { className: 'bottom-sheet' }, [
+    var sheet = el('div', {
+      className: 'bottom-sheet',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title
+    }, [
       header,
       el('div', { className: 'bottom-sheet-content' }, [contentEl])
     ]);
@@ -593,9 +612,14 @@
     overlay.addEventListener('click', function (e) {
       if (e.target === overlay) close();
     });
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close();
+    });
     closeBtn.addEventListener('click', close);
 
     overlay._close = close;
+    /* Auto-focus close button after caller appends to DOM */
+    setTimeout(function () { closeBtn.focus(); }, 100);
     return overlay;
   }
 

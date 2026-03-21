@@ -1,6 +1,12 @@
 (function () {
   'use strict';
 
+  var _pollTimer = null;
+
+  window.addEventListener('hashchange', function() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  });
+
   window.Screens = window.Screens || {};
 
   window.Screens.profile = function (appEl) {
@@ -172,14 +178,16 @@
                   window.open(botUrl, '_blank');
 
                   // Poll every 3 s to check if telegram_chat_id has appeared
-                  var pollTimer = setInterval(function () {
+                  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+                  _pollTimer = setInterval(function () {
                     window.fieldAPI.apiCall('GET', '/api/method/vaishali.api.field.get_me')
                       .then(function (meResp) {
                         var me = (meResp.data && meResp.data.data) ||
                                  (meResp.data && meResp.data.message) ||
                                  (meResp.data) || {};
                         if (me.telegram_chat_id) {
-                          clearInterval(pollTimer);
+                          clearInterval(_pollTimer);
+                          _pollTimer = null;
                           window.fieldAPI.showToast('Telegram connected!', 'success');
                           renderTelegramSection(true);
                         }

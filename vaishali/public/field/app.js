@@ -7,40 +7,7 @@
 
   var api = window.fieldAPI;
 
-  // Use UI.el if available, otherwise inline fallback
-  var el = (window.UI && window.UI.el) || function (tag, attrs, children) {
-    var node = document.createElement(tag);
-    if (attrs) {
-      var keys = Object.keys(attrs);
-      for (var i = 0; i < keys.length; i++) {
-        var k = keys[i], v = attrs[k];
-        if (v == null || v === false) continue;
-        if (k === 'textContent') node.textContent = v;
-        else if (k === 'className') node.className = v;
-        else if (k === 'disabled') node.disabled = !!v;
-        else if (k === 'type') node.type = v;
-        else if (k === 'placeholder') node.placeholder = v;
-        else if (k.indexOf('on') === 0 && typeof v === 'function') {
-          node.addEventListener(k.slice(2).toLowerCase(), v);
-        }
-        else if (k === 'style' && typeof v === 'object') {
-          var sk = Object.keys(v);
-          for (var j = 0; j < sk.length; j++) node.style[sk[j]] = v[sk[j]];
-        }
-        else node.setAttribute(k, v);
-      }
-    }
-    if (children) {
-      if (!Array.isArray(children)) children = [children];
-      for (var c = 0; c < children.length; c++) {
-        var child = children[c];
-        if (!child) continue;
-        if (typeof child === 'string') child = document.createTextNode(child);
-        node.appendChild(child);
-      }
-    }
-    return node;
-  };
+  var el = UI.el;
 
   var appEl  = document.getElementById('app');
   var navEl  = document.getElementById('bottom-nav');

@@ -249,6 +249,7 @@
      All IC values are trusted hardcoded constants (not user input). */
   function icon(name, size) {
     var span = document.createElement("span");
+    span.setAttribute("aria-hidden", "true");
     span.style.display = "inline-flex";
     span.style.alignItems = "center";
     span.style.flexShrink = "0";
