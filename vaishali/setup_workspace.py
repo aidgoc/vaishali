@@ -409,6 +409,7 @@ def create_dspl_operations_workspace():
             "doctype": "Workspace",
             "name": ws_name,
             "label": "DSPL Operations",
+            "title": "DSPL Operations",
             "module": "Vaishali",
             "category": "Modules",
             "icon": "tool",
