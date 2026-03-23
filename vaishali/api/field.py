@@ -667,7 +667,7 @@ def get_budget_summary(fiscal_year=None):
     # --- Admin: all verticals ---
     if tier == "admin":
         result["verticals"] = []
-        for v in ["EPS", "ERS", "ESS", "OTHER"]:
+        for v in ["EPS"]:
             vdata = _vertical_budget(v, fiscal_year, fy_start, fy_end,
                                       month_start, month_end)
             if vdata["employee_count"] > 0:

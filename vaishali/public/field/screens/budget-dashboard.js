@@ -234,7 +234,7 @@
 
     // Vertical cards
     appEl.appendChild(UI.sectionHeading('By vertical'));
-    var vertColors = { EPS: '#2563eb', ERS: '#059669', ESS: '#d97706', OTHER: '#6b7280' };
+    var vertColors = { EPS: '#2563eb' };
 
     for (var i = 0; i < verts.length; i++) {
       (function (v) {
@@ -339,10 +339,7 @@
 
     var vertOptions = [
       { value: '', text: 'Select vertical...' },
-      { value: 'EPS', text: 'EPS' },
-      { value: 'ERS', text: 'ERS' },
-      { value: 'ESS', text: 'ESS' },
-      { value: 'OTHER', text: 'OTHER' }
+      { value: 'EPS', text: 'EPS' }
     ];
     var vertSelect = UI.select('Vertical', vertOptions, '');
 

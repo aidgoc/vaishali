@@ -14,16 +14,16 @@ VERTICAL_MAP = {
 
 # Default vertical assignment by ERPNext department
 DEPT_VERTICAL_DEFAULT = {
-    "Operations - DCEPL": "ERS",
+    "Operations - DCEPL": "EPS",
     "SERVICE - DSPL": "EPS",
     "Sales - DSPL": "EPS",
     "SALES AND MARKETING - DSPL": "EPS",
     "Production - DSPL": "EPS",
     "R AND D - DSPL": "EPS",
-    "Management - DSPL": "OTHER",
-    "Accounts": "OTHER",
-    "Human Resources": "OTHER",
-    "Purchase": "OTHER",
+    "Management - DSPL": "EPS",
+    "Accounts": "EPS",
+    "Human Resources": "EPS",
+    "Purchase": "EPS",
     "Marketing": "EPS",
 }
 
@@ -48,7 +48,7 @@ def _add_vertical_field():
         "fieldname": "vertical",
         "label": "Vertical",
         "fieldtype": "Select",
-        "options": "EPS\nERS\nESS\nOTHER",
+        "options": "EPS",
         "insert_after": "department",
     })
     doc.insert(ignore_permissions=True)
@@ -67,7 +67,7 @@ def _populate_verticals():
         # Check explicit mapping first
         vertical = VERTICAL_MAP.get(emp.name)
         if not vertical:
-            vertical = DEPT_VERTICAL_DEFAULT.get(emp.department, "OTHER")
+            vertical = DEPT_VERTICAL_DEFAULT.get(emp.department, "EPS")
 
         current = frappe.db.get_value("Employee", emp.name, "vertical")
         if current != vertical:
@@ -84,9 +84,6 @@ def _seed_budgets():
     # Vertical-level budgets
     vertical_budgets = {
         "EPS": 250000,   # ₹2.5L/month
-        "ERS": 233000,   # ₹2.33L/month
-        "ESS": 67000,    # ₹67K/month
-        "OTHER": 50000,  # ₹50K/month
     }
 
     for vertical, monthly in vertical_budgets.items():
@@ -120,7 +117,7 @@ def _seed_budgets():
         doc = frappe.get_doc({
             "doctype": "Expense Budget",
             "fiscal_year": fy,
-            "vertical": emp.vertical or "OTHER",
+            "vertical": emp.vertical or "EPS",
             "employee": emp.name,
             "monthly_cap": cap,
             "alert_threshold": 80,
