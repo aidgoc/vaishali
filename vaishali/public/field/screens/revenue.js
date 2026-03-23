@@ -57,18 +57,15 @@
 
   // ─── Progress gauge ──────────────────────────────────────────────
 
-  var ANNUAL_TARGET = 85000000; // ₹8.5Cr
-
-  function buildCollectionGauge(collected) {
+  function buildCollectionGauge(collected, annualTarget) {
     // Monthly target = annual / 12
     var now = new Date();
-    var monthsElapsed = now.getMonth() + 1; // months into FY (approx, assumes Apr start)
     var fyMonth = now.getMonth() >= 3 ? now.getMonth() - 3 + 1 : now.getMonth() + 9 + 1;
-    var proRataTarget = (ANNUAL_TARGET / 12) * fyMonth;
+    var proRataTarget = (annualTarget / 12) * fyMonth;
     var pct = proRataTarget > 0 ? Math.min((collected / proRataTarget) * 100, 100) : 0;
     var colorClass = pct >= 80 ? 'green' : pct >= 50 ? 'amber' : 'red';
 
-    var monthlyTarget = ANNUAL_TARGET / 12;
+    var monthlyTarget = annualTarget / 12;
     var targetLabel = formatIndianAmount(monthlyTarget) + '/mo';
 
     var label = el('div', { className: 'target-gauge-label' }, [
@@ -124,15 +121,28 @@
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);
 
-    api.apiCall('GET', '/api/field/view/revenue_dashboard').then(function (res) {
+    var revenueData = null;
+    var annualTarget = 0;
+
+    var revenueDone = api.apiCall('GET', '/api/field/view/revenue_dashboard').then(function (res) {
+      revenueData = res;
+    }).catch(function () { revenueData = null; });
+
+    var targetsDone = api.apiCall('GET', '/api/field/sales-targets').then(function (res) {
+      var raw = res.data || {};
+      var d = raw.message || raw.data || raw;
+      annualTarget = d.total_target || 0;
+    }).catch(function () { annualTarget = 0; });
+
+    Promise.all([revenueDone, targetsDone]).then(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
 
-      if (res.error || !res.data) {
+      if (!revenueData || revenueData.error || !revenueData.data) {
         appEl.appendChild(UI.error('Failed to load revenue data'));
         return;
       }
 
-      var data = res.data;
+      var data = revenueData.data;
       var sections = data.sections || data;
       var invoicedList = sections.invoiced_this_fy || [];
       var collectedList = sections.collected_this_fy || [];
@@ -168,7 +178,7 @@
       ], 2));
 
       // ── Collection gauge ─────────────────────────────────────────
-      appEl.appendChild(buildCollectionGauge(totalCollected));
+      appEl.appendChild(buildCollectionGauge(totalCollected, annualTarget));
 
       // ── Top Customers by Revenue ─────────────────────────────────
       // Use monthly_trend (all submitted invoices this FY) for grouping

@@ -1036,6 +1036,23 @@ def get_my_sales_performance():
     leads = frappe.db.count("Lead",
         filters={"lead_owner": user, "creation": [">=", fy_start]})
 
+    # Personal sales target from Sales Target DocType
+    fiscal_year = frappe.defaults.get_defaults().get("fiscal_year")
+    personal_target = frappe.db.get_value("Sales Target", {
+        "fiscal_year": fiscal_year,
+        "employee": emp.name,
+        "product_category": "All Products",
+    }, "annual_target")
+    # Fall back to company-wide target if no personal target
+    if not personal_target:
+        personal_target = frappe.db.get_value("Sales Target", {
+            "fiscal_year": fiscal_year,
+            "product_category": "All Products",
+            "employee": ["in", ["", None]],
+        }, "annual_target")
+    annual_target = float(personal_target) if personal_target else 0
+    monthly_target = round(annual_target / 12) if annual_target else 0
+
     return {
         "employee": emp.employee_name,
         "fy_start": fy_start,
@@ -1043,6 +1060,10 @@ def get_my_sales_performance():
         "quotations": {"count": len(quotes), "total": quote_total},
         "visits_this_month": visits,
         "leads_this_fy": leads,
+        "target": {
+            "annual": annual_target,
+            "monthly": monthly_target,
+        },
         "conversion": {
             "quote_to_order": round(len(orders) / len(quotes) * 100, 1) if len(quotes) > 0 else 0,
             "target_qo": 75
@@ -1110,6 +1131,17 @@ def get_sales_funnel():
     }
 
 
+def _get_fy_sales_target(fy_start):
+    """Get the 'All Products' sales target for the FY containing fy_start."""
+    fiscal_year = frappe.defaults.get_defaults().get("fiscal_year")
+    target = frappe.db.get_value("Sales Target", {
+        "fiscal_year": fiscal_year,
+        "product_category": "All Products",
+        "employee": ["in", ["", None]],
+    }, "annual_target")
+    return float(target) if target else 0
+
+
 # ── Monthly Report Card ───────────────────────────────────────
 
 @frappe.whitelist()
@@ -1169,7 +1201,7 @@ def get_monthly_report():
         "ytd": {
             "revenue": revenue_ytd,
             "orders": len(orders_ytd),
-            "target": 100900000
+            "target": _get_fy_sales_target(fy_start),
         },
         "health": {
             "outstanding": outstanding,
@@ -1180,53 +1212,101 @@ def get_monthly_report():
 
 # ── Sales Targets ─────────────────────────────────────────────
 
+# Maps ERPNext Item Group → Sales Target product_category
+PRODUCT_CATEGORY_MAP = {
+    "ACD": "ACD",
+    "ACD with SLI System": "ACD",
+    "DRM 3400": "DRM-3400",
+    "DJ-1005": "DJ-1005",
+    "E-DASH EOT": "E-DASH EOT",
+    "EOT Crane": "E-DASH EOT",
+    "E-Dash Chain Hoist": "E-Dash Chain Hoist",
+    "F-Dash": "F-Dash",
+    "TPS": "TPS",
+    "Tilt Prevention": "TPS",
+    "MRT": "MRT",
+    "MRT Systems": "MRT",
+    "DC-1005": "DC-1005",
+    "Mobile Crane": "DC-1005",
+    "Installation": "Installation",
+    "Spares & Services": "Spares",
+    "Spares": "Spares",
+    "WWSI": "WWSI",
+}
+
+
 @frappe.whitelist()
-def get_sales_targets():
-    """Get sales target vs actual for the current financial year."""
-    from datetime import date
-    today = date.today()
-    if today.month >= 4:
-        fy_start = f"{today.year}-04-01"
-        fy_end = f"{today.year + 1}-03-31"
-    else:
-        fy_start = f"{today.year - 1}-04-01"
-        fy_end = f"{today.year}-03-31"
+def get_sales_targets(fiscal_year=None):
+    """Get sales target vs actual for the current financial year from Sales Target DocType."""
+    if not fiscal_year:
+        fiscal_year = frappe.defaults.get_defaults().get("fiscal_year")
 
-    # Hardcoded targets from ABP (until we have a Target DocType)
-    targets = [
-        {"product": "ACD with SLI", "target_qty": 50, "target_amount": 11250000, "rate": 225000},
-        {"product": "DRM 3400", "target_qty": 60, "target_amount": 21000000, "rate": 350000},
-        {"product": "DJ-1005", "target_qty": 20, "target_amount": 2000000, "rate": 100000},
-        {"product": "E-DASH EOT", "target_qty": 100, "target_amount": 6000000, "rate": 60000},
-        {"product": "E-Dash Chain Hoist", "target_qty": 100, "target_amount": 2800000, "rate": 28000},
-        {"product": "WWSI", "target_qty": 100, "target_amount": 1700000, "rate": 17000},
-        {"product": "F-Dash", "target_qty": 40, "target_amount": 1600000, "rate": 40000},
-        {"product": "MRT Systems", "target_qty": 2, "target_amount": 5000000, "rate": 2500000},
-        {"product": "MRT Service", "target_qty": 100, "target_amount": 800000, "rate": 8000},
-        {"product": "TPS", "target_qty": 50, "target_amount": 1250000, "rate": 25000},
-        {"product": "Installation", "target_qty": 310, "target_amount": 3600000, "rate": 10000},
-        {"product": "Spares & Services", "target_qty": 50, "target_amount": 2500000, "rate": 50000},
-    ]
+    fy = frappe.db.get_value("Fiscal Year", fiscal_year,
+                             ["year_start_date", "year_end_date"], as_dict=True)
+    if not fy:
+        frappe.throw(_("Fiscal Year {0} not found").format(fiscal_year))
+    fy_start = fy.year_start_date
+    fy_end = fy.year_end_date
 
-    # Get actual sales orders this FY
-    orders = frappe.get_list("Sales Order",
-        filters=[["docstatus", "=", 1], ["transaction_date", ">=", fy_start], ["transaction_date", "<=", fy_end],
-                 ["company", "=", COMPANY]],
-        fields=["grand_total"],
-        limit_page_length=0)
-    total_actual = sum(o.grand_total or 0 for o in orders)
+    # Get company-wide targets from Sales Target DocType
+    targets = frappe.get_all("Sales Target",
+        filters={"fiscal_year": fiscal_year, "employee": ["in", ["", None]]},
+        fields=["product_category", "annual_target", "quarterly_target"])
 
-    # Get quotation count this FY
-    quotes = frappe.db.count("Quotation", filters={
-        "docstatus": 1, "transaction_date": [">=", fy_start], "company": COMPANY
-    })
+    target_map = {}
+    total_target = 0
+    for t in targets:
+        if t.product_category == "All Products":
+            total_target = float(t.annual_target or 0)
+        else:
+            target_map[t.product_category] = float(t.annual_target or 0)
 
-    total_target = sum(t["target_amount"] for t in targets)
+    # If no "All Products" record, sum the individual targets
+    if not total_target:
+        total_target = sum(target_map.values())
+
+    # Get actuals from Sales Order items grouped by item_group
+    actuals_raw = frappe.db.sql("""
+        SELECT soi.item_group, SUM(soi.amount) as actual
+        FROM `tabSales Order Item` soi
+        JOIN `tabSales Order` so ON so.name = soi.parent
+        WHERE so.docstatus = 1
+          AND so.transaction_date BETWEEN %s AND %s
+          AND so.company IN %s
+        GROUP BY soi.item_group
+    """, (fy_start, fy_end, COMPANIES), as_dict=True)
+
+    # Map item_groups to product categories
+    actual_map = {}
+    for row in actuals_raw:
+        cat = PRODUCT_CATEGORY_MAP.get(row.item_group)
+        if cat:
+            actual_map[cat] = actual_map.get(cat, 0) + float(row.actual or 0)
+
+    # Build product list (all categories that have either a target or an actual)
+    all_cats = set(list(target_map.keys()) + list(actual_map.keys()))
+    products = []
+    total_actual = 0
+    for cat in sorted(all_cats):
+        target = target_map.get(cat, 0)
+        actual = actual_map.get(cat, 0)
+        total_actual += actual
+        pct = round(actual / target * 100, 1) if target > 0 else 0
+        products.append({
+            "category": cat,
+            "target": target,
+            "actual": actual,
+            "pct": pct,
+        })
+
+    total_pct = round(total_actual / total_target * 100, 1) if total_target > 0 else 0
+    monthly_target = round(total_target / 12)
 
     return {
-        "fy": f"{fy_start[:4]}-{fy_end[2:4]}",
+        "fiscal_year": fiscal_year,
         "total_target": total_target,
         "total_actual": total_actual,
-        "total_quotes": quotes,
-        "products": targets
+        "total_pct": total_pct,
+        "monthly_target": monthly_target,
+        "products": products,
     }

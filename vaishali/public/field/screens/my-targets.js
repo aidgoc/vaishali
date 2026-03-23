@@ -41,8 +41,6 @@
 
   // ─── Progress bar ──────────────────────────────────────────────
 
-  var MONTHLY_TARGET_AMOUNT = 7100000; // ₹71L
-
   function progressBar(percent) {
     var pct = Math.min(100, Math.max(0, percent));
     return el('div', { className: 'progress-bar-track' }, [
@@ -50,12 +48,12 @@
     ]);
   }
 
-  function buildTargetProgress(orderedAmount) {
-    var pct = MONTHLY_TARGET_AMOUNT > 0 ? (orderedAmount / MONTHLY_TARGET_AMOUNT) * 100 : 0;
+  function buildTargetProgress(orderedAmount, monthlyTarget) {
+    var pct = monthlyTarget > 0 ? (orderedAmount / monthlyTarget) * 100 : 0;
 
     var label = el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--ink-tertiary)', marginBottom: '4px' } }, [
       el('span', { textContent: formatIndianAmount(orderedAmount) + ' ordered' }),
-      el('span', { textContent: 'Target: \u20B971L/mo' })
+      el('span', { textContent: 'Target: ' + formatIndianAmount(monthlyTarget) + '/mo' })
     ]);
 
     return el('div', { style: { margin: '16px 0' } }, [label, progressBar(pct)]);
@@ -96,19 +94,32 @@
   function renderMyTargets(appEl) {
     appEl.appendChild(UI.skeleton(3));
 
-    api.apiCall('GET', '/api/field/view/my_targets').then(function (res) {
+    var viewData = null;
+    var monthlyTarget = 0;
+
+    var viewDone = api.apiCall('GET', '/api/field/view/my_targets').then(function (res) {
+      viewData = res;
+    }).catch(function () { viewData = null; });
+
+    var targetsDone = api.apiCall('GET', '/api/field/sales-targets').then(function (res) {
+      var raw = res.data || {};
+      var d = raw.message || raw.data || raw;
+      monthlyTarget = d.monthly_target || 0;
+    }).catch(function () { monthlyTarget = 0; });
+
+    Promise.all([viewDone, targetsDone]).then(function () {
       // Remove skeletons
       var skeletons = appEl.querySelectorAll('.skeleton');
       for (var i = 0; i < skeletons.length; i++) {
         if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
       }
 
-      if (res.error || !res.data) {
+      if (!viewData || viewData.error || !viewData.data) {
         appEl.appendChild(UI.error('Could not load targets data'));
         return;
       }
 
-      var data = res.data;
+      var data = viewData.data;
       var sections = data.sections || data;
       var quotations = sections.quotation_summary || [];
       var orders = sections.order_summary || [];
@@ -132,7 +143,7 @@
       ]));
 
       // Target progress bar
-      appEl.appendChild(buildTargetProgress(totalOrdered));
+      appEl.appendChild(buildTargetProgress(totalOrdered, monthlyTarget));
 
       // Recent Quotations
       appEl.appendChild(buildQuoteList('Recent Quotations', quotations, 10));

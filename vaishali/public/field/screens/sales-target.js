@@ -115,7 +115,7 @@
         renderMyPerformance(appEl, perfData);
       }
 
-      var totalTarget = d.total_target || 62800000;
+      var totalTarget = d.total_target || 0;
       var totalActual = d.total_actual || 0;
       var totalQuotes = d.total_quotes || 0;
       var products = d.products || [];
@@ -159,8 +159,7 @@
 
       for (var i = 0; i < products.length; i++) {
         var p = products[i];
-        // Actual per-product not available yet (no SO item breakdown), show 0
-        prodSection.appendChild(targetBar(p.product, p.target_amount, 0));
+        prodSection.appendChild(targetBar(p.category, p.target, p.actual || 0));
       }
 
       appEl.appendChild(prodSection);

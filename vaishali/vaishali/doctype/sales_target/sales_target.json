@@ -1,0 +1,106 @@
+{
+  "actions": [],
+  "autoname": "ST-.fiscal_year.-.product_category.-.####",
+  "creation": "2026-03-23 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "fiscal_year",
+    "employee",
+    "column_break_1",
+    "product_category",
+    "section_break_targets",
+    "annual_target",
+    "column_break_2",
+    "quarterly_target"
+  ],
+  "fields": [
+    {
+      "fieldname": "fiscal_year",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Fiscal Year",
+      "options": "Fiscal Year",
+      "reqd": 1
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Employee",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "product_category",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Product Category",
+      "options": "ACD\nDRM-3400\nDJ-1005\nE-DASH EOT\nE-Dash Chain Hoist\nF-Dash\nTPS\nMRT\nDC-1005\nInstallation\nSpares\nWWSI\nAll Products",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_break_targets",
+      "fieldtype": "Section Break",
+      "label": "Targets"
+    },
+    {
+      "fieldname": "annual_target",
+      "fieldtype": "Currency",
+      "in_list_view": 1,
+      "label": "Annual Target",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_2",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "quarterly_target",
+      "fieldtype": "Currency",
+      "label": "Quarterly Target",
+      "description": "Auto-calculated as Annual Target / 4 if left blank"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-03-23 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "Sales Target",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Sales Manager",
+      "write": 1,
+      "create": 1
+    },
+    {
+      "read": 1,
+      "role": "Sales User"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "product_category",
+  "track_changes": 1
+}

@@ -56,15 +56,28 @@
     var loader = UI.skeleton(4);
     appEl.appendChild(loader);
 
-    api.apiCall('GET', '/api/field/monthly-report').then(function (res) {
+    var reportData = null;
+    var annualTarget = 0;
+
+    var reportDone = api.apiCall('GET', '/api/field/monthly-report').then(function (res) {
+      reportData = res;
+    }).catch(function () { reportData = null; });
+
+    var targetsDone = api.apiCall('GET', '/api/field/sales-targets').then(function (res) {
+      var raw = res.data || {};
+      var d = raw.message || raw.data || raw;
+      annualTarget = d.total_target || 0;
+    }).catch(function () { annualTarget = 0; });
+
+    Promise.all([reportDone, targetsDone]).then(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
 
-      if (res.error || !res.data) {
+      if (!reportData || reportData.error || !reportData.data) {
         appEl.appendChild(UI.error('Could not load report data. Please try again.'));
         return;
       }
 
-      var raw = res.data;
+      var raw = reportData.data;
       var data = raw.message || raw.data || raw;
 
       var month = data.month || '';
@@ -114,7 +127,7 @@
         UI.statCard(ytd.orders || 0, 'YTD Orders')
       ], 2));
 
-      appEl.appendChild(buildYTDProgress(ytd.revenue || 0, ytd.target || 100900000));
+      appEl.appendChild(buildYTDProgress(ytd.revenue || 0, ytd.target || annualTarget));
 
       // ── Health section ────────────────────────────────────────────
       appEl.appendChild(UI.sectionHeading('Health'));
