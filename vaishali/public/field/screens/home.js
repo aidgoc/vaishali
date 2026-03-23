@@ -421,6 +421,11 @@
           value: expenseCount > 0 ? String(expenseCount) : null,
           sub: expenseCount > 0 ? '\u20b9' + expenseTotal.toLocaleString('en-IN') + ' pending' : null,
           onClick: function () { location.hash = '#/expense'; }
+        }),
+        UI.actionCard({
+          icon: 'receipt',
+          label: 'Budget',
+          onClick: function () { location.hash = '#/budget'; }
         })
       ]);
       appEl.appendChild(actionGrid);

@@ -338,6 +338,17 @@
       else if (path === '/api/field/my-performance') path = '/api/method/vaishali.api.field.get_my_sales_performance';
       else if (path === '/api/field/sales-funnel') path = '/api/method/vaishali.api.field.get_sales_funnel';
       else if (path === '/api/field/monthly-report') path = '/api/method/vaishali.api.field.get_monthly_report';
+      else if (path === '/api/field/budget-summary' || path.indexOf('/api/field/budget-summary?') === 0) {
+        var bsQS = ''; var bsQI = path.indexOf('?'); if (bsQI !== -1) bsQS = path.substring(bsQI);
+        path = '/api/method/vaishali.api.field.get_budget_summary' + bsQS;
+      }
+      else if (path === '/api/field/budget-detail' || path.indexOf('/api/field/budget-detail?') === 0) {
+        var bdQS = ''; var bdQI = path.indexOf('?'); if (bdQI !== -1) bdQS = path.substring(bdQI);
+        path = '/api/method/vaishali.api.field.get_budget_detail' + bdQS;
+      }
+      else if (path === '/api/field/budget' && method === 'POST') {
+        path = '/api/method/vaishali.api.field.set_budget';
+      }
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);

@@ -32,6 +32,7 @@ doc_events = {
         "on_update": "vaishali.notifications.on_leave_application_update",
     },
     "Expense Claim": {
+        "before_submit": "vaishali.budget.check_budget_cap",
         "on_submit": "vaishali.notifications.on_expense_claim_submit",
         "on_update": "vaishali.notifications.on_expense_claim_update",
     },

@@ -5,18 +5,26 @@ from datetime import date, datetime
 import calendar
 
 COMPANY = "Dynamic Servitech Private Limited"
+COMPANIES = [
+    "Dynamic Servitech Private Limited",
+    "Dynamic Crane Engineers Private Limited",
+]
 
 
 def _get_employee(user=None):
     if not user:
         user = frappe.session.user
     emps = frappe.get_list("Employee",
-        filters={"user_id": user, "company": COMPANY, "status": "Active"},
-        fields=["name", "employee_name", "department", "designation"],
+        filters={"user_id": user, "company": ["in", COMPANIES], "status": "Active"},
+        fields=["name", "employee_name", "department", "designation", "company",
+                "reports_to"],
         limit_page_length=1)
     if not emps:
-        frappe.throw(_("No active DSPL employee found for {0}").format(user))
-    return emps[0]
+        frappe.throw(_("No active employee found for {0}").format(user))
+    emp = emps[0]
+    # Fetch vertical (custom field, may not be in get_list)
+    emp.vertical = frappe.db.get_value("Employee", emp.name, "vertical") or ""
+    return emp
 
 
 def _get_nav_tier(user=None):
@@ -545,6 +553,316 @@ def get_pending_expenses():
         fields=["grand_total"])
     total = sum(c.grand_total or 0 for c in claims)
     return {"count": len(claims), "total": total}
+
+
+# ── Budget Dashboard ─────────────────────────────────────────
+
+def _budget_month_range(posting_date=None):
+    """Return (first_day, last_day) ISO strings for the month of posting_date."""
+    from datetime import date as dt_date
+    d = posting_date or dt_date.today()
+    if isinstance(d, str):
+        parts = d.split("-")
+        y, m = int(parts[0]), int(parts[1])
+    else:
+        y, m = d.year, d.month
+    last = calendar.monthrange(y, m)[1]
+    return dt_date(y, m, 1).isoformat(), dt_date(y, m, last).isoformat()
+
+
+def _get_emp_budget(vertical, employee, fiscal_year):
+    """Find matching Expense Budget: employee-specific first, then vertical."""
+    b = frappe.db.get_value("Expense Budget",
+        {"fiscal_year": fiscal_year, "employee": employee},
+        ["monthly_cap", "annual_budget", "alert_threshold", "escalate_threshold"],
+        as_dict=True)
+    if b:
+        return b
+    return frappe.db.get_value("Expense Budget",
+        {"fiscal_year": fiscal_year, "vertical": vertical,
+         "employee": ["in", ["", None]]},
+        ["monthly_cap", "annual_budget", "alert_threshold", "escalate_threshold"],
+        as_dict=True)
+
+
+def _employee_spend(employee_name, date_start, date_end):
+    """Sum submitted, non-rejected Expense Claims for an employee in a date range."""
+    return frappe.db.sql("""
+        SELECT IFNULL(SUM(total_claimed_amount), 0)
+        FROM `tabExpense Claim`
+        WHERE employee = %s
+          AND posting_date BETWEEN %s AND %s
+          AND docstatus = 1
+          AND approval_status != 'Rejected'
+    """, (employee_name, date_start, date_end))[0][0]
+
+
+def _employee_spend_by_type(employee_name, date_start, date_end):
+    """Breakdown by expense_type for an employee in a date range."""
+    return frappe.db.sql("""
+        SELECT ed.expense_type as type, SUM(ed.amount) as amount
+        FROM `tabExpense Claim Detail` ed
+        JOIN `tabExpense Claim` ec ON ec.name = ed.parent
+        WHERE ec.employee = %s
+          AND ec.posting_date BETWEEN %s AND %s
+          AND ec.docstatus = 1
+          AND ec.approval_status != 'Rejected'
+        GROUP BY ed.expense_type
+        ORDER BY amount DESC
+    """, (employee_name, date_start, date_end), as_dict=True)
+
+
+@frappe.whitelist()
+def get_budget_summary(fiscal_year=None):
+    """Budget vs actual summary. Returns role-appropriate data."""
+    employee = _get_employee()
+    tier = _get_nav_tier()
+
+    if not fiscal_year:
+        fiscal_year = frappe.defaults.get_defaults().get("fiscal_year", "2025-2026")
+
+    fy_dates = frappe.db.get_value("Fiscal Year", fiscal_year,
+                                    ["year_start_date", "year_end_date"])
+    if not fy_dates:
+        frappe.throw(_(f"Fiscal Year {fiscal_year} not found"))
+    fy_start, fy_end = str(fy_dates[0]), str(fy_dates[1])
+
+    month_start, month_end = _budget_month_range()
+
+    # --- My budget (all users) ---
+    budget = _get_emp_budget(employee.vertical, employee.name, fiscal_year)
+    cap = budget.monthly_cap if budget else 0
+    annual = (budget.annual_budget or cap * 12) if budget else 0
+
+    spent_month = _employee_spend(employee.name, month_start, month_end)
+    spent_ytd = _employee_spend(employee.name, fy_start, fy_end)
+
+    pct_month = round(spent_month / cap * 100, 1) if cap else 0
+    pct_ytd = round(spent_ytd / annual * 100, 1) if annual else 0
+    status = "exceeded" if pct_month >= 100 else "warning" if pct_month >= 80 else "ok"
+
+    result = {
+        "my_budget": {
+            "monthly_cap": cap,
+            "spent_this_month": spent_month,
+            "annual_budget": annual,
+            "spent_ytd": spent_ytd,
+            "pct_month": pct_month,
+            "pct_ytd": pct_ytd,
+            "status": status,
+            "by_type": _employee_spend_by_type(employee.name, month_start, month_end),
+        }
+    }
+
+    # --- Manager: vertical view ---
+    if tier in ("manager", "admin"):
+        vertical = employee.vertical
+        if vertical:
+            result["vertical"] = _vertical_budget(vertical, fiscal_year,
+                                                   fy_start, fy_end,
+                                                   month_start, month_end)
+        result["trend"] = _expense_trend(fy_start, fy_end,
+                                          vertical if tier == "manager" else None)
+
+    # --- Admin: all verticals ---
+    if tier == "admin":
+        result["verticals"] = []
+        for v in ["EPS", "ERS", "ESS", "OTHER"]:
+            vdata = _vertical_budget(v, fiscal_year, fy_start, fy_end,
+                                      month_start, month_end)
+            if vdata["employee_count"] > 0:
+                result["verticals"].append(vdata)
+
+        total_exp = sum(v["spent_ytd"] for v in result["verticals"])
+        result["expense_to_revenue"] = {
+            "total_expenses": total_exp,
+            "total_revenue": 70000000,
+            "ratio_pct": round(total_exp / 70000000 * 100, 1) if total_exp else 0,
+        }
+        result["top_spenders"] = _top_spenders(fy_start, fy_end, limit=10)
+
+    return result
+
+
+def _vertical_budget(vertical, fiscal_year, fy_start, fy_end,
+                     month_start, month_end):
+    """Budget vs actual for a vertical."""
+    employees = frappe.get_all("Employee",
+        filters={"vertical": vertical, "status": "Active"},
+        fields=["name", "employee_name"],
+        limit_page_length=0)
+    emp_names = [e.name for e in employees]
+
+    if not emp_names:
+        return {"name": vertical, "annual_budget": 0, "spent_ytd": 0, "pct": 0,
+                "employee_count": 0, "over_cap_count": 0, "employees": []}
+
+    vbudget = frappe.db.get_value("Expense Budget",
+        {"fiscal_year": fiscal_year, "vertical": vertical,
+         "employee": ["in", ["", None]]},
+        "annual_budget") or 0
+
+    spent_ytd = frappe.db.sql("""
+        SELECT IFNULL(SUM(total_claimed_amount), 0)
+        FROM `tabExpense Claim`
+        WHERE employee IN %s
+          AND posting_date BETWEEN %s AND %s
+          AND docstatus = 1 AND approval_status != 'Rejected'
+    """, (emp_names, fy_start, fy_end))[0][0]
+
+    # Per-employee this month
+    emp_spend = frappe.db.sql("""
+        SELECT employee, IFNULL(SUM(total_claimed_amount), 0) as spent
+        FROM `tabExpense Claim`
+        WHERE employee IN %s
+          AND posting_date BETWEEN %s AND %s
+          AND docstatus = 1 AND approval_status != 'Rejected'
+        GROUP BY employee
+    """, (emp_names, month_start, month_end), as_dict=True)
+    spend_map = {e.employee: e.spent for e in emp_spend}
+
+    over_cap = 0
+    emp_list = []
+    for emp in employees:
+        spent = spend_map.get(emp.name, 0)
+        cap = frappe.db.get_value("Expense Budget",
+            {"fiscal_year": fiscal_year, "employee": emp.name},
+            "monthly_cap") or 15000
+        st = "exceeded" if spent > cap else "warning" if spent > cap * 0.8 else "ok"
+        if spent > cap:
+            over_cap += 1
+        emp_list.append({"name": emp.employee_name, "employee": emp.name,
+                         "spent_month": spent, "cap": cap, "status": st})
+    emp_list.sort(key=lambda x: -x["spent_month"])
+
+    return {
+        "name": vertical,
+        "annual_budget": vbudget,
+        "spent_ytd": spent_ytd,
+        "pct": round(spent_ytd / vbudget * 100, 1) if vbudget else 0,
+        "employee_count": len(employees),
+        "over_cap_count": over_cap,
+        "employees": emp_list,
+    }
+
+
+def _expense_trend(fy_start, fy_end, vertical=None):
+    """Monthly expense totals for the fiscal year."""
+    vert_filter = "AND e.vertical = %s" if vertical else ""
+    params = [fy_start, fy_end]
+    if vertical:
+        params.append(vertical)
+
+    rows = frappe.db.sql(f"""
+        SELECT DATE_FORMAT(ec.posting_date, '%%b %%y') as month,
+               MONTH(ec.posting_date) as month_num,
+               IFNULL(SUM(ec.total_claimed_amount), 0) as actual
+        FROM `tabExpense Claim` ec
+        JOIN `tabEmployee` e ON e.name = ec.employee
+        WHERE ec.posting_date BETWEEN %s AND %s
+          AND ec.docstatus = 1 AND ec.approval_status != 'Rejected'
+          {vert_filter}
+        GROUP BY month, month_num
+        ORDER BY YEAR(ec.posting_date), month_num
+    """, params, as_dict=True)
+    return [{"month": r.month, "actual": r.actual} for r in rows]
+
+
+def _top_spenders(fy_start, fy_end, limit=10):
+    """Top N spenders across all verticals."""
+    return frappe.db.sql("""
+        SELECT ec.employee_name as name, e.vertical,
+               SUM(ec.total_claimed_amount) as spent_ytd
+        FROM `tabExpense Claim` ec
+        JOIN `tabEmployee` e ON e.name = ec.employee
+        WHERE ec.posting_date BETWEEN %s AND %s
+          AND ec.docstatus = 1 AND ec.approval_status != 'Rejected'
+        GROUP BY ec.employee, ec.employee_name, e.vertical
+        ORDER BY spent_ytd DESC
+        LIMIT %s
+    """, (fy_start, fy_end, limit), as_dict=True)
+
+
+@frappe.whitelist()
+def get_budget_detail(vertical, employee=None, month=None, fiscal_year=None):
+    """Drill-down budget detail. Manager+ only."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        frappe.throw(_("Only managers and admins can view budget details"))
+
+    if not fiscal_year:
+        fiscal_year = frappe.defaults.get_defaults().get("fiscal_year", "2025-2026")
+
+    fy_dates = frappe.db.get_value("Fiscal Year", fiscal_year,
+                                    ["year_start_date", "year_end_date"])
+    if not fy_dates:
+        return []
+    fy_start, fy_end = str(fy_dates[0]), str(fy_dates[1])
+
+    if employee:
+        if month:
+            ms, me = _budget_month_range(month + "-15")
+        else:
+            ms, me = fy_start, fy_end
+
+        claims = frappe.get_list("Expense Claim",
+            filters={
+                "employee": employee, "docstatus": 1,
+                "approval_status": ["!=", "Rejected"],
+                "posting_date": ["between", [ms, me]],
+            },
+            fields=["name", "posting_date", "total_claimed_amount",
+                     "approval_status"],
+            order_by="posting_date desc",
+            limit_page_length=50)
+        return {"employee": employee, "claims": claims}
+    else:
+        month_start, month_end = _budget_month_range()
+        return _vertical_budget(vertical, fiscal_year, fy_start, fy_end,
+                                 month_start, month_end)
+
+
+@frappe.whitelist(methods=["POST"])
+def set_budget(fiscal_year, vertical, monthly_cap, employee=None,
+               alert_threshold=80, escalate_threshold=100, name=None):
+    """Create or update an Expense Budget record. Admin only."""
+    tier = _get_nav_tier()
+    if tier != "admin":
+        frappe.throw(_("Only admins can set budgets"))
+
+    monthly_cap = float(monthly_cap)
+    if monthly_cap <= 0:
+        frappe.throw(_("Monthly cap must be greater than 0"))
+    if not frappe.db.exists("Fiscal Year", fiscal_year):
+        frappe.throw(_(f"Fiscal Year {fiscal_year} does not exist"))
+
+    # Upsert: find existing or create
+    is_new = False
+    if name and frappe.db.exists("Expense Budget", name):
+        doc = frappe.get_doc("Expense Budget", name)
+    else:
+        filters = {"fiscal_year": fiscal_year, "vertical": vertical}
+        if employee:
+            filters["employee"] = employee
+        else:
+            filters["employee"] = ["in", ["", None]]
+        existing = frappe.db.get_value("Expense Budget", filters, "name")
+        if existing:
+            doc = frappe.get_doc("Expense Budget", existing)
+        else:
+            is_new = True
+            doc = frappe.new_doc("Expense Budget")
+            doc.fiscal_year = fiscal_year
+            doc.vertical = vertical
+            doc.employee = employee or ""
+
+    doc.monthly_cap = monthly_cap
+    doc.alert_threshold = float(alert_threshold)
+    doc.escalate_threshold = float(escalate_threshold)
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"name": doc.name, "action": "created" if is_new else "updated"}
 
 
 # ── Items (for quotation picker) ─────────────────────────────

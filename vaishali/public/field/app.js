@@ -168,6 +168,7 @@
 
     // Reports
     { pattern: '#/monthly-report', handler: function () { S().monthlyReport(appEl); }, tab: 'home', title: 'Monthly Report', back: '#/home' },
+    { pattern: '#/budget', handler: function () { S().budgetDashboard(appEl); }, tab: 'home', title: 'Budget', back: '#/home' },
 
     // AI Chat
     { pattern: '#/chat', handler: function () { S().chat(appEl); }, tab: 'chat', title: 'AI Chat', back: null },

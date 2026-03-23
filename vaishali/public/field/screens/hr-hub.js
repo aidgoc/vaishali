@@ -16,7 +16,8 @@
       { label: 'Leave', ic: 'umbrella', hash: '#/leave', sub: 'Balance and applications' },
       { label: 'Expenses', ic: 'receipt', hash: '#/expense', sub: 'Claims and reimbursements' },
       { label: 'Advances', ic: 'banknote', hash: '#/advance', sub: 'Salary advance requests' },
-      { label: 'Salary', ic: 'wallet', hash: '#/salary', sub: 'Payslips and history' }
+      { label: 'Salary', ic: 'wallet', hash: '#/salary', sub: 'Payslips and history' },
+      { label: 'Budget', ic: 'receipt', hash: '#/budget', sub: 'Expense budget tracker' }
     ];
 
     for (var i = 0; i < tiles.length; i++) {

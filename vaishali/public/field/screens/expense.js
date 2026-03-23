@@ -4,7 +4,8 @@
 
   window.Screens = window.Screens || {};
 
-  var COMPANY = 'Dynamic Servitech Private Limited';
+  var emp = Auth.getEmployee() || {};
+  var COMPANY = emp.company || 'Dynamic Servitech Private Limited';
   var EXPENSE_TYPES = [
     { value: '', text: 'Select type\u2026' },
     { value: 'Travel Fare', text: 'Travel' },

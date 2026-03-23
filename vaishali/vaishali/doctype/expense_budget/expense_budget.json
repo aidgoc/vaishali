@@ -1,0 +1,119 @@
+{
+  "actions": [],
+  "autoname": "EXB-.fiscal_year.-.vertical.-.####",
+  "creation": "2026-03-23 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "fiscal_year",
+    "vertical",
+    "employee",
+    "column_break_1",
+    "monthly_cap",
+    "annual_budget",
+    "section_break_thresholds",
+    "alert_threshold",
+    "escalate_threshold"
+  ],
+  "fields": [
+    {
+      "fieldname": "fiscal_year",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Fiscal Year",
+      "options": "Fiscal Year",
+      "reqd": 1
+    },
+    {
+      "fieldname": "vertical",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Vertical",
+      "options": "EPS\nERS\nESS\nOTHER",
+      "reqd": 1
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Employee",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "monthly_cap",
+      "fieldtype": "Currency",
+      "in_list_view": 1,
+      "label": "Monthly Cap",
+      "reqd": 1
+    },
+    {
+      "fieldname": "annual_budget",
+      "fieldtype": "Currency",
+      "label": "Annual Budget",
+      "description": "Auto-calculated as Monthly Cap × 12 if left blank"
+    },
+    {
+      "fieldname": "section_break_thresholds",
+      "fieldtype": "Section Break",
+      "label": "Thresholds"
+    },
+    {
+      "fieldname": "alert_threshold",
+      "fieldtype": "Percent",
+      "default": "80",
+      "label": "Alert Threshold",
+      "reqd": 1,
+      "description": "Show warning at this % of monthly cap"
+    },
+    {
+      "fieldname": "escalate_threshold",
+      "fieldtype": "Percent",
+      "default": "100",
+      "label": "Escalate Threshold",
+      "reqd": 1,
+      "description": "Telegram alert to manager at this % of monthly cap"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2026-03-23 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "Expense Budget",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "HR Manager",
+      "write": 1,
+      "create": 1
+    },
+    {
+      "read": 1,
+      "role": "HR User"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "vertical",
+  "track_changes": 1
+}
