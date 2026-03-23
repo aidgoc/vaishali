@@ -298,7 +298,27 @@
         }
       }
 
-      // 4. Department shortcuts
+      // 4. HR Services
+      appEl.appendChild(UI.sectionHeading('HR services'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/leave'; } }, [
+          icon('umbrella'), el('span', { textContent: 'Leave' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/salary'; } }, [
+          icon('wallet'), el('span', { textContent: 'Salary' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/expense'; } }, [
+          icon('receipt'), el('span', { textContent: 'Expenses' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/advance'; } }, [
+          icon('banknote'), el('span', { textContent: 'Advances' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/budget'; } }, [
+          icon('receipt'), el('span', { textContent: 'Budget' })
+        ])
+      ]));
+
+      // 5. Department shortcuts
       renderDeptShortcuts(appEl);
 
     }).catch(function () {
@@ -444,6 +464,9 @@
         ]),
         el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/advance'; } }, [
           icon('banknote'), el('span', { textContent: 'Advances' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/budget'; } }, [
+          icon('receipt'), el('span', { textContent: 'Budget' })
         ])
       ]));
 
