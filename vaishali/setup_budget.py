@@ -12,18 +12,13 @@ VERTICAL_MAP = {
     # This mapping should be populated from the Krisp data
 }
 
-# Default vertical assignment by ERPNext department
-DEPT_VERTICAL_DEFAULT = {
-    "Operations - DCEPL": "EPS",
+# Only these departments are EPS — all others get no vertical
+EPS_DEPARTMENTS = {
     "SERVICE - DSPL": "EPS",
     "Sales - DSPL": "EPS",
     "SALES AND MARKETING - DSPL": "EPS",
     "Production - DSPL": "EPS",
     "R AND D - DSPL": "EPS",
-    "Management - DSPL": "EPS",
-    "Accounts": "EPS",
-    "Human Resources": "EPS",
-    "Purchase": "EPS",
     "Marketing": "EPS",
 }
 
@@ -67,7 +62,7 @@ def _populate_verticals():
         # Check explicit mapping first
         vertical = VERTICAL_MAP.get(emp.name)
         if not vertical:
-            vertical = DEPT_VERTICAL_DEFAULT.get(emp.department, "EPS")
+            vertical = EPS_DEPARTMENTS.get(emp.department, "")
 
         current = frappe.db.get_value("Employee", emp.name, "vertical")
         if current != vertical:
