@@ -20,6 +20,7 @@ EPS_DEPARTMENTS = {
     "Production - DSPL": "EPS",
     "R AND D - DSPL": "EPS",
     "Marketing": "EPS",
+    "Management - DSPL": "EPS",
 }
 
 
