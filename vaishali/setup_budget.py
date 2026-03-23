@@ -78,8 +78,8 @@ def _populate_verticals():
 
 
 def _seed_budgets():
-    """Create default Expense Budget records for FY 2026-2027."""
-    fy = "2026-2027"
+    """Create default Expense Budget records for FY 2025-2026."""
+    fy = "2025-2026"
 
     # Vertical-level budgets
     vertical_budgets = {
