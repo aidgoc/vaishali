@@ -1310,3 +1310,75 @@ def get_sales_targets(fiscal_year=None):
         "monthly_target": monthly_target,
         "products": products,
     }
+
+
+# ── Equipment Tracker ────────────────────────────────────────
+
+@frappe.whitelist()
+def get_equipment(search=None, status=None, customer=None):
+    """Equipment register — list serial numbers with equipment metadata."""
+    _get_employee()  # auth check
+
+    filters = [["company", "in", COMPANIES]]
+    if status:
+        filters.append(["status", "=", status])
+    if customer:
+        filters.append(["customer", "like", f"%{customer}%"])
+
+    or_filters = None
+    if search:
+        or_filters = [
+            ["serial_no", "like", f"%{search}%"],
+            ["item_code", "like", f"%{search}%"],
+            ["customer", "like", f"%{search}%"],
+            ["krisp_asset_id", "like", f"%{search}%"],
+        ]
+
+    # Get status counts (unfiltered by search for summary)
+    status_counts = frappe.db.sql("""
+        SELECT status, COUNT(*) as cnt
+        FROM `tabSerial No`
+        WHERE company IN %s
+        GROUP BY status
+    """, (COMPANIES,), as_dict=True)
+    by_status = {}
+    total = 0
+    for row in status_counts:
+        by_status[row.status] = row.cnt
+        total += row.cnt
+
+    # Fetch equipment list
+    equipment_raw = frappe.get_list("Serial No",
+        filters=filters,
+        or_filters=or_filters,
+        fields=[
+            "name as serial_no", "item_code", "item_name",
+            "customer", "customer_name", "status",
+            "warranty_expiry_date as warranty_expiry",
+            "delivery_date", "creation",
+            # Custom fields
+            "krisp_asset_id as krisp_id",
+            "customer_site", "dc_number",
+            "asset_type_1", "asset_type_2", "asset_type_3",
+            "next_calibration", "next_maintenance",
+        ],
+        order_by="creation desc",
+        limit_page_length=50)
+
+    # Enrich with item_name from Item if not on Serial No
+    for eq in equipment_raw:
+        if not eq.get("item_name") and eq.get("item_code"):
+            eq["item_name"] = frappe.db.get_value("Item", eq["item_code"], "item_name") or eq["item_code"]
+        # Use customer_name if available, fall back to customer link
+        if eq.get("customer_name"):
+            eq["customer"] = eq["customer_name"]
+        # Convert dates to strings
+        for dt_field in ["warranty_expiry", "delivery_date", "next_calibration", "next_maintenance"]:
+            if eq.get(dt_field):
+                eq[dt_field] = str(eq[dt_field])
+
+    return {
+        "total": total,
+        "by_status": by_status,
+        "equipment": equipment_raw,
+    }

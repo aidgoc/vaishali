@@ -349,6 +349,10 @@
       else if (path === '/api/field/budget' && method === 'POST') {
         path = '/api/method/vaishali.api.field.set_budget';
       }
+      else if (path === '/api/field/equipment' || path.indexOf('/api/field/equipment?') === 0) {
+        var eqQS = ''; var eqQI = path.indexOf('?'); if (eqQI !== -1) eqQS = path.substring(eqQI);
+        path = '/api/method/vaishali.api.field.get_equipment' + eqQS;
+      }
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);

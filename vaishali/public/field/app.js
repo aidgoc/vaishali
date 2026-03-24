@@ -157,6 +157,10 @@
     { pattern: '#/breakdown/new',    handler: function () { S().breakdownNew(appEl); },           tab: 'home', title: 'Log Breakdown', back: '#/breakdowns' },
     { pattern: '#/breakdown/:id',    handler: function (p) { S().breakdownDetail(appEl, p); },    tab: 'home', title: 'Breakdown',     back: '#/breakdowns' },
 
+    // Equipment
+    { pattern: '#/equipment/:id', handler: function (p) { S().equipmentDetail(appEl, p); }, tab: 'home', title: 'Equipment', back: '#/equipment' },
+    { pattern: '#/equipment', handler: function () { S().equipmentList(appEl); }, tab: 'home', title: 'Equipment', back: '#/home' },
+
     // Production
     { pattern: '#/production', handler: function () { S().productionDashboard(appEl); }, tab: 'home', title: 'Production', back: '#/home' },
     { pattern: '#/dispatch',   handler: function () { S().dispatchTracker(appEl); },     tab: 'home', title: 'Dispatch',   back: '#/home' },

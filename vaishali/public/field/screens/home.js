@@ -118,6 +118,7 @@
     } else if (tab === 'operations') {
       tiles = [
         { label: 'Service', ic: 'settings', hash: '#/service' },
+        { label: 'Equipment', ic: 'package', hash: '#/equipment' },
         { label: 'Production', ic: 'refresh', hash: '#/production' },
         { label: 'Dispatch', ic: 'shoppingCart', hash: '#/dispatch' },
         { label: 'Breakdowns', ic: 'bell', hash: '#/breakdowns' },
@@ -175,6 +176,7 @@
       container.appendChild(UI.sectionHeading('Service'));
       var serviceTiles = [
         { label: 'Service', ic: 'settings', hash: '#/service' },
+        { label: 'Equipment', ic: 'package', hash: '#/equipment' },
         { label: 'Installations', ic: 'package', hash: '#/installations' },
         { label: 'Breakdowns', ic: 'bell', hash: '#/breakdowns' }
       ];
