@@ -1315,7 +1315,7 @@ def get_sales_targets(fiscal_year=None):
 # ── Equipment Tracker ────────────────────────────────────────
 
 @frappe.whitelist()
-def get_equipment(search=None, status=None, customer=None):
+def get_devices(search=None, status=None, customer=None):
     """Equipment register — list serial numbers with equipment metadata."""
     _get_employee()  # auth check
 

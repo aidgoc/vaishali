@@ -1,4 +1,4 @@
-/* equipment.js — Equipment Tracker for DSPL Field PWA */
+/* devices.js — Device Tracker for DSPL Field PWA */
 (function () {
   'use strict';
 
@@ -85,9 +85,9 @@
     return UI.pill(text, color);
   }
 
-  // ── Equipment List ──────────────────────────────────────────────
+  // ── Devices List ──────────────────────────────────────────────
 
-  function renderEquipmentList(appEl) {
+  function renderDevicesList(appEl) {
     var currentSearch = '';
     var currentStatus = '';
 
@@ -118,7 +118,7 @@
       var qs = [];
       if (currentSearch) qs.push('search=' + encodeURIComponent(currentSearch));
       if (currentStatus) qs.push('status=' + encodeURIComponent(currentStatus));
-      var path = '/api/field/equipment' + (qs.length ? '?' + qs.join('&') : '');
+      var path = '/api/field/devices' + (qs.length ? '?' + qs.join('&') : '');
 
       api.apiCall('GET', path).then(function (res) {
         // Remove skeletons
@@ -129,14 +129,14 @@
 
         if (res.error || !res.data) {
           listContainer.textContent = '';
-          listContainer.appendChild(UI.error('Could not load equipment'));
+          listContainer.appendChild(UI.error('Could not load devices'));
           return;
         }
 
         var data = res.data.data || res.data.message || res.data;
         var total = data.total || 0;
         var byStatus = data.by_status || {};
-        var equipment = data.equipment || [];
+        var devices = data.devices || [];
 
         // KPI row
         var activeCount = byStatus['Active'] || 0;
@@ -144,8 +144,8 @@
 
         // Count warranty expiring soon (within 90 days)
         var warrantyExpiring = 0;
-        for (var wi = 0; wi < equipment.length; wi++) {
-          var wDays = daysUntil(equipment[wi].warranty_expiry);
+        for (var wi = 0; wi < devices.length; wi++) {
+          var wDays = daysUntil(devices[wi].warranty_expiry);
           if (wDays !== null && wDays >= 0 && wDays <= 90) warrantyExpiring++;
         }
 
@@ -189,16 +189,16 @@
           })(statuses[si], statusLabels[si]);
         }
 
-        // Equipment list
+        // Devices list
         listContainer.textContent = '';
 
-        if (equipment.length === 0) {
-          listContainer.appendChild(UI.empty('settings', 'No equipment found'));
+        if (devices.length === 0) {
+          listContainer.appendChild(UI.empty('settings', 'No devices found'));
           return;
         }
 
-        for (var ei = 0; ei < equipment.length; ei++) {
-          var eq = equipment[ei];
+        for (var ei = 0; ei < devices.length; ei++) {
+          var eq = devices[ei];
           var subParts = [eq.serial_no];
           if (eq.customer) subParts.push(eq.customer);
           if (eq.customer_site) subParts.push(eq.customer_site);
@@ -208,7 +208,7 @@
             sub: subParts.join(' \u00B7 '),
             right: UI.pill(eq.status || 'Unknown', statusColor(eq.status)),
             onClick: (function (sn) {
-              return function () { location.hash = '#/equipment/' + encodeURIComponent(sn); };
+              return function () { location.hash = '#/devices/' + encodeURIComponent(sn); };
             })(eq.serial_no)
           }));
         }
@@ -218,42 +218,42 @@
           if (skels[i].parentNode) skels[i].parentNode.removeChild(skels[i]);
         }
         listContainer.textContent = '';
-        listContainer.appendChild(UI.error('Could not load equipment'));
+        listContainer.appendChild(UI.error('Could not load devices'));
       });
     }
   }
 
-  // ── Equipment Detail ────────────────────────────────────────────
+  // ── Devices Detail ────────────────────────────────────────────
 
-  function renderEquipmentDetail(appEl, params) {
+  function renderDevicesDetail(appEl, params) {
     var serialNo = params.id;
 
     var loader = UI.skeleton(3);
     appEl.appendChild(loader);
 
-    api.apiCall('GET', '/api/field/equipment?search=' + encodeURIComponent(serialNo)).then(function (res) {
+    api.apiCall('GET', '/api/field/devices?search=' + encodeURIComponent(serialNo)).then(function (res) {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
 
       if (res.error || !res.data) {
-        appEl.appendChild(UI.error('Failed to load equipment data'));
+        appEl.appendChild(UI.error('Failed to load devices data'));
         return;
       }
 
       var data = res.data.data || res.data.message || res.data;
-      var equipment = data.equipment || [];
+      var devices = data.devices || [];
 
       // Find exact match
       var eq = null;
-      for (var i = 0; i < equipment.length; i++) {
-        if (equipment[i].serial_no === serialNo) {
-          eq = equipment[i];
+      for (var i = 0; i < devices.length; i++) {
+        if (devices[i].serial_no === serialNo) {
+          eq = devices[i];
           break;
         }
       }
-      if (!eq && equipment.length > 0) eq = equipment[0];
+      if (!eq && devices.length > 0) eq = devices[0];
 
       if (!eq) {
-        appEl.appendChild(UI.empty('settings', 'Equipment not found'));
+        appEl.appendChild(UI.empty('settings', 'Device not found'));
         return;
       }
 
@@ -334,18 +334,18 @@
 
     }).catch(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
-      appEl.appendChild(UI.error('Failed to load equipment data'));
+      appEl.appendChild(UI.error('Failed to load devices data'));
     });
   }
 
   // ── Export ──────────────────────────────────────────────────────
 
   window.Screens = window.Screens || {};
-  window.Screens.equipmentList = function (appEl) {
-    renderEquipmentList(appEl);
+  window.Screens.devicesList = function (appEl) {
+    renderDevicesList(appEl);
   };
-  window.Screens.equipmentDetail = function (appEl, params) {
-    renderEquipmentDetail(appEl, params);
+  window.Screens.devicesDetail = function (appEl, params) {
+    renderDevicesDetail(appEl, params);
   };
 
 })();
