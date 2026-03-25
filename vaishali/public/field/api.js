@@ -300,6 +300,9 @@
         path = '/api/method/vaishali.api.field.process_approval';
       }
       else if (path.match(/^\/api\/field\/dcr\/[^/]+\/checkout$/)) {
+        var coId = path.replace('/api/field/dcr/', '').replace('/checkout', '');
+        body = body || {};
+        body.dcr_id = decodeURIComponent(coId);
         path = '/api/method/vaishali.api.field.checkout_dcr';
       }
       else if (path.match(/^\/api\/field\/dcr\/[^/]+$/)) {

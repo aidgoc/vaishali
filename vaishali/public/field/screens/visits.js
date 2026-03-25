@@ -232,7 +232,7 @@
     var isProspect = false;
 
     // Purpose dropdowns — must match Daily Call Report DocType select options exactly
-    var salesPurposes = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Quotation Follow-up', 'Order Follow-up', 'Recovery', 'Relationship Building'];
+    var salesPurposes = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Opportunity Follow-up', 'Quotation Follow-up', 'Order Follow-up', 'Recovery', 'Relationship Building'];
     var servicePurposes = ['Installation', 'Breakdown / Repair', 'Preventive Maintenance (AMC)', 'Commissioning', 'Training', 'Warranty Service', 'Inspection'];
 
     var isSales = empDept.indexOf('sales') >= 0 || empDept.indexOf('marketing') >= 0;
@@ -605,6 +605,18 @@
       if (dcr.remarks) {
         details.push({ label: 'Remarks', value: dcr.remarks });
       }
+      if (dcr.discussion_remarks) {
+        details.push({ label: 'Discussion', value: dcr.discussion_remarks });
+      }
+      if (dcr.next_action) {
+        details.push({ label: 'Next Action', value: dcr.next_action });
+      }
+      if (dcr.next_action_date) {
+        details.push({ label: 'Next Action Date', value: formatDate(dcr.next_action_date) });
+      }
+      if (dcr.conversion_status && dcr.conversion_status !== 'Open') {
+        details.push({ label: 'Conversion', value: dcr.conversion_status });
+      }
 
       content.appendChild(UI.detailCard(details));
 
@@ -675,38 +687,96 @@
         });
         content.appendChild(el('div', { style: { marginTop: '12px' } }, [saveRemarksBtn]));
 
-        // Checkout button
+        // Checkout button — opens outcome bottom sheet
         var checkoutBtn = UI.btn('Check out', {
           type: 'primary',
           block: true,
           icon: 'mapPin',
           onClick: function () {
-            checkoutBtn._setLoading(true, 'Checking out...');
-            getGPS().then(function (gpsResult) {
-              var now = new Date().toISOString();
-              var gpsStr = (gpsResult.lat != null && gpsResult.lng != null) ? gpsResult.lat + ',' + gpsResult.lng : '';
-              window.fieldAPI.apiCall('PUT', '/api/field/dcr/' + encodeURIComponent(dcrName) + '/checkout', {
-                check_out_time: now,
-                check_out_gps: gpsStr
-              }).then(function (r) {
-                if (r.error || (r.status && r.status >= 400)) {
-                  UI.toast('Checkout failed: ' + (r.error || 'Server error'), 'danger');
-                  checkoutBtn._setLoading(false);
-                  return;
-                }
-                // Clear timers
-                for (var j = 0; j < _timers.length; j++) clearInterval(_timers[j]);
-                _timers = [];
-                UI.toast('Checked out!', 'success');
-                // Reload by re-navigating to same hash
-                var currentHash = location.hash;
-                location.hash = '#/';
-                setTimeout(function () { location.hash = currentHash; }, 0);
-              }).catch(function (err) {
-                UI.toast('Checkout failed: ' + (err.message || err), 'danger');
-                checkoutBtn._setLoading(false);
-              });
+            var purpose = dcr.visit_purpose || '';
+            var sheetContent = el('div', { style: { padding: '0 4px' } });
+
+            // Outcome checkboxes (conditional on visit_purpose)
+            var leadToggle = null, oppToggle = null, orderToggle = null;
+            var leadVal = false, oppVal = false, orderVal = false;
+
+            var showLead = ['Cold Call / New Enquiry', 'Lead Follow-up'].indexOf(purpose) >= 0;
+            var showOpp = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Opportunity Follow-up'].indexOf(purpose) >= 0;
+            var showOrder = purpose === 'Quotation Follow-up';
+
+            if (showLead) {
+              leadToggle = UI.toggle('Lead generated?', false, function (v) { leadVal = v; });
+              sheetContent.appendChild(leadToggle);
+            }
+            if (showOpp) {
+              oppToggle = UI.toggle('Opportunity generated?', false, function (v) { oppVal = v; });
+              sheetContent.appendChild(oppToggle);
+            }
+            if (showOrder) {
+              orderToggle = UI.toggle('Order received?', false, function (v) { orderVal = v; });
+              sheetContent.appendChild(orderToggle);
+            }
+
+            // Discussion / Remark
+            var discussionInput = UI.textarea('Discussion / Remark', { rows: 3 });
+            sheetContent.appendChild(el('div', { style: { marginTop: '12px' } }, [
+              UI.field('Discussion / Remark', discussionInput)
+            ]));
+
+            // Next action
+            var nextActionInput = UI.textarea('Next action', { rows: 2 });
+            sheetContent.appendChild(el('div', { style: { marginTop: '8px' } }, [
+              UI.field('Next action', nextActionInput)
+            ]));
+
+            // Next action date
+            var nextDateInput = UI.dateInput('Next action date', '');
+            sheetContent.appendChild(el('div', { style: { marginTop: '8px' } }, [nextDateInput]));
+
+            // Confirm checkout button
+            var confirmBtn = UI.btn('Confirm checkout', {
+              type: 'success',
+              block: true,
+              icon: 'mapPin',
+              onClick: function () {
+                confirmBtn._setLoading(true, 'Checking out...');
+                getGPS().then(function (gpsResult) {
+                  var now = new Date().toISOString();
+                  var gpsStr = (gpsResult.lat != null && gpsResult.lng != null) ? gpsResult.lat + ',' + gpsResult.lng : '';
+                  var dateInput = nextDateInput.querySelector('input');
+                  var payload = {
+                    check_out_time: now,
+                    check_out_gps: gpsStr,
+                    lead_generated: leadVal ? 1 : 0,
+                    opportunity_generated: oppVal ? 1 : 0,
+                    order_received: orderVal ? 1 : 0,
+                    discussion_remarks: discussionInput.value.trim() || '',
+                    next_action: nextActionInput.value.trim() || '',
+                    next_action_date: (dateInput && dateInput.value) || ''
+                  };
+                  window.fieldAPI.apiCall('PUT', '/api/field/dcr/' + encodeURIComponent(dcrName) + '/checkout', payload).then(function (r) {
+                    if (r.error || (r.status && r.status >= 400)) {
+                      UI.toast('Checkout failed: ' + (r.error || 'Server error'), 'danger');
+                      confirmBtn._setLoading(false);
+                      return;
+                    }
+                    for (var j = 0; j < _timers.length; j++) clearInterval(_timers[j]);
+                    _timers = [];
+                    if (sheet && sheet._close) sheet._close();
+                    UI.toast('Checked out!', 'success');
+                    var currentHash = location.hash;
+                    location.hash = '#/';
+                    setTimeout(function () { location.hash = currentHash; }, 0);
+                  }).catch(function (err) {
+                    UI.toast('Checkout failed: ' + (err.message || err), 'danger');
+                    confirmBtn._setLoading(false);
+                  });
+                });
+              }
             });
+            sheetContent.appendChild(el('div', { style: { marginTop: '16px' } }, [confirmBtn]));
+
+            var sheet = UI.bottomSheet('Check out', sheetContent);
           }
         });
         content.appendChild(el('div', { style: { marginTop: '12px' } }, [checkoutBtn]));

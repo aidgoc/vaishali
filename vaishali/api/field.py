@@ -99,7 +99,9 @@ def get_dcrs(date_filter=None, start_date=None, end_date=None, department=None):
         fields=["name", "employee", "employee_name", "date", "department", "status",
                 "visit_purpose", "service_purpose", "customer", "customer_name",
                 "prospect_name", "check_in_time", "check_in_gps", "check_out_time",
-                "check_out_gps", "remarks"],
+                "check_out_gps", "remarks", "lead_generated", "opportunity_generated",
+                "order_received", "discussion_remarks", "next_action", "next_action_date",
+                "opportunity", "quotation", "sales_order", "conversion_status"],
         order_by="date desc, check_in_time desc",
         limit_page_length=100)
 
@@ -135,7 +137,10 @@ def get_dcr(dcr_id):
 
 
 @frappe.whitelist(methods=["POST"])
-def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None, status="Completed"):
+def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None,
+                 status="Completed", lead_generated=0, opportunity_generated=0,
+                 order_received=0, discussion_remarks=None, next_action=None,
+                 next_action_date=None):
     emp = _get_employee()
     doc = frappe.get_doc("Daily Call Report", dcr_id)
     if doc.employee != emp.name:
@@ -146,6 +151,12 @@ def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None, 
     if check_out_time: doc.check_out_time = check_out_time
     if check_out_gps: doc.check_out_gps = check_out_gps
     if remarks: doc.remarks = remarks
+    doc.lead_generated = int(lead_generated)
+    doc.opportunity_generated = int(opportunity_generated)
+    doc.order_received = int(order_received)
+    if discussion_remarks: doc.discussion_remarks = discussion_remarks
+    if next_action: doc.next_action = next_action
+    if next_action_date: doc.next_action_date = next_action_date
     doc.save(ignore_permissions=True)
     frappe.db.commit()
     return doc.as_dict()
