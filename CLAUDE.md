@@ -347,6 +347,10 @@ Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Activ
 - **Frappe Cloud:** `dcepl.logstop.com` (source of truth for data, synced to EC2)
 - **nginx:** `Service-Worker-Allowed: /` header on sw.js, gzip enabled
 
+## Project Memory
+
+Read `.claude-memory/` for persistent context across sessions — user profile, working preferences, data inventory across 3 systems (ERPNext, Frappe Cloud, Krisp ERP), EPS revenue data, and roadmap. Credentials are redacted — ask the user when needed.
+
 ## Development
 
 ```bash
