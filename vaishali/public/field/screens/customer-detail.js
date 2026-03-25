@@ -140,6 +140,15 @@
         }
       }
 
+      // ── Sales Timeline button ──────────────────────────────
+      appEl.appendChild(el('div', { style: { margin: '12px 0' } }, [
+        UI.btn('Sales Timeline', {
+          type: 'outline',
+          block: true,
+          onClick: function () { location.hash = '#/customer-timeline/' + encodeURIComponent(customerId); }
+        })
+      ]));
+
       // ── Transaction tabs ─────────────────────────────────────
       var sectionKeys = Object.keys(sections);
       if (sectionKeys.length === 0) return;

@@ -182,6 +182,47 @@ def get_nav_tier():
     return _get_nav_tier()
 
 
+# ── Customer Timeline ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_customer_timeline(customer_id):
+    """Get merged timeline of visits, opportunities, quotations, orders for a customer."""
+    events = []
+
+    dcrs = frappe.get_list("Daily Call Report",
+        filters={"customer": customer_id},
+        fields=["name", "date", "visit_purpose", "employee_name", "status",
+                "conversion_status", "check_in_time", "check_out_time",
+                "discussion_remarks", "next_action"],
+        order_by="date desc", limit_page_length=50)
+    for d in dcrs:
+        events.append({"type": "visit", "date": str(d.date), "data": d})
+
+    opps = frappe.get_list("Opportunity",
+        filters={"party_name": customer_id},
+        fields=["name", "creation", "opportunity_amount", "status", "source"],
+        order_by="creation desc", limit_page_length=20)
+    for o in opps:
+        events.append({"type": "opportunity", "date": str(o.creation)[:10], "data": o})
+
+    quotes = frappe.get_list("Quotation",
+        filters={"party_name": customer_id, "docstatus": ["<", 2]},
+        fields=["name", "transaction_date", "grand_total", "status", "quotation_temperature"],
+        order_by="transaction_date desc", limit_page_length=20)
+    for q in quotes:
+        events.append({"type": "quotation", "date": str(q.transaction_date), "data": q})
+
+    orders = frappe.get_list("Sales Order",
+        filters={"customer": customer_id, "docstatus": 1},
+        fields=["name", "transaction_date", "grand_total", "status"],
+        order_by="transaction_date desc", limit_page_length=20)
+    for so in orders:
+        events.append({"type": "order", "date": str(so.transaction_date), "data": so})
+
+    events.sort(key=lambda e: e["date"], reverse=True)
+    return events[:50]
+
+
 # ── Customers ─────────────────────────────────────────────────────
 
 @frappe.whitelist()

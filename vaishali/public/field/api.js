@@ -259,6 +259,10 @@
       else if (path === '/api/field/me') path = '/api/method/vaishali.api.field.get_me';
       else if (path === '/api/field/nav-tier') path = '/api/method/vaishali.api.field.get_nav_tier';
       else if (path === '/api/field/session-info') path = '/api/method/vaishali.api.field.get_session_info';
+      else if (path.match(/^\/api\/field\/customer-timeline\/[^/]+$/)) {
+        var ctId = path.replace('/api/field/customer-timeline/', '');
+        path = '/api/method/vaishali.api.field.get_customer_timeline?customer_id=' + encodeURIComponent(ctId);
+      }
       else if (path === '/api/field/customers' || path.indexOf('/api/field/customers?') === 0) {
         var custQS = '';
         var custQIdx = path.indexOf('?');

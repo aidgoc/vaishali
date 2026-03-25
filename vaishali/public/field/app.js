@@ -139,6 +139,7 @@
 
     // Customer / Debtors / Revenue
     { pattern: '#/customer/:id', handler: function (p) { S().customerDetail(appEl, p); }, tab: 'home', title: 'Customer',    back: '#/customers' },
+    { pattern: '#/customer-timeline/:id', handler: function (p) { S().customerTimeline(appEl, p); }, tab: 'home', title: 'Sales Timeline', back: function(p) { return '#/customer/' + p.id; } },
     { pattern: '#/debtors',      handler: function () { S().debtors(appEl); },            tab: 'home', title: 'Receivables', back: '#/home' },
     { pattern: '#/revenue',      handler: function () { S().revenueDashboard(appEl); },   tab: 'home', title: 'Revenue',     back: '#/home' },
 
