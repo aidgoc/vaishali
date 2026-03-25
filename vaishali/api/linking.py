@@ -124,7 +124,7 @@ def on_dcr_update(doc, method):
             lead.company_name = doc.get("prospect_company") or ""
             lead.mobile_no = doc.get("prospect_phone") or ""
             lead.source = "Campaign"
-            lead.notes = f"Auto-created from visit {doc.name} on {doc.date}"
+            lead.append("notes", {"note": f"Auto-created from visit {doc.name} on {doc.date}"})
             lead.insert(ignore_permissions=True)
             doc.db_set("lead", lead.name, update_modified=False)
             doc.db_set("conversion_status", "Lead Created", update_modified=False)
@@ -141,7 +141,7 @@ def on_dcr_update(doc, method):
         else:
             return  # Can't create opportunity without lead or customer
         opp.source = "Campaign"
-        opp.notes = f"From visit {doc.name} on {doc.date}"
+        opp.append("notes", {"note": f"From visit {doc.name} on {doc.date}"})
         opp.insert(ignore_permissions=True)
         doc.db_set("opportunity", opp.name, update_modified=False)
         doc.db_set("conversion_status", "Opportunity", update_modified=False)
