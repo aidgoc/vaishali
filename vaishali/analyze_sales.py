@@ -15,7 +15,6 @@ def run():
         SELECT name, customer, customer_name, grand_total,
                outstanding_amount, status, posting_date, company
         FROM `tabSales Invoice`
-        WHERE docstatus = 1
         ORDER BY posting_date DESC
     """, as_dict=True)
     invoices = invoices_raw
@@ -59,7 +58,7 @@ def run():
         SELECT sii.item_group, sii.item_name, sii.amount, sii.qty
         FROM `tabSales Invoice Item` sii
         JOIN `tabSales Invoice` si ON si.name = sii.parent
-        WHERE si.docstatus = 1
+        WHERE 1=1
     """, as_dict=True)
     results["item_count"] = len(items)
 
@@ -86,7 +85,7 @@ def run():
     payments = frappe.db.sql("""
         SELECT paid_amount, posting_date, party_name
         FROM `tabPayment Entry`
-        WHERE docstatus = 1 AND payment_type = 'Receive'
+        WHERE payment_type = 'Receive'
     """, as_dict=True)
     results["payment_count"] = len(payments)
     results["total_collected"] = round(sum(p.paid_amount or 0 for p in payments), 2)
