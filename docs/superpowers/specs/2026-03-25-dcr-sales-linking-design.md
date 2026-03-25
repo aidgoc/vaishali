@@ -47,15 +47,19 @@ Recovery
 Relationship Building
 ```
 
-## 2. Quotation Temperature Field
+## 2. Quotation Status Fields
 
-Add Custom Field on Quotation DocType:
+Add Custom Fields on Quotation DocType:
 
 | Field | Fieldname | Type | Options | Insert After | Default | Notes |
 |---|---|---|---|---|---|---|
 | Quotation Temperature | `quotation_temperature` | Select | New\nHot\nWarm\nCold\nWill take time\nWon\nLost\nClosed\nModified | `status` | New | Not mandatory |
+| Lost Reason | `lost_reason_category` | Select | Price\nTechnical\nBudget related\nOther | `quotation_temperature` | — | `depends_on: eval:doc.quotation_temperature=="Lost"` |
+| Lost Remark | `lost_remark` | Small Text | — | `lost_reason_category` | — | `depends_on: eval:doc.quotation_temperature=="Lost"` |
 
-Matches the "Quotation status report" sheet in the Excel template.
+When temperature is set to "Lost", the lost reason and remark fields appear. Matches the updated "Quotation status report" Excel sheet which breaks Lost into: Price / Technical / Budget related / Other + Remark.
+
+**Note:** ERPNext Quotation already has a "Mark as Lost" dialog (our `quotation.js` client script) with `lost_reason` and `lost_to_competitor` fields. The new `lost_reason_category` provides structured categorization (Price/Technical/Budget/Other) while the existing fields capture free-text detail.
 
 ## 3. Auto-linking Hook Logic
 
