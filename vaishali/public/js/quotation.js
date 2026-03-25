@@ -7,10 +7,10 @@ frappe.ui.form.on('Quotation', {
                     title: 'Mark Quotation as Lost',
                     fields: [
                         {
-                            fieldname: 'lost_reason',
+                            fieldname: 'lost_reason_category',
                             label: 'Lost Reason',
                             fieldtype: 'Select',
-                            options: '\nPrice Too High\nCompetitor Won\nCustomer Not Ready\nTechnical Mismatch\nNo Response\nOther',
+                            options: '\nPrice\nTechnical\nBudget related\nOther',
                             reqd: 1
                         },
                         {
@@ -19,7 +19,7 @@ frappe.ui.form.on('Quotation', {
                             fieldtype: 'Data'
                         },
                         {
-                            fieldname: 'remarks',
+                            fieldname: 'lost_remark',
                             label: 'Remarks',
                             fieldtype: 'Small Text'
                         }
@@ -27,14 +27,18 @@ frappe.ui.form.on('Quotation', {
                     primary_action_label: 'Mark as Lost',
                     primary_action(values) {
                         let update_fields = {
-                            'status': 'Lost'
+                            'status': 'Lost',
+                            'quotation_temperature': 'Lost'
                         };
-                        // Only set custom fields if they exist on the doctype
-                        if (frm.fields_dict.lost_reason) {
-                            update_fields['lost_reason'] = values.lost_reason;
+                        if (frm.fields_dict.lost_reason_category) {
+                            update_fields['lost_reason_category'] = values.lost_reason_category;
                         }
-                        if (frm.fields_dict.lost_to_competitor) {
-                            update_fields['lost_to_competitor'] = values.competitor || '';
+                        if (frm.fields_dict.lost_remark) {
+                            update_fields['lost_remark'] = values.lost_remark || '';
+                        }
+                        if (frm.fields_dict.custom_competitor || frm.fields_dict.lost_to_competitor) {
+                            let field = frm.fields_dict.custom_competitor ? 'custom_competitor' : 'lost_to_competitor';
+                            update_fields[field] = values.competitor || '';
                         }
                         frappe.call({
                             method: 'frappe.client.set_value',
