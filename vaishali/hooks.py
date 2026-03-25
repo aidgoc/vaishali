@@ -25,7 +25,17 @@ website_route_rules = [
 # Doc Events
 doc_events = {
     "Daily Call Report": {
-        "on_update": "vaishali.api.field.on_dcr_update",
+        "on_update": "vaishali.api.linking.on_dcr_update",
+    },
+    "Quotation": {
+        "on_submit": "vaishali.api.linking.link_quotation_to_dcr",
+        "on_update_after_submit": "vaishali.api.linking.on_quotation_status_change",
+    },
+    "Sales Order": {
+        "on_submit": "vaishali.api.linking.link_sales_order_to_dcr",
+    },
+    "Customer": {
+        "after_insert": "vaishali.api.linking.on_customer_created",
     },
     "Leave Application": {
         "on_submit": "vaishali.notifications.on_leave_application_submit",

@@ -105,3 +105,147 @@ def migrate_existing_dcrs():
     """)
     frappe.db.commit()
     print("Existing DCRs migrated.")
+
+
+# ── Doc Event Hooks ──────────────────────────────────────────────
+
+
+def on_dcr_update(doc, method):
+    """Auto-create Lead/Opportunity on DCR completion with outcome checkboxes."""
+    if doc.status != "Completed":
+        return
+
+    # Lead creation (checkbox-driven)
+    if doc.lead_generated and not doc.lead:
+        lead_name_val = doc.prospect_name or doc.customer_name
+        if lead_name_val and not frappe.db.exists("Lead", {"lead_name": lead_name_val}):
+            lead = frappe.new_doc("Lead")
+            lead.lead_name = lead_name_val
+            lead.company_name = doc.get("prospect_company") or ""
+            lead.mobile_no = doc.get("prospect_phone") or ""
+            lead.source = "Campaign"
+            lead.notes = f"Auto-created from visit {doc.name} on {doc.date}"
+            lead.insert(ignore_permissions=True)
+            doc.db_set("lead", lead.name, update_modified=False)
+            doc.db_set("conversion_status", "Lead Created", update_modified=False)
+
+    # Opportunity creation
+    if doc.opportunity_generated and not doc.opportunity:
+        opp = frappe.new_doc("Opportunity")
+        if doc.lead:
+            opp.opportunity_from = "Lead"
+            opp.party_name = doc.lead
+        elif doc.customer:
+            opp.opportunity_from = "Customer"
+            opp.party_name = doc.customer
+        else:
+            return  # Can't create opportunity without lead or customer
+        opp.source = "Campaign"
+        opp.notes = f"From visit {doc.name} on {doc.date}"
+        opp.insert(ignore_permissions=True)
+        doc.db_set("opportunity", opp.name, update_modified=False)
+        doc.db_set("conversion_status", "Opportunity", update_modified=False)
+
+    # Order received
+    if doc.order_received and doc.conversion_status not in ("Won",):
+        doc.db_set("conversion_status", "Won", update_modified=False)
+
+    # Default status if nothing set
+    if not doc.conversion_status:
+        doc.db_set("conversion_status", "Open", update_modified=False)
+
+
+def link_quotation_to_dcr(doc, method):
+    """On Quotation submit, link to matching DCR visits."""
+    # Primary: match via Opportunity
+    if doc.opportunity:
+        dcrs = frappe.get_all("Daily Call Report",
+            filters={"opportunity": doc.opportunity, "quotation": ["is", "not set"]},
+            pluck="name")
+        for dcr_name in dcrs:
+            frappe.db.set_value("Daily Call Report", dcr_name, {
+                "quotation": doc.name,
+                "conversion_status": "Quoted"
+            }, update_modified=False)
+        if dcrs:
+            return
+
+    # Fallback: customer + 90-day window
+    if doc.party_name:
+        dcrs = frappe.get_all("Daily Call Report",
+            filters={
+                "customer": doc.party_name,
+                "quotation": ["is", "not set"],
+                "date": [">=", add_days(doc.transaction_date, -90)]
+            },
+            order_by="date desc",
+            pluck="name")
+        for dcr_name in dcrs:
+            frappe.db.set_value("Daily Call Report", dcr_name, {
+                "quotation": doc.name,
+                "conversion_status": "Quoted"
+            }, update_modified=False)
+
+
+def link_sales_order_to_dcr(doc, method):
+    """On Sales Order submit, link to matching DCR visits."""
+    # Primary: match via linked Quotation
+    quotations = set()
+    for item in doc.items:
+        if item.prevdoc_docname:
+            quotations.add(item.prevdoc_docname)
+
+    if quotations:
+        dcrs = frappe.get_all("Daily Call Report",
+            filters={"quotation": ["in", list(quotations)], "sales_order": ["is", "not set"]},
+            pluck="name")
+        for dcr_name in dcrs:
+            frappe.db.set_value("Daily Call Report", dcr_name, {
+                "sales_order": doc.name,
+                "conversion_status": "Won"
+            }, update_modified=False)
+        if dcrs:
+            return
+
+    # Fallback: customer + 90-day window
+    if doc.customer:
+        dcrs = frappe.get_all("Daily Call Report",
+            filters={
+                "customer": doc.customer,
+                "sales_order": ["is", "not set"],
+                "date": [">=", add_days(doc.transaction_date, -90)]
+            },
+            order_by="date desc",
+            pluck="name")
+        for dcr_name in dcrs:
+            frappe.db.set_value("Daily Call Report", dcr_name, {
+                "sales_order": doc.name,
+                "conversion_status": "Won"
+            }, update_modified=False)
+
+
+def on_customer_created(doc, method):
+    """On Customer insert, retroactively link DCR visits from converted Lead."""
+    lead_name = frappe.db.get_value("Lead", {
+        "lead_name": doc.customer_name,
+        "status": "Converted"
+    }, "name")
+    if not lead_name:
+        return
+    dcrs = frappe.get_all("Daily Call Report",
+        filters={"lead": lead_name, "customer": ["is", "not set"]},
+        pluck="name")
+    for dcr_name in dcrs:
+        frappe.db.set_value("Daily Call Report", dcr_name, "customer", doc.name,
+                           update_modified=False)
+
+
+def on_quotation_status_change(doc, method):
+    """On Quotation status change to Lost, update linked DCR conversion_status."""
+    if doc.status == "Lost":
+        dcrs = frappe.get_all("Daily Call Report",
+            filters={"quotation": doc.name, "conversion_status": ["!=", "Won"]},
+            pluck="name")
+        for dcr_name in dcrs:
+            frappe.db.set_value("Daily Call Report", dcr_name, "conversion_status", "Lost",
+                               update_modified=False)

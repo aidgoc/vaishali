@@ -466,25 +466,6 @@ def get_leads(search=None, limit=50):
         limit_page_length=int(limit))
 
 
-# ── Doc Event: Auto-create Lead on DCR checkout ──────────────────
-
-def on_dcr_update(doc, method):
-    if doc.status != "Completed" or not doc.prospect_name or doc.customer:
-        return
-    if frappe.db.exists("Lead", {"lead_name": doc.prospect_name}):
-        return
-    try:
-        lead = frappe.new_doc("Lead")
-        lead.lead_name = doc.prospect_name
-        lead.company_name = doc.get("prospect_company") or ""
-        lead.mobile_no = doc.get("prospect_phone") or ""
-        lead.source = "Campaign"
-        lead.notes = f"Auto-created from visit {doc.name} on {doc.date}"
-        lead.insert(ignore_permissions=True)
-        frappe.db.commit()
-    except Exception:
-        pass
-
 
 # ── Telegram Linking ─────────────────────────────────────────────
 
