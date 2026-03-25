@@ -259,6 +259,9 @@
       else if (path === '/api/field/me') path = '/api/method/vaishali.api.field.get_me';
       else if (path === '/api/field/nav-tier') path = '/api/method/vaishali.api.field.get_nav_tier';
       else if (path === '/api/field/session-info') path = '/api/method/vaishali.api.field.get_session_info';
+      else if (path === '/api/field/conversion-funnel' || path.indexOf('/api/field/conversion-funnel?') === 0) {
+        var cfQS = ''; var cfQI = path.indexOf('?'); if (cfQI !== -1) cfQS = path.substring(cfQI); path = '/api/method/vaishali.api.field.get_conversion_funnel' + cfQS;
+      }
       else if (path.match(/^\/api\/field\/customer-timeline\/[^/]+$/)) {
         var ctId = path.replace('/api/field/customer-timeline/', '');
         path = '/api/method/vaishali.api.field.get_customer_timeline?customer_id=' + encodeURIComponent(ctId);

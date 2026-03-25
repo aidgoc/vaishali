@@ -114,6 +114,52 @@ def create_number_cards():
             "stats_time_interval": "Monthly",
             "is_standard": 0,
         },
+        # --- Conversion Funnel ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Visits This Month",
+            "label": "DSPL Visits This Month",
+            "document_type": "Daily Call Report",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Daily Call Report", "date", "Timespan", "this month"],
+            ]),
+            "color": "#3B82F6",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Leads Generated",
+            "label": "DSPL Leads Generated",
+            "document_type": "Daily Call Report",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Daily Call Report", "date", "Timespan", "this month"],
+                ["Daily Call Report", "conversion_status", "in",
+                 ["Lead Created", "Opportunity", "Quoted", "Won"]],
+            ]),
+            "color": "#A855F7",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Visits Won",
+            "label": "DSPL Visits Won",
+            "document_type": "Daily Call Report",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Daily Call Report", "date", "Timespan", "this month"],
+                ["Daily Call Report", "conversion_status", "=", "Won"],
+            ]),
+            "color": "#22C55E",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
         # --- HR / Operations ---
         {
             "doctype": "Number Card",

@@ -223,6 +223,45 @@ def get_customer_timeline(customer_id):
     return events[:50]
 
 
+# ── Conversion Funnel ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_conversion_funnel(period="month", employee=None, department=None):
+    """Get conversion funnel counts for DCR visits."""
+    from frappe.utils import today, get_first_day, getdate, add_months
+
+    filters = {}
+    if period == "month":
+        filters["date"] = [">=", get_first_day(today())]
+    elif period == "quarter":
+        filters["date"] = [">=", add_months(get_first_day(today()), -2)]
+    elif period == "fy":
+        t = getdate(today())
+        fy_start = f"{t.year}-04-01" if t.month >= 4 else f"{t.year - 1}-04-01"
+        filters["date"] = [">=", fy_start]
+
+    if employee:
+        filters["employee"] = employee
+    if department:
+        filters["department"] = department
+
+    total = frappe.db.count("Daily Call Report", filters)
+    leads = frappe.db.count("Daily Call Report", {**filters, "conversion_status": ["in", ["Lead Created", "Opportunity", "Quoted", "Won"]]})
+    opportunities = frappe.db.count("Daily Call Report", {**filters, "conversion_status": ["in", ["Opportunity", "Quoted", "Won"]]})
+    quoted = frappe.db.count("Daily Call Report", {**filters, "conversion_status": ["in", ["Quoted", "Won"]]})
+    won = frappe.db.count("Daily Call Report", {**filters, "conversion_status": "Won"})
+    lost = frappe.db.count("Daily Call Report", {**filters, "conversion_status": "Lost"})
+
+    return {
+        "visits": total,
+        "leads": leads,
+        "opportunities": opportunities,
+        "quoted": quoted,
+        "won": won,
+        "lost": lost,
+    }
+
+
 # ── Customers ─────────────────────────────────────────────────────
 
 @frappe.whitelist()

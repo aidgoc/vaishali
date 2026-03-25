@@ -137,6 +137,48 @@
         UI.statCard(health.attendance_days || 0, 'Attendance Days')
       ], 2));
 
+      // ── Conversion Funnel section ──────────────────────────────
+      var funnelContainer = el('div');
+      appEl.appendChild(funnelContainer);
+
+      api.apiCall('GET', '/api/field/conversion-funnel').then(function (fRes) {
+        var fRaw = fRes.data || {};
+        var funnel = fRaw.message || fRaw.data || fRaw;
+
+        if (!funnel || !funnel.visits) return;
+
+        funnelContainer.appendChild(UI.sectionHeading('Conversion funnel'));
+
+        funnelContainer.appendChild(UI.kpiRow([
+          { value: String(funnel.visits || 0), label: 'Visits' },
+          { value: String(funnel.leads || 0), label: 'Leads' },
+          { value: String(funnel.opportunities || 0), label: 'Opportunities' },
+          { value: String(funnel.quoted || 0), label: 'Quoted' },
+          { value: String(funnel.won || 0), label: 'Won' }
+        ]));
+
+        // Stage-to-stage rates
+        var rates = [];
+        if (funnel.visits > 0) rates.push('Visit\u2192Lead: ' + Math.round((funnel.leads / funnel.visits) * 100) + '%');
+        if (funnel.leads > 0) rates.push('Lead\u2192Opp: ' + Math.round((funnel.opportunities / funnel.leads) * 100) + '%');
+        if (funnel.opportunities > 0) rates.push('Opp\u2192Quote: ' + Math.round((funnel.quoted / funnel.opportunities) * 100) + '%');
+        if (funnel.quoted > 0) rates.push('Quote\u2192Won: ' + Math.round((funnel.won / funnel.quoted) * 100) + '%');
+
+        if (rates.length > 0) {
+          funnelContainer.appendChild(el('div', {
+            style: { fontSize: '12px', color: 'var(--ink-tertiary, #6B6B70)', textAlign: 'center', marginTop: '8px' },
+            textContent: rates.join('  \u00B7  ')
+          }));
+        }
+
+        if (funnel.lost > 0) {
+          funnelContainer.appendChild(el('div', {
+            style: { fontSize: '12px', color: '#ef4444', textAlign: 'center', marginTop: '4px' },
+            textContent: funnel.lost + ' lost'
+          }));
+        }
+      }).catch(function () { /* silently skip funnel on error */ });
+
     }).catch(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
       appEl.appendChild(UI.error('Could not load report data. Please try again.'));

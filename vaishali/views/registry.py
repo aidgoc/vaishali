@@ -729,4 +729,28 @@ VIEWS = {
             },
         },
     },
+
+    # ═══════════════════════════════════════════════════════════════
+    # CONVERSION FUNNEL — Visits to Wins
+    # ═══════════════════════════════════════════════════════════════
+    "conversion_funnel": {
+        "description": "Sales conversion funnel — visits to wins by stage",
+        "context_doctype": None,
+        "sections": {
+            "sales": ["funnel_data"],
+            "manager": ["funnel_data"],
+            "admin": ["*"],
+        },
+        "section_defs": {
+            "funnel_data": {
+                "doctype": "Daily Call Report",
+                "fields": ["name", "date", "conversion_status", "employee_name",
+                           "customer", "visit_purpose", "department"],
+                "filters": [["date", ">=", "month_start"]],
+                "order_by": "date desc",
+                "limit": 500,
+                "skip_company_filter": True,
+            },
+        },
+    },
 }
