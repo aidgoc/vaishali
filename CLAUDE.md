@@ -30,8 +30,9 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 31 screen modules, 49 routes, hash router, standalone PWA |
-| **Field API** | `@frappe.whitelist` in `api/field.py` | 32 endpoints with ownership/role checks |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 33 screen modules, 51 routes, hash router, standalone PWA |
+| **Field API** | `@frappe.whitelist` in `api/field.py` | 35 endpoints with ownership/role checks |
+| **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
 | **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment |
 | **AI Agent** | `agent/runner.py` (AsyncAnthropic) | Claude with 101 ERPNext tools, knows full ABP |
 | **FastAPI slim** | `~/dspl_erp/` on EC2 | Async AI chat + Telegram notifications |
@@ -56,7 +57,7 @@ The PWA at `/field` uses a **standalone HTML document** (not `{%- extends "templ
 ### Installability
 - **Manifest:** `/assets/vaishali/field/manifest.json` with `display: standalone`, `scope: /`, `start_url: /field`
 - **Service Worker:** `/assets/vaishali/field/sw.js` registered with `{ scope: '/' }` — nginx sends `Service-Worker-Allowed: /` header
-- **SW version:** v19, precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true` for cache-busted URLs
+- **SW version:** v25, precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true` for cache-busted URLs
 - **Apple PWA:** `apple-mobile-web-app-capable`, `apple-touch-icon`, safe-area insets on header/nav
 - **Splash screen:** Branded loading with animated progress bar, dismisses on boot
 - **All scripts use `defer`** — non-blocking HTML parsing
@@ -136,7 +137,8 @@ Chat uses a special flex layout — sets `#app` to `display: flex; flex-directio
 ```
 vaishali/
 ├── api/
-│   ├── field.py          # 32 whitelist endpoints (with ownership/role checks)
+│   ├── field.py          # 35 whitelist endpoints (with ownership/role checks)
+│   ├── linking.py        # DCR-to-Sales auto-linking hooks + setup functions
 │   ├── views.py          # View Engine API
 │   └── chat.py           # AI chat endpoints
 ├── agent/                 # AI agent (101 tools)
@@ -157,12 +159,12 @@ vaishali/
 │       ├── auth.js            # Session, roles, nav tiers
 │       ├── style.css          # Notion-inspired design system + transitions
 │       ├── icons.js           # SVG sprites (aria-hidden)
-│       ├── sw.js              # Service worker v19 (stale-while-revalidate, ignoreSearch)
+│       ├── sw.js              # Service worker v25 (stale-while-revalidate, ignoreSearch)
 │       ├── manifest.json      # PWA manifest (standalone, scope: /)
-│   └── screens/           # 31 screen modules
+│   └── screens/           # 33 screen modules
 │       ├── home.js        # KPI row + action cards + tabbed department nav
 │       ├── attendance.js  # GPS "Location captured" + check-in/check-out
-│       ├── visits.js      # DCR with department-aware form + inline validation
+│       ├── visits.js      # DCR with department-aware form + outcome bottom sheet on checkout
 │       ├── lead.js        # Lead list + creation + inline validation
 │       ├── quotation.js   # Quotation with item picker + inline validation
 │       ├── stock.js       # Stock update with camera
@@ -173,12 +175,14 @@ vaishali/
 │       ├── my-targets.js  # Personal targets with progress bars + kpiRow
 │       ├── customer-search.js # Full customer list (1,879) with search
 │       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call
+│       ├── customer-timeline.js # Sales timeline: DCRs, Opportunities, Quotations, SOs by customer
+│       ├── monthly-report.js # Revenue, orders, visits, YTD progress, conversion funnel
 │       ├── chat.js        # Vaishali AI (120s timeout)
 │       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
 │       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
 │       └── ... (leave, expense, advance, salary, approvals, team, etc.)
 ├── setup_workspace.py     # Creates Number Cards, Charts, updates DSPL Sales/Operations workspaces
-├── hooks.py               # Doc events, fixtures, website routes, app_include_css, doctype_js
+├── hooks.py               # Doc events (DCR/Quotation/SO/Customer linking + Leave/Expense/Advance notifications), fixtures, website routes, app_include_css, doctype_js
 ├── notifications.py       # Telegram notification handlers
 ├── fixtures/
 │   └── custom_field.json  # telegram_chat_id on Employee
@@ -235,15 +239,15 @@ Loaded via `app_include_css` in hooks.py. 571-line CSS override scoped to `body[
 
 ### Client Scripts (`public/js/`)
 Registered via `doctype_js` in hooks.py:
-- **Quotation:** "Mark as Lost" dialog (captures reason + competitor), auto `valid_till` (30 days), customer quotation count indicator
+- **Quotation:** "Mark as Lost" dialog (lost_reason_category: Price/Technical/Budget/Other + lost_remark, sets quotation_temperature=Lost), auto `valid_till` (30 days), customer quotation count indicator
 - **Lead:** Age indicator (days, color-coded), "Convert to Customer" button, auto `lead_name` from company
-- **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator
+- **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator, sales timeline (DCRs + Opps + Quotations + SOs)
 
 ### Workspaces (`setup_workspace.py`)
 Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent):
-- **DSPL Sales:** 4 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads) + Monthly Revenue bar chart + Quotation Pipeline donut + Lead Source Breakdown pie
+- **DSPL Sales:** 7 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won) + Monthly Revenue bar chart + Quotation Pipeline donut + Lead Source Breakdown pie
 - **DSPL Operations:** 3 ops cards (Work Orders, Deliveries, Stock Below Reorder) + 2 HR cards (Team Present, Pending Approvals) + Monthly Orders line chart
-- 9 Number Cards + 4 Dashboard Charts total, all prefixed "DSPL"
+- 12 Number Cards + 4 Dashboard Charts total, all prefixed "DSPL"
 
 #### Frappe v15 Workspace Gotchas (CRITICAL for programmatic creation)
 1. **Number Card autonames from `label`** — the explicit `name` field is ignored; set `label` to desired doc name
@@ -280,6 +284,9 @@ PWA uses clean paths translated to Frappe methods:
 | `GET /api/field/sales-targets` | `vaishali.api.field.get_sales_targets` |
 | `GET /api/field/sales-funnel` | `vaishali.api.field.get_sales_funnel` |
 | `GET /api/field/monthly-report` | `vaishali.api.field.get_monthly_report` |
+| `GET /api/field/customer-timeline/{id}` | `vaishali.api.field.get_customer_timeline` |
+| `GET /api/field/conversion-funnel` | `vaishali.api.field.get_conversion_funnel` |
+| `POST /api/field/dcr/{id}/checkout` | `vaishali.api.field.checkout_dcr` (extracts dcr_id from path) |
 | `POST /api/ai/chat` | FastAPI (nginx proxy, 120s timeout) |
 
 ## Auth Model
@@ -290,6 +297,37 @@ PWA uses clean paths translated to Frappe methods:
 - **Bottom nav:** 3 tabs for everyone (Home, AI, Me)
 - **View Engine:** Role-based section filtering (sales/field/accounts/service/manager/admin)
 
+## DCR-to-Sales Linking (`api/linking.py`)
+
+Auto-links Daily Call Reports through the full sales chain: Visit → Lead → Opportunity → Quotation → Sales Order.
+
+### How It Works
+- **DCR checkout** captures outcome checkboxes (lead_generated, opportunity_generated, order_received) + discussion/next-action fields via bottom sheet in PWA
+- **on_dcr_update** hook auto-creates Lead (if lead_generated=1) and Opportunity (if opportunity_generated=1), sets conversion_status
+- **link_quotation_to_dcr** on Quotation submit backlinks to matching DCR via Opportunity or customer+90-day window
+- **link_sales_order_to_dcr** on SO submit backlinks via linked Quotation or customer+90-day fallback
+- **on_customer_created** retroactively links new Customer to recent DCR visits
+- **on_quotation_status_change** updates DCR conversion_status when Quotation wins/loses
+
+### DCR Custom Fields (12 fields)
+`lead_generated`, `opportunity_generated`, `order_received` (checkboxes), `discussion_remarks`, `next_action`, `next_action_date`, `lead`, `opportunity`, `quotation`, `sales_order` (Link fields), `conversion_status` (Select: Open/Lead Created/Opportunity/Quoted/Won/Lost)
+
+### Quotation Custom Fields (3 fields)
+`quotation_temperature` (Select: Hot/Warm/Cold/Lost), `lost_reason_category` (Select: Price/Technical/Budget/Other), `lost_remark` (Small Text)
+
+### Setup Functions (idempotent)
+```bash
+bench --site dgoc.logstop.com execute vaishali.api.linking.setup_dcr_fields
+bench --site dgoc.logstop.com execute vaishali.api.linking.setup_quotation_fields
+bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
+```
+
+### Conversion Funnel API
+`get_conversion_funnel(period, employee, department)` — counts DCRs by conversion_status stage, returns `{visits, leads, opportunities, quoted, won, lost}`. Used by monthly-report.js and View Engine `conversion_funnel` view.
+
+### Gotcha: Lead/Opportunity `notes` Field
+`notes` is a **child table** (Table field) in Lead and Opportunity. Use `doc.append("notes", {"note": "..."})`, NOT `doc.notes = "..."`. The latter causes `'str' object has no attribute 'modified'`.
+
 ## ERPNext Customizations
 
 ### Custom Fields
@@ -299,9 +337,13 @@ PWA uses clean paths translated to Frappe methods:
 | Item | ABP Category (Select) | Tower Crane, EOT, MRT, Mobile, etc. |
 | Quotation | Lost Reason (Select) | Track why quotations are lost |
 | Quotation | Lost To Competitor (Data) | Who won the deal |
+| Quotation | quotation_temperature (Select) | Hot/Warm/Cold/Lost temperature |
+| Quotation | lost_reason_category (Select) | Price/Technical/Budget/Other |
+| Quotation | lost_remark (Small Text) | Detail on why quotation was lost |
 | Lead | Zone (Select) | North/South/East/West/Central |
 | Customer | Zone (Select) | Geographic presence |
 | Customer | ICP Score (Rating) | Ideal Customer Profile match |
+| Daily Call Report | 12 fields | See DCR-to-Sales Linking section above |
 
 ### Notifications
 - Quotation expiring (3 days before valid_till)
@@ -310,7 +352,7 @@ PWA uses clean paths translated to Frappe methods:
 - Lead assigned to new owner
 
 ### DSPL Sales Workspace
-Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Active Leads
+Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won
 
 ## AI (Vaishali) Configuration
 
@@ -342,8 +384,15 @@ Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Activ
 
 ## Infrastructure
 
-- **EC2 instance:** `dspl-erp-server` (use `aws ec2 describe-instances` to get current IP)
-- **SSH key:** `~/.ssh/heft-erp-key.pem`, user `ubuntu`
+- **EC2 instance:** `dspl-erp-server`, instance ID `i-08deae9f14e3cc99e`, IP `35.154.17.172`, region `ap-south-1`
+- **SSH:** EC2 Instance Connect (no PEM key on this machine). Pattern:
+  ```bash
+  ssh-keygen -t rsa -f /tmp/dspl-temp-key -N "" -q
+  aws ec2-instance-connect send-ssh-public-key --instance-id i-08deae9f14e3cc99e --instance-os-user ubuntu --ssh-public-key file:///tmp/dspl-temp-key.pub --region ap-south-1
+  ssh -i /tmp/dspl-temp-key -o StrictHostKeyChecking=no ubuntu@35.154.17.172
+  ```
+  Keys expire in ~60s — chain SCP+SSH in one command.
+- **Server git remote:** `upstream` (not `origin`)
 - **Frappe Cloud:** `dcepl.logstop.com` (source of truth for data, synced to EC2)
 - **nginx:** `Service-Worker-Allowed: /` header on sw.js, gzip enabled
 
@@ -360,14 +409,23 @@ bench --site <site> migrate          # After Python changes
 bench build --app vaishali           # After JS changes (not needed for www/ assets)
 bench clear-cache
 
-# Deploy to EC2 (get IP first)
-EC2_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=dspl-erp-server" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-ssh -i ~/.ssh/heft-erp-key.pem ubuntu@$EC2_IP
-sudo -u frappe bash -c 'cd /home/frappe/frappe-bench/apps/vaishali && git pull upstream main'
-redis-cli FLUSHALL
-sudo supervisorctl restart frappe-bench-web:frappe-bench-frappe-web dspl-fastapi
+# Deploy to EC2 via Instance Connect
+rm -f /tmp/dspl-temp-key /tmp/dspl-temp-key.pub && ssh-keygen -t rsa -f /tmp/dspl-temp-key -N "" -q \
+  && aws ec2-instance-connect send-ssh-public-key --instance-id i-08deae9f14e3cc99e --instance-os-user ubuntu --ssh-public-key file:///tmp/dspl-temp-key.pub --region ap-south-1 \
+  && ssh -i /tmp/dspl-temp-key -o StrictHostKeyChecking=no ubuntu@35.154.17.172 \
+    "sudo -u frappe bash -c 'cd /home/frappe/frappe-bench/apps/vaishali && git pull upstream main' \
+     && redis-cli FLUSHALL \
+     && sudo supervisorctl restart frappe-bench-web:frappe-bench-frappe-web dspl-fastapi"
 
-# After workspace/number card/chart changes:
+# After workspace/number card/chart changes (on server):
 sudo -u frappe bash -c 'cd /home/frappe/frappe-bench && bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup'
 redis-cli FLUSHALL
+
+# After hooks.py changes — MUST clear cache + restart ALL (frappe caches hooks in Redis):
+redis-cli FLUSHALL && sudo -u frappe bash -c 'cd /home/frappe/frappe-bench && bench --site dgoc.logstop.com clear-cache' && sudo supervisorctl restart all
+
+# Running Python scripts on server (frappe context):
+# Write to /tmp, SCP to server, run with: sudo -u frappe /home/frappe/frappe-bench/env/bin/python3 /tmp/script.py
+# Script MUST start with: import os; os.chdir('/home/frappe/frappe-bench/sites')
+# Then: import frappe; frappe.init(site='dgoc.logstop.com'); frappe.connect()
 ```
