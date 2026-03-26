@@ -12,6 +12,23 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
+  function extractError(res) {
+    if (res.error) return res.error;
+    var d = res.data;
+    if (!d) return 'Server error';
+    // Frappe sends _server_messages as JSON-encoded array of JSON strings
+    if (d._server_messages) {
+      try {
+        var msgs = JSON.parse(d._server_messages);
+        var first = JSON.parse(msgs[0]);
+        return first.message || first;
+      } catch (e) { /* fall through */ }
+    }
+    if (d.exc_type) return d.exc_type.replace(/Error$/, '') + ' error';
+    if (d.exception) return 'Server error';
+    return 'Server error';
+  }
+
   function getGPS() {
     return new Promise(function (resolve) {
       if (!navigator.geolocation) {
@@ -181,7 +198,7 @@
               idempotency_key: key
             }).then(function (res) {
               if (res.error || (res.status && res.status >= 400)) {
-                UI.toast('Check-in failed: ' + (res.error || 'Server error'), 'danger');
+                UI.toast('Check-in failed: ' + extractError(res), 'danger');
                 checkinBtn._setLoading(false);
                 return;
               }
@@ -233,7 +250,7 @@
               idempotency_key: key
             }).then(function (res) {
               if (res.error || (res.status && res.status >= 400)) {
-                UI.toast('Check-out failed: ' + (res.error || 'Server error'), 'danger');
+                UI.toast('Check-out failed: ' + extractError(res), 'danger');
                 checkoutBtn._setLoading(false);
                 return;
               }
