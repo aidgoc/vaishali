@@ -110,24 +110,58 @@ def migrate_existing_dcrs():
 # ── Doc Event Hooks ──────────────────────────────────────────────
 
 
+def _resolve_customer(doc):
+    """Try to resolve customer Link from customer_name if customer is not set."""
+    if doc.customer:
+        return
+    name = doc.customer_name
+    if not name:
+        return
+    match = frappe.db.get_value("Customer", {"customer_name": name}, "name")
+    if match:
+        doc.db_set("customer", match, update_modified=False)
+        doc.customer = match
+
+
+def _ensure_lead(doc):
+    """Create or find a Lead from prospect/customer data. Returns lead name or None."""
+    if doc.lead:
+        return doc.lead
+    lead_name_val = doc.prospect_name or doc.customer_name
+    if not lead_name_val:
+        return None
+    # Check for existing lead
+    existing = frappe.db.get_value("Lead", {"lead_name": lead_name_val}, "name")
+    if existing:
+        doc.db_set("lead", existing, update_modified=False)
+        doc.lead = existing
+        return existing
+    # Create new lead
+    lead = frappe.new_doc("Lead")
+    lead.lead_name = lead_name_val
+    lead.company_name = doc.get("prospect_company") or ""
+    lead.mobile_no = doc.get("prospect_phone") or ""
+    lead.source = "Campaign"
+    lead.append("notes", {"note": f"Auto-created from visit {doc.name} on {doc.date}"})
+    lead.insert(ignore_permissions=True)
+    doc.db_set("lead", lead.name, update_modified=False)
+    doc.lead = lead.name
+    if not doc.conversion_status or doc.conversion_status == "Open":
+        doc.db_set("conversion_status", "Lead Created", update_modified=False)
+    return lead.name
+
+
 def on_dcr_update(doc, method):
     """Auto-create Lead/Opportunity on DCR completion with outcome checkboxes."""
     if doc.status != "Completed":
         return
 
-    # Lead creation (checkbox-driven)
-    if doc.lead_generated and not doc.lead:
-        lead_name_val = doc.prospect_name or doc.customer_name
-        if lead_name_val and not frappe.db.exists("Lead", {"lead_name": lead_name_val}):
-            lead = frappe.new_doc("Lead")
-            lead.lead_name = lead_name_val
-            lead.company_name = doc.get("prospect_company") or ""
-            lead.mobile_no = doc.get("prospect_phone") or ""
-            lead.source = "Campaign"
-            lead.append("notes", {"note": f"Auto-created from visit {doc.name} on {doc.date}"})
-            lead.insert(ignore_permissions=True)
-            doc.db_set("lead", lead.name, update_modified=False)
-            doc.db_set("conversion_status", "Lead Created", update_modified=False)
+    # Resolve customer Link from customer_name
+    _resolve_customer(doc)
+
+    # Lead creation (checkbox-driven, or implied by opportunity_generated)
+    if (doc.lead_generated or doc.opportunity_generated) and not doc.lead:
+        _ensure_lead(doc)
 
     # Opportunity creation
     if doc.opportunity_generated and not doc.opportunity:
@@ -139,7 +173,12 @@ def on_dcr_update(doc, method):
             opp.opportunity_from = "Customer"
             opp.party_name = doc.customer
         else:
-            return  # Can't create opportunity without lead or customer
+            # Last resort: ensure a lead from prospect/customer data
+            lead_name = _ensure_lead(doc)
+            if not lead_name:
+                return  # Can't create opportunity without any party
+            opp.opportunity_from = "Lead"
+            opp.party_name = lead_name
         opp.source = "Campaign"
         opp.append("notes", {"note": f"From visit {doc.name} on {doc.date}"})
         opp.insert(ignore_permissions=True)
