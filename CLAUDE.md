@@ -41,14 +41,14 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 - **Company:** Dynamic Servitech Private Limited (DSPL)
 - **Business:** Crane safety electronics (SLIs, load monitors, IoT), equipment rental, wire rope testing
-- **Divisions:** EPS (Electronic Products & Safety), MLR (Machine Lifting & Rentals)
 - **Products:** ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT Systems, TPS
+- **BOM Item Prefixes:** Both DSPL and DCEPL use Krisp-derived BK*/BL* codes in BOMs; no EPS/ESS/ERS prefixes
 - **Annual Target:** ₹10.09 Crore (FY 2026-27)
 - **Sales Team:** Raghuvir, Aniket, NJG, BNG (Bangalore)
 - **ERPNext apps:** frappe, erpnext, hrms, india_compliance, payments, vaishali
 - **HSN items:** disable, never delete
 - **Currency:** INR only, format ₹X,XX,XXX (en-IN locale)
-- **Data:** 1,879 customers, 1,807 suppliers, 6,456 items, 8,242 contacts, 189 employees
+- **Data:** 1,896 customers, 1,807 suppliers, 6,456 items, 8,242 contacts, 189 employees
 
 ## PWA Structure (Installable Standalone App)
 
@@ -173,7 +173,7 @@ vaishali/
 │       ├── pipeline.js    # Sales funnel + pipeline board
 │       ├── follow-ups.js  # Quotation expiry tracking
 │       ├── my-targets.js  # Personal targets with progress bars + kpiRow
-│       ├── customer-search.js # Full customer list (1,879) with search
+│       ├── customer-search.js # Full customer list (1,896) with search
 │       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call
 │       ├── customer-timeline.js # Sales timeline: DCRs, Opportunities, Quotations, SOs by customer
 │       ├── monthly-report.js # Revenue, orders, visits, YTD progress, conversion funnel
@@ -276,7 +276,7 @@ PWA uses clean paths translated to Frappe methods:
 | `GET /api/field/attendance/today` | `vaishali.api.field.attendance_today` |
 | `POST /api/field/attendance` | `vaishali.api.field.create_checkin` |
 | `POST /api/field/dcr` | `vaishali.api.field.create_dcr` |
-| `GET /api/field/customers` | `vaishali.api.field.get_customers` (all 1,879, no limit) |
+| `GET /api/field/customers` | `vaishali.api.field.get_customers` (all 1,896, no limit) |
 | `GET /api/field/view/customer_360/{id}` | View Engine (overview + addresses + contacts + transactions) |
 | `GET /api/field/view/X` | `vaishali.api.views.get_view?view_name=X` |
 | `POST /api/field/lead` | `vaishali.api.field.create_lead` |
