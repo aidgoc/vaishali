@@ -1,0 +1,2548 @@
+{
+  "metadata": {
+    "extracted_at": "2026-03-31T02:52:33.693625",
+    "total_recipes": 12,
+    "data_source": "ERPNext v15",
+    "site": "dgoc.logstop.com",
+    "validation_stage": "Task 2: Component Details Extraction"
+  },
+  "extraction_summary": {
+    "successful": 12,
+    "errors": 0,
+    "no_bom": 0
+  },
+  "recipes": [
+    {
+      "code": "BKC02002",
+      "item_name": "CABLE ANGLE 15M",
+      "item_group": "ANGLE (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKC02002-001",
+      "bom_status": "submitted",
+      "component_count": 8,
+      "components": [
+        {
+          "item_code": "EAD04001",
+          "item_name": "CONNECTOR BULLET 5MM F",
+          "description": "CONNECTOR BULLET 5MM F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 27.36,
+          "amount": 27.36
+        },
+        {
+          "item_code": "EAD04002",
+          "item_name": "CONNECTOR BULLET 5MM M",
+          "description": "CONNECTOR BULLET 5MM M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 19.79,
+          "amount": 19.79
+        },
+        {
+          "item_code": "EAD01003",
+          "item_name": "CONNECTOR CABEL MOUNT 7PIN F",
+          "description": "CONNECTOR CABEL MOUNT 7PIN F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 295.0,
+          "amount": 295.0
+        },
+        {
+          "item_code": "EAT01002",
+          "item_name": "GENERAL HEATSHRINK 14MM",
+          "description": "GENERAL HEATSHRINK 14MM",
+          "qty": 0.4,
+          "uom": "Meter",
+          "rate": 30.0,
+          "amount": 12.0
+        },
+        {
+          "item_code": "EAB02001",
+          "item_name": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 15.0,
+          "uom": "Meter",
+          "rate": 51.0,
+          "amount": 765.0
+        },
+        {
+          "item_code": "EAD01004",
+          "item_name": "CONNECTOR CABEL MOUNT 3PIN F",
+          "description": "CONNECTOR CABEL MOUNT 3PIN F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 177.0,
+          "amount": 177.0
+        },
+        {
+          "item_code": "EAB02002",
+          "item_name": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 1.0,
+          "uom": "Meter",
+          "rate": 39.0,
+          "amount": 39.0
+        },
+        {
+          "item_code": "EAT01003",
+          "item_name": "GENERAL HEATSHRINK 2.5MM",
+          "description": "GENERAL HEATSHRINK 2.5MM",
+          "qty": 0.2,
+          "uom": "Meter",
+          "rate": 5.0,
+          "amount": 1.0
+        }
+      ],
+      "total_bom_cost": 1336.15,
+      "status": "extracted"
+    },
+    {
+      "code": "BKD01001",
+      "item_name": "SENSOR ASMBL ANGLE 0-90 (D)",
+      "item_group": "ANGLE (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKD01001-001",
+      "bom_status": "submitted",
+      "component_count": 16,
+      "components": [
+        {
+          "item_code": "EAD02002",
+          "item_name": "CONNECTOR PANEL MOUNT 3PIN M",
+          "description": "CONNECTOR PANEL MOUNT 3PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 110.0,
+          "amount": 110.0
+        },
+        {
+          "item_code": "EEB01002",
+          "item_name": "ENCLOSURE ABS 110X80X65",
+          "description": "ENCLOSURE ABS 110X80X65",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 785.0,
+          "amount": 785.0
+        },
+        {
+          "item_code": "EEC03004",
+          "item_name": "METAL PLATE 185X40X5MM",
+          "description": "METAL PLATE 185X40X5MM",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 110.0,
+          "amount": 110.0
+        },
+        {
+          "item_code": "EEC03001",
+          "item_name": "METAL PLATE 170X115X2MM",
+          "description": "METAL PLATE 170X115X2MM",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "EEC03005",
+          "item_name": "METAL PLATE 85X70X2MM",
+          "description": "METAL PLATE 85X70X2MM",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 55.0,
+          "amount": 55.0
+        },
+        {
+          "item_code": "EEE01005",
+          "item_name": "HARDWARE BOLT CSK M6X10",
+          "description": "HARDWARE BOLT CSK M6X10",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.6,
+          "amount": 3.2
+        },
+        {
+          "item_code": "EEE03001",
+          "item_name": "HARDWARE BOLT STAR M3X10",
+          "description": "HARDWARE BOLT STAR M3X10",
+          "qty": 12.0,
+          "uom": "Nos",
+          "rate": 0.8,
+          "amount": 9.6
+        },
+        {
+          "item_code": "EEE05001",
+          "item_name": "HARDWARE BOLT SS CH M4X12",
+          "description": "HARDWARE BOLT SS CH M4X12",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.6,
+          "amount": 2.4
+        },
+        {
+          "item_code": "EEE06001",
+          "item_name": "HARDWARE SPACER M3X30",
+          "description": "HARDWARE SPACER M3X30",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 4.0,
+          "amount": 16.0
+        },
+        {
+          "item_code": "EEE07001",
+          "item_name": "HARDWARE WASHER PLAIN M6",
+          "description": "HARDWARE WASHER PLAIN M6",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.4,
+          "amount": 0.8
+        },
+        {
+          "item_code": "EFB02001",
+          "item_name": "STICKER PVC ARROW",
+          "description": "STICKER PVC ARROW",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 42.0,
+          "amount": 42.0
+        },
+        {
+          "item_code": "EFB03001",
+          "item_name": "STICKER SILVER FOIL SERIAL NO",
+          "description": "STICKER SILVER FOIL SERIAL NO",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 60.0,
+          "amount": 60.0
+        },
+        {
+          "item_code": "EEE12003",
+          "item_name": "HARDWARE NUT M4",
+          "description": "HARDWARE NUT M4",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.3,
+          "amount": 1.2
+        },
+        {
+          "item_code": "EEE12001",
+          "item_name": "HARDWARE NUT M3",
+          "description": "HARDWARE NUT M3",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.2,
+          "amount": 0.8
+        },
+        {
+          "item_code": "EBE01001",
+          "item_name": "SENSOR ANGLE SINGLE AXIS 90",
+          "description": "SENSOR ANGLE SINGLE AXIS 90",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2850.0,
+          "amount": 2850.0
+        },
+        {
+          "item_code": "EAT01003",
+          "item_name": "GENERAL HEATSHRINK 2.5MM",
+          "description": "GENERAL HEATSHRINK 2.5MM",
+          "qty": 0.01,
+          "uom": "Meter",
+          "rate": 5.0,
+          "amount": 0.05
+        }
+      ],
+      "total_bom_cost": 4166.05,
+      "status": "extracted"
+    },
+    {
+      "code": "BKC05009",
+      "item_name": "CABLE ATB 80M",
+      "item_group": "ATB (05)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKC05009-001",
+      "bom_status": "submitted",
+      "component_count": 4,
+      "components": [
+        {
+          "item_code": "EAD04001",
+          "item_name": "CONNECTOR BULLET 5MM F",
+          "description": "CONNECTOR BULLET 5MM F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 27.36,
+          "amount": 54.72
+        },
+        {
+          "item_code": "EAB02002",
+          "item_name": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 80.0,
+          "uom": "Meter",
+          "rate": 39.0,
+          "amount": 3120.0
+        },
+        {
+          "item_code": "EAD04002",
+          "item_name": "CONNECTOR BULLET 5MM M",
+          "description": "CONNECTOR BULLET 5MM M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 19.79,
+          "amount": 39.58
+        },
+        {
+          "item_code": "EAT01001",
+          "item_name": "GENERAL HEATSHRINK 6MM",
+          "description": "GENERAL HEATSHRINK 6MM",
+          "qty": 0.06,
+          "uom": "Meter",
+          "rate": 12.0,
+          "amount": 0.72
+        }
+      ],
+      "total_bom_cost": 3215.02,
+      "status": "extracted"
+    },
+    {
+      "code": "BKA02008",
+      "item_name": "DISPLAY D SERIES DRM 1005",
+      "item_group": "D SERIES (02)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKA02008-001",
+      "bom_status": "submitted",
+      "component_count": 66,
+      "components": [
+        {
+          "item_code": "EAB02001",
+          "item_name": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 1.0,
+          "uom": "Meter",
+          "rate": 51.0,
+          "amount": 51.0
+        },
+        {
+          "item_code": "EAB04001",
+          "item_name": "CABLE FRC 26CORE",
+          "description": "CABLE FRC 26CORE",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 15.0,
+          "amount": 15.0
+        },
+        {
+          "item_code": "EAC04001",
+          "item_name": "FUSE RESETTABLE 500MA",
+          "description": "FUSE RESETTABLE 500MA",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 4.75,
+          "amount": 14.25
+        },
+        {
+          "item_code": "EAD01002",
+          "item_name": "CONNECTOR CABEL MOUNT 5PIN M",
+          "description": "CONNECTOR CABEL MOUNT 5PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 255.0,
+          "amount": 255.0
+        },
+        {
+          "item_code": "EAT01005",
+          "item_name": "GENERAL HEATSHRINK 12MM",
+          "description": "GENERAL HEATSHRINK 12MM",
+          "qty": 1.0,
+          "uom": "Meter",
+          "rate": 24.0,
+          "amount": 24.0
+        },
+        {
+          "item_code": "EAT01002",
+          "item_name": "GENERAL HEATSHRINK 14MM",
+          "description": "GENERAL HEATSHRINK 14MM",
+          "qty": 1.0,
+          "uom": "Meter",
+          "rate": 30.0,
+          "amount": 30.0
+        },
+        {
+          "item_code": "EEB03002",
+          "item_name": "ENCLOSURE ALUMINIUM 100X160X80 WITH DRILLING",
+          "description": "ENCLOSURE ALUMINIUM 100X160X80 WITH DRILLING",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1846.82,
+          "amount": 1846.82
+        },
+        {
+          "item_code": "EEC01001",
+          "item_name": "METAL MOUNTING STAND D SERIES",
+          "description": "METAL MOUNTING STAND D SERIES",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 100.0,
+          "amount": 100.0
+        },
+        {
+          "item_code": "EEC02001",
+          "item_name": "METAL MOUNTING BRACKET D SERIES",
+          "description": "METAL MOUNTING BRACKET D SERIES",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 30.0,
+          "amount": 60.0
+        },
+        {
+          "item_code": "EEE02003",
+          "item_name": "HARDWARE BOLT HEX M6X20",
+          "description": "HARDWARE BOLT HEX M6X20",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.0,
+          "amount": 2.0
+        },
+        {
+          "item_code": "BKH02001",
+          "item_name": "PCB ASMB D SERIES CONTLR",
+          "description": "PCB ASMB D SERIES CONTLR",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2099.37,
+          "amount": 2099.37
+        },
+        {
+          "item_code": "EBB02002",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 0.89,
+          "amount": 2.67
+        },
+        {
+          "item_code": "EBB09003",
+          "item_name": "COMPONENT RED LED SMD",
+          "description": "COMPONENT RED LED SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 1.5
+        },
+        {
+          "item_code": "EBB02004",
+          "item_name": "COMPONENT CAPACITOR TENTALUM SMD 220UF 25V",
+          "description": "COMPONENT CAPACITOR TENTALUM SMD 220UF 25V",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 16.0,
+          "amount": 64.0
+        },
+        {
+          "item_code": "EBB02003",
+          "item_name": "COMPONENT CAPACITOR TENTALUM SMD 4.7UF 50V",
+          "description": "COMPONENT CAPACITOR TENTALUM SMD 4.7UF 50V",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 10.5,
+          "amount": 21.0
+        },
+        {
+          "item_code": "EBB05008",
+          "item_name": "COMPONENT IC AT24C512",
+          "description": "COMPONENT IC AT24C512",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 52.0,
+          "amount": 52.0
+        },
+        {
+          "item_code": "EBB05011",
+          "item_name": "COMPONENT IC MAX 232",
+          "description": "COMPONENT IC MAX 232",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 32.0,
+          "amount": 32.0
+        },
+        {
+          "item_code": "EBD01002",
+          "item_name": "PCB BARE D SERIES CNTRL",
+          "description": "PCB BARE D SERIES CNTRL",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 400.0,
+          "amount": 400.0
+        },
+        {
+          "item_code": "EBB05006",
+          "item_name": "COMPONENT IC AD 620 SMD",
+          "description": "COMPONENT IC AD 620 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 260.0,
+          "amount": 520.0
+        },
+        {
+          "item_code": "EBB05009",
+          "item_name": "COMPONENT IC 2003 SMD",
+          "description": "COMPONENT IC 2003 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 13.0,
+          "amount": 13.0
+        },
+        {
+          "item_code": "EBB05012",
+          "item_name": "COMPONENT IC PC817 DIP",
+          "description": "COMPONENT IC PC817 DIP",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 3.5,
+          "amount": 17.5
+        },
+        {
+          "item_code": "EBB05002",
+          "item_name": "COMPONENT IC PIC18F67K22",
+          "description": "COMPONENT IC PIC18F67K22",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 448.1,
+          "amount": 448.1
+        },
+        {
+          "item_code": "EBB05007",
+          "item_name": "COMPONENT IC LM 324 SMD",
+          "description": "COMPONENT IC LM 324 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 6.85,
+          "amount": 13.7
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 4.5
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 54.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 18.9
+        },
+        {
+          "item_code": "EBB06001",
+          "item_name": "COMPONENT REGULATOR TPS5430DDA",
+          "description": "COMPONENT REGULATOR TPS5430DDA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 90.0,
+          "amount": 90.0
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 42.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 273.0
+        },
+        {
+          "item_code": "EAD09001",
+          "item_name": "CONNECTOR 26 PIN HEADER",
+          "description": "CONNECTOR 26 PIN HEADER",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 27.0,
+          "amount": 27.0
+        },
+        {
+          "item_code": "EBB03002",
+          "item_name": "COMPONENT INDUCTOR 2000E",
+          "description": "COMPONENT INDUCTOR 2000E",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 27.5
+        },
+        {
+          "item_code": "EBB03001",
+          "item_name": "COMPONENT INDUCTOR 22UH",
+          "description": "COMPONENT INDUCTOR 22UH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 15.0,
+          "amount": 15.0
+        },
+        {
+          "item_code": "EAC02001",
+          "item_name": "POTENTIOMETER PCB MOUNT 1 K",
+          "description": "POTENTIOMETER PCB MOUNT 1 K",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 12.5,
+          "amount": 25.0
+        },
+        {
+          "item_code": "EBB07003",
+          "item_name": "COMPONENT DIODE MBRS340",
+          "description": "COMPONENT DIODE MBRS340",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 5.5
+        },
+        {
+          "item_code": "EBB07004",
+          "item_name": "COMPONENT DIODE P6KE36CA",
+          "description": "COMPONENT DIODE P6KE36CA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EAD11004",
+          "item_name": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "description": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EAD11001",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 6.0
+        },
+        {
+          "item_code": "EAD11003",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.4,
+          "amount": 8.4
+        },
+        {
+          "item_code": "EAD11002",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.6,
+          "amount": 3.6
+        },
+        {
+          "item_code": "BKH02004",
+          "item_name": "PCB ASMB D SERIES DISPLAY",
+          "description": "PCB ASMB D SERIES DISPLAY",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 915.85,
+          "amount": 915.85
+        },
+        {
+          "item_code": "EBB05005",
+          "item_name": "COMPONENT IC 4094 SMD",
+          "description": "COMPONENT IC 4094 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 11.0,
+          "amount": 22.0
+        },
+        {
+          "item_code": "EBB05001",
+          "item_name": "COMPONENT IC PIC16F1527",
+          "description": "COMPONENT IC PIC16F1527",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 239.0,
+          "amount": 239.0
+        },
+        {
+          "item_code": "EBB09004",
+          "item_name": "7 SEG REDX4 CA",
+          "description": "7 SEG REDX4 CA",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 26.5,
+          "amount": 106.0
+        },
+        {
+          "item_code": "EBD01001",
+          "item_name": "PCB BARE D SERIES DISPLAY",
+          "description": "PCB BARE D SERIES DISPLAY",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 365.0,
+          "amount": 365.0
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 0.9
+        },
+        {
+          "item_code": "EBB04001",
+          "item_name": "COMPONENT TRANSISTOR 847 SMD",
+          "description": "COMPONENT TRANSISTOR 847 SMD",
+          "qty": 16.0,
+          "uom": "Nos",
+          "rate": 0.7,
+          "amount": 11.2
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 60.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 21.0
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 14.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 91.0
+        },
+        {
+          "item_code": "EBB04002",
+          "item_name": "COMPONENT TRANSISTOR 857 SMD",
+          "description": "COMPONENT TRANSISTOR 857 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.7,
+          "amount": 0.7
+        },
+        {
+          "item_code": "EAD09001",
+          "item_name": "CONNECTOR 26 PIN HEADER",
+          "description": "CONNECTOR 26 PIN HEADER",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 27.0,
+          "amount": 54.0
+        },
+        {
+          "item_code": "EBB02005",
+          "item_name": "COMPONENT CAPACITOR ELECTROLYTIC 10UF/25V",
+          "description": "COMPONENT CAPACITOR ELECTROLYTIC 10UF/25V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.35,
+          "amount": 1.35
+        },
+        {
+          "item_code": "EEE12003",
+          "item_name": "HARDWARE NUT M4",
+          "description": "HARDWARE NUT M4",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.3,
+          "amount": 1.2
+        },
+        {
+          "item_code": "EEE12001",
+          "item_name": "HARDWARE NUT M3",
+          "description": "HARDWARE NUT M3",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 0.2,
+          "amount": 1.0
+        },
+        {
+          "item_code": "EEE06003",
+          "item_name": "HARDWARE SPACER M3X10",
+          "description": "HARDWARE SPACER M3X10",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 0.3,
+          "amount": 1.5
+        },
+        {
+          "item_code": "EEE02006",
+          "item_name": "HARDWARE BOLT HEX M4X20",
+          "description": "HARDWARE BOLT HEX M4X20",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.98,
+          "amount": 3.92
+        },
+        {
+          "item_code": "EFF02001",
+          "item_name": "D-CAL DISPLAY BLANK D SERIES",
+          "description": "D-CAL DISPLAY BLANK D SERIES",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 360.0,
+          "amount": 360.0
+        },
+        {
+          "item_code": "EFB01007",
+          "item_name": "STICKER POLYESTER DRM 1005",
+          "description": "STICKER POLYESTER DRM 1005",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "BKI03002",
+          "item_name": "PCB ASMB DRM RS 485 CONVERTER",
+          "description": "PCB ASMB DRM RS 485 CONVERTER",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 71.15,
+          "amount": 71.15
+        },
+        {
+          "item_code": "EBB06003",
+          "item_name": "COMPONENT REGULATOR LM1117 3.3V",
+          "description": "COMPONENT REGULATOR LM1117 3.3V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.25,
+          "amount": 8.25
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 13.0
+        },
+        {
+          "item_code": "EBB05021",
+          "item_name": "COMPONENT IC SN65HVD75DR SOIC",
+          "description": "COMPONENT IC SN65HVD75DR SOIC",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 48.0,
+          "amount": 48.0
+        },
+        {
+          "item_code": "EBD07001",
+          "item_name": "PCB BARE OTHER RS 485 CONVERTER",
+          "description": "PCB BARE OTHER RS 485 CONVERTER",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.0,
+          "amount": 0.0
+        },
+        {
+          "item_code": "EAD11006",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.2,
+          "amount": 1.2
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 0.7
+        },
+        {
+          "item_code": "EBB05010",
+          "item_name": "COMPONENT IC DS1307",
+          "description": "COMPONENT IC DS1307",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 72.0,
+          "amount": 72.0
+        },
+        {
+          "item_code": "EBB10001",
+          "item_name": "COMPONENT CRYSTAL 32 M HZ",
+          "description": "COMPONENT CRYSTAL 32 M HZ",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 4.85,
+          "amount": 4.85
+        },
+        {
+          "item_code": "EBB05008",
+          "item_name": "COMPONENT IC AT24C512",
+          "description": "COMPONENT IC AT24C512",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 52.0,
+          "amount": 52.0
+        },
+        {
+          "item_code": "EFK02009",
+          "item_name": "MISC BATTERY LITHIUM 3V",
+          "description": "MISC BATTERY LITHIUM 3V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 20.0,
+          "amount": 20.0
+        }
+      ],
+      "total_bom_cost": 9203.58,
+      "status": "extracted"
+    },
+    {
+      "code": "BKH02001",
+      "item_name": "PCB ASMB D SERIES CONTLR",
+      "item_group": "D SERIES (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKH02001-001",
+      "bom_status": "submitted",
+      "component_count": 26,
+      "components": [
+        {
+          "item_code": "EBB05008",
+          "item_name": "COMPONENT IC AT24C512",
+          "description": "COMPONENT IC AT24C512",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 52.0,
+          "amount": 52.0
+        },
+        {
+          "item_code": "EBB02002",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 0.89,
+          "amount": 2.67
+        },
+        {
+          "item_code": "EBB09003",
+          "item_name": "COMPONENT RED LED SMD",
+          "description": "COMPONENT RED LED SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 1.5
+        },
+        {
+          "item_code": "EBB02004",
+          "item_name": "COMPONENT CAPACITOR TENTALUM SMD 220UF 25V",
+          "description": "COMPONENT CAPACITOR TENTALUM SMD 220UF 25V",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 16.0,
+          "amount": 64.0
+        },
+        {
+          "item_code": "EBB02003",
+          "item_name": "COMPONENT CAPACITOR TENTALUM SMD 4.7UF 50V",
+          "description": "COMPONENT CAPACITOR TENTALUM SMD 4.7UF 50V",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 10.5,
+          "amount": 21.0
+        },
+        {
+          "item_code": "EBB05011",
+          "item_name": "COMPONENT IC MAX 232",
+          "description": "COMPONENT IC MAX 232",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 32.0,
+          "amount": 32.0
+        },
+        {
+          "item_code": "EBD01002",
+          "item_name": "PCB BARE D SERIES CNTRL",
+          "description": "PCB BARE D SERIES CNTRL",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 400.0,
+          "amount": 400.0
+        },
+        {
+          "item_code": "EBB05012",
+          "item_name": "COMPONENT IC PC817 DIP",
+          "description": "COMPONENT IC PC817 DIP",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 3.5,
+          "amount": 17.5
+        },
+        {
+          "item_code": "EBB05006",
+          "item_name": "COMPONENT IC AD 620 SMD",
+          "description": "COMPONENT IC AD 620 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 260.0,
+          "amount": 520.0
+        },
+        {
+          "item_code": "EBB05009",
+          "item_name": "COMPONENT IC 2003 SMD",
+          "description": "COMPONENT IC 2003 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 13.0,
+          "amount": 13.0
+        },
+        {
+          "item_code": "EBB05002",
+          "item_name": "COMPONENT IC PIC18F67K22",
+          "description": "COMPONENT IC PIC18F67K22",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 448.1,
+          "amount": 448.1
+        },
+        {
+          "item_code": "EBB05007",
+          "item_name": "COMPONENT IC LM 324 SMD",
+          "description": "COMPONENT IC LM 324 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 6.85,
+          "amount": 13.7
+        },
+        {
+          "item_code": "EBB06001",
+          "item_name": "COMPONENT REGULATOR TPS5430DDA",
+          "description": "COMPONENT REGULATOR TPS5430DDA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 90.0,
+          "amount": 90.0
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 4.5
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 54.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 18.9
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 42.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 273.0
+        },
+        {
+          "item_code": "EAD09001",
+          "item_name": "CONNECTOR 26 PIN HEADER",
+          "description": "CONNECTOR 26 PIN HEADER",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 27.0,
+          "amount": 27.0
+        },
+        {
+          "item_code": "EAC02001",
+          "item_name": "POTENTIOMETER PCB MOUNT 1 K",
+          "description": "POTENTIOMETER PCB MOUNT 1 K",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 12.5,
+          "amount": 25.0
+        },
+        {
+          "item_code": "EBB03002",
+          "item_name": "COMPONENT INDUCTOR 2000E",
+          "description": "COMPONENT INDUCTOR 2000E",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 27.5
+        },
+        {
+          "item_code": "EBB03001",
+          "item_name": "COMPONENT INDUCTOR 22UH",
+          "description": "COMPONENT INDUCTOR 22UH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 15.0,
+          "amount": 15.0
+        },
+        {
+          "item_code": "EBB07003",
+          "item_name": "COMPONENT DIODE MBRS340",
+          "description": "COMPONENT DIODE MBRS340",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 5.5
+        },
+        {
+          "item_code": "EBB07004",
+          "item_name": "COMPONENT DIODE P6KE36CA",
+          "description": "COMPONENT DIODE P6KE36CA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EAD11004",
+          "item_name": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "description": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EAD11001",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 6.0
+        },
+        {
+          "item_code": "EAD11003",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.4,
+          "amount": 8.4
+        },
+        {
+          "item_code": "EAD11002",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.6,
+          "amount": 3.6
+        }
+      ],
+      "total_bom_cost": 2099.37,
+      "status": "extracted"
+    },
+    {
+      "code": "BKA04001",
+      "item_name": "DISPLAY E-DASH",
+      "item_group": "E-DASH (04)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKA04001-001",
+      "bom_status": "submitted",
+      "component_count": 52,
+      "components": [
+        {
+          "item_code": "EEB01007",
+          "item_name": "ENCLOSURE ABS F-DASH",
+          "description": "ENCLOSURE ABS F-DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1450.0,
+          "amount": 1450.0
+        },
+        {
+          "item_code": "EAD01013",
+          "item_name": "CONNECTOR CABLE MOUNT 5PIN F GX16",
+          "description": "CONNECTOR CABLE MOUNT 5PIN F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 50.0,
+          "amount": 50.0
+        },
+        {
+          "item_code": "EAD01011",
+          "item_name": "CONNECTOR CABLE MOUNT 2PIN F GX16",
+          "description": "CONNECTOR CABLE MOUNT 2PIN F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 20.0,
+          "amount": 20.0
+        },
+        {
+          "item_code": "EAD02005",
+          "item_name": "CONNECTOR PANEL MOUNT 2PIN M/F GX16",
+          "description": "CONNECTOR PANEL MOUNT 2PIN M/F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 30.0,
+          "amount": 30.0
+        },
+        {
+          "item_code": "EAD02007",
+          "item_name": "CONNECTOR PANEL MOUNT 5PIN M/F GX16",
+          "description": "CONNECTOR PANEL MOUNT 5PIN M/F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 60.0,
+          "amount": 60.0
+        },
+        {
+          "item_code": "EAK03001",
+          "item_name": "BUZZER 24V (4.2MM)",
+          "description": "BUZZER 24V (4.2MM)",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 50.0,
+          "amount": 50.0
+        },
+        {
+          "item_code": "EEE02001",
+          "item_name": "HARDWARE BOLT HEX M3X10",
+          "description": "HARDWARE BOLT HEX M3X10",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.75,
+          "amount": 1.5
+        },
+        {
+          "item_code": "BKI08002",
+          "item_name": "PCB ASMB POWER PROTECTION OVER VOLTAGE",
+          "description": "PCB ASMB POWER PROTECTION OVER VOLTAGE",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 91.75,
+          "amount": 91.75
+        },
+        {
+          "item_code": "EBB08001",
+          "item_name": "COMPONENT ZENER 12 V",
+          "description": "COMPONENT ZENER 12 V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 2.7
+        },
+        {
+          "item_code": "EEE01003",
+          "item_name": "HARDWARE BOLT CSK M3X10",
+          "description": "HARDWARE BOLT CSK M3X10",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.8,
+          "amount": 0.8
+        },
+        {
+          "item_code": "EBB04003",
+          "item_name": "COMPONENT TRANSISTOR MJ2955",
+          "description": "COMPONENT TRANSISTOR MJ2955",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 48.0,
+          "amount": 48.0
+        },
+        {
+          "item_code": "EEE12001",
+          "item_name": "HARDWARE NUT M3",
+          "description": "HARDWARE NUT M3",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.2,
+          "amount": 0.4
+        },
+        {
+          "item_code": "EBB07002",
+          "item_name": "COMPONENT DIODE 1N4007",
+          "description": "COMPONENT DIODE 1N4007",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.65,
+          "amount": 0.65
+        },
+        {
+          "item_code": "EBD03001",
+          "item_name": "PCB BARE POWER PROTECTION",
+          "description": "PCB BARE POWER PROTECTION",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 25.0,
+          "amount": 25.0
+        },
+        {
+          "item_code": "EBB04004",
+          "item_name": "COMPONENT TRANSISTOR 2N2905",
+          "description": "COMPONENT TRANSISTOR 2N2905",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 13.5,
+          "amount": 13.5
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 0.7
+        },
+        {
+          "item_code": "EAB02002",
+          "item_name": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 2 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 2.0,
+          "uom": "Meter",
+          "rate": 39.0,
+          "amount": 78.0
+        },
+        {
+          "item_code": "EAB01003",
+          "item_name": "CABLE NON SHIELDED BOTH SIDE 5263 CRIMP",
+          "description": "CABLE NON SHIELDED BOTH SIDE 5263 CRIMP",
+          "qty": 30.0,
+          "uom": "Nos",
+          "rate": 0.4,
+          "amount": 12.0
+        },
+        {
+          "item_code": "EFB01020",
+          "item_name": "STICKER POLYESTER E DASH",
+          "description": "STICKER POLYESTER E DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "EAD02008",
+          "item_name": "CONNECTOR PANEL MOUNT 6PIN M/F GX16",
+          "description": "CONNECTOR PANEL MOUNT 6PIN M/F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 70.0,
+          "amount": 70.0
+        },
+        {
+          "item_code": "EAD01014",
+          "item_name": "CONNECTOR CABLE MOUNT 6PIN F GX16",
+          "description": "CONNECTOR CABLE MOUNT 6PIN F GX16",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 80.0,
+          "amount": 80.0
+        },
+        {
+          "item_code": "EEE12001",
+          "item_name": "HARDWARE NUT M3",
+          "description": "HARDWARE NUT M3",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.2,
+          "amount": 0.4
+        },
+        {
+          "item_code": "EBA03001",
+          "item_name": "MODULE DC DC CONVERTER LM 2596",
+          "description": "MODULE DC DC CONVERTER LM 2596",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "EAA01010",
+          "item_name": "SWITCH ROCKER DPST RED IRS-1",
+          "description": "SWITCH ROCKER DPST RED IRS-1",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 50.85,
+          "amount": 50.85
+        },
+        {
+          "item_code": "BKI07001",
+          "item_name": "PCB ASMB LOAD F- DASH",
+          "description": "PCB ASMB LOAD F- DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 599.47,
+          "amount": 599.47
+        },
+        {
+          "item_code": "EBB09006",
+          "item_name": "7 SEG REDX4 CC",
+          "description": "7 SEG REDX4 CC",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 25.0,
+          "amount": 25.0
+        },
+        {
+          "item_code": "EBB06003",
+          "item_name": "COMPONENT REGULATOR LM1117 3.3V",
+          "description": "COMPONENT REGULATOR LM1117 3.3V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.25,
+          "amount": 8.25
+        },
+        {
+          "item_code": "EAD11006",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 1.2,
+          "amount": 3.6
+        },
+        {
+          "item_code": "EBB03002",
+          "item_name": "COMPONENT INDUCTOR 2000E",
+          "description": "COMPONENT INDUCTOR 2000E",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 5.5
+        },
+        {
+          "item_code": "EAD01017",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 6PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 6PIN F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 34.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 11.9
+        },
+        {
+          "item_code": "EBB05032",
+          "item_name": "COMPONENT IC MAX485 SO8",
+          "description": "COMPONENT IC MAX485 SO8",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 12.62,
+          "amount": 12.62
+        },
+        {
+          "item_code": "EBB06007",
+          "item_name": "COMPONENT REGULATOR IC 7805",
+          "description": "COMPONENT REGULATOR IC 7805",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 9.5,
+          "amount": 9.5
+        },
+        {
+          "item_code": "EBB02002",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 0.89,
+          "amount": 4.45
+        },
+        {
+          "item_code": "EAD11002",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.6,
+          "amount": 3.6
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 24.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 156.0
+        },
+        {
+          "item_code": "EBB05015",
+          "item_name": "COMPONENT IC PC817 SOP 04",
+          "description": "COMPONENT IC PC817 SOP 04",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 4.5,
+          "amount": 18.0
+        },
+        {
+          "item_code": "EAD11007",
+          "item_name": "CONNECTOR PCB MOUNT MKDSN 2PIN M",
+          "description": "CONNECTOR PCB MOUNT MKDSN 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EBB02014",
+          "item_name": "COMPONENT CAPACITOR ELECTROLYTIC 220UF/40V",
+          "description": "COMPONENT CAPACITOR ELECTROLYTIC 220UF/40V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.86,
+          "amount": 3.86
+        },
+        {
+          "item_code": "EAD01007",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 2.4,
+          "amount": 7.2
+        },
+        {
+          "item_code": "EBD07002",
+          "item_name": "PCB BARE F-DASH",
+          "description": "PCB BARE F-DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 106.1,
+          "amount": 106.1
+        },
+        {
+          "item_code": "EBB09007",
+          "item_name": "7 SEG REDX3 CC",
+          "description": "7 SEG REDX3 CC",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 25.0,
+          "amount": 25.0
+        },
+        {
+          "item_code": "EBB05033",
+          "item_name": "COMPONENT IC TM1628",
+          "description": "COMPONENT IC TM1628",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 36.0,
+          "amount": 36.0
+        },
+        {
+          "item_code": "EBB05040",
+          "item_name": "COMPONENT IC HX710B",
+          "description": "COMPONENT IC HX710B",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 22.0,
+          "amount": 22.0
+        },
+        {
+          "item_code": "EBB02015",
+          "item_name": "COMPONENT CAPACITOR SMD 10UF/50V",
+          "description": "COMPONENT CAPACITOR SMD 10UF/50V",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 3.6
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 0.9
+        },
+        {
+          "item_code": "EBB04005",
+          "item_name": "COMPONENT TRANSISTOR 2N2222",
+          "description": "COMPONENT TRANSISTOR 2N2222",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 13.0,
+          "amount": 26.0
+        },
+        {
+          "item_code": "EAD11001",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 9.0
+        },
+        {
+          "item_code": "EBB07010",
+          "item_name": "COMPONENT DIODE SMBJ12CA",
+          "description": "COMPONENT DIODE SMBJ12CA",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 13.0
+        },
+        {
+          "item_code": "EBB05026",
+          "item_name": "COMPONENT IC MM32F0144C6P",
+          "description": "COMPONENT IC MM32F0144C6P",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 60.0,
+          "amount": 60.0
+        },
+        {
+          "item_code": "EFF01014",
+          "item_name": "D-CAL DISPLAY BLANK E/B-DASH",
+          "description": "D-CAL DISPLAY BLANK E/B-DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 400.0,
+          "amount": 400.0
+        },
+        {
+          "item_code": "EEC01012",
+          "item_name": "METAL MOUNTING STAND OF E/B-DASH DISPLAY",
+          "description": "METAL MOUNTING STAND OF E/B-DASH DISPLAY",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 55.0,
+          "amount": 55.0
+        }
+      ],
+      "total_bom_cost": 4011.3,
+      "status": "extracted"
+    },
+    {
+      "code": "BKA05001",
+      "item_name": "DISPLAY E-SLI V2",
+      "item_group": "E-SLI (05)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKA05001-001",
+      "bom_status": "submitted",
+      "component_count": 54,
+      "components": [
+        {
+          "item_code": "EEB01006",
+          "item_name": "ENCLOSURE ABS 170X125X65",
+          "description": "ENCLOSURE ABS 170X125X65",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 271.0,
+          "amount": 271.0
+        },
+        {
+          "item_code": "EFF01004",
+          "item_name": "D-CAL DISPLAY E-SLI V2",
+          "description": "D-CAL DISPLAY E-SLI V2",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 450.0,
+          "amount": 450.0
+        },
+        {
+          "item_code": "EBA06001",
+          "item_name": "DISPLAY LCD 20X4",
+          "description": "DISPLAY LCD 20X4",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 700.0,
+          "amount": 700.0
+        },
+        {
+          "item_code": "EEC01004",
+          "item_name": "METAL MOUNTING STAND E-SLI V2",
+          "description": "METAL MOUNTING STAND E-SLI V2",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 90.0,
+          "amount": 90.0
+        },
+        {
+          "item_code": "EAD02009",
+          "item_name": "CONNECTOR PANEL MOUNT 5PIN F",
+          "description": "CONNECTOR PANEL MOUNT 5PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 167.0,
+          "amount": 334.0
+        },
+        {
+          "item_code": "EAD02010",
+          "item_name": "CONNECTOR PANEL MOUNT 7PIN F",
+          "description": "CONNECTOR PANEL MOUNT 7PIN F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 295.0,
+          "amount": 295.0
+        },
+        {
+          "item_code": "EEE03001",
+          "item_name": "HARDWARE BOLT STAR M3X10",
+          "description": "HARDWARE BOLT STAR M3X10",
+          "qty": 12.0,
+          "uom": "Nos",
+          "rate": 0.8,
+          "amount": 9.6
+        },
+        {
+          "item_code": "EEE05002",
+          "item_name": "HARDWARE BOLT SS CH M4X10",
+          "description": "HARDWARE BOLT SS CH M4X10",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 6.0
+        },
+        {
+          "item_code": "EBA03001",
+          "item_name": "MODULE DC DC CONVERTER LM 2596",
+          "description": "MODULE DC DC CONVERTER LM 2596",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "BKI08001",
+          "item_name": "PCB ASMB POWER PROTECTION LOAD DUMP",
+          "description": "PCB ASMB POWER PROTECTION LOAD DUMP",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 150.97,
+          "amount": 150.97
+        },
+        {
+          "item_code": "EBB02002",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 0.89,
+          "amount": 2.67
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 0.9
+        },
+        {
+          "item_code": "EBB07011",
+          "item_name": "COMPONENT DIODE 1N4734A",
+          "description": "COMPONENT DIODE 1N4734A",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 12.0,
+          "amount": 24.0
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 0.35
+        },
+        {
+          "item_code": "EAC02005",
+          "item_name": "FUSE PCB MOUNT 667MA",
+          "description": "FUSE PCB MOUNT 667MA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.0,
+          "amount": 0.0
+        },
+        {
+          "item_code": "EBB13001",
+          "item_name": "COMPONENT MOSFET IRF840",
+          "description": "COMPONENT MOSFET IRF840",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 34.0,
+          "amount": 34.0
+        },
+        {
+          "item_code": "EBB02009",
+          "item_name": "COMPONENT CAPACITOR ELECTROLYTIC 330UF/50V",
+          "description": "COMPONENT CAPACITOR ELECTROLYTIC 330UF/50V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 5.85,
+          "amount": 17.55
+        },
+        {
+          "item_code": "EBB06006",
+          "item_name": "COMPONENT REGULATOR TL431 LP",
+          "description": "COMPONENT REGULATOR TL431 LP",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.0,
+          "amount": 0.0
+        },
+        {
+          "item_code": "EBD03002",
+          "item_name": "PCB BARE POWER PROTUCTION LOAD DUMP",
+          "description": "PCB BARE POWER PROTUCTION LOAD DUMP",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 65.0,
+          "amount": 65.0
+        },
+        {
+          "item_code": "EBB02011",
+          "item_name": "COMPONENT CAPACITOR 1000UF/50V",
+          "description": "COMPONENT CAPACITOR 1000UF/50V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EBB13002",
+          "item_name": "COMPONENT MOSFET IRF9220",
+          "description": "COMPONENT MOSFET IRF9220",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.0,
+          "amount": 0.0
+        },
+        {
+          "item_code": "BKI04001",
+          "item_name": "PCB ASMB E-SLI CONTLR V2",
+          "description": "PCB ASMB E-SLI CONTLR V2",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2768.9,
+          "amount": 2768.9
+        },
+        {
+          "item_code": "EBB05021",
+          "item_name": "COMPONENT IC SN65HVD75DR SOIC",
+          "description": "COMPONENT IC SN65HVD75DR SOIC",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 48.0,
+          "amount": 48.0
+        },
+        {
+          "item_code": "EBB05027",
+          "item_name": "COMPONENT IC 2803A, SOT",
+          "description": "COMPONENT IC 2803A, SOT",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 26.0,
+          "amount": 26.0
+        },
+        {
+          "item_code": "EBB05015",
+          "item_name": "COMPONENT IC PC817 SOP 04",
+          "description": "COMPONENT IC PC817 SOP 04",
+          "qty": 13.0,
+          "uom": "Nos",
+          "rate": 4.5,
+          "amount": 58.5
+        },
+        {
+          "item_code": "EBB07010",
+          "item_name": "COMPONENT DIODE SMBJ12CA",
+          "description": "COMPONENT DIODE SMBJ12CA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EBB09003",
+          "item_name": "COMPONENT RED LED SMD",
+          "description": "COMPONENT RED LED SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 1.5
+        },
+        {
+          "item_code": "EAD01018",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 8PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 8PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 4.0,
+          "amount": 8.0
+        },
+        {
+          "item_code": "EBB05028",
+          "item_name": "COMPONENT IC MCP 6001T",
+          "description": "COMPONENT IC MCP 6001T",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 60.0,
+          "amount": 300.0
+        },
+        {
+          "item_code": "EAD11001",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 5PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 6.0
+        },
+        {
+          "item_code": "EBB06005",
+          "item_name": "COMPONENT REGULATOR IC 7805 SMD",
+          "description": "COMPONENT REGULATOR IC 7805 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 12.0,
+          "amount": 12.0
+        },
+        {
+          "item_code": "EBB07009",
+          "item_name": "COMPONENT DIODE S1FLD-GS08",
+          "description": "COMPONENT DIODE S1FLD-GS08",
+          "qty": 8.0,
+          "uom": "Nos",
+          "rate": 12.0,
+          "amount": 96.0
+        },
+        {
+          "item_code": "EAD11009",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 8PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 8PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 4.8,
+          "amount": 4.8
+        },
+        {
+          "item_code": "EAD01017",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 6PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 6PIN F",
+          "qty": 4.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 12.0
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 84.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 29.4
+        },
+        {
+          "item_code": "EAD11005",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 3PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 3PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 1.8,
+          "amount": 1.8
+        },
+        {
+          "item_code": "EBB06003",
+          "item_name": "COMPONENT REGULATOR LM1117 3.3V",
+          "description": "COMPONENT REGULATOR LM1117 3.3V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.25,
+          "amount": 8.25
+        },
+        {
+          "item_code": "EBB05035",
+          "item_name": "COMPONENT IC 25Q80DVSSING",
+          "description": "COMPONENT IC 25Q80DVSSING",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 26.0,
+          "amount": 26.0
+        },
+        {
+          "item_code": "EBB02007",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 100U/25V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 100U/25V",
+          "qty": 5.0,
+          "uom": "Nos",
+          "rate": 5.85,
+          "amount": 29.25
+        },
+        {
+          "item_code": "EAD01008",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 3 PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 3 PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EBD06001",
+          "item_name": "PCB BARE E-SLI COUNTLR",
+          "description": "PCB BARE E-SLI COUNTLR",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 887.0,
+          "amount": 887.0
+        },
+        {
+          "item_code": "EAD11002",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 6PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 3.6,
+          "amount": 7.2
+        },
+        {
+          "item_code": "EAD11004",
+          "item_name": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "description": "CONNECTOR PCB MOUNT 3.96MM 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EBB05034",
+          "item_name": "COMPONENT IC MCP2562",
+          "description": "COMPONENT IC MCP2562",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 99.0,
+          "amount": 99.0
+        },
+        {
+          "item_code": "EBB02002",
+          "item_name": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "description": "COMPONENT CAPCITOR ELECTROLYTIC 10UF/63V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 0.89,
+          "amount": 0.89
+        },
+        {
+          "item_code": "EAD01016",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 5PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 5PIN F",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 6.0,
+          "amount": 18.0
+        },
+        {
+          "item_code": "EBB05024",
+          "item_name": "COMPONENT IC STM32F103VCT6",
+          "description": "COMPONENT IC STM32F103VCT6",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 750.0,
+          "amount": 750.0
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 45.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 292.5
+        },
+        {
+          "item_code": "EAD11003",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 14PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 8.4,
+          "amount": 8.4
+        },
+        {
+          "item_code": "EBB10001",
+          "item_name": "COMPONENT CRYSTAL 32 M HZ",
+          "description": "COMPONENT CRYSTAL 32 M HZ",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 4.85,
+          "amount": 4.85
+        },
+        {
+          "item_code": "EBF01001",
+          "item_name": "POTENTIOMETER PCB MOUNT 10K 3296W",
+          "description": "POTENTIOMETER PCB MOUNT 10K 3296W",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 12.5,
+          "amount": 12.5
+        },
+        {
+          "item_code": "EBB02012",
+          "item_name": "COMPONENT CAPACITOR ELECTROYLIC 470UF/25V",
+          "description": "COMPONENT CAPACITOR ELECTROYLIC 470UF/25V",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.76,
+          "amount": 3.76
+        },
+        {
+          "item_code": "EAD01007",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 2.4,
+          "amount": 4.8
+        },
+        {
+          "item_code": "EAB01003",
+          "item_name": "CABLE NON SHIELDED BOTH SIDE 5263 CRIMP",
+          "description": "CABLE NON SHIELDED BOTH SIDE 5263 CRIMP",
+          "qty": 35.0,
+          "uom": "Nos",
+          "rate": 0.4,
+          "amount": 14.0
+        }
+      ],
+      "total_bom_cost": 8129.34,
+      "status": "extracted"
+    },
+    {
+      "code": "BKC09020",
+      "item_name": "CABLE LOAD 110M V2",
+      "item_group": "LOAD (09)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKC09020-001",
+      "bom_status": "submitted",
+      "component_count": 4,
+      "components": [
+        {
+          "item_code": "EAB02001",
+          "item_name": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "description": "CABLE SHIELDED 4 CORE X 14/36SWG (0.4 SQ.MM)",
+          "qty": 110.0,
+          "uom": "Meter",
+          "rate": 51.0,
+          "amount": 5610.0
+        },
+        {
+          "item_code": "EAD01005",
+          "item_name": "CONNECTOR CABEL MOUNT 5PIN F",
+          "description": "CONNECTOR CABEL MOUNT 5PIN F",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 233.0,
+          "amount": 233.0
+        },
+        {
+          "item_code": "EAD01010",
+          "item_name": "CONNECTOR CABLE MOUNT 4PIN M",
+          "description": "CONNECTOR CABLE MOUNT 4PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 247.0,
+          "amount": 247.0
+        },
+        {
+          "item_code": "EAT01005",
+          "item_name": "GENERAL HEATSHRINK 12MM",
+          "description": "GENERAL HEATSHRINK 12MM",
+          "qty": 0.06,
+          "uom": "Meter",
+          "rate": 24.0,
+          "amount": 1.44
+        }
+      ],
+      "total_bom_cost": 6091.44,
+      "status": "extracted"
+    },
+    {
+      "code": "BKD07001",
+      "item_name": "SENSOR ASMBL LOAD 2.25T",
+      "item_group": "LOAD (09)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKD07001-001",
+      "bom_status": "submitted",
+      "component_count": 4,
+      "components": [
+        {
+          "item_code": "EAD01002",
+          "item_name": "CONNECTOR CABEL MOUNT 5PIN M",
+          "description": "CONNECTOR CABEL MOUNT 5PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 255.0,
+          "amount": 255.0
+        },
+        {
+          "item_code": "EBE02002",
+          "item_name": "SENSOR LOAD BEAM 2.25T",
+          "description": "SENSOR LOAD BEAM 2.25T",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2500.0,
+          "amount": 2500.0
+        },
+        {
+          "item_code": "EEE02008",
+          "item_name": "HARDWARE BOLT HEX 1/2UNF",
+          "description": "HARDWARE BOLT HEX 1/2UNF",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 120.0,
+          "amount": 120.0
+        },
+        {
+          "item_code": "EAT01005",
+          "item_name": "GENERAL HEATSHRINK 12MM",
+          "description": "GENERAL HEATSHRINK 12MM",
+          "qty": 0.03,
+          "uom": "Meter",
+          "rate": 24.0,
+          "amount": 0.72
+        }
+      ],
+      "total_bom_cost": 2875.72,
+      "status": "extracted"
+    },
+    {
+      "code": "BKI07004",
+      "item_name": "PCB ASMB L/C JUNCTION B-DASH",
+      "item_group": "LOAD (09)",
+      "company": "Dynamic Servitech Private Limited",
+      "bom_id": "BOM-BKI07004-001",
+      "bom_status": "submitted",
+      "component_count": 3,
+      "components": [
+        {
+          "item_code": "EBD07008",
+          "item_name": "PCB BARE L/C JUNCTION B-DASH",
+          "description": "PCB BARE L/C JUNCTION B-DASH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 75.0,
+          "amount": 75.0
+        },
+        {
+          "item_code": "EAD11007",
+          "item_name": "CONNECTOR PCB MOUNT MKDSN 2PIN M",
+          "description": "CONNECTOR PCB MOUNT MKDSN 2PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EAC02001",
+          "item_name": "POTENTIOMETER PCB MOUNT 1 K",
+          "description": "POTENTIOMETER PCB MOUNT 1 K",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 12.5,
+          "amount": 12.5
+        }
+      ],
+      "total_bom_cost": 94.0,
+      "status": "extracted"
+    },
+    {
+      "code": "BKJ05001",
+      "item_name": "LINE RIDER LR-TM",
+      "item_group": "LR-TM (05)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKJ05001-001",
+      "bom_status": "submitted",
+      "component_count": 4,
+      "components": [
+        {
+          "item_code": "EEC04002",
+          "item_name": "METAL DYNAMOMETER LR-TM",
+          "description": "METAL DYNAMOMETER LR-TM",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 4675.0,
+          "amount": 4675.0
+        },
+        {
+          "item_code": "BKD07001",
+          "item_name": "SENSOR ASMBL LOAD 2.25T",
+          "description": "SENSOR ASMBL LOAD 2.25T",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2875.72,
+          "amount": 2875.72
+        },
+        {
+          "item_code": "EFB02001",
+          "item_name": "STICKER PVC ARROW",
+          "description": "STICKER PVC ARROW",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 42.0,
+          "amount": 42.0
+        },
+        {
+          "item_code": "EED04001",
+          "item_name": "SHEAVE LR-TM 23MM HRDN",
+          "description": "SHEAVE LR-TM 23MM HRDN",
+          "qty": 1.0,
+          "uom": "Set",
+          "rate": 3775.0,
+          "amount": 3775.0
+        }
+      ],
+      "total_bom_cost": 11367.72,
+      "status": "extracted"
+    },
+    {
+      "code": "BKI11001",
+      "item_name": "PCB ASMB WIND CONTLR",
+      "item_group": "WIND (14)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "bom_id": "BOM-BKI11001-001",
+      "bom_status": "submitted",
+      "component_count": 23,
+      "components": [
+        {
+          "item_code": "EBB05013",
+          "item_name": "COMPONENT IC N79E715AT20 SMD",
+          "description": "COMPONENT IC N79E715AT20 SMD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 60.0,
+          "amount": 60.0
+        },
+        {
+          "item_code": "EAD08001",
+          "item_name": "CONNECTOR BURG STRIP 40 PIN X 2.5MM",
+          "description": "CONNECTOR BURG STRIP 40 PIN X 2.5MM",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 3.0,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EBD02001",
+          "item_name": "DYN/2023/001",
+          "description": "DYN/2023/001",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 65.0,
+          "amount": 65.0
+        },
+        {
+          "item_code": "EAD11006",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 2PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.2,
+          "amount": 2.4
+        },
+        {
+          "item_code": "EAC02003",
+          "item_name": "RELAY PCB MOUNT 24 V",
+          "description": "RELAY PCB MOUNT 24 V",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 13.5,
+          "amount": 27.0
+        },
+        {
+          "item_code": "EBB07002",
+          "item_name": "COMPONENT DIODE 1N4007",
+          "description": "COMPONENT DIODE 1N4007",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.65,
+          "amount": 1.3
+        },
+        {
+          "item_code": "EBB03003",
+          "item_name": "COMPONENT INDUCTOR  220UH/800MA,TH",
+          "description": "COMPONENT INDUCTOR  220UH/800MA,TH",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 9.5,
+          "amount": 9.5
+        },
+        {
+          "item_code": "EBB05016",
+          "item_name": "COMPONENT IC MC34063AD",
+          "description": "COMPONENT IC MC34063AD",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 12.0,
+          "amount": 12.0
+        },
+        {
+          "item_code": "EBB01001",
+          "item_name": "COMPONENT RESISTOR SMD",
+          "description": "COMPONENT RESISTOR SMD",
+          "qty": 15.0,
+          "uom": "Nos",
+          "rate": 0.35,
+          "amount": 5.25
+        },
+        {
+          "item_code": "EAD11009",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 8PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 8PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 4.8,
+          "amount": 4.8
+        },
+        {
+          "item_code": "EAD11005",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 3PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 3PIN M",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.8,
+          "amount": 3.6
+        },
+        {
+          "item_code": "EAD11011",
+          "item_name": "CONNECTOR PCB MOUNT MOLEX 4PIN M",
+          "description": "CONNECTOR PCB MOUNT MOLEX 4PIN M",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 2.0,
+          "amount": 2.0
+        },
+        {
+          "item_code": "EBB02009",
+          "item_name": "COMPONENT CAPACITOR ELECTROLYTIC 330UF/50V",
+          "description": "COMPONENT CAPACITOR ELECTROLYTIC 330UF/50V",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 5.85,
+          "amount": 17.55
+        },
+        {
+          "item_code": "EBB05015",
+          "item_name": "COMPONENT IC PC817 SOP 04",
+          "description": "COMPONENT IC PC817 SOP 04",
+          "qty": 3.0,
+          "uom": "Nos",
+          "rate": 4.5,
+          "amount": 13.5
+        },
+        {
+          "item_code": "EBB02001",
+          "item_name": "COMPONENT CAPACITOR SMD",
+          "description": "COMPONENT CAPACITOR SMD",
+          "qty": 11.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 71.5
+        },
+        {
+          "item_code": "EBB07006",
+          "item_name": "COMPONENT DIODE SMBJ18CA",
+          "description": "COMPONENT DIODE SMBJ18CA",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 6.5,
+          "amount": 6.5
+        },
+        {
+          "item_code": "EBB07003",
+          "item_name": "COMPONENT DIODE MBRS340",
+          "description": "COMPONENT DIODE MBRS340",
+          "qty": 1.0,
+          "uom": "Nos",
+          "rate": 5.5,
+          "amount": 5.5
+        },
+        {
+          "item_code": "EBB04001",
+          "item_name": "COMPONENT TRANSISTOR 847 SMD",
+          "description": "COMPONENT TRANSISTOR 847 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.7,
+          "amount": 1.4
+        },
+        {
+          "item_code": "EBB07001",
+          "item_name": "COMPONENT DIODE 1N4007 SMD",
+          "description": "COMPONENT DIODE 1N4007 SMD",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 1.8
+        },
+        {
+          "item_code": "EAD01007",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 2PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 2.4,
+          "amount": 4.8
+        },
+        {
+          "item_code": "EAD01018",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 8PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 8PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 4.0,
+          "amount": 8.0
+        },
+        {
+          "item_code": "EAD01008",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 3 PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 3 PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 1.5,
+          "amount": 3.0
+        },
+        {
+          "item_code": "EAD01015",
+          "item_name": "CONNECTOR CABLE MOUNT MOLEX 4PIN F",
+          "description": "CONNECTOR CABLE MOUNT MOLEX 4PIN F",
+          "qty": 2.0,
+          "uom": "Nos",
+          "rate": 0.9,
+          "amount": 1.8
+        }
+      ],
+      "total_bom_cost": 331.2,
+      "status": "extracted"
+    }
+  ]
+}
