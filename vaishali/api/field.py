@@ -101,7 +101,8 @@ def get_dcrs(date_filter=None, start_date=None, end_date=None, department=None):
                 "prospect_name", "check_in_time", "check_in_gps", "check_out_time",
                 "check_out_gps", "remarks", "lead_generated", "opportunity_generated",
                 "order_received", "discussion_remarks", "next_action", "next_action_date",
-                "opportunity", "quotation", "sales_order", "conversion_status"],
+                "lead", "opportunity", "quotation", "sales_order", "conversion_status",
+                "follow_up_doctype", "follow_up_name"],
         order_by="date desc, check_in_time desc",
         limit_page_length=100)
 
@@ -127,6 +128,14 @@ def create_dcr(**kwargs):
         doc.department = "Office"
     if not doc.status:
         doc.status = "Ongoing"
+    # Wire follow-up selection into the DCR Link fields used by linking.py
+    fu_dt = kwargs.get("follow_up_doctype")
+    fu_name = kwargs.get("follow_up_name")
+    if fu_dt and fu_name:
+        link_map = {"Lead": "lead", "Opportunity": "opportunity", "Quotation": "quotation"}
+        link_field = link_map.get(fu_dt)
+        if link_field:
+            doc.set(link_field, fu_name)
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return doc.as_dict()
