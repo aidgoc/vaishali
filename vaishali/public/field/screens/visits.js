@@ -230,6 +230,8 @@
     // Form state
     var selectedCustomer = null;
     var isProspect = false;
+    var followUpDoctype = null;
+    var followUpName = null;
 
     // Purpose dropdowns — must match Daily Call Report DocType select options exactly
     var salesPurposes = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Opportunity Follow-up', 'Quotation Follow-up', 'Order Follow-up', 'Recovery', 'Relationship Building'];
@@ -379,7 +381,90 @@
         el('span', { textContent: label }),
         removeBtn
       ]));
+      checkFollowUp();
     }
+
+    // Follow-up selector (shown when purpose contains "Follow-up" and customer is selected)
+    var followUpContainer = el('div', { style: { display: 'none' } });
+
+    function checkFollowUp() {
+      followUpDoctype = null;
+      followUpName = null;
+      followUpContainer.textContent = '';
+      followUpContainer.style.display = 'none';
+
+      var purpose = visitPurposeSelect.value || '';
+      if (purpose.indexOf('Follow-up') === -1 || !selectedCustomer || isProspect) return;
+
+      followUpContainer.style.display = 'block';
+      followUpContainer.appendChild(UI.skeleton(2));
+
+      window.fieldAPI.apiCall('GET', '/api/field/customer-open-items?customer=' + encodeURIComponent(selectedCustomer)).then(function (res) {
+        followUpContainer.textContent = '';
+        var data = {};
+        if (res && res.data) {
+          data = res.data.data || res.data.message || res.data;
+        }
+        var leads = data.leads || [];
+        var quotations = data.quotations || [];
+        var opportunities = data.opportunities || [];
+
+        if (leads.length === 0 && quotations.length === 0 && opportunities.length === 0) {
+          followUpContainer.style.display = 'none';
+          return;
+        }
+
+        followUpContainer.appendChild(UI.sectionHeading('Following up on'));
+
+        function makeCard(doctype, name, title, sub, selected) {
+          var card = el('div', {
+            className: 'card-surface' + (selected ? ' follow-up-selected' : ''),
+            style: {
+              padding: '10px 12px', marginBottom: '6px', borderRadius: '8px', cursor: 'pointer',
+              border: selected ? '2px solid var(--primary, #E60005)' : '2px solid transparent'
+            },
+            onClick: function () {
+              if (followUpName === name) {
+                followUpDoctype = null;
+                followUpName = null;
+              } else {
+                followUpDoctype = doctype;
+                followUpName = name;
+              }
+              renderFollowUpCards(leads, quotations, opportunities);
+            }
+          }, [
+            el('div', { textContent: title, style: { fontWeight: '500', fontSize: '14px' } }),
+            el('div', { textContent: sub, style: { fontSize: '12px', color: 'var(--text-muted, #6c757d)' } })
+          ]);
+          return card;
+        }
+
+        function renderFollowUpCards(ld, qt, op) {
+          followUpContainer.textContent = '';
+          followUpContainer.appendChild(UI.sectionHeading('Following up on'));
+          for (var i = 0; i < ld.length; i++) {
+            var l = ld[i];
+            followUpContainer.appendChild(makeCard('Lead', l.name, l.lead_name || l.name, 'Lead \u00b7 ' + (l.status || ''), followUpName === l.name));
+          }
+          for (var j = 0; j < op.length; j++) {
+            var o = op[j];
+            var oAmt = o.opportunity_amount ? ' \u00b7 \u20b9' + Number(o.opportunity_amount).toLocaleString('en-IN') : '';
+            followUpContainer.appendChild(makeCard('Opportunity', o.name, o.name, 'Opportunity' + oAmt, followUpName === o.name));
+          }
+          for (var k = 0; k < qt.length; k++) {
+            var q = qt[k];
+            var qAmt = q.grand_total ? ' \u00b7 \u20b9' + Number(q.grand_total).toLocaleString('en-IN') : '';
+            followUpContainer.appendChild(makeCard('Quotation', q.name, q.name, 'Quotation' + qAmt + ' \u00b7 ' + (q.status || ''), followUpName === q.name));
+          }
+        }
+
+        renderFollowUpCards(leads, quotations, opportunities);
+      });
+    }
+
+    // Trigger follow-up check when purpose or customer changes
+    visitPurposeSelect.addEventListener('change', checkFollowUp);
 
     // Prospect toggle + fields
     var prospectFields = el('div', { style: { display: 'none' } });
@@ -430,6 +515,7 @@
     formChildren.push(visitPurposeField);
     formChildren.push(servicePurposeField);
     formChildren.push(customerField);
+    formChildren.push(followUpContainer);
     formChildren.push(prospectToggle);
     formChildren.push(prospectFields);
     formChildren.push(serviceFields);
@@ -518,6 +604,10 @@
         payload.equipment_name = equipmentInput.value.trim();
         payload.serial_no = serialInput.value.trim();
         payload.job_card_no = jobCardInput.value.trim();
+      }
+      if (followUpDoctype && followUpName) {
+        payload.follow_up_doctype = followUpDoctype;
+        payload.follow_up_name = followUpName;
       }
 
       window.fieldAPI.apiCall('POST', '/api/field/dcr', payload).then(function (res) {

@@ -279,6 +279,22 @@
         path = '/api/method/vaishali.api.field.get_leads' + leadQS;
       }
       else if (path === '/api/field/lead' && method === 'POST') path = '/api/method/vaishali.api.field.create_lead';
+      else if (path.match(/^\/api\/field\/customer-open-items/)) {
+        var coiQS = ''; var coiQI = path.indexOf('?'); if (coiQI !== -1) coiQS = path.substring(coiQI);
+        path = '/api/method/vaishali.api.field.get_customer_open_items' + coiQS;
+      }
+      else if (path === '/api/field/opportunities' || path.indexOf('/api/field/opportunities?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_opportunity_from_lead';
+        } else {
+          var oppQS = ''; var oppQI = path.indexOf('?'); if (oppQI !== -1) oppQS = path.substring(oppQI);
+          path = '/api/method/vaishali.api.field.get_opportunities' + oppQS;
+        }
+      }
+      else if (path.match(/^\/api\/field\/opportunity\/[^/]+$/)) {
+        var oppId = path.replace('/api/field/opportunity/', '');
+        path = '/api/method/vaishali.api.field.get_opportunity?name=' + encodeURIComponent(oppId);
+      }
       else if (path === '/api/field/quotations' || path.indexOf('/api/field/quotations?') === 0) {
         if (method === 'POST') { path = '/api/method/vaishali.api.field.create_quotation'; }
         else { var qQS = ''; var qQI = path.indexOf('?'); if (qQI !== -1) qQS = path.substring(qQI); path = '/api/method/vaishali.api.field.get_my_quotations' + qQS; }

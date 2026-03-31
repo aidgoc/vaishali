@@ -121,6 +121,11 @@
     // Leads
     { pattern: '#/lead/new', handler: function () { S().leadNew(appEl); },   tab: 'home', title: 'New Lead', back: '#/leads' },
     { pattern: '#/leads',    handler: function () { S().leadList(appEl); },  tab: 'home', title: 'Leads',    back: null },
+    { pattern: '#/lead/:id', handler: function (p) { S().leadDetail(appEl, p); }, tab: 'home', title: 'Lead', back: '#/leads' },
+
+    // Opportunities
+    { pattern: '#/opportunities',    handler: function () { S().opportunityList(appEl); },         tab: 'home', title: 'Opportunities', back: '#/home' },
+    { pattern: '#/opportunity/:id',  handler: function (p) { S().opportunityDetail(appEl, p); },   tab: 'home', title: 'Opportunity',   back: '#/opportunities' },
 
     // Quotations
     { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },  tab: 'home', title: 'New Quotation', back: '#/quotations' },

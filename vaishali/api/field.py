@@ -115,7 +115,8 @@ def create_dcr(**kwargs):
     for field in ["date", "department", "visit_purpose", "service_purpose",
                   "customer", "prospect_name", "prospect_company", "prospect_phone",
                   "prospect_address", "check_in_time", "check_in_gps", "status",
-                  "equipment_name", "serial_no", "job_card_no"]:
+                  "equipment_name", "serial_no", "job_card_no",
+                  "follow_up_doctype", "follow_up_name"]:
         if field in kwargs and kwargs[field]:
             doc.set(field, kwargs[field])
     if not doc.department:
@@ -991,11 +992,15 @@ def create_quotation(**kwargs):
         items = json.loads(items)
 
     doc = frappe.new_doc("Quotation")
-    doc.quotation_to = "Customer"
+    quotation_to = kwargs.get("quotation_to", "Customer")
+    doc.quotation_to = quotation_to
     doc.party_name = customer
     doc.company = COMPANY
     doc.transaction_date = date.today().isoformat()
     doc.order_type = "Sales"
+
+    if kwargs.get("opportunity"):
+        doc.opportunity = kwargs["opportunity"]
 
     for item in items:
         doc.append("items", {
@@ -1691,3 +1696,97 @@ def create_payment_entry(sales_invoice, amount=None, mode_of_payment=None, refer
     pe.submit()
     frappe.db.commit()
     return pe.as_dict()
+
+
+# ── Customer Open Items (for DCR follow-up linking) ──────────
+
+@frappe.whitelist()
+def get_customer_open_items(customer):
+    """Get open leads, quotations, and opportunities for a customer."""
+    _get_employee()  # auth check
+
+    leads = frappe.get_list("Lead",
+        filters=[["company_name", "like", f"%{customer}%"],
+                 ["status", "not in", ["Converted", "Do Not Contact"]]],
+        fields=["name", "lead_name", "company_name", "status", "source", "creation"],
+        order_by="creation desc",
+        limit_page_length=20)
+
+    # Also check leads linked by lead_owner
+    leads_by_owner = frappe.get_list("Lead",
+        filters=[["lead_owner", "=", frappe.session.user],
+                 ["status", "not in", ["Converted", "Do Not Contact"]]],
+        fields=["name", "lead_name", "company_name", "status", "source", "creation"],
+        order_by="creation desc",
+        limit_page_length=20)
+    # Merge unique
+    seen = {l.name for l in leads}
+    for l in leads_by_owner:
+        if l.name not in seen:
+            leads.append(l)
+            seen.add(l.name)
+
+    quotations = frappe.get_list("Quotation",
+        filters=[["party_name", "=", customer], ["docstatus", "=", 1],
+                 ["status", "not in", ["Ordered", "Lost", "Cancelled"]]],
+        fields=["name", "party_name", "grand_total", "status", "transaction_date", "valid_till"],
+        order_by="transaction_date desc",
+        limit_page_length=20)
+
+    opportunities = frappe.get_list("Opportunity",
+        filters=[["party_name", "=", customer], ["status", "=", "Open"]],
+        fields=["name", "party_name", "opportunity_amount", "status", "source", "creation"],
+        order_by="creation desc",
+        limit_page_length=20)
+
+    return {"leads": leads, "quotations": quotations, "opportunities": opportunities}
+
+
+# ── Opportunities ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_opportunities(status=None):
+    """List opportunities. Managers see all, field staff see own."""
+    tier = _get_nav_tier()
+    filters = [["company", "=", COMPANY]]
+    if tier == "field":
+        filters.append(["owner", "=", frappe.session.user])
+    if status and status != "All":
+        filters.append(["status", "=", status])
+    return frappe.get_list("Opportunity",
+        filters=filters,
+        fields=["name", "party_name", "opportunity_amount", "status", "source",
+                "opportunity_type", "creation", "modified"],
+        order_by="creation desc",
+        limit_page_length=100)
+
+
+@frappe.whitelist()
+def get_opportunity(name):
+    """Get a single opportunity."""
+    _get_employee()  # auth check
+    doc = frappe.get_doc("Opportunity", name)
+    result = doc.as_dict()
+    # Include linked items
+    result["items"] = [{"item_code": i.item_code, "item_name": i.item_name or "",
+                         "qty": i.qty, "rate": i.rate, "amount": i.amount}
+                        for i in (doc.items or [])]
+    return result
+
+
+@frappe.whitelist(methods=["POST"])
+def create_opportunity_from_lead(lead_name):
+    """Convert a Lead to an Opportunity using ERPNext make_opportunity."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(_("You do not have permission to create opportunities"), frappe.PermissionError)
+
+    from erpnext.crm.doctype.lead.lead import make_opportunity
+    opp = make_opportunity(lead_name)
+    opp.company = COMPANY
+    opp.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return opp.as_dict()

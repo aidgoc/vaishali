@@ -122,8 +122,24 @@
 
   window.Screens.quotationNew = function (appEl) {
     var el = UI.el;
+
+    // ── Read URL params ──
+    var hashParts = (location.hash || '').split('?');
+    var urlParams = {};
+    if (hashParts[1]) {
+      var pairs = hashParts[1].split('&');
+      for (var p = 0; p < pairs.length; p++) {
+        var kv = pairs[p].split('=');
+        urlParams[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+      }
+    }
+    var prefillOpportunity = urlParams.opportunity || null;
+    var prefillCustomer = urlParams.customer || null;
+    var prefillLead = urlParams.lead || null;
+    var prefillLeadName = urlParams.lead_name || null;
+
     // ── State ──
-    var selectedCustomer = null;
+    var selectedCustomer = prefillCustomer || null;
     var itemRows = []; // {item_code, item_name, qty, rate, stock_uom}
 
     // ── Customer Search ──
@@ -200,6 +216,11 @@
         el('span', { textContent: label }),
         removeBtn
       ]));
+    }
+
+    // ── Pre-fill customer from URL params ──
+    if (selectedCustomer) {
+      showCustomerChip(prefillLeadName || prefillCustomer || selectedCustomer);
     }
 
     // ── Item Picker ──
@@ -429,12 +450,19 @@
       submitBtn._setLoading(true, 'Creating...');
 
       var payload = {
-        customer: selectedCustomer,
+        customer: prefillLead || selectedCustomer,
         items: itemRows.map(function (r) {
           return { item_code: r.item_code, qty: r.qty, rate: r.rate };
         }),
         remarks: remarksArea.value.trim() || ''
       };
+      if (prefillOpportunity) {
+        payload.opportunity = prefillOpportunity;
+      }
+      if (prefillLead) {
+        payload.quotation_to = 'Lead';
+        payload.customer = prefillLead;
+      }
 
       window.fieldAPI.apiCall('POST', '/api/field/quotations', payload).then(function (res) {
         if (res.error || (res.status && res.status >= 400)) {

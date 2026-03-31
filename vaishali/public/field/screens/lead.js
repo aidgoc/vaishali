@@ -86,7 +86,8 @@
               avatar: name,
               title: name,
               sub: sub,
-              right: UI.pill(status, statusColor(status))
+              right: UI.pill(status, statusColor(status)),
+              onClick: function () { location.hash = '#/lead/' + lead.name; }
             }));
           })(items[i]);
         }
@@ -211,6 +212,125 @@
         submitBtn._setLoading(false);
       });
     }
+  };
+
+  // ── Screen: Lead Detail ────────────────────────────────────────────
+
+  window.Screens.leadDetail = function (appEl, params) {
+    var el = UI.el;
+    var leadName = params.id || params.name;
+
+    appEl.appendChild(UI.skeleton(3));
+
+    // Fetch lead via Frappe API directly
+    window.fieldAPI.apiCall('GET', '/api/method/frappe.client.get?doctype=Lead&name=' + encodeURIComponent(leadName)).then(function (res) {
+      appEl.textContent = '';
+
+      var lead = null;
+      if (res && res.data) {
+        lead = res.data.data || res.data.message || res.data;
+      }
+      if (!lead) {
+        appEl.appendChild(UI.error('Could not load lead.'));
+        return;
+      }
+
+      var name = lead.lead_name || 'Unknown';
+      var status = lead.status || 'Lead';
+
+      // Header
+      appEl.appendChild(el('div', { style: { marginBottom: '12px' } }, [
+        el('h3', { textContent: name, style: { margin: '0 0 8px 0' } }),
+        UI.pill(status, statusColor(status))
+      ]));
+
+      // Detail card
+      var details = [
+        { label: 'Lead', value: lead.name },
+        { label: 'Company', value: lead.company_name || '\u2014' },
+        { label: 'Source', value: lead.source || '\u2014' },
+        { label: 'Territory', value: lead.territory || '\u2014' },
+        { label: 'Status', value: status },
+        { label: 'Created', value: formatDate(lead.creation) }
+      ];
+      appEl.appendChild(UI.detailCard(details));
+
+      // Contact info with tap-to-call/email
+      var contactItems = [];
+      if (lead.mobile_no) {
+        contactItems.push(el('a', {
+          href: 'tel:' + lead.mobile_no,
+          textContent: lead.mobile_no,
+          style: { display: 'block', color: 'var(--primary, #E60005)', fontSize: '15px', padding: '8px 0', textDecoration: 'none' }
+        }));
+      }
+      if (lead.email_id) {
+        contactItems.push(el('a', {
+          href: 'mailto:' + lead.email_id,
+          textContent: lead.email_id,
+          style: { display: 'block', color: 'var(--primary, #E60005)', fontSize: '15px', padding: '8px 0', textDecoration: 'none' }
+        }));
+      }
+      if (contactItems.length > 0) {
+        appEl.appendChild(el('div', { style: { marginTop: '16px' } }));
+        appEl.appendChild(UI.sectionHeading('Contact'));
+        appEl.appendChild(UI.card(contactItems));
+      }
+
+      // Action buttons (only for non-converted leads)
+      if (status !== 'Converted' && status !== 'Do Not Contact') {
+        var btnContainer = el('div', { style: { marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' } });
+
+        // Create Opportunity
+        var createOppBtn = UI.btn('Create Opportunity', {
+          type: 'primary',
+          block: true,
+          icon: 'plus',
+          onClick: function () {
+            createOppBtn._setLoading(true, 'Creating...');
+            window.fieldAPI.apiCall('POST', '/api/field/opportunities', { lead_name: lead.name }).then(function (r) {
+              if (r.error || (r.status && r.status >= 400)) {
+                UI.toast('Failed: ' + (r.error || 'Server error'), 'danger');
+                createOppBtn._setLoading(false);
+                return;
+              }
+              var oppName = '';
+              if (r.data) {
+                var d = r.data.data || r.data.message || r.data;
+                oppName = d.name || '';
+              }
+              UI.toast('Opportunity created!', 'success');
+              if (oppName) {
+                location.hash = '#/opportunity/' + oppName;
+              } else {
+                location.hash = '#/opportunities';
+              }
+            }).catch(function (err) {
+              UI.toast('Error: ' + (err.message || err), 'danger');
+              createOppBtn._setLoading(false);
+            });
+          }
+        });
+        btnContainer.appendChild(createOppBtn);
+
+        // Create Quotation directly from lead
+        var createQuotBtn = UI.btn('Create Quotation', {
+          type: 'outline',
+          block: true,
+          icon: 'plus',
+          onClick: function () {
+            location.hash = '#/quotations/new?lead=' + encodeURIComponent(lead.name) + '&lead_name=' + encodeURIComponent(name);
+          }
+        });
+        btnContainer.appendChild(createQuotBtn);
+
+        appEl.appendChild(btnContainer);
+      }
+
+    }).catch(function (err) {
+      appEl.textContent = '';
+      appEl.appendChild(UI.error('Failed to load lead: ' + (err.message || err)));
+    });
   };
 
 })();
