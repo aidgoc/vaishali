@@ -126,6 +126,11 @@ def create_dcr(**kwargs):
     valid_dcr_depts = {"Sales", "Service", "Office"}
     if doc.department not in valid_dcr_depts:
         doc.department = "Office"
+    # Convert ISO datetime (2026-03-31T15:27:15.386Z) to MySQL format
+    for dt_field in ("check_in_time", "check_out_time"):
+        val = doc.get(dt_field)
+        if val and isinstance(val, str) and "T" in val:
+            doc.set(dt_field, val.replace("T", " ").replace("Z", "").split(".")[0])
     if not doc.status:
         doc.status = "Ongoing"
     # Wire follow-up selection into the DCR Link fields used by linking.py
@@ -162,6 +167,9 @@ def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None,
     if doc.status == "Completed":
         frappe.throw(_("DCR already completed"))
     doc.status = status
+    # Convert ISO datetime to MySQL format
+    if check_out_time and isinstance(check_out_time, str) and "T" in check_out_time:
+        check_out_time = check_out_time.replace("T", " ").replace("Z", "").split(".")[0]
     if check_out_time: doc.check_out_time = check_out_time
     if check_out_gps: doc.check_out_gps = check_out_gps
     if remarks: doc.remarks = remarks
