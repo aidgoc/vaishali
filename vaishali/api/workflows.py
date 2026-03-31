@@ -22,7 +22,7 @@ def get_tutorials():
         frappe.PermissionError: If user is not System Manager
     """
     # Check permission: only System Manager can access tutorials
-    if not frappe.has_role("System Manager"):
+    if "System Manager" not in frappe.get_roles():
         frappe.throw("Only System Manager can access tutorial content",
                      exc=frappe.PermissionError)
 

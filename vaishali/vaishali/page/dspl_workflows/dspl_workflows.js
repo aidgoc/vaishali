@@ -16,7 +16,7 @@ function init_workflows(wrapper) {
 	var WORKFLOWS = {};
 
 	// Check if user is System Manager
-	if (!frappe.has_role('System Manager')) {
+	if (!frappe.user.has_role('System Manager')) {
 		show_access_denied(wrapper);
 		return;
 	}
