@@ -113,9 +113,19 @@
             el('span', { className: 'ink-tertiary', textContent: 'Total ', style: { fontSize: '12px' } }),
             UI.amount(grandTotal)
           ]),
-          el('div', null, [
-            el('span', { className: 'ink-tertiary', textContent: 'Due ', style: { fontSize: '12px' } }),
-            UI.amount(outstanding)
+          el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+            el('div', null, [
+              el('span', { className: 'ink-tertiary', textContent: 'Due ', style: { fontSize: '12px' } }),
+              UI.amount(outstanding)
+            ]),
+            el('button', {
+              textContent: 'Pay',
+              style: { fontSize: '11px', padding: '2px 10px', border: '1px solid var(--primary, #E60005)', borderRadius: '4px', background: 'none', color: 'var(--primary, #E60005)', cursor: 'pointer', whiteSpace: 'nowrap' },
+              onClick: function (e) {
+                e.stopPropagation();
+                location.hash = '#/payments/new';
+              }
+            })
           ])
         ])
       ]);

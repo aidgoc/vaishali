@@ -76,12 +76,24 @@
             var deliveryDate = o.delivery_date ? 'Due ' + formatDate(o.delivery_date) : '';
             var sub = [amount, delivered, deliveryDate].filter(Boolean).join(' \u00b7 ');
 
-            appEl.appendChild(UI.listCard({
+            var card = UI.listCard({
               avatar: customer,
               title: customer,
               sub: sub,
-              right: UI.pill(o.status || 'Open', statusColor(o.status))
-            }));
+              right: el('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' } }, [
+                UI.pill(o.status || 'Open', statusColor(o.status)),
+                el('button', {
+                  textContent: 'Create DN',
+                  className: 'btn-sm',
+                  style: { fontSize: '11px', padding: '2px 8px', border: '1px solid var(--primary, #E60005)', borderRadius: '4px', background: 'none', color: 'var(--primary, #E60005)', cursor: 'pointer' },
+                  onClick: function (e) {
+                    e.stopPropagation();
+                    location.hash = '#/delivery-notes/new';
+                  }
+                })
+              ])
+            });
+            appEl.appendChild(card);
           })(pendingDelivery[i]);
         }
       }

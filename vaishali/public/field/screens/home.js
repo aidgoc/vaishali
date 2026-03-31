@@ -502,7 +502,24 @@
         }
       }
 
-      // 5. Tabbed department navigation
+      // 5. Sales cycle section (manager only)
+      appEl.appendChild(UI.sectionHeading('Sales cycle'));
+      appEl.appendChild(el('div', { className: 'hr-grid' }, [
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/sales-orders'; } }, [
+          icon('file'), el('span', { textContent: 'Sales Orders' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/delivery-notes'; } }, [
+          icon('package'), el('span', { textContent: 'Delivery Notes' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/sales-invoices'; } }, [
+          icon('receipt'), el('span', { textContent: 'Invoices' })
+        ]),
+        el('div', { className: 'hr-tile', onClick: function () { location.hash = '#/payments/new'; } }, [
+          icon('wallet'), el('span', { textContent: 'Record Payment' })
+        ])
+      ]));
+
+      // 6. Tabbed department navigation
       appEl.appendChild(UI.sectionHeading('Departments'));
       renderDeptTabs(appEl);
 
