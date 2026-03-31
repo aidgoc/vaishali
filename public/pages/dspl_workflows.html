@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>DSPL Workflows — Interactive Guide</title>
+
+    <style>
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1F2937;
+            background-color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            letter-spacing: -0.04em;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.25;
+            margin-bottom: 12px;
+            letter-spacing: -0.04em;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            color: #6B6B70;
+        }
+
+        /* Container & Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* Header Section */
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header-content {
+            margin-bottom: 24px;
+        }
+
+        .header-description {
+            font-size: 15px;
+            color: #6B6B70;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.04);
+            margin-bottom: 32px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-button {
+            flex: 0 0 auto;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: #6B6B70;
+            position: relative;
+            transition: color 0.2s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            color: #1F2937;
+        }
+
+        .tab-button.active {
+            color: #E60005;
+            border-bottom-color: #E60005;
+        }
+
+        /* Content Container */
+        .content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            padding: 48px 24px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(230, 0, 5, 0.1);
+            border-top-color: #E60005;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 15px;
+            color: #6B6B70;
+        }
+
+        /* Error State */
+        .error-container {
+            display: none;
+            background-color: #FEE2E2;
+            border-left: 4px solid #E60005;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .error-container.visible {
+            display: block;
+        }
+
+        .error-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #B91C1C;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            font-size: 14px;
+            color: #7F1D1D;
+            line-height: 1.5;
+        }
+
+        /* Workflow Section Card */
+        .workflow-section {
+            background-color: #F8F8F8;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .workflow-section:hover {
+            border-color: rgba(0, 0, 0, 0.08);
+            background-color: #FAFAFA;
+        }
+
+        .workflow-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .workflow-header:hover {
+            background-color: rgba(230, 0, 5, 0.02);
+        }
+
+        .workflow-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1F2937;
+            flex: 1;
+        }
+
+        .workflow-header-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6B6B70;
+            transition: transform 0.3s ease;
+            font-size: 16px;
+        }
+
+        .workflow-section.expanded .workflow-header-icon {
+            transform: rotate(180deg);
+        }
+
+        .workflow-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .workflow-section.expanded .workflow-body {
+            max-height: 2000px;
+        }
+
+        .workflow-body-content {
+            padding: 20px;
+        }
+
+        /* Tutorial Steps */
+        .tutorial-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+        }
+
+        .step-number {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            background-color: #E60005;
+            color: #FFFFFF;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 8px;
+        }
+
+        .step-description {
+            font-size: 14px;
+            color: #6B6B70;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .step-screenshot {
+            background-color: #E5E7EB;
+            border-radius: 6px;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9CA3AF;
+            font-size: 14px;
+            margin-top: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            min-height: 200px;
+        }
+
+        .step-screenshot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        /* Info Box */
+        .info-box {
+            background-color: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+
+        .info-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1E40AF;
+            margin-bottom: 6px;
+        }
+
+        .info-box-text {
+            font-size: 14px;
+            color: #1E3A8A;
+            line-height: 1.5;
+        }
+
+        /* Tips Box */
+        .tips-box {
+            background-color: #F0FDF4;
+            border-left: 4px solid #22C55E;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+
+        .tips-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 6px;
+        }
+
+        .tips-box-text {
+            font-size: 14px;
+            color: #15803D;
+            line-height: 1.5;
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+
+        .warning-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #92400E;
+            margin-bottom: 6px;
+        }
+
+        .warning-box-text {
+            font-size: 14px;
+            color: #78350F;
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: #E60005;
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            background-color: #C80004;
+        }
+
+        .btn-secondary {
+            background-color: rgba(0, 0, 0, 0.04);
+            color: #1F2937;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(0, 0, 0, 0.08);
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            color: #6B6B70;
+            margin-bottom: 24px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .tabs {
+                margin-bottom: 24px;
+            }
+
+            .tab-button {
+                padding: 14px 16px;
+                font-size: 14px;
+            }
+
+            .workflow-header {
+                padding: 14px 16px;
+            }
+
+            .workflow-body-content {
+                padding: 16px;
+            }
+
+            .step {
+                gap: 12px;
+            }
+
+            .step-screenshot {
+                min-height: 150px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px 8px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .header {
+                margin-bottom: 24px;
+            }
+
+            .tabs {
+                margin-bottom: 16px;
+                gap: 0;
+            }
+
+            .tab-button {
+                padding: 12px 12px;
+                font-size: 13px;
+            }
+
+            .step-number {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
+                font-size: 14px;
+            }
+
+            .step-title {
+                font-size: 15px;
+            }
+
+            .step-description {
+                font-size: 13px;
+            }
+        }
+
+        /* Accessibility */
+        .tab-button:focus-visible {
+            outline: 2px solid #E60005;
+            outline-offset: 2px;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid #E60005;
+            outline-offset: 2px;
+        }
+
+        .workflow-header:focus-visible {
+            outline: 2px solid #E60005;
+            outline-offset: -2px;
+        }
+
+        /* Prefers Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Skip to Content Link */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background-color: #E60005;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            text-decoration: none;
+            z-index: 100;
+            border-radius: 0 0 8px 0;
+        }
+
+        .skip-to-content:focus {
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🔄 DSPL Workflows — Interactive Guide</h1>
+                <p class="header-description">
+                    Learn step-by-step how to complete key workflows in the DSPL ERP system.
+                    Select your role below to view role-specific tutorials and best practices.
+                </p>
+            </div>
+
+            <!-- Tab Navigation -->
+            <nav class="tabs" role="tablist" aria-label="Workflow roles">
+                <button
+                    class="tab-button active"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="sales-content"
+                    data-role="sales"
+                >
+                    Sales
+                </button>
+                <button
+                    class="tab-button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="field-content"
+                    data-role="field"
+                >
+                    Field
+                </button>
+                <button
+                    class="tab-button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="hr-content"
+                    data-role="hr"
+                >
+                    HR
+                </button>
+                <button
+                    class="tab-button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="operations-content"
+                    data-role="operations"
+                >
+                    Operations
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="content">
+            <!-- Loading State (shown initially) -->
+            <div class="loading-container" id="loading-state">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Loading workflows...</p>
+            </div>
+
+            <!-- Error State (hidden initially) -->
+            <div class="error-container" id="error-state">
+                <div class="error-title">Unable to Load Workflows</div>
+                <div class="error-message" id="error-message">
+                    Please refresh the page and try again.
+                </div>
+            </div>
+
+            <!-- Sales Role Content -->
+            <div
+                class="tab-content active"
+                id="sales-content"
+                role="tabpanel"
+                aria-labelledby="sales-tab"
+            >
+                <div id="sales-workflows"></div>
+            </div>
+
+            <!-- Field Role Content -->
+            <div
+                class="tab-content"
+                id="field-content"
+                role="tabpanel"
+                aria-labelledby="field-tab"
+            >
+                <div id="field-workflows"></div>
+            </div>
+
+            <!-- HR Role Content -->
+            <div
+                class="tab-content"
+                id="hr-content"
+                role="tabpanel"
+                aria-labelledby="hr-tab"
+            >
+                <div id="hr-workflows"></div>
+            </div>
+
+            <!-- Operations Role Content -->
+            <div
+                class="tab-content"
+                id="operations-content"
+                role="tabpanel"
+                aria-labelledby="operations-tab"
+            >
+                <div id="operations-workflows"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript will be added in Task 2 -->
+    <script>
+        // Placeholder for Task 2 implementation
+        console.log('DSPL Workflows page loaded. JavaScript logic will be added in Task 2.');
+    </script>
+</body>
+</html>
