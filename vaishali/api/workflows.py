@@ -46,7 +46,7 @@ def _load_tutorial_content():
         fixture_path = os.path.join(
             os.path.dirname(__file__),
             '..',
-            'fixtures',
+            'data',
             'tutorial_content.json'
         )
 
