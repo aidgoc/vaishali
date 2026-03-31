@@ -1,0 +1,162 @@
+{
+  "recipes": [
+    {
+      "code": "BKC02002",
+      "name": "CABLE ANGLE 15M",
+      "category": "ANGLE (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 8,
+      "total_cost": 1336.15,
+      "bom_name": "BOM-BKC02002-001",
+      "reason": "Cable assembly with 8 components, represents electrical/cabling category",
+      "status": "selected"
+    },
+    {
+      "code": "BKD01001",
+      "name": "SENSOR ASMBL ANGLE 0-90 (D)",
+      "category": "ANGLE (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 16,
+      "total_cost": 4166.05,
+      "bom_name": "BOM-BKD01001-001",
+      "reason": "Sensor assembly with 16 components, complex BOM for angle measurement",
+      "status": "selected"
+    },
+    {
+      "code": "BKC05009",
+      "name": "CABLE ATB 80M",
+      "category": "ATB (05)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 4,
+      "total_cost": 3215.02,
+      "bom_name": "BOM-BKC05009-001",
+      "reason": "Long cable assembly (80M) with 4 components, represents cable length variation",
+      "status": "selected"
+    },
+    {
+      "code": "BKA02008",
+      "name": "DISPLAY D SERIES DRM 1005",
+      "category": "D SERIES (02)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 66,
+      "total_cost": 9203.58,
+      "bom_name": "BOM-BKA02008-001",
+      "reason": "Complex display assembly (66 components), largest BOM in selection, D Series flagship",
+      "status": "selected"
+    },
+    {
+      "code": "BKH02001",
+      "name": "PCB ASMB D SERIES CONTLR",
+      "category": "D SERIES (02)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 26,
+      "total_cost": 2099.37,
+      "bom_name": "BOM-BKH02001-001",
+      "reason": "Controller PCB with 26 components, mid-complexity D Series product",
+      "status": "selected"
+    },
+    {
+      "code": "BKA04001",
+      "name": "DISPLAY E-DASH",
+      "category": "E-DASH (04)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 52,
+      "total_cost": 4011.3,
+      "bom_name": "BOM-BKA04001-001",
+      "reason": "E-Dash display with 52 components, represents newer product line",
+      "status": "selected"
+    },
+    {
+      "code": "BKA05001",
+      "name": "DISPLAY E-SLI V2",
+      "category": "E-SLI (05)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 54,
+      "total_cost": 8129.34,
+      "bom_name": "BOM-BKA05001-001",
+      "reason": "E-SLI V2 display with 54 components, v2 product iteration validation",
+      "status": "selected"
+    },
+    {
+      "code": "BKC09020",
+      "name": "CABLE LOAD 110M V2",
+      "category": "LOAD (09)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 4,
+      "total_cost": 6091.44,
+      "bom_name": "BOM-BKC09020-001",
+      "reason": "Long load cable (110M) with 4 components, largest cable variant",
+      "status": "selected"
+    },
+    {
+      "code": "BKD07001",
+      "name": "SENSOR ASMBL LOAD 2.25T",
+      "category": "LOAD (09)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 4,
+      "total_cost": 2875.72,
+      "bom_name": "BOM-BKD07001-001",
+      "reason": "Load sensor assembly (2.25T capacity) with 4 components, sensor variant",
+      "status": "selected"
+    },
+    {
+      "code": "BKI07004",
+      "name": "PCB ASMB L/C JUNCTION B-DASH",
+      "category": "LOAD (09)",
+      "company": "Dynamic Servitech Private Limited",
+      "components": 3,
+      "total_cost": 94.0,
+      "bom_name": "BOM-BKI07004-001",
+      "reason": "Simple PCB assembly (3 components), minimal BOM for low-cost testing",
+      "status": "selected"
+    },
+    {
+      "code": "BKJ05001",
+      "name": "LINE RIDER LR-TM",
+      "category": "LR-TM (05)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 4,
+      "total_cost": 11367.72,
+      "bom_name": "BOM-BKJ05001-001",
+      "reason": "Line Rider complete assembly (4 components), specialty product with high value",
+      "status": "selected"
+    },
+    {
+      "code": "BKI11001",
+      "name": "PCB ASMB WIND CONTLR",
+      "category": "WIND (14)",
+      "company": "Dynamic Crane Engineers Private Limited",
+      "components": 23,
+      "total_cost": 331.2,
+      "bom_name": "BOM-BKI11001-001",
+      "reason": "Wind controller PCB with 23 components, represents sensor control electronics",
+      "status": "selected"
+    }
+  ],
+  "metadata": {
+    "total_selected": 12,
+    "selection_date": "2026-03-31",
+    "selection_method": "Strategic selection across categories: 3 from LOAD (largest BOM category), 2 from D SERIES (second largest), 2 from ANGLE, 1 each from WIND, ATB, E-DASH, E-SLI, LR-TM",
+    "categories_represented": [
+      "ANGLE (02)",
+      "ATB (05)",
+      "D SERIES (02)",
+      "E-DASH (04)",
+      "E-SLI (05)",
+      "LOAD (09)",
+      "LR-TM (05)",
+      "WIND (14)"
+    ],
+    "component_range": "3-66 components per BOM",
+    "cost_range": "₹94 to ₹11,367.72",
+    "total_boms_in_system": 131,
+    "validation_purpose": "Cost verification across component types, product categories, and complexity levels",
+    "selection_rationale": {
+      "diversity": "Selected across 8 different product categories (61% of all categories)",
+      "complexity": "Range from 3-component simple PCBs to 66-component complex displays",
+      "cost_coverage": "From budget-friendly sub-500 rupee PCBs to premium 11k+ Line Rider assemblies",
+      "product_type_coverage": "Includes cables, sensors, PCBs, displays, junctions, and complete assemblies",
+      "company_representation": "Both Dynamic Crane Engineers and Dynamic Servitech represented"
+    }
+  }
+}
