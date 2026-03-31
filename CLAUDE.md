@@ -12,7 +12,7 @@ Custom Frappe v15 app for **Dynamic Servitech Private Limited** (DSPL) — a cra
 
 ```
 Browser (PWA)  ──cookie──>  Frappe/ERPNext (gunicorn :8000)
-                              ├── vaishali.api.field.*    (32 whitelist endpoints)
+                              ├── vaishali.api.field.*    (42 whitelist endpoints)
                               ├── vaishali.api.views.*    (View Engine)
                               ├── vaishali.api.chat.*     (AI chat)
                               └── vaishali.views.engine   (role-filtered data fetcher)
@@ -30,7 +30,7 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 37 screen modules, 58 routes, hash router, standalone PWA |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 38 screen modules, 61 routes, hash router, standalone PWA |
 | **Field API** | `@frappe.whitelist` in `api/field.py` | 42 endpoints with ownership/role checks |
 | **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
 | **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment |
@@ -220,6 +220,7 @@ vaishali/
 │       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call
 │       ├── customer-timeline.js # Sales timeline: DCRs, Opportunities, Quotations, SOs by customer
 │       ├── monthly-report.js # Revenue, orders, visits, YTD progress, conversion funnel
+│       ├── opportunity.js  # Opportunity list + detail + Create Quotation
 │       ├── chat.js        # Vaishali AI (120s timeout)
 │       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
 │       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
@@ -342,6 +343,11 @@ PWA uses clean paths translated to Frappe methods:
 | `GET /api/field/billable-documents` | `vaishali.api.field.get_billable_documents` |
 | `GET /api/field/unpaid-invoices` | `vaishali.api.field.get_unpaid_invoices` |
 | `POST /api/field/payments` | `vaishali.api.field.create_payment_entry` |
+| `GET /api/field/customer-open-items` | `vaishali.api.field.get_customer_open_items` |
+| `GET /api/field/opportunities` | `vaishali.api.field.get_opportunities` |
+| `POST /api/field/opportunities` | `vaishali.api.field.create_opportunity_from_lead` |
+| `GET /api/field/opportunity/:id` | `vaishali.api.field.get_opportunity` |
+| `GET /api/field/lead-sources` | `vaishali.api.field.get_lead_sources` |
 
 ## Auth Model
 
@@ -363,8 +369,8 @@ Auto-links Daily Call Reports through the full sales chain: Visit → Lead → O
 - **on_customer_created** retroactively links new Customer to recent DCR visits
 - **on_quotation_status_change** updates DCR conversion_status when Quotation wins/loses
 
-### DCR Custom Fields (12 fields)
-`lead_generated`, `opportunity_generated`, `order_received` (checkboxes), `discussion_remarks`, `next_action`, `next_action_date`, `lead`, `opportunity`, `quotation`, `sales_order` (Link fields), `conversion_status` (Select: Open/Lead Created/Opportunity/Quoted/Won/Lost)
+### DCR Custom Fields (14 fields)
+`lead_generated`, `opportunity_generated`, `order_received` (checkboxes), `discussion_remarks`, `next_action`, `next_action_date`, `lead`, `opportunity`, `quotation`, `sales_order` (Link fields), `conversion_status` (Select: Open/Lead Created/Opportunity/Quoted/Won/Lost), `follow_up_doctype`, `follow_up_name` (Data, hidden — set when rep picks a lead/opp/quote to follow up on during visit creation; auto-wires to corresponding Link field)
 
 ### Quotation Custom Fields (3 fields)
 `quotation_temperature` (Select: Hot/Warm/Cold/Lost), `lost_reason_category` (Select: Price/Technical/Budget/Other), `lost_remark` (Small Text)
@@ -381,6 +387,24 @@ bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
 
 ### Gotcha: Lead/Opportunity `notes` Field
 `notes` is a **child table** (Table field) in Lead and Opportunity. Use `doc.append("notes", {"note": "..."})`, NOT `doc.notes = "..."`. The latter causes `'str' object has no attribute 'modified'`.
+
+### CRM Flow: DCR Follow-up Linking (2026-03-31)
+When a field rep creates a follow-up visit (purpose contains "Follow-up") and selects a customer, the PWA fetches `get_customer_open_items` showing open leads/quotations/opportunities. The rep picks which one they're visiting about. On check-in:
+- `follow_up_doctype` + `follow_up_name` are set (Data fields, hidden)
+- The corresponding Link field (`lead`/`opportunity`/`quotation`) is also set automatically
+- This connects the visit to the existing `linking.py` conversion chain
+
+**Lead → Opportunity:** `create_opportunity_from_lead` uses `erpnext.crm.doctype.lead.lead.make_opportunity`
+**Opportunity → Quotation:** Navigates to `#/quotations/new?opportunity=X&customer=Y` with pre-fill
+**Lead → Quotation:** Navigates to `#/quotations/new?lead=X&lead_name=Y` with pre-fill
+
+### Gotchas Discovered (2026-03-31)
+- **`UI.bottomSheet()` returns but doesn't append** — caller must `document.body.appendChild(sheet)`
+- **`new Date().toISOString()` in PWA** → MySQL rejects `T`/`Z` chars; server must convert to `YYYY-MM-DD HH:MM:SS`
+- **Router query params** — `matchRoute()` must strip `?params` before comparing to route patterns: `hash.split('?')[0]`
+- **DCR department validation** — only accepts Sales/Service/Office; admin users with other departments need fallback
+- **Lead Source** — it's a DocType (not a Select), dropdown must fetch from `get_lead_sources` API, not hardcode
+- **`doc.set(field, value)`** silently ignores fields not on the DocType — always verify custom fields exist before relying on persistence
 
 ## ERPNext Customizations
 
