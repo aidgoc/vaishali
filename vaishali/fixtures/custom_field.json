@@ -1,6 +1,7 @@
 [
     {
         "doctype": "Custom Field",
+        "name": "Employee-telegram_chat_id",
         "dt": "Employee",
         "fieldname": "telegram_chat_id",
         "fieldtype": "Data",
