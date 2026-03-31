@@ -867,6 +867,7 @@
             sheetContent.appendChild(el('div', { style: { marginTop: '16px' } }, [confirmBtn]));
 
             var sheet = UI.bottomSheet('Check out', sheetContent);
+            document.body.appendChild(sheet);
           }
         });
         content.appendChild(el('div', { style: { marginTop: '12px' } }, [checkoutBtn]));
