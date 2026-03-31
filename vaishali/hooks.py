@@ -53,7 +53,7 @@ doc_events = {
 }
 
 # Fixtures
-fixtures = ["custom_field", "tutorial_content"]
+fixtures = ["custom_field"]
 
 # Custom pages and modules
 module_config = [
