@@ -51,3 +51,21 @@ doc_events = {
         "on_update": "vaishali.notifications.on_employee_advance_update",
     },
 }
+
+# Custom pages and modules
+module_config = [
+    {
+        "label": "DSPL",
+        "color": "#E60005",
+        "icon": "octicon octicon-organization",
+        "type": "module",
+        "items": [
+            {
+                "label": "Workflows Guide",
+                "icon": "octicon octicon-workflow",
+                "route": "/app/dspl-workflows",
+                "roles": ["System Manager"]
+            }
+        ]
+    }
+]
