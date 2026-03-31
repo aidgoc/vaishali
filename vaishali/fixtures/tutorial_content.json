@@ -1,0 +1,1095 @@
+{
+  "sales": {
+    "overview": {
+      "title": "Sales Workflows",
+      "who": "Sales Team (Raghuvir, Aniket, NJG, BNG in Bangalore)",
+      "what": "Convert customer interactions into revenue via Daily Call Reports, Leads, Opportunities, Quotations, and Sales Orders",
+      "when": "Daily — DCRs from field staff, leads converted to opportunities weekly, quotations tracked for follow-up"
+    },
+    "workflows": [
+      {
+        "id": "dcr_to_lead",
+        "name": "Daily Call Report → Lead (Auto-linked System)",
+        "diagram": "sales_dcr_to_lead.svg",
+        "status": "Automated",
+        "prerequisites": [
+          "Field staff must be assigned as Employee with active user account",
+          "Customer must exist in ERPNext database",
+          "DCR checkout must include 'Lead Generated' checkbox"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Field Staff Creates DCR",
+            "description": "Field staff checks in at customer location with GPS coordinates",
+            "screenshot": "dcr_checkin.png",
+            "details": [
+              "Open Vaishali app → Visits tab",
+              "Click 'New Visit' button",
+              "System auto-captures GPS location (latitude/longitude)",
+              "Select existing customer from list",
+              "Fill customer reference/contact person name"
+            ],
+            "expected": "DCR created in 'In Progress' state with GPS coordinates recorded"
+          },
+          {
+            "number": 2,
+            "title": "Field Staff Fills Discussion & Outcome",
+            "description": "Staff documents visit details and marks 'Lead Generated' checkbox",
+            "screenshot": "dcr_discussion.png",
+            "details": [
+              "Scroll down in DCR form",
+              "Fill 'Discussion Remarks' (what was discussed with customer)",
+              "Select 'Next Action' from dropdown (Follow-up / Quotation needed / Order expected)",
+              "Check the 'Lead Generated' checkbox if customer expressed interest",
+              "Fill 'Next Action Date' for follow-up"
+            ],
+            "expected": "Discussion and outcome fields populated; 'Lead Generated' checkbox checked"
+          },
+          {
+            "number": 3,
+            "title": "Field Staff Checks Out",
+            "description": "Staff exits visit and confirms completion",
+            "screenshot": "dcr_checkout.png",
+            "details": [
+              "Click 'Check Out' button at bottom of DCR form",
+              "System captures checkout time and GPS location",
+              "Confirm completion in bottom sheet modal",
+              "DCR transitions to 'Submitted' state"
+            ],
+            "expected": "DCR submitted with checkout timestamp"
+          },
+          {
+            "number": 4,
+            "title": "System Auto-Creates Lead",
+            "description": "Vaishali backend automatically creates Lead and links to DCR",
+            "screenshot": "lead_auto_created.png",
+            "details": [
+              "System checks DCR for 'Lead Generated' = 1 on submission",
+              "Auto-creates Lead document with:",
+              "  • lead_name = Customer name",
+              "  • email_id = Customer email (if available)",
+              "  • mobile_no = Customer phone",
+              "  • source = 'Daily Call Report'",
+              "  • notes child table entry with DCR link",
+              "  • lead_owner assigned to sales manager or field staff",
+              "DCR conversion_status updated to 'Lead Created'",
+              "Lead is automatically assigned to Sales team"
+            ],
+            "expected": "Lead document created in 'Open' state with all customer details pre-filled; Lead appears in Sales team's queue"
+          }
+        ],
+        "what_happens_next": "Sales team follows up on generated leads, converting them to Opportunities within 7-14 days. Lead age indicator on ERPNext dashboard shows follow-up urgency.",
+        "quick_links": [
+          { "label": "Create Daily Call Report", "url": "/app/daily-call-report/new" },
+          { "label": "View All Leads", "url": "/app/lead" },
+          { "label": "My Generated Leads", "url": "/app/lead?_assign_like=%Customer Generated" }
+        ]
+      },
+      {
+        "id": "lead_to_opportunity",
+        "name": "Lead → Opportunity (Manual Conversion)",
+        "diagram": "sales_lead_to_opportunity.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Lead must exist and be assigned to sales team",
+          "Lead details (name, email, mobile) should be complete",
+          "Customer details (potential business type, budget, timeline) discussed"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open Lead from List",
+            "description": "Sales team views generated leads and selects one for follow-up",
+            "screenshot": "lead_list.png",
+            "details": [
+              "Navigate to CRM → Lead",
+              "Filter by 'Status: Open' to see active leads",
+              "Filter by 'Lead Source: Daily Call Report' to see field-generated leads",
+              "Sort by 'Created On' (newest first) or 'Lead Age' (oldest first for follow-up)",
+              "Click on a lead to open detail view"
+            ],
+            "expected": "Lead document opens showing customer name, contact info, DCR source link, and age indicator"
+          },
+          {
+            "number": 2,
+            "title": "Review Lead Details & Age",
+            "description": "Verify lead information and check follow-up urgency",
+            "screenshot": "lead_detail.png",
+            "details": [
+              "Check lead_name (customer/company name)",
+              "Verify email_id and mobile_no",
+              "Review notes child table for DCR discussion remarks",
+              "Note 'Lead Age' indicator (shows days since creation, color-coded: green <7d, orange 7-14d, red >14d)",
+              "Check if customer has existing relationship (click 'Customer' link if available)"
+            ],
+            "expected": "Lead details visible; age indicator shows follow-up urgency; DCR notes provide context"
+          },
+          {
+            "number": 3,
+            "title": "Click 'Convert to Opportunity' Button",
+            "description": "Initiate lead conversion to Opportunity record",
+            "screenshot": "lead_convert_button.png",
+            "details": [
+              "Scroll down to action buttons",
+              "Click 'Convert to Opportunity' button (red button in toolbar)",
+              "System opens conversion dialog"
+            ],
+            "expected": "Conversion dialog appears with opportunity template options"
+          },
+          {
+            "number": 4,
+            "title": "Fill Opportunity Details",
+            "description": "Define business opportunity parameters",
+            "screenshot": "opportunity_form.png",
+            "details": [
+              "opportunity_name (auto-populated from lead)",
+              "party_name (auto-populated, can edit)",
+              "opportunity_type (select: In-house, External)",
+              "source (auto-populated from lead source)",
+              "probability (select: Low 10%, Medium 50%, High 90%)",
+              "expected_close_date (when decision expected)",
+              "opportunity_amount (estimated deal value in ₹)",
+              "notes (sales notes, opportunity context)"
+            ],
+            "expected": "Opportunity form pre-filled with lead data, waiting for sales insights"
+          },
+          {
+            "number": 5,
+            "title": "Assign Opportunity & Submit",
+            "description": "Assign sales owner and create opportunity record",
+            "screenshot": "opportunity_assign.png",
+            "details": [
+              "Select '_assign_to' (sales team member responsible)",
+              "Click 'Save' button",
+              "System creates Opportunity document linked to original Lead",
+              "Lead conversion_status updated to 'Opportunity'",
+              "Opportunity created in 'Open' status"
+            ],
+            "expected": "Opportunity document created and linked to Lead; visible in Sales CRM pipeline"
+          }
+        ],
+        "what_happens_next": "Sales team tracks opportunity through pipeline stages (Pending, Qualification, Proposal, Negotiation, Won/Lost). Quotations created from opportunities to move deals forward.",
+        "quick_links": [
+          { "label": "Create New Lead", "url": "/app/lead/new" },
+          { "label": "View All Opportunities", "url": "/app/opportunity" },
+          { "label": "Sales Pipeline", "url": "/app/opportunity?view=Pipeline" }
+        ]
+      },
+      {
+        "id": "opportunity_to_quotation",
+        "name": "Opportunity → Quotation (Manual Creation)",
+        "diagram": "sales_opportunity_to_quotation.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Opportunity must exist and be assigned",
+          "Customer details confirmed (GSTIN, shipping address, contact person)",
+          "Product/service scope defined (which items to quote)",
+          "Pricing strategy determined (standard pricing or discount authorized)"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open Opportunity in Pipeline View",
+            "description": "Sales team accesses opportunity to create quotation",
+            "screenshot": "opportunity_detail.png",
+            "details": [
+              "Navigate to CRM → Opportunity",
+              "Find opportunity in list or pipeline kanban view",
+              "Click on opportunity to open detail form",
+              "Review opportunity_amount (estimated deal value) and expected_close_date"
+            ],
+            "expected": "Opportunity detail view open; action buttons visible"
+          },
+          {
+            "number": 2,
+            "title": "Click 'Create Quotation' Button",
+            "description": "Initiate quotation creation from opportunity",
+            "screenshot": "opportunity_create_quotation.png",
+            "details": [
+              "Scroll down to action buttons (or use top toolbar)",
+              "Click 'Create Quotation' button",
+              "System opens new quotation form pre-filled with opportunity data"
+            ],
+            "expected": "Quotation form appears with party_name, opportunity link, and empty items table"
+          },
+          {
+            "number": 3,
+            "title": "Add Items to Quotation",
+            "description": "Select products/services to quote",
+            "screenshot": "quotation_add_items.png",
+            "details": [
+              "In 'Items' table, click 'Add Row' button",
+              "Select 'item_code' (search by name: e.g., 'BLA07006 Control Unit', 'SOFTWARE', 'DMH02001 Load Monitor')",
+              "qty auto-fills to 1; update as needed",
+              "rate auto-populates from item master (or latest BOM cost)",
+              "Repeat to add multiple line items",
+              "Can adjust rate if custom pricing authorized"
+            ],
+            "expected": "Items added to quotation table; amount auto-calculated for each row"
+          },
+          {
+            "number": 4,
+            "title": "Set Quotation Terms & Pricing",
+            "description": "Configure quotation validity and payment terms",
+            "screenshot": "quotation_terms.png",
+            "details": [
+              "Set quotation_date (default: today)",
+              "Set valid_till (default: 30 days from today, auto-populated by vaishali)",
+              "Select payment_terms if applicable (e.g., 'Net 30', 'Advance 50%')",
+              "Add quotation_temperature (Hot/Warm/Cold) for sales tracking",
+              "Add notes if special terms or conditions apply"
+            ],
+            "expected": "Valid_till shows red if expiration approaching; quotation ready for submission"
+          },
+          {
+            "number": 5,
+            "title": "Save & Submit Quotation",
+            "description": "Finalize quotation and send to customer",
+            "screenshot": "quotation_submit.png",
+            "details": [
+              "Click 'Save' button to save draft",
+              "Review final total_qty and grand_total",
+              "Click 'Submit' button to lock quotation",
+              "Select 'Email Print' to send quotation PDF to customer email"
+            ],
+            "expected": "Quotation submitted; Opportunity conversion_status updated to 'Quoted'; customer receives quotation via email"
+          }
+        ],
+        "what_happens_next": "Customer reviews quotation and responds with acceptance/rejection. Sales team tracks quotation via age indicator (red if >14 days old, due for follow-up). Accepted quotations converted to Sales Orders; rejected quotations marked as 'Lost' with reason category (Price/Technical/Budget/Other).",
+        "quick_links": [
+          { "label": "Create New Quotation", "url": "/app/quotation/new" },
+          { "label": "View All Quotations", "url": "/app/quotation" },
+          { "label": "Expiring Quotations", "url": "/app/quotation?quotation_status=Open&valid_till_like=days" }
+        ]
+      },
+      {
+        "id": "quotation_to_sales_order",
+        "name": "Quotation → Sales Order (Customer Acceptance)",
+        "diagram": "sales_quotation_to_so.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Quotation must be submitted",
+          "Customer has accepted quotation",
+          "Delivery address and terms confirmed",
+          "Billing GSTIN/PAN verified in Customer master"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open Accepted Quotation",
+            "description": "Locate customer-approved quotation ready for order conversion",
+            "screenshot": "quotation_accepted.png",
+            "details": [
+              "Navigate to Selling → Quotation",
+              "Filter by quotation_status = 'Open'",
+              "Search for quotation by customer name or quotation_id",
+              "Open quotation detail form",
+              "Verify all items and pricing are customer-approved"
+            ],
+            "expected": "Submitted quotation open; 'Create Sales Order' button visible"
+          },
+          {
+            "number": 2,
+            "title": "Click 'Create Sales Order' Button",
+            "description": "Initiate sales order from quotation",
+            "screenshot": "quotation_create_so.png",
+            "details": [
+              "Scroll to action buttons or use top toolbar",
+              "Click 'Create Sales Order' button",
+              "System opens new sales order form with quotation data pre-filled",
+              "All items, quantities, rates copied from quotation"
+            ],
+            "expected": "Sales Order form appears pre-filled; warehouse and delivery settings awaiting configuration"
+          },
+          {
+            "number": 3,
+            "title": "Configure Order Details",
+            "description": "Set warehouse, delivery address, and order series",
+            "screenshot": "so_config.png",
+            "details": [
+              "delivery_date (when customer expects delivery)",
+              "set_warehouse (select: 'Finished Goods - DSPL' for DSPL company)",
+              "shipping_address (confirm or select from customer addresses)",
+              "billing_address (confirm or select from customer addresses)",
+              "customer_po_no (if customer provided PO number)",
+              "remarks (internal order notes)"
+            ],
+            "expected": "Delivery, warehouse, and address fields configured; ready for submission"
+          },
+          {
+            "number": 4,
+            "title": "Review Order Total & Tax",
+            "description": "Verify final order amount including taxes",
+            "screenshot": "so_total.png",
+            "details": [
+              "Scroll to bottom of form",
+              "Review items_total (sum of line items before tax)",
+              "Review tax_amount (GST or other applicable taxes)",
+              "Verify grand_total = items_total + tax_amount",
+              "Confirm payment terms and due date"
+            ],
+            "expected": "Total amount correct; taxes calculated per company configuration"
+          },
+          {
+            "number": 5,
+            "title": "Save & Submit Sales Order",
+            "description": "Finalize order and trigger downstream workflows",
+            "screenshot": "so_submit.png",
+            "details": [
+              "Click 'Save' to save order as draft",
+              "Review all fields one final time",
+              "Click 'Submit' button to lock and finalize order",
+              "System auto-updates Quotation status = 'Ordered'",
+              "System auto-updates Opportunity conversion_status = 'Won'",
+              "System auto-creates Work Order if manufacturing required",
+              "System auto-reserves stock from warehouse"
+            ],
+            "expected": "Sales Order submitted; status = 'To Deliver'; linked to Quotation and Opportunity; inventory reserved"
+          }
+        ],
+        "what_happens_next": "Sales Order triggers manufacturing (Work Order creation), delivery planning (Delivery Note), and invoice creation (Sales Invoice). Finance team processes payment collection per payment terms. Customer receives delivery notification and invoice.",
+        "quick_links": [
+          { "label": "Create New Sales Order", "url": "/app/sales-order/new" },
+          { "label": "View All Orders", "url": "/app/sales-order" },
+          { "label": "Orders To Deliver", "url": "/app/sales-order?status=To Deliver" }
+        ]
+      }
+    ]
+  },
+  "field": {
+    "overview": {
+      "title": "Field Staff Workflows",
+      "who": "Field Staff (Raghuvir, Aniket, NJG, BNG — Bangalore-based; also contract field representatives)",
+      "what": "Daily customer visits with GPS tracking, discussion documentation, and automated sales lead generation; mobile-first PWA on smartphones",
+      "when": "Daily during working hours; field staff typically start 9 AM, visit 4-6 customers per day, return by 5 PM"
+    },
+    "workflows": [
+      {
+        "id": "daily_call_report",
+        "name": "Daily Call Report (DCR) with GPS Tracking",
+        "diagram": "field_dcr_workflow.svg",
+        "status": "Mobile-first",
+        "prerequisites": [
+          "Field staff must have Employee record with active user account",
+          "Smartphone with Vaishali PWA installed (available at https://dgoc.logstop.com/field)",
+          "GPS enabled on phone (location permission granted to browser)",
+          "Customer database pre-populated in ERPNext (field staff cannot create new customers on mobile)"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open Vaishali Field App",
+            "description": "Launch mobile PWA from smartphone home screen or browser",
+            "screenshot": "field_app_home.png",
+            "details": [
+              "If installed as PWA: tap Vaishali icon on phone home screen (standalone app)",
+              "If using browser: navigate to https://dgoc.logstop.com/field",
+              "Automatically logged in via browser cookie if already authenticated to ERPNext",
+              "Home screen shows greeting with current time/date, KPI row (Team Present, Approvals Pending), and action cards"
+            ],
+            "expected": "Vaishali app opens in full-screen PWA mode; Home screen displays with personalized greeting"
+          },
+          {
+            "number": 2,
+            "title": "Navigate to Visits Tab",
+            "description": "Access Daily Call Report entry screen",
+            "screenshot": "field_visits_tab.png",
+            "details": [
+              "In bottom navigation, tap 'Home' tab (if not already active)",
+              "Scroll down to action cards section",
+              "Tap 'New Visit' action card (icon: checkmark + location pin)",
+              "App navigates to Visits screen with list of today's DCRs (if any)",
+              "Tap 'New Visit' button (FAB or + button) to create DCR"
+            ],
+            "expected": "Visits screen open; list shows previous DCRs; New Visit form ready to open"
+          },
+          {
+            "number": 3,
+            "title": "App Requests Location Permission",
+            "description": "Confirm GPS access for location capture",
+            "screenshot": "location_permission.png",
+            "details": [
+              "Browser prompts: 'Vaishali wants to access your location' (first time only)",
+              "Tap 'Allow' button (mandatory for GPS-enabled DCR)",
+              "If previously denied, go to Settings → Browser → Vaishali → Location → 'Allow'",
+              "GPS coordinates will be captured at check-in and check-out"
+            ],
+            "expected": "Location permission granted; GPS coordinates accessible to app"
+          },
+          {
+            "number": 4,
+            "title": "Select Customer from List",
+            "description": "Choose customer to visit",
+            "screenshot": "dcr_select_customer.png",
+            "details": [
+              "Tap 'Customer' field in DCR form",
+              "List of 1,896 DSPL customers appears (searchable)",
+              "Type customer name to filter (e.g., 'Krisp', 'DCEPL', 'ABC Industries')",
+              "Tap customer to select",
+              "Customer email and phone auto-populate if available"
+            ],
+            "expected": "Customer selected; customer name, email, phone visible in form"
+          },
+          {
+            "number": 5,
+            "title": "Fill Customer Reference & Contact Person",
+            "description": "Document visit context",
+            "screenshot": "dcr_customer_details.png",
+            "details": [
+              "customer_reference (optional: reference number from customer, e.g., 'PO-123', 'Project ABC')",
+              "contact_person (name of person met, e.g., 'Arun Kumar', 'Plant Manager')",
+              "Tap 'Check In' button when ready to start visit"
+            ],
+            "expected": "Customer details and contact person recorded; check-in initiated"
+          },
+          {
+            "number": 6,
+            "title": "App Captures Check-In GPS & Time",
+            "description": "System records arrival location and timestamp",
+            "screenshot": "dcr_checkin_location.png",
+            "details": [
+              "App captures current GPS coordinates (latitude, longitude)",
+              "System records check-in time (timestamp)",
+              "Toast notification: 'Location captured' displays at top of screen",
+              "DCR status transitions to 'In Progress'",
+              "Field staff now free to conduct visit (app continues running in background)"
+            ],
+            "expected": "Check-in time and GPS recorded; toast confirms 'Location captured'; DCR in 'In Progress' state"
+          },
+          {
+            "number": 7,
+            "title": "Conduct Customer Visit",
+            "description": "Field staff meets customer, discusses products/services",
+            "screenshot": "field_visit_in_progress.png",
+            "details": [
+              "Field staff discusses DSPL products (crane controls, load monitors, safety systems)",
+              "Documents discussion topics for later entry",
+              "Takes photos of equipment/site if needed (optional, not in app yet)",
+              "Notes customer interest level, pain points, next steps verbally"
+            ],
+            "expected": "Visit happens outside app; notes mentally recorded or on notepad"
+          },
+          {
+            "number": 8,
+            "title": "Return to App & Scroll to Discussion Section",
+            "description": "Begin checkout and outcome recording",
+            "screenshot": "dcr_discussion_section.png",
+            "details": [
+              "Open Vaishali app on phone",
+              "Navigate back to Visits tab (if navigated away)",
+              "Open the DCR form again (taps 'In Progress' DCR from list)",
+              "Scroll down past customer details to 'Discussion' section"
+            ],
+            "expected": "DCR form open in 'In Progress' state; Discussion section visible"
+          },
+          {
+            "number": 9,
+            "title": "Fill Discussion Remarks",
+            "description": "Document what was discussed",
+            "screenshot": "dcr_remarks.png",
+            "details": [
+              "discussion_remarks (text area: detailed summary of discussion)",
+              "  Example: 'Discussed ACD 3300 Pro load monitor for 25-ton overhead crane. Customer interested in safety certification. Referred to sales team for technical demo.'",
+              "Keep remarks concise (1-2 sentences) but informative for sales team"
+            ],
+            "expected": "Discussion remarks entered in text field"
+          },
+          {
+            "number": 10,
+            "title": "Select Next Action & Date",
+            "description": "Plan follow-up action",
+            "screenshot": "dcr_next_action.png",
+            "details": [
+              "next_action (dropdown: 'Follow-up', 'Quotation needed', 'Order expected', 'Technical demo', 'No interest')",
+              "next_action_date (date picker: when follow-up should happen)",
+              "Example: Select 'Follow-up', set date to 7 days from today"
+            ],
+            "expected": "Next action and date selected; shows in form"
+          },
+          {
+            "number": 11,
+            "title": "Check 'Lead Generated' if Interested Customer",
+            "description": "Flag for auto-lead creation",
+            "screenshot": "dcr_lead_generated.png",
+            "details": [
+              "Scroll down to checkbox section",
+              "If customer expressed interest: check 'Lead Generated' checkbox",
+              "If no interest or just maintenance call: leave unchecked",
+              "Other checkboxes available: 'opportunity_generated', 'order_received' (for future use)"
+            ],
+            "expected": "'Lead Generated' checkbox checked if customer interested; left unchecked for routine calls"
+          },
+          {
+            "number": 12,
+            "title": "Scroll to Bottom & Tap 'Check Out'",
+            "description": "Complete and submit DCR",
+            "screenshot": "dcr_checkout_button.png",
+            "details": [
+              "Scroll to bottom of DCR form",
+              "Tap 'Check Out' button (red/prominent button)",
+              "Bottom sheet modal appears asking to confirm checkout"
+            ],
+            "expected": "Checkout confirmation modal appears"
+          },
+          {
+            "number": 13,
+            "title": "Confirm Checkout in Modal",
+            "description": "Finalize DCR submission",
+            "screenshot": "dcr_checkout_confirm.png",
+            "details": [
+              "Modal shows: 'Confirm checkout? This will finalize the visit record.'",
+              "Tap 'Confirm' button to proceed",
+              "System captures checkout GPS and timestamp",
+              "App displays success toast: 'Visit completed'"
+            ],
+            "expected": "Checkout time and GPS recorded; DCR submitted to server; success toast shown; DCR status = 'Submitted'"
+          },
+          {
+            "number": 14,
+            "title": "Next Visit or End of Day",
+            "description": "Continue to next customer or close app",
+            "screenshot": "field_app_next.png",
+            "details": [
+              "If more customers to visit: repeat from step 4 (Select Customer)",
+              "If end of day: close Vaishali app",
+              "App syncs all DCRs to server automatically",
+              "Data stored locally in PWA cache for offline access if needed"
+            ],
+            "expected": "Field staff ready for next visit or day concludes; all DCRs synced to server"
+          }
+        ],
+        "what_happens_next": "Backend system auto-creates Lead if 'Lead Generated' checked. Sales team receives lead notification and begins follow-up. Visit data tracked in Sales Dashboard for performance metrics (visits per day, conversion rate, etc.). Manager can view field staff location history for territory management.",
+        "quick_links": [
+          { "label": "Open Vaishali Field App", "url": "https://dgoc.logstop.com/field" },
+          { "label": "View My Visits Today", "url": "#/visits" },
+          { "label": "Sales Manager Dashboard", "url": "/app/dashboard/sales" }
+        ]
+      },
+      {
+        "id": "auto_lead_generation",
+        "name": "Auto-Linking to Leads (System Automation)",
+        "diagram": "field_auto_linking.svg",
+        "status": "Automated",
+        "prerequisites": [
+          "Daily Call Report must be submitted with 'Lead Generated' checkbox = 1",
+          "Customer details (name, email, phone) must exist in DCR",
+          "Sales team role must be configured in Vaishali"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Field Staff Submits DCR",
+            "description": "Field staff checks out with 'Lead Generated' flagged",
+            "screenshot": "dcr_lead_generated.png",
+            "details": [
+              "See step 11 in 'Daily Call Report with GPS' workflow",
+              "Check 'Lead Generated' checkbox before checkout",
+              "Tap 'Check Out' and confirm",
+              "DCR submitted to server"
+            ],
+            "expected": "DCR submitted with 'Lead Generated' = 1"
+          },
+          {
+            "number": 2,
+            "title": "Backend Detects Lead Generation Flag",
+            "description": "Vaishali backend hook processes submitted DCR",
+            "screenshot": "backend_hook_processing.png",
+            "details": [
+              "Frappe 'on_dcr_update' hook triggered (in api/linking.py)",
+              "System checks: if dcr.lead_generated == 1 and dcr.customer exists",
+              "Proceeds to auto-create Lead (next step)"
+            ],
+            "expected": "Backend hook processes DCR; conditions met for lead creation"
+          },
+          {
+            "number": 3,
+            "title": "System Auto-Creates Lead Document",
+            "description": "Vaishali backend auto-generates Lead with customer details",
+            "screenshot": "lead_auto_created_backend.png",
+            "details": [
+              "Lead created with automatic mapping:",
+              "  • lead_name = Customer name (e.g., 'ABC Industries Pvt Ltd')",
+              "  • email_id = Customer email (from customer master)",
+              "  • mobile_no = Customer phone (from customer master)",
+              "  • lead_source = 'Daily Call Report' (system default)",
+              "  • lead_owner = Field staff employee or Sales Manager (auto-assigned)",
+              "  • Lead status = 'Open'",
+              "  • Notes child table entry created with: 'DCR ID: ' + dcr.name + '\\n' + dcr.discussion_remarks"
+            ],
+            "expected": "Lead document created in ERPNext with all customer data pre-filled; notes include DCR context"
+          },
+          {
+            "number": 4,
+            "title": "System Updates DCR Conversion Status",
+            "description": "Backend marks DCR as having generated a lead",
+            "screenshot": "dcr_conversion_status.png",
+            "details": [
+              "DCR custom field 'conversion_status' updated to 'Lead Created'",
+              "DCR 'lead' link field populated with Lead name",
+              "Field staff can see in app that lead was auto-created"
+            ],
+            "expected": "DCR conversion_status = 'Lead Created'; lead field populated"
+          },
+          {
+            "number": 5,
+            "title": "Sales Team Receives Notification",
+            "description": "Sales team alerted to new lead for follow-up",
+            "screenshot": "sales_team_notification.png",
+            "details": [
+              "Notification sent to Sales Manager/assigned sales user",
+              "Notification shows: 'New Lead: [Customer Name] generated from DCR by [Field Staff Name]'",
+              "Link to Lead document for immediate follow-up",
+              "Telegram notification sent if team configured (optional)"
+            ],
+            "expected": "Sales team receives notification; can immediately open Lead for follow-up"
+          },
+          {
+            "number": 6,
+            "title": "Sales Team Converts Lead to Opportunity",
+            "description": "See Lead → Opportunity workflow (sales tab)",
+            "screenshot": "sales_lead_conversion.png",
+            "details": [
+              "Sales team follows 'Lead → Opportunity' workflow documented in Sales tab",
+              "Opens Lead from notification or queue",
+              "Clicks 'Convert to Opportunity'",
+              "Fills opportunity details and submits"
+            ],
+            "expected": "Opportunity created; linked back to original DCR and Lead"
+          }
+        ],
+        "what_happens_next": "Opportunity progresses through sales pipeline (qualification → proposal → negotiation). If customer buys, Quotation → Sales Order created. Opportunity completion closes the loop from field visit to revenue. Field staff sees in their monthly report how many of their generated leads converted to sales (key performance metric).",
+        "quick_links": [
+          { "label": "View My Generated Leads", "url": "/app/lead?_assign_like=% Generated" },
+          { "label": "Lead to Opportunity Conversion", "url": "/app/crmconvert" },
+          { "label": "Sales Funnel Dashboard", "url": "/app/dashboard/sales-funnel" }
+        ]
+      }
+    ]
+  },
+  "hr": {
+    "overview": {
+      "title": "HR Workflows",
+      "who": "HR Team (leave approvers, expense managers, finance team); Field Staff (employees submitting requests)",
+      "what": "Attendance tracking, leave requests/approvals, expense reports, salary advances, and payroll management",
+      "when": "Attendance daily; leave/expense submitted as needed; payroll monthly; approvals within 2-3 business days"
+    },
+    "workflows": [
+      {
+        "id": "attendance_checkin_checkout",
+        "name": "Attendance Check-in/Check-out",
+        "diagram": "hr_attendance_workflow.svg",
+        "status": "Mobile-first",
+        "prerequisites": [
+          "Employee record with active user account",
+          "Vaishali PWA installed on smartphone",
+          "GPS enabled for location capture (optional but recommended)"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Open Vaishali Field App in Morning",
+            "description": "Launch app at start of workday",
+            "screenshot": "field_app_morning.png",
+            "details": [
+              "Tap Vaishali icon on phone home screen (PWA)",
+              "App opens to Home screen showing greeting with current time/date",
+              "Greeting changes based on time: 'Good Morning [Name]' (before 12 PM), 'Good Afternoon [Name]' (12-5 PM), 'Good Evening [Name]' (after 5 PM)"
+            ],
+            "expected": "App opens; personalized greeting displayed"
+          },
+          {
+            "number": 2,
+            "title": "Tap 'Check In' Action Card",
+            "description": "Record attendance arrival",
+            "screenshot": "attendance_checkin_card.png",
+            "details": [
+              "In action cards section (below KPI row), find 'Check In / Check Out' card",
+              "Tap the card or button to check in",
+              "App requests location permission (first time only) — tap 'Allow'",
+              "System records current time as check-in timestamp",
+              "GPS coordinates captured (latitude, longitude)"
+            ],
+            "expected": "Check-in recorded; toast shows 'Checked in at [TIME]'; app displays check-out button now visible"
+          },
+          {
+            "number": 3,
+            "title": "Work Throughout the Day",
+            "description": "Employee performs regular work duties",
+            "screenshot": "field_app_working.png",
+            "details": [
+              "Employee works normally",
+              "Can use Vaishali app for other tasks (visits, quotations, etc.)",
+              "Can close app — attendance session remains open server-side",
+              "Can switch away from Vaishali to other apps"
+            ],
+            "expected": "Attendance session open; employee working"
+          },
+          {
+            "number": 4,
+            "title": "Tap 'Check Out' Action Card at Day End",
+            "description": "Record attendance departure",
+            "screenshot": "attendance_checkout_card.png",
+            "details": [
+              "At end of workday (5-6 PM typically), open Vaishali app",
+              "In action cards, find 'Check In / Check Out' card showing 'Check Out' button",
+              "Tap 'Check Out' button",
+              "System records current time as check-out timestamp",
+              "GPS coordinates captured (latitude, longitude)"
+            ],
+            "expected": "Check-out recorded; toast shows 'Checked out at [TIME]'; working hours calculated"
+          },
+          {
+            "number": 5,
+            "title": "Attendance Record Complete",
+            "description": "System finalizes daily attendance",
+            "screenshot": "attendance_complete.png",
+            "details": [
+              "Employee Checkin document created in ERPNext with:",
+              "  • employee = current employee",
+              "  • log_type = 'IN' (check-in) or 'OUT' (check-out)",
+              "  • time = check-in/check-out timestamp",
+              "  • latitude, longitude = GPS coordinates",
+              "Attendance report updated for payroll",
+              "Manager can view team attendance dashboard"
+            ],
+            "expected": "Daily attendance recorded; visible in manager's Attendance view; payroll system updated"
+          }
+        ],
+        "what_happens_next": "Attendance data feeds HR Dashboard, Attendance Reports, and Payroll. Monthly payroll runs on attendance record; days missed = deduction. Leave requests deduct from attendance. Overtime tracked for bonus calculations.",
+        "quick_links": [
+          { "label": "View My Attendance", "url": "/app/attendance?employee_name_like=%20My" },
+          { "label": "Team Attendance", "url": "/app/dashboard/attendance" },
+          { "label": "Check-in / Out", "url": "#/attendance" }
+        ]
+      },
+      {
+        "id": "leave_request_approval",
+        "name": "Leave Request & Approval (Stub for Future)",
+        "diagram": "hr_leave_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Employee must have leave balance in employee master",
+          "Leave approver assigned to employee (via 'reports_to' hierarchy)"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Submit Leave Request",
+            "description": "Employee submits leave application",
+            "screenshot": "leave_request_form.png",
+            "details": [
+              "Navigate to HR → Leave Request",
+              "Click 'New Leave Request' button",
+              "Fill: from_date, to_date, leave_type (Annual / Sick / Casual), reason",
+              "Click 'Save' then 'Submit'",
+              "Notification sent to leave approver"
+            ],
+            "expected": "Leave request submitted; awaiting approval"
+          },
+          {
+            "number": 2,
+            "title": "Leave Approver Reviews & Approves",
+            "description": "Manager approves or rejects leave request",
+            "screenshot": "leave_approval.png",
+            "details": [
+              "Leave approver receives notification",
+              "Opens Leave Request form",
+              "Verifies leave balance is available",
+              "Clicks 'Approve' or 'Reject' button",
+              "If rejected: must provide reason"
+            ],
+            "expected": "Leave request approved; employee notified"
+          }
+        ],
+        "what_happens_next": "Approved leave deducted from employee balance. Attendance marked as 'Leave' for those dates. Payroll excludes leave days from salary (unpaid leave) or includes leave encashment (paid leave type-dependent).",
+        "quick_links": [
+          { "label": "Submit Leave Request", "url": "/app/leave-request/new" },
+          { "label": "My Leave Balance", "url": "/app/employee-leave-balance" },
+          { "label": "Leave Approvals Queue", "url": "/app/leave-request?status=Pending" }
+        ]
+      },
+      {
+        "id": "expense_report_approval",
+        "name": "Expense Report & Approval (Stub for Future)",
+        "diagram": "hr_expense_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Employee has expense policy configured",
+          "Expense approver assigned"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Submit Expense Report",
+            "description": "Employee submits expenses for reimbursement",
+            "screenshot": "expense_report_form.png",
+            "details": [
+              "Navigate to HR → Expense Report",
+              "Click 'New' button",
+              "Add expense details: date, category (Travel/Meals/Other), amount, description",
+              "Attach receipt image/PDF",
+              "Click 'Save' then 'Submit'"
+            ],
+            "expected": "Expense report submitted for approval"
+          },
+          {
+            "number": 2,
+            "title": "Approver Reviews Expenses",
+            "description": "Manager validates and approves reimbursement",
+            "screenshot": "expense_approval.png",
+            "details": [
+              "Expense approver reviews submitted expenses",
+              "Verifies policy compliance and receipt validity",
+              "Approves or requests modification",
+              "System calculates reimbursement amount"
+            ],
+            "expected": "Expense approved; reimbursement scheduled"
+          }
+        ],
+        "what_happens_next": "Approved expense reimbursement added to next payroll or paid via separate check. Finance department tracks expense by category for budget reporting.",
+        "quick_links": [
+          { "label": "Submit Expense Report", "url": "/app/expense-report/new" },
+          { "label": "My Expense Reports", "url": "/app/expense-report?employee_like=%20My" },
+          { "label": "Expense Approvals", "url": "/app/expense-report?status=Pending" }
+        ]
+      },
+      {
+        "id": "advance_request_approval",
+        "name": "Salary Advance Request & Approval (Stub for Future)",
+        "diagram": "hr_advance_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Employee has completed probation period (policy-dependent)",
+          "Advance policy configured in HR settings"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Request Salary Advance",
+            "description": "Employee requests advance against salary",
+            "screenshot": "advance_request_form.png",
+            "details": [
+              "Navigate to HR → Employee Advance",
+              "Click 'New' button",
+              "Fill: advance_amount (in ₹), reason (Medical/Travel/Personal/Emergency)",
+              "proposed_repayment_period (number of months to repay)",
+              "Click 'Save' then 'Submit'"
+            ],
+            "expected": "Advance request submitted for approval"
+          },
+          {
+            "number": 2,
+            "title": "HR Manager Approves Advance",
+            "description": "HR manager evaluates and approves request",
+            "screenshot": "advance_approval.png",
+            "details": [
+              "HR manager reviews advance request",
+              "Checks employee's previous advances, salary history",
+              "Approves or requests lower amount",
+              "System auto-calculates monthly deduction from salary"
+            ],
+            "expected": "Advance approved; payment scheduled"
+          }
+        ],
+        "what_happens_next": "Approved advance transferred to employee bank account within 2-3 days. Monthly deduction from salary spread across repayment period. Finance tracks advance recovery.",
+        "quick_links": [
+          { "label": "Request Salary Advance", "url": "/app/employee-advance/new" },
+          { "label": "My Advances", "url": "/app/employee-advance?employee_like=%20My" },
+          { "label": "Pending Approvals", "url": "/app/employee-advance?status=Pending" }
+        ]
+      }
+    ]
+  },
+  "operations": {
+    "overview": {
+      "title": "Operations & Manufacturing Workflows",
+      "who": "Operations Team (warehouse staff, manufacturing team, logistics coordinators)",
+      "what": "Stock management, manufacturing work orders, delivery planning, and inventory optimization",
+      "when": "Daily stock checks, manufacturing as per sales orders, deliveries coordinated with warehouse"
+    },
+    "workflows": [
+      {
+        "id": "stock_management",
+        "name": "Stock Management & Inventory Adjustment",
+        "diagram": "ops_stock_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Warehouse configured (e.g., 'Finished Goods - DSPL')",
+          "Items created in item master with stock uoms (units/pieces)",
+          "Stock manager role configured"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "View Current Stock Levels",
+            "description": "Operations team checks warehouse inventory",
+            "screenshot": "stock_list_view.png",
+            "details": [
+              "Navigate to Inventory → Stock Entry",
+              "Or view Stock Balance Report for real-time stock by warehouse",
+              "Filter by warehouse: 'Finished Goods - DSPL'",
+              "See current quantity on hand (QOH) for all items"
+            ],
+            "expected": "Stock list shows item codes, quantities, reorder levels, and warehouse locations"
+          },
+          {
+            "number": 2,
+            "title": "Identify Stock Adjustment Needs",
+            "description": "Determine if stock entry needed",
+            "screenshot": "stock_reorder_check.png",
+            "details": [
+              "Items below reorder level flagged (e.g., 'BLA07006 Control Unit' minimum: 50, current: 30)",
+              "Items with damage/expiry need write-off",
+              "Inventory reconciliation (physical count vs system) requires adjustment",
+              "Items transferred between warehouses need stock movement record"
+            ],
+            "expected": "Operations team identifies stock needs"
+          },
+          {
+            "number": 3,
+            "title": "Create Stock Entry",
+            "description": "Record inventory adjustment",
+            "screenshot": "stock_entry_form.png",
+            "details": [
+              "Navigate to Inventory → Stock Entry",
+              "Click 'New Stock Entry' button",
+              "Select stock_entry_type:",
+              "  • 'Material Issue' = removing stock from warehouse (damage, loss)",
+              "  • 'Material Receipt' = receiving new stock from purchase order or manufacturing",
+              "  • 'Material Transfer' = moving stock between warehouses",
+              "Fill from_warehouse and to_warehouse (if applicable)",
+              "Add items to stock_entry_details table"
+            ],
+            "expected": "Stock Entry form open with type selected"
+          },
+          {
+            "number": 4,
+            "title": "Add Items & Quantities",
+            "description": "Specify items to adjust",
+            "screenshot": "stock_entry_items.png",
+            "details": [
+              "In stock_entry_details table, click 'Add Row'",
+              "Select item_code (e.g., 'BLA07006 Control Unit')",
+              "Enter qty (quantity to adjust)",
+              "uom auto-populated (units/pieces)",
+              "reason (optional: 'Stock Reconciliation', 'Damage', 'Inventory Count Mismatch')"
+            ],
+            "expected": "Items added to stock entry with quantities"
+          },
+          {
+            "number": 5,
+            "title": "Save & Submit Stock Entry",
+            "description": "Finalize inventory adjustment",
+            "screenshot": "stock_entry_submit.png",
+            "details": [
+              "Click 'Save' button",
+              "Review total quantity and warehouse location",
+              "Click 'Submit' button to lock and post entry",
+              "System updates warehouse stock levels automatically",
+              "Stock Ledger Entry created (audit trail)"
+            ],
+            "expected": "Stock Entry submitted; warehouse inventory updated; audit trail recorded"
+          }
+        ],
+        "what_happens_next": "Stock levels updated in real-time. Sales Order fulfillment checks available stock. If stock insufficient for order, manufacturing work order created to build more units. Low stock alerts trigger purchase orders to suppliers. Valuation reports updated for financial accounting.",
+        "quick_links": [
+          { "label": "Create Stock Entry", "url": "/app/stock-entry/new" },
+          { "label": "Stock Balance Report", "url": "/app/stock-balance" },
+          { "label": "Warehouse Stock", "url": "/app/warehouse" },
+          { "label": "Items Below Reorder", "url": "/app/item?reorder_level=!0" }
+        ]
+      },
+      {
+        "id": "work_order_manufacturing",
+        "name": "Manufacturing Work Order (Stub for Future)",
+        "diagram": "ops_work_order_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Sales Order submitted",
+          "BOM (Bill of Materials) exists for product",
+          "Components available in stock or on purchase order"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Create Work Order from Sales Order",
+            "description": "Manufacturing team initiates production",
+            "screenshot": "work_order_create.png",
+            "details": [
+              "Navigate to Manufacturing → Work Order",
+              "Click 'Create' from Sales Order form",
+              "Or manually create with: sales_order reference, product_code, qty_to_produce",
+              "BOM auto-populated from product master"
+            ],
+            "expected": "Work Order created with material requirements"
+          },
+          {
+            "number": 2,
+            "title": "Assign Components & Schedule",
+            "description": "Plan manufacturing timeline",
+            "screenshot": "work_order_schedule.png",
+            "details": [
+              "Set planned_start_date, planned_end_date",
+              "Assign manufacturing team lead",
+              "Click 'Submit' to lock work order",
+              "System reserves materials from stock"
+            ],
+            "expected": "Work Order submitted; materials reserved; production scheduled"
+          }
+        ],
+        "what_happens_next": "Manufacturing team follows BOM, produces product, and records completion. Finished goods moved to warehouse stock. Sales Order delivery date updated. Customer notified of readiness.",
+        "quick_links": [
+          { "label": "Create Work Order", "url": "/app/work-order/new" },
+          { "label": "Active Work Orders", "url": "/app/work-order?status=Open" },
+          { "label": "Work Order Dashboard", "url": "/app/dashboard/manufacturing" }
+        ]
+      },
+      {
+        "id": "delivery_management",
+        "name": "Delivery Planning & Shipment (Stub for Future)",
+        "diagram": "ops_delivery_workflow.svg",
+        "status": "Manual",
+        "prerequisites": [
+          "Sales Order submitted",
+          "Stock available in 'Finished Goods - DSPL' warehouse",
+          "Customer shipping address confirmed"
+        ],
+        "steps": [
+          {
+            "number": 1,
+            "title": "Create Delivery Note",
+            "description": "Prepare shipment",
+            "screenshot": "delivery_note_create.png",
+            "details": [
+              "Navigate to Selling → Delivery Note",
+              "Click 'Create' from Sales Order",
+              "System populates items, quantities, warehouse",
+              "Driver/logistics contact assigned"
+            ],
+            "expected": "Delivery Note form ready for shipping details"
+          },
+          {
+            "number": 2,
+            "title": "Print & Ship",
+            "description": "Execute delivery",
+            "screenshot": "delivery_note_print.png",
+            "details": [
+              "Print packing slip for warehouse team",
+              "Warehouse prepares items for shipment",
+              "Logistics partner picks up package",
+              "Tracking number recorded in Delivery Note"
+            ],
+            "expected": "Shipment dispatched; customer receives package"
+          }
+        ],
+        "what_happens_next": "Delivery Note submitted; Sales Order status = 'To Bill'. Finance creates Sales Invoice for billing. Customer receives shipment and invoice. Payment collection begins per payment terms.",
+        "quick_links": [
+          { "label": "Create Delivery Note", "url": "/app/delivery-note/new" },
+          { "label": "Pending Deliveries", "url": "/app/delivery-note?docstatus=0" },
+          { "label": "Shipping Dashboard", "url": "/app/dashboard/logistics" }
+        ]
+      }
+    ]
+  }
+}
