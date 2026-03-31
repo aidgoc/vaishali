@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSPL Field PWA — User Journey Walkthrough</title>
+<style>
+  :root {
+    --red: #E60005;
+    --blue: #3B82F6;
+    --green: #16A34A;
+    --orange: #EA580C;
+    --purple: #7C3AED;
+    --ink: #1A1A1A;
+    --ink2: #4A4A4F;
+    --ink3: #6B6B70;
+    --surface: #F8F8F8;
+    --border: rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%);
+    color: #fff;
+    padding: 80px 24px 64px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.65);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Role Section ── */
+  .role-section {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .role-section:last-child { border-bottom: none; }
+
+  .role-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .role-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .role-icon.sales { background: rgba(59,130,246,0.1); color: var(--blue); }
+  .role-icon.service { background: rgba(234,88,12,0.1); color: var(--orange); }
+  .role-icon.manager { background: rgba(124,58,237,0.1); color: var(--purple); }
+  .role-icon.admin { background: rgba(228,0,5,0.1); color: var(--red); }
+
+  .role-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .role-subtitle {
+    font-size: 14px;
+    color: var(--ink3);
+    margin-top: 2px;
+  }
+
+  /* ── Journey Flow ── */
+  .journey {
+    margin-bottom: 40px;
+  }
+  .journey-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    align-items: stretch;
+  }
+  .flow-step {
+    flex: 1 1 140px;
+    min-width: 130px;
+    max-width: 200px;
+    position: relative;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  .flow-step .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .flow-step .step-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .flow-step .step-desc {
+    font-size: 12px;
+    color: var(--ink3);
+    line-height: 1.4;
+  }
+  .flow-step .step-screen {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.05);
+    color: var(--ink2);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    flex-shrink: 0;
+    color: var(--ink3);
+    font-size: 18px;
+  }
+
+  /* color variants */
+  .flow.blue .step-num { background: var(--blue); }
+  .flow.orange .step-num { background: var(--orange); }
+  .flow.purple .step-num { background: var(--purple); }
+  .flow.red .step-num { background: var(--red); }
+  .flow.green .step-num { background: var(--green); }
+
+  /* ── Screen Cards ── */
+  .screens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .screen-card {
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+  }
+  .screen-card .sc-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .screen-card .sc-route {
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--ink3);
+    margin-bottom: 6px;
+  }
+  .screen-card .sc-desc {
+    font-size: 13px;
+    color: var(--ink2);
+    line-height: 1.4;
+  }
+
+  /* ── Linking Diagram ── */
+  .link-diagram {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin: 32px 0;
+    overflow-x: auto;
+  }
+  .link-diagram h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+  }
+  .link-chain {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    min-width: 700px;
+  }
+  .link-node {
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .link-node .ln-type {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-bottom: 2px;
+  }
+  .link-node .ln-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .link-node.visit { background: #E0F2FE; color: #0369A1; }
+  .link-node.lead { background: #FEF3C7; color: #92400E; }
+  .link-node.opp { background: #F3E8FF; color: #6B21A8; }
+  .link-node.quote { background: #DBEAFE; color: #1E40AF; }
+  .link-node.order { background: #DCFCE7; color: #166534; }
+  .link-node.dn { background: #FFF7ED; color: #9A3412; }
+  .link-node.inv { background: #FEE2E2; color: #991B1B; }
+  .link-node.pay { background: #D1FAE5; color: #065F46; }
+
+  .link-arrow {
+    width: 36px;
+    text-align: center;
+    font-size: 16px;
+    color: var(--ink3);
+    flex-shrink: 0;
+  }
+  .link-arrow .la-label {
+    font-size: 9px;
+    display: block;
+    white-space: nowrap;
+    color: var(--ink3);
+  }
+
+  /* ── Note ── */
+  .note {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #FFFBEB;
+    border-radius: var(--radius);
+    margin: 20px 0;
+    font-size: 13px;
+    color: #92400E;
+    line-height: 1.5;
+  }
+  .note-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* ── Feature Tag ── */
+  .tag-new {
+    display: inline-block;
+    background: var(--green);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--ink3);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+  .footer strong { color: var(--ink); }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .flow { flex-direction: column; align-items: stretch; }
+    .flow-step { max-width: 100%; }
+    .flow-arrow { width: auto; height: 24px; transform: rotate(90deg); }
+    .role-header { flex-direction: column; text-align: center; }
+    .link-diagram { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<div class="hero">
+  <div class="hero-badge">DSPL Field PWA</div>
+  <h1>User Journey Walkthrough</h1>
+  <p>How each role uses the app — from daily visits to order fulfilment</p>
+</div>
+
+<div class="container">
+
+<!-- ══════════════════════ DATA LINKING ══════════════════════ -->
+<div class="link-diagram">
+  <h3>Complete CRM &amp; Sales Chain</h3>
+  <div class="link-chain">
+    <div class="link-node visit">
+      <div class="ln-type">Visit</div>
+      <div class="ln-name">DCR</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">auto-link</span>
+      →
+    </div>
+    <div class="link-node lead">
+      <div class="ln-type">CRM</div>
+      <div class="ln-name">Lead</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">convert</span>
+      →
+    </div>
+    <div class="link-node opp">
+      <div class="ln-type">CRM</div>
+      <div class="ln-name">Opportunity</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">quote</span>
+      →
+    </div>
+    <div class="link-node quote">
+      <div class="ln-type">Selling</div>
+      <div class="ln-name">Quotation</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">order</span>
+      →
+    </div>
+    <div class="link-node order">
+      <div class="ln-type">Selling</div>
+      <div class="ln-name">Sales Order</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">deliver</span>
+      →
+    </div>
+    <div class="link-node dn">
+      <div class="ln-type">Stock</div>
+      <div class="ln-name">Delivery Note</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">invoice</span>
+      →
+    </div>
+    <div class="link-node inv">
+      <div class="ln-type">Accounts</div>
+      <div class="ln-name">Sales Invoice</div>
+    </div>
+    <div class="link-arrow">
+      <span class="la-label">collect</span>
+      →
+    </div>
+    <div class="link-node pay">
+      <div class="ln-type">Accounts</div>
+      <div class="ln-name">Payment</div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:20px; margin-bottom: 0;">
+    <span class="note-icon">🔗</span>
+    <span>Every document is linked to the previous one. A follow-up visit (DCR) links to the Lead, Opportunity, or Quotation being followed up. ERPNext's <code>make_*</code> functions preserve the chain automatically through the rest.</span>
+  </div>
+</div>
+
+<!-- ══════════════════════ SALES REP ══════════════════════ -->
+<section class="role-section">
+  <div class="role-header">
+    <div class="role-icon sales">📊</div>
+    <div>
+      <div class="role-title">Sales Representative</div>
+      <div class="role-subtitle">Field tier &bull; Sales / Marketing department</div>
+    </div>
+  </div>
+
+  <!-- Journey 1: New Business -->
+  <div class="journey">
+    <div class="journey-label">Journey 1 — New business (cold visit to order)</div>
+    <div class="flow blue">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">New Visit</div>
+        <div class="step-desc">Check in at customer site with GPS. Pick "Cold Call / New Enquiry"</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Checkout + Lead</div>
+        <div class="step-desc">Toggle "Lead generated". System auto-creates Lead on checkout</div>
+        <span class="step-screen">#/dcr/:id</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Lead Detail<span class="tag-new">new</span></div>
+        <div class="step-desc">View lead info, tap to call. Create Opportunity or Quotation</div>
+        <span class="step-screen">#/lead/:id</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Create Opportunity<span class="tag-new">new</span></div>
+        <div class="step-desc">Convert lead to opportunity. Track deal value and status</div>
+        <span class="step-screen">#/opportunity/:id</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div class="step-title">Create Quotation</div>
+        <div class="step-desc">Pre-filled from opportunity. Add items, set rates, send to customer</div>
+        <span class="step-screen">#/quotations/new</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey 2: Follow-up Visit -->
+  <div class="journey">
+    <div class="journey-label">Journey 2 — Follow-up visit on existing lead / quotation<span class="tag-new">new</span></div>
+    <div class="flow blue">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">New Visit</div>
+        <div class="step-desc">Pick "Lead Follow-up" or "Quotation Follow-up" purpose</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Select Customer</div>
+        <div class="step-desc">System shows open leads, opportunities, quotations for this customer</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Pick What</div>
+        <div class="step-desc">Tap the lead or quotation you're following up on. DCR links to it</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Check In</div>
+        <div class="step-desc">Visit is created with follow-up link. Shows in customer timeline</div>
+        <span class="step-screen">#/dcr/:id</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div class="step-title">Checkout</div>
+        <div class="step-desc">Record outcome, next action. Conversion status auto-updates</div>
+        <span class="step-screen">#/dcr/:id</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey 3: Quotation to Order -->
+  <div class="journey">
+    <div class="journey-label">Journey 3 — Quotation accepted → Sales Order</div>
+    <div class="flow blue">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Quotations</div>
+        <div class="step-desc">View all quotations. Filter by Draft / Open / All</div>
+        <span class="step-screen">#/quotations</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Create SO</div>
+        <div class="step-desc">Pick a submitted quotation. One tap converts to Sales Order (draft)</div>
+        <span class="step-screen">#/sales-orders/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">ERPNext Desk</div>
+        <div class="step-desc">Manager reviews and submits SO. Triggers delivery &amp; invoicing chain</div>
+        <span class="step-screen">Desk</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="journey-label" style="margin-top: 32px;">Other screens available</div>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="sc-name">Leads</div>
+      <div class="sc-route">#/leads</div>
+      <div class="sc-desc">Browse and create leads. Tap to see detail with conversion actions</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Opportunities<span class="tag-new">new</span></div>
+      <div class="sc-route">#/opportunities</div>
+      <div class="sc-desc">Open / Replied / All tabs. Tap for detail + Create Quotation</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Pipeline</div>
+      <div class="sc-route">#/pipeline</div>
+      <div class="sc-desc">Sales funnel: visits → leads → quotes → orders with conversion ratios</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">My Targets</div>
+      <div class="sc-route">#/targets</div>
+      <div class="sc-desc">Personal sales performance vs annual/monthly targets</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Follow Ups</div>
+      <div class="sc-route">#/follow-ups</div>
+      <div class="sc-desc">Quotations expiring soon — never miss a deal</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Customer 360</div>
+      <div class="sc-route">#/customer/:id</div>
+      <div class="sc-desc">GSTIN, addresses, contacts, sales timeline — all in one place</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ SERVICE ENGINEER ══════════════════════ -->
+<section class="role-section">
+  <div class="role-header">
+    <div class="role-icon service">🔧</div>
+    <div>
+      <div class="role-title">Service Engineer</div>
+      <div class="role-subtitle">Field tier &bull; Service / Support department</div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="journey-label">Journey — Service visit lifecycle</div>
+    <div class="flow orange">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">New Visit</div>
+        <div class="step-desc">Auto-detected as Service visit. Pick purpose: Installation, Breakdown, AMC, etc.</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Service Details</div>
+        <div class="step-desc">Enter equipment name, serial number, job card. GPS captured on check-in</div>
+        <span class="step-screen">#/dcr/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">On-Site Work</div>
+        <div class="step-desc">Live duration timer. Add remarks during visit. Save progress anytime</div>
+        <span class="step-screen">#/dcr/:id</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Checkout</div>
+        <div class="step-desc">Record discussion, next action + date. GPS captured again on checkout</div>
+        <span class="step-screen">#/dcr/:id</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="sc-name">Service Dashboard</div>
+      <div class="sc-route">#/service</div>
+      <div class="sc-desc">Overview of installations, breakdowns, maintenance schedule</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Installations</div>
+      <div class="sc-route">#/installations</div>
+      <div class="sc-desc">Track equipment installations with status and customer details</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Breakdowns</div>
+      <div class="sc-route">#/breakdowns</div>
+      <div class="sc-desc">Log and track breakdown reports. Create new breakdown tickets</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Devices</div>
+      <div class="sc-route">#/devices</div>
+      <div class="sc-desc">Equipment register — serial numbers, warranty, calibration dates</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">AMC Tracker</div>
+      <div class="sc-route">#/amc</div>
+      <div class="sc-desc">Annual maintenance contracts — due dates, renewals, customer sites</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ ALL FIELD STAFF ══════════════════════ -->
+<section class="role-section">
+  <div class="role-header">
+    <div class="role-icon sales" style="background: rgba(22,163,74,0.1); color: var(--green);">👤</div>
+    <div>
+      <div class="role-title">All Field Staff</div>
+      <div class="role-subtitle">Field tier &bull; Every employee</div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="journey-label">Journey — Daily attendance + HR self-service</div>
+    <div class="flow green">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Check In</div>
+        <div class="step-desc">GPS-stamped attendance from home screen. One tap</div>
+        <span class="step-screen">#/home</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Field Visits</div>
+        <div class="step-desc">Create visits throughout the day. Each tracked with GPS + duration</div>
+        <span class="step-screen">#/dcr</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">HR Services</div>
+        <div class="step-desc">Apply leave, submit expenses, request advances, view salary slips</div>
+        <span class="step-screen">#/hr</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Check Out</div>
+        <div class="step-desc">End of day checkout from home screen</div>
+        <span class="step-screen">#/home</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="sc-name">Home</div>
+      <div class="sc-route">#/home</div>
+      <div class="sc-desc">KPIs, quick actions (check in/out, new visit), pending approvals, department nav</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Attendance</div>
+      <div class="sc-route">#/attendance</div>
+      <div class="sc-desc">Today's check-in/out times, GPS location, working hours</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Leave</div>
+      <div class="sc-route">#/leave</div>
+      <div class="sc-desc">Leave balance, history, apply for new leave</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Expenses</div>
+      <div class="sc-route">#/expense</div>
+      <div class="sc-desc">Submit claims, track approval status, view history</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">AI Chat</div>
+      <div class="sc-route">#/chat</div>
+      <div class="sc-desc">Ask Vaishali anything about customers, orders, stock, targets</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Profile</div>
+      <div class="sc-route">#/profile</div>
+      <div class="sc-desc">Personal info, Telegram linking, sign out</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ MANAGER ══════════════════════ -->
+<section class="role-section">
+  <div class="role-header">
+    <div class="role-icon manager">📋</div>
+    <div>
+      <div class="role-title">Manager</div>
+      <div class="role-subtitle">Manager tier &bull; HR / Sales / Stock Manager roles</div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="journey-label">Journey — Morning review + approvals</div>
+    <div class="flow purple">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Home Dashboard</div>
+        <div class="step-desc">See team present count, pending approvals, today's visits at a glance</div>
+        <span class="step-screen">#/home</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Team Overview</div>
+        <div class="step-desc">Who's present, in field, absent. Department-level attendance</div>
+        <span class="step-screen">#/team</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Approvals</div>
+        <div class="step-desc">Approve/reject leave, expenses, advances. One-tap actions</div>
+        <span class="step-screen">#/approvals</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Reports</div>
+        <div class="step-desc">Monthly report card: revenue, orders, visits, YTD progress</div>
+        <span class="step-screen">#/monthly-report</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="journey-label">Journey — Order fulfilment (Sales Order → Payment)</div>
+    <div class="flow purple">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Sales Orders</div>
+        <div class="step-desc">View all orders. Create from submitted quotations</div>
+        <span class="step-screen">#/sales-orders</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Delivery Note</div>
+        <div class="step-desc">Create DN from pending delivery SOs. Stock Manager role required</div>
+        <span class="step-screen">#/delivery-notes/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Sales Invoice</div>
+        <div class="step-desc">Create invoice from DN or SO. Accounts Manager role required</div>
+        <span class="step-screen">#/sales-invoices/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Record Payment</div>
+        <div class="step-desc">Record payment against unpaid invoices. Auto-submitted</div>
+        <span class="step-screen">#/payments/new</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="sc-name">Sales Targets</div>
+      <div class="sc-route">#/sales-targets</div>
+      <div class="sc-desc">Company-wide targets by product category vs actuals</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Budget</div>
+      <div class="sc-route">#/budget</div>
+      <div class="sc-desc">Expense budgets — personal + vertical view. Track vs caps</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Receivables</div>
+      <div class="sc-route">#/debtors</div>
+      <div class="sc-desc">Outstanding invoices, aging analysis, collection priority</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Revenue</div>
+      <div class="sc-route">#/revenue</div>
+      <div class="sc-desc">Revenue dashboard with trends and comparisons</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-icon">💡</span>
+    <span>Managers see <strong>all records</strong> for their department. Field staff only see their own visits, quotations, and orders. All documents created in the PWA are drafts (except Payment Entry which auto-submits) — managers review and submit in ERPNext Desk.</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ ADMIN ══════════════════════ -->
+<section class="role-section">
+  <div class="role-header">
+    <div class="role-icon admin">⚙️</div>
+    <div>
+      <div class="role-title">System Administrator</div>
+      <div class="role-subtitle">Admin tier &bull; System Manager role</div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top: 0;">
+    <span class="note-icon">🔑</span>
+    <span>Admins have <strong>all manager capabilities</strong> plus: cross-vertical budget views, top spenders leaderboard, expense-to-revenue ratio, budget cap setting, and the <a href="https://dgoc.logstop.com/app/dspl-workflows" style="color: inherit; font-weight: 600;">DSPL Workflows Guide</a> (interactive training for all roles).</span>
+  </div>
+
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="sc-name">Budget Admin</div>
+      <div class="sc-route">#/budget</div>
+      <div class="sc-desc">All-vertical budget view. Set monthly caps per employee. Top spenders leaderboard</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Workflows Guide</div>
+      <div class="sc-route">/app/dspl-workflows</div>
+      <div class="sc-desc">Interactive training page. Step-by-step tutorials for Sales, Field, HR, Operations</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Production</div>
+      <div class="sc-route">#/production</div>
+      <div class="sc-desc">Work orders, manufacturing progress, BOM tracking</div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">Dispatch</div>
+      <div class="sc-route">#/dispatch</div>
+      <div class="sc-desc">Dispatch tracker — outbound shipments and delivery status</div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <strong>DSPL Field PWA</strong> &bull; Dynamic Servitech Private Limited<br>
+  Built with Vaishali on Frappe/ERPNext &bull; 58 routes &bull; 37 screen modules<br>
+  <span style="color: var(--ink3); font-size: 12px;">Generated 31 Mar 2026</span>
+</div>
+
+</body>
+</html>
