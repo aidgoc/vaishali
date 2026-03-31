@@ -139,7 +139,7 @@
     var prefillLeadName = urlParams.lead_name || null;
 
     // ── State ──
-    var selectedCustomer = prefillCustomer || null;
+    var selectedCustomer = prefillCustomer || prefillLead || null;
     var itemRows = []; // {item_code, item_name, qty, rate, stock_uom}
 
     // ── Customer Search ──
