@@ -449,9 +449,7 @@
           return api.apiCall('GET', '/api/field/session-info').then(function (res) {
             var info = (res.data && (res.data.data || res.data.message)) || {};
             if (info.employee) {
-              return api.saveSession(info.employee, info.nav_tier).then(function () {
-                Auth.setEmployee(info.employee);
-                Auth.setNavTier(info.nav_tier);
+              return Auth.saveSession(info.employee, info.nav_tier || 'field', []).then(function () {
                 buildBottomNav();
                 dismissSplash();
                 navigate('#/home');
