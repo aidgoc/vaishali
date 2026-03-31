@@ -131,3 +131,51 @@ def on_employee_advance_update(doc, method):
         f"status is now: {doc.status}."
     )
     _notify(doc.employee, msg)
+
+
+# ── Sales Cycle Notifications ────────────────────────────────
+
+def on_sales_order_submit(doc, method):
+    """Notify managers when a Sales Order is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"New Sales Order {doc.name} submitted: "
+        f"{doc.customer_name} — ₹{doc.grand_total:,.0f}."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_delivery_note_submit(doc, method):
+    """Notify managers when a Delivery Note is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"Delivery Note {doc.name} submitted: "
+        f"{doc.customer_name} — ₹{doc.grand_total:,.0f}."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_sales_invoice_submit(doc, method):
+    """Notify managers when a Sales Invoice is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"Sales Invoice {doc.name} submitted: "
+        f"{doc.customer_name} — ₹{doc.grand_total:,.0f}."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_payment_entry_submit(doc, method):
+    """Notify managers when a Payment Entry is submitted."""
+    if doc.payment_type != "Receive":
+        return
+    managers = _get_managers()
+    msg = (
+        f"Payment received: ₹{doc.paid_amount:,.0f} from "
+        f"{doc.party_name} ({doc.name})."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)

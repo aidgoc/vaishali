@@ -1454,3 +1454,240 @@ def get_devices(search=None, status=None, customer=None):
         "by_status": by_status,
         "equipment": equipment_raw,
     }
+
+
+# ── Sales Orders ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_sales_orders(status=None):
+    """List sales orders. Managers see all, field staff see own."""
+    tier = _get_nav_tier()
+    filters = [["company", "=", COMPANY], ["docstatus", "<", 2]]
+    if tier == "field":
+        filters.append(["owner", "=", frappe.session.user])
+    if status and status != "All":
+        if status == "Draft":
+            filters.append(["docstatus", "=", 0])
+        else:
+            filters.append(["status", "=", status])
+    return frappe.get_list("Sales Order",
+        filters=filters,
+        fields=["name", "customer", "customer_name", "grand_total", "status",
+                "transaction_date", "delivery_date", "per_delivered", "per_billed",
+                "docstatus"],
+        order_by="transaction_date desc",
+        limit_page_length=100)
+
+
+@frappe.whitelist()
+def get_submitted_quotations():
+    """List submitted quotations that can be converted to Sales Orders."""
+    tier = _get_nav_tier()
+    filters = [["docstatus", "=", 1], ["status", "not in", ["Ordered", "Lost", "Cancelled"]],
+               ["company", "=", COMPANY]]
+    if tier == "field":
+        filters.append(["owner", "=", frappe.session.user])
+    return frappe.get_list("Quotation",
+        filters=filters,
+        fields=["name", "party_name", "grand_total", "status", "transaction_date", "valid_till"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_sales_order_from_quotation(quotation, delivery_date=None):
+    """Convert a submitted Quotation to a draft Sales Order using ERPNext make_sales_order."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(_("You do not have permission to create sales orders"), frappe.PermissionError)
+
+    from erpnext.selling.doctype.quotation.quotation import make_sales_order
+    so = make_sales_order(quotation)
+    if delivery_date:
+        so.delivery_date = delivery_date
+    elif not so.delivery_date:
+        from frappe.utils import add_days, today
+        so.delivery_date = add_days(today(), 30)
+    so.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return so.as_dict()
+
+
+# ── Delivery Notes ───────────────────────────────────────────
+
+@frappe.whitelist()
+def get_delivery_notes(status=None):
+    """List delivery notes. Stock managers/managers see all, field sees own."""
+    tier = _get_nav_tier()
+    filters = [["company", "=", COMPANY], ["docstatus", "<", 2]]
+    if tier == "field":
+        filters.append(["owner", "=", frappe.session.user])
+    if status and status != "All":
+        if status == "Draft":
+            filters.append(["docstatus", "=", 0])
+        else:
+            filters.append(["status", "=", status])
+    return frappe.get_list("Delivery Note",
+        filters=filters,
+        fields=["name", "customer", "customer_name", "grand_total", "status",
+                "posting_date", "docstatus"],
+        order_by="posting_date desc",
+        limit_page_length=100)
+
+
+@frappe.whitelist()
+def get_pending_delivery_orders():
+    """List submitted SOs that have items pending delivery."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Stock Manager" not in roles:
+        frappe.throw(_("You do not have permission to create delivery notes"), frappe.PermissionError)
+    return frappe.get_list("Sales Order",
+        filters=[["docstatus", "=", 1], ["per_delivered", "<", 100],
+                 ["status", "not in", ["Closed", "Cancelled"]], ["company", "=", COMPANY]],
+        fields=["name", "customer", "customer_name", "grand_total", "transaction_date",
+                "delivery_date", "per_delivered", "status"],
+        order_by="delivery_date asc",
+        limit_page_length=50)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_delivery_note_from_so(sales_order):
+    """Convert a submitted Sales Order to a draft Delivery Note."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Stock Manager" not in roles:
+        frappe.throw(_("You do not have permission to create delivery notes"), frappe.PermissionError)
+
+    from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
+    dn = make_delivery_note(sales_order)
+    dn.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return dn.as_dict()
+
+
+# ── Sales Invoices ───────────────────────────────────────────
+
+@frappe.whitelist()
+def get_sales_invoices(status=None):
+    """List sales invoices."""
+    tier = _get_nav_tier()
+    filters = [["company", "=", COMPANY], ["docstatus", "<", 2]]
+    if tier == "field":
+        filters.append(["owner", "=", frappe.session.user])
+    if status and status != "All":
+        if status == "Draft":
+            filters.append(["docstatus", "=", 0])
+        elif status == "Unpaid":
+            filters.append(["outstanding_amount", ">", 0])
+            filters.append(["docstatus", "=", 1])
+        else:
+            filters.append(["status", "=", status])
+    return frappe.get_list("Sales Invoice",
+        filters=filters,
+        fields=["name", "customer", "customer_name", "grand_total", "outstanding_amount",
+                "status", "posting_date", "due_date", "docstatus"],
+        order_by="posting_date desc",
+        limit_page_length=100)
+
+
+@frappe.whitelist()
+def get_billable_documents():
+    """List submitted DNs and SOs that can be invoiced."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Accounts Manager" not in roles:
+        frappe.throw(_("You do not have permission to create invoices"), frappe.PermissionError)
+
+    # Delivery Notes not fully billed
+    dns = frappe.get_list("Delivery Note",
+        filters=[["docstatus", "=", 1], ["per_billed", "<", 100],
+                 ["status", "not in", ["Closed", "Cancelled"]], ["company", "=", COMPANY]],
+        fields=["name", "customer", "customer_name", "grand_total", "posting_date",
+                "per_billed", "status"],
+        order_by="posting_date desc",
+        limit_page_length=50)
+    for d in dns:
+        d["source_type"] = "Delivery Note"
+
+    # Sales Orders not fully billed (direct invoice without DN)
+    sos = frappe.get_list("Sales Order",
+        filters=[["docstatus", "=", 1], ["per_billed", "<", 100],
+                 ["status", "not in", ["Closed", "Cancelled"]], ["company", "=", COMPANY]],
+        fields=["name", "customer", "customer_name", "grand_total", "transaction_date",
+                "per_billed", "status"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+    for s in sos:
+        s["source_type"] = "Sales Order"
+
+    return {"delivery_notes": dns, "sales_orders": sos}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_sales_invoice(source_type, source_name):
+    """Create a draft Sales Invoice from DN or SO."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Accounts Manager" not in roles:
+        frappe.throw(_("You do not have permission to create invoices"), frappe.PermissionError)
+
+    if source_type == "Delivery Note":
+        from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_invoice
+        si = make_sales_invoice(source_name)
+    elif source_type == "Sales Order":
+        from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
+        si = make_sales_invoice(source_name)
+    else:
+        frappe.throw(_("Invalid source type"))
+
+    si.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return si.as_dict()
+
+
+# ── Payment Entry ────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_unpaid_invoices():
+    """List submitted sales invoices with outstanding amount."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Accounts Manager" not in roles:
+        frappe.throw(_("You do not have permission to record payments"), frappe.PermissionError)
+    return frappe.get_list("Sales Invoice",
+        filters=[["docstatus", "=", 1], ["outstanding_amount", ">", 0],
+                 ["company", "=", COMPANY]],
+        fields=["name", "customer", "customer_name", "grand_total", "outstanding_amount",
+                "posting_date", "due_date"],
+        order_by="due_date asc",
+        limit_page_length=50)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_payment_entry(sales_invoice, amount=None, mode_of_payment=None, reference_no=None,
+                         reference_date=None):
+    """Create and submit a Payment Entry against a Sales Invoice."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Accounts Manager" not in roles:
+        frappe.throw(_("You do not have permission to record payments"), frappe.PermissionError)
+
+    from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+    pe = get_payment_entry("Sales Invoice", sales_invoice)
+    if amount:
+        pe.paid_amount = float(amount)
+        pe.received_amount = float(amount)
+    if mode_of_payment:
+        pe.mode_of_payment = mode_of_payment
+    if reference_no:
+        pe.reference_no = reference_no
+    if reference_date:
+        pe.reference_date = reference_date
+    pe.insert(ignore_permissions=True)
+    pe.submit()
+    frappe.db.commit()
+    return pe.as_dict()

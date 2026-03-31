@@ -126,6 +126,21 @@
     { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },  tab: 'home', title: 'New Quotation', back: '#/quotations' },
     { pattern: '#/quotations',     handler: function () { S().quotationList(appEl); }, tab: 'home', title: 'Quotations',    back: '#/home' },
 
+    // Sales Orders
+    { pattern: '#/sales-orders/new', handler: function () { S().salesOrderNew(appEl); },  tab: 'home', title: 'New Sales Order', back: '#/sales-orders' },
+    { pattern: '#/sales-orders',     handler: function () { S().salesOrderList(appEl); }, tab: 'home', title: 'Sales Orders',    back: '#/home' },
+
+    // Delivery Notes
+    { pattern: '#/delivery-notes/new', handler: function () { S().deliveryNoteNew(appEl); },  tab: 'home', title: 'New Delivery Note', back: '#/delivery-notes' },
+    { pattern: '#/delivery-notes',     handler: function () { S().deliveryNoteList(appEl); }, tab: 'home', title: 'Delivery Notes',    back: '#/home' },
+
+    // Sales Invoices
+    { pattern: '#/sales-invoices/new', handler: function () { S().salesInvoiceNew(appEl); },  tab: 'home', title: 'New Invoice', back: '#/sales-invoices' },
+    { pattern: '#/sales-invoices',     handler: function () { S().salesInvoiceList(appEl); }, tab: 'home', title: 'Sales Invoices', back: '#/home' },
+
+    // Payments
+    { pattern: '#/payments/new', handler: function () { S().paymentNew(appEl); }, tab: 'home', title: 'Record Payment', back: '#/debtors' },
+
     // Stock
     { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },  tab: 'home', title: 'Add Stock',    back: '#/stock' },
     { pattern: '#/stock',        handler: function () { S().stockList(appEl); },    tab: 'home', title: 'Stock Levels', back: '#/home' },

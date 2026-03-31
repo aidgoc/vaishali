@@ -363,6 +363,36 @@
         var eqQS = ''; var eqQI = path.indexOf('?'); if (eqQI !== -1) eqQS = path.substring(eqQI);
         path = '/api/method/vaishali.api.field.get_devices' + eqQS;
       }
+      // Sales cycle endpoints
+      else if (path === '/api/field/sales-orders' || path.indexOf('/api/field/sales-orders?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_sales_order_from_quotation';
+        } else {
+          var soQS = ''; var soQI = path.indexOf('?'); if (soQI !== -1) soQS = path.substring(soQI);
+          path = '/api/method/vaishali.api.field.get_sales_orders' + soQS;
+        }
+      }
+      else if (path === '/api/field/submitted-quotations') path = '/api/method/vaishali.api.field.get_submitted_quotations';
+      else if (path === '/api/field/delivery-notes' || path.indexOf('/api/field/delivery-notes?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_delivery_note_from_so';
+        } else {
+          var dnQS = ''; var dnQI = path.indexOf('?'); if (dnQI !== -1) dnQS = path.substring(dnQI);
+          path = '/api/method/vaishali.api.field.get_delivery_notes' + dnQS;
+        }
+      }
+      else if (path === '/api/field/pending-delivery-orders') path = '/api/method/vaishali.api.field.get_pending_delivery_orders';
+      else if (path === '/api/field/sales-invoices' || path.indexOf('/api/field/sales-invoices?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_sales_invoice';
+        } else {
+          var siQS = ''; var siQI = path.indexOf('?'); if (siQI !== -1) siQS = path.substring(siQI);
+          path = '/api/method/vaishali.api.field.get_sales_invoices' + siQS;
+        }
+      }
+      else if (path === '/api/field/billable-documents') path = '/api/method/vaishali.api.field.get_billable_documents';
+      else if (path === '/api/field/unpaid-invoices') path = '/api/method/vaishali.api.field.get_unpaid_invoices';
+      else if (path === '/api/field/payments' && method === 'POST') path = '/api/method/vaishali.api.field.create_payment_entry';
 
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);

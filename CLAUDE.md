@@ -30,8 +30,8 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 33 screen modules, 51 routes, hash router, standalone PWA |
-| **Field API** | `@frappe.whitelist` in `api/field.py` | 35 endpoints with ownership/role checks |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 37 screen modules, 58 routes, hash router, standalone PWA |
+| **Field API** | `@frappe.whitelist` in `api/field.py` | 42 endpoints with ownership/role checks |
 | **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
 | **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment |
 | **AI Agent** | `agent/runner.py` (AsyncAnthropic) | Claude with 101 ERPNext tools, knows full ABP |
@@ -331,6 +331,17 @@ PWA uses clean paths translated to Frappe methods:
 | `GET /api/field/conversion-funnel` | `vaishali.api.field.get_conversion_funnel` |
 | `POST /api/field/dcr/{id}/checkout` | `vaishali.api.field.checkout_dcr` (extracts dcr_id from path) |
 | `POST /api/ai/chat` | FastAPI (nginx proxy, 120s timeout) |
+| `GET /api/field/sales-orders` | `vaishali.api.field.get_sales_orders` |
+| `POST /api/field/sales-orders` | `vaishali.api.field.create_sales_order_from_quotation` |
+| `GET /api/field/submitted-quotations` | `vaishali.api.field.get_submitted_quotations` |
+| `GET /api/field/delivery-notes` | `vaishali.api.field.get_delivery_notes` |
+| `POST /api/field/delivery-notes` | `vaishali.api.field.create_delivery_note_from_so` |
+| `GET /api/field/pending-delivery-orders` | `vaishali.api.field.get_pending_delivery_orders` |
+| `GET /api/field/sales-invoices` | `vaishali.api.field.get_sales_invoices` |
+| `POST /api/field/sales-invoices` | `vaishali.api.field.create_sales_invoice` |
+| `GET /api/field/billable-documents` | `vaishali.api.field.get_billable_documents` |
+| `GET /api/field/unpaid-invoices` | `vaishali.api.field.get_unpaid_invoices` |
+| `POST /api/field/payments` | `vaishali.api.field.create_payment_entry` |
 
 ## Auth Model
 

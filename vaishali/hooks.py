@@ -32,7 +32,19 @@ doc_events = {
         "on_update_after_submit": "vaishali.api.linking.on_quotation_status_change",
     },
     "Sales Order": {
-        "on_submit": "vaishali.api.linking.link_sales_order_to_dcr",
+        "on_submit": [
+            "vaishali.api.linking.link_sales_order_to_dcr",
+            "vaishali.notifications.on_sales_order_submit",
+        ],
+    },
+    "Delivery Note": {
+        "on_submit": "vaishali.notifications.on_delivery_note_submit",
+    },
+    "Sales Invoice": {
+        "on_submit": "vaishali.notifications.on_sales_invoice_submit",
+    },
+    "Payment Entry": {
+        "on_submit": "vaishali.notifications.on_payment_entry_submit",
     },
     "Customer": {
         "after_insert": "vaishali.api.linking.on_customer_created",
