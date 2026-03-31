@@ -121,6 +121,10 @@ def create_dcr(**kwargs):
             doc.set(field, kwargs[field])
     if not doc.department:
         doc.department = emp.department
+    # DCR only accepts Sales/Service/Office — fall back if employee dept doesn't match
+    valid_dcr_depts = {"Sales", "Service", "Office"}
+    if doc.department not in valid_dcr_depts:
+        doc.department = "Office"
     if not doc.status:
         doc.status = "Ongoing"
     doc.insert(ignore_permissions=True)
@@ -529,6 +533,12 @@ def get_session_info():
 
 
 # ── Leads ─────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_lead_sources():
+    """Get all Lead Source records for the PWA dropdown."""
+    return frappe.get_all("Lead Source", pluck="name", order_by="name asc")
+
 
 @frappe.whitelist(methods=["POST"])
 def create_lead(**kwargs):

@@ -278,6 +278,7 @@
         if (leadQIdx !== -1) leadQS = path.substring(leadQIdx);
         path = '/api/method/vaishali.api.field.get_leads' + leadQS;
       }
+      else if (path === '/api/field/lead-sources') path = '/api/method/vaishali.api.field.get_lead_sources';
       else if (path === '/api/field/lead' && method === 'POST') path = '/api/method/vaishali.api.field.create_lead';
       else if (path.match(/^\/api\/field\/customer-open-items/)) {
         var coiQS = ''; var coiQI = path.indexOf('?'); if (coiQI !== -1) coiQS = path.substring(coiQI);

@@ -124,9 +124,24 @@
     var mobileInput = UI.textInput('Mobile number', { type: 'tel' });
     var emailInput = UI.textInput('Email address', { type: 'email' });
 
-    var sourceOptions = ['Campaign', 'Cold Call', 'Advertisement', 'Reference', 'Website', 'Other'];
-    var sourceField = UI.select('Source', sourceOptions);
+    var sourceField = UI.select('Source', ['Loading...']);
     var sourceSelect = sourceField.querySelector('select');
+    sourceSelect.disabled = true;
+    window.fieldAPI.apiCall('GET', '/api/field/lead-sources').then(function (res) {
+      var sources = [];
+      if (res && res.data) {
+        sources = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
+      }
+      if (!sources.length) sources = ['Campaign', 'Cold Calling', 'Advertisement', 'Reference'];
+      sourceSelect.textContent = '';
+      for (var i = 0; i < sources.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = sources[i];
+        opt.textContent = sources[i];
+        sourceSelect.appendChild(opt);
+      }
+      sourceSelect.disabled = false;
+    });
 
     var territoryInput = UI.textInput('Territory');
     var notesArea = UI.textarea('Notes', { rows: 3 });
