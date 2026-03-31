@@ -53,7 +53,7 @@ doc_events = {
 }
 
 # Fixtures
-fixtures = ["custom_field", "tutorial_content", "page/dspl_workflows"]
+fixtures = ["custom_field", "tutorial_content"]
 
 # Custom pages and modules
 module_config = [

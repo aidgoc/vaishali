@@ -1,0 +1,19 @@
+{
+ "creation": "2026-03-31 15:15:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "modified": "2026-03-31 15:15:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vaishali",
+ "name": "dspl-workflows",
+ "owner": "Administrator",
+ "page_name": "dspl-workflows",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "DSPL Workflows"
+}

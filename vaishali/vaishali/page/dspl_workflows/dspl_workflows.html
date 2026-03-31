@@ -1,0 +1,111 @@
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+<div class="container">
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-content">
+            <h1>DSPL Workflows — Interactive Guide</h1>
+            <p class="header-description">
+                Learn step-by-step how to complete key workflows in the DSPL ERP system.
+                Select your role below to view role-specific tutorials and best practices.
+            </p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs" role="tablist" aria-label="Workflow roles">
+            <button
+                class="tab-button active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="sales-content"
+                data-role="sales"
+            >
+                Sales
+            </button>
+            <button
+                class="tab-button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="field-content"
+                data-role="field"
+            >
+                Field
+            </button>
+            <button
+                class="tab-button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="hr-content"
+                data-role="hr"
+            >
+                HR
+            </button>
+            <button
+                class="tab-button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="operations-content"
+                data-role="operations"
+            >
+                Operations
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="content">
+        <!-- Loading State (shown initially) -->
+        <div class="loading-container" id="loading-state">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading workflows...</p>
+        </div>
+
+        <!-- Error State (hidden initially) -->
+        <div class="error-container" id="error-state">
+            <div class="error-title">Unable to Load Workflows</div>
+            <div class="error-message" id="error-message">
+                Please refresh the page and try again.
+            </div>
+        </div>
+
+        <!-- Sales Role Content -->
+        <div
+            class="tab-content active"
+            id="sales-content"
+            role="tabpanel"
+            aria-labelledby="sales-tab"
+        >
+            <div id="sales-workflows"></div>
+        </div>
+
+        <!-- Field Role Content -->
+        <div
+            class="tab-content"
+            id="field-content"
+            role="tabpanel"
+            aria-labelledby="field-tab"
+        >
+            <div id="field-workflows"></div>
+        </div>
+
+        <!-- HR Role Content -->
+        <div
+            class="tab-content"
+            id="hr-content"
+            role="tabpanel"
+            aria-labelledby="hr-tab"
+        >
+            <div id="hr-workflows"></div>
+        </div>
+
+        <!-- Operations Role Content -->
+        <div
+            class="tab-content"
+            id="operations-content"
+            role="tabpanel"
+            aria-labelledby="operations-tab"
+        >
+            <div id="operations-workflows"></div>
+        </div>
+    </main>
+</div>
