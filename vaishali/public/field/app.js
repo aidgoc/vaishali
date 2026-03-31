@@ -206,13 +206,15 @@
 
   function matchRoute(hash) {
     if (!hash || hash === '#' || hash === '#/') hash = '#/home';
+    // Strip query params for matching (screens read them from location.hash)
+    var hashPath = hash.split('?')[0];
     for (var i = 0; i < routes.length; i++) {
       var r = routes[i];
       if (r.pattern.indexOf(':') === -1) {
-        if (hash === r.pattern) return { handler: r.handler, params: {}, tab: r.tab, title: r.title, back: r.back };
+        if (hashPath === r.pattern) return { handler: r.handler, params: {}, tab: r.tab, title: r.title, back: r.back };
       } else {
         var patParts = r.pattern.split('/');
-        var hashParts = hash.split('/');
+        var hashParts = hashPath.split('/');
         if (patParts.length !== hashParts.length) continue;
         var params = {};
         var match = true;
