@@ -1,0 +1,36 @@
+[   40149ms] [ERROR] Failed to load resource: the server responded with a status of 417 (Expectation Failed) @ https://dgoc.logstop.com/api/method/frappe.client.get_value:0
+[   40150ms] [ERROR] Traceback (most recent call last):
+  File "apps/frappe/frappe/app.py", line 120, in application
+    response = frappe.api.handle(request)
+  File "apps/frappe/frappe/api/__init__.py", line 52, in handle
+    data = endpoint(**arguments)
+  File "apps/frappe/frappe/api/v1.py", line 40, in handle_rpc_call
+    return frappe.handler.handle()
+  File "apps/frappe/frappe/handler.py", line 53, in handle
+    data = execute_cmd(cmd)
+  File "apps/frappe/frappe/handler.py", line 86, in execute_cmd
+    return frappe.call(method, **frappe.form_dict)
+  File "apps/frappe/frappe/__init__.py", line 1764, in call
+    return fn(*args, **newargs)
+  File "apps/frappe/frappe/utils/typing_validations.py", line 32, in wrapper
+    return func(*args, **kwargs)
+  File "apps/frappe/frappe/client.py", line 146, in get_value
+    value = get_list(
+  File "apps/frappe/frappe/utils/typing_validations.py", line 32, in wrapper
+    return func(*args, **kwargs)
+  File "apps/frappe/frappe/client.py", line 67, in get_list
+    validate_args(args)
+  File "apps/frappe/frappe/desk/reportview.py", line 91, in validate_args
+    validate_fields(data)
+  File "apps/frappe/frappe/desk/reportview.py", line 119, in validate_fields
+    raise_invalid_field(fieldname)
+  File "apps/frappe/frappe/desk/reportview.py", line 180, in raise_invalid_field
+    frappe.throw(_("Field not permitted in query") + f": {fieldname}", frappe.DataError)
+  File "apps/frappe/frappe/__init__.py", line 619, in throw
+    msgprint(
+  File "apps/frappe/frappe/__init__.py", line 584, in msgprint
+    _raise_exception()
+  File "apps/frappe/frappe/__init__.py", line 535, in _raise_exception
+    raise exc
+frappe.exceptions.DataError: Field not permitted in query: script
+ @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:466

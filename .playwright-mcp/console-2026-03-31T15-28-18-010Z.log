@@ -1,0 +1,3 @@
+[  389083ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://dgoc.logstop.com/field#/dcr/DCR-2026-03-00234:0
+[  437816ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ https://dgoc.logstop.com/api/method/vaishali.api.field.checkout_dcr:0
+[ 1372849ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://dgoc.logstop.com/field#/quotations/new?lead=CRM-LEAD-2026-02401&lead_name=Test%20CRM%20Flow%20Lead:0

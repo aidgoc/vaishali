@@ -1,0 +1,4 @@
+[  411337ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ https://dgoc.logstop.com/socket.io/?EIO=4&transport=polling&t=Pr3gLTd:0
+[  411338ms] [ERROR] Error connecting to socket.io: xhr poll error @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:470
+[  412750ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ https://dgoc.logstop.com/socket.io/?EIO=4&transport=polling&t=Pr3gLpf:0
+[  412751ms] [ERROR] Error connecting to socket.io: xhr poll error @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:470

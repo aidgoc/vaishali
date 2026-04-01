@@ -1,0 +1,1 @@
+[   16520ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://dgoc.logstop.com/api/resource/Manufacturing%20Settings?fields=[%22disable_capacity_planning%22,%22material_consumption%22,%22overproduction_percentage_for_sales_order%22]:0

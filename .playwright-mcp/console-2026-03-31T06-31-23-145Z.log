@@ -1,0 +1,7 @@
+[     445ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://dgoc.logstop.com/field:0
+[     560ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://dgoc.logstop.com/favicon.ico:0
+[     603ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://dgoc.logstop.com/favicon.ico:0
+[   59524ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ https://dgoc.logstop.com/api/method/login:0
+[   60003ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ https://dgoc.logstop.com/api/method/login:0
+[  106471ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ https://dgoc.logstop.com/api/method/login:0
+[  106896ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ https://dgoc.logstop.com/api/method/login:0

@@ -1,0 +1,5 @@
+[     441ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://dgoc.logstop.com/field:0
+[     634ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://dgoc.logstop.com/favicon.ico:0
+[     698ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://dgoc.logstop.com/favicon.ico:0
+[   24578ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://dgoc.logstop.com/field#/attendance:0
+[   84758ms] [ERROR] Failed to load resource: the server responded with a status of 417 (Expectation Failed) @ https://dgoc.logstop.com/api/method/vaishali.api.field.create_dcr:0

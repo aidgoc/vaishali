@@ -1,0 +1,9 @@
+[    3448ms] [WARNING] Invalid JSON in filter expression {
+    "company": ["like", '%' + frappe.defaults.get_global_default("company") + '%'],
+    "status": "Pending"
+} @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:501
+[    3450ms] [WARNING] Invalid JSON in filter expression {
+    "company": ["like", '%' + frappe.defaults.get_global_default("company") + '%'],
+    "status":["in", ["To Receive", "To Receive and Bill"]]
+} @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:501
+[    4699ms] [WARNING] "" is not a valid color. @ https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:1709

@@ -1,0 +1,16 @@
+[   22519ms] [ERROR] Failed to load resource: the server responded with a status of 417 (Expectation Failed) @ https://dgoc.logstop.com/api/method/frappe.client.get_default:0
+[   29779ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://dgoc.logstop.com/api/resource/Global%20Defaults?fields=[%22default_company%22]:0
+[   60200ms] [WARNING] Deprecation warning: value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are discouraged. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.
+Arguments: 
+[0] _isAMomentObject: true, _isUTC: true, _useUTC: true, _l: undefined, _i: undefined, _f: undefined, _strict: undefined, _locale: [object Object]
+Error
+    at z.createFromInputFallback (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:3)
+    at jn (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:24628)
+    at mr (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:28419)
+    at Xi (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:28284)
+    at Ki (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:28002)
+    at Zn (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:28780)
+    at Fe (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:4:112815)
+    at z.ne [as tz] (https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:7:61602)
+    at Object.convert_to_user_tz (https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:790:442)
+    at Qo (https://dgoc.logstop.com/assets/frappe/dist/js/desk.bundle.WBJQIARY.js:784:4358) @ https://dgoc.logstop.com/assets/frappe/dist/js/libs.bundle.TIV7ZGVY.js:3
