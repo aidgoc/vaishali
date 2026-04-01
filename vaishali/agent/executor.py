@@ -52,7 +52,7 @@ def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name
         elif tool_name == "update_document":
             return _update_document(tool_input)
         elif tool_name == "submit_document":
-            return _submit_document(tool_input)
+            return _submit_document(tool_input, user_role)
         elif tool_name == "cancel_document":
             if user_role not in ("admin", "manager"):
                 return json.dumps({"error": "Cancel requires manager or admin role"})
@@ -211,18 +211,47 @@ def _update_document(inp):
     return json.dumps({"success": True, "name": doc.name})
 
 
-def _submit_document(inp):
-    doc = frappe.get_doc(inp["doctype"], inp["name"])
+def _submit_document(inp, user_role="user"):
+    doctype = inp["doctype"]
+    name = inp["name"]
+
+    # Guard 1: verify the DocType is submittable
+    meta = frappe.get_meta(doctype)
+    if not meta.is_submittable:
+        return json.dumps({"error": f"{doctype} is not a submittable DocType. Only submittable documents (Sales Order, Invoice, etc.) can be submitted."})
+
+    doc = frappe.get_doc(doctype, name)
+
+    # Guard 2: verify document is in Draft state
+    if doc.docstatus != 0:
+        status = {1: "already submitted", 2: "cancelled"}.get(doc.docstatus, f"docstatus={doc.docstatus}")
+        return json.dumps({"error": f"{doctype} {name} is {status}. Only Draft documents (docstatus=0) can be submitted."})
+
+    # Guard 3: role gate — field users can only submit if ERPNext permits their roles
+    # (ERPNext enforces this internally, but we add an extra gate for the "user" tier)
+    if user_role == "user":
+        # Check if the current Frappe user actually has submit permission
+        if not frappe.has_permission(doctype, "submit", doc):
+            return json.dumps({"error": f"You don't have permission to submit {doctype}. Ask a manager to submit this document."})
+
     doc.submit()
     frappe.db.commit()
-    route = "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name
+    route = "/app/" + _doctype_to_route(doctype) + "/" + doc.name
     _add_action({"type": "navigate", "route": route})
-    _add_action({"type": "notify", "message": inp["doctype"] + " " + doc.name + " submitted", "variant": "green"})
+    _add_action({"type": "notify", "message": doctype + " " + doc.name + " submitted", "variant": "green"})
     return json.dumps({"success": True, "name": doc.name, "docstatus": 1})
 
 
 def _cancel_document(inp):
-    doc = frappe.get_doc(inp["doctype"], inp["name"])
+    doctype = inp["doctype"]
+    name = inp["name"]
+    meta = frappe.get_meta(doctype)
+    if not meta.is_submittable:
+        return json.dumps({"error": f"{doctype} is not a submittable DocType and cannot be cancelled."})
+    doc = frappe.get_doc(doctype, name)
+    if doc.docstatus != 1:
+        status = {0: "still in Draft", 2: "already cancelled"}.get(doc.docstatus, f"docstatus={doc.docstatus}")
+        return json.dumps({"error": f"{doctype} {name} is {status}. Only submitted documents (docstatus=1) can be cancelled."})
     doc.cancel()
     frappe.db.commit()
     return json.dumps({"success": True, "name": doc.name, "docstatus": 2})
