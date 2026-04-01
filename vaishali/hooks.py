@@ -7,8 +7,9 @@ app_license = "MIT"
 app_icon = "octicon octicon-robot"
 app_color = "#E60005"
 
-# Desk theme
+# Desk theme + chat widget
 app_include_css = "/assets/vaishali/css/vaishali.css"
+app_include_js = "vaishali.bundle.js"
 
 # Client scripts for desk forms
 doctype_js = {
