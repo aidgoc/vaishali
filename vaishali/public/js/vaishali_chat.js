@@ -2,13 +2,6 @@
 (function () {
   'use strict';
 
-  // Skip on mobile (PWA available) and on the Field PWA itself
-  if (window.innerWidth < 768) return;
-  if (window.location.pathname.indexOf('/field') === 0) return;
-
-  // Wait for frappe to be ready
-  if (typeof frappe === 'undefined') return;
-
   // ─── State ──────────────────────────────────────────────────
   var _open = false;
   var _loading = false;
@@ -288,7 +281,10 @@
 
   // ─── Init ────────────────────────────────────────────────────
   $(document).ready(function () {
-    if (frappe.session.user === 'Guest') return;
+    // Skip on mobile (PWA available), on /field PWA, and for guests
+    if (window.innerWidth < 768) return;
+    if (window.location.pathname.indexOf('/field') === 0) return;
+    if (!window.frappe || frappe.session.user === 'Guest') return;
     buildWidget();
   });
 
