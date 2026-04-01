@@ -69,6 +69,23 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - Sub-assembly code mapping: Krisp K* -> ERPNext BK* (prefix B), or name match
 - Scripts at /tmp/bom_migration.py, /tmp/bom_multilevel.py, /tmp/bom_fix_remaining.py
 
+### BOM Update/Fix Procedures (CRITICAL)
+**NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades breakage.
+
+| Fix Type | Procedure |
+|----------|-----------|
+| **Wrong rates** | Fix Item master `valuation_rate` → click "Update Cost" on the BOM (works on submitted BOMs without cancel) |
+| **Bulk rate fix** | Fix Item prices → Manufacturing > BOM Update Tool > "Update latest price in all BOMs" |
+| **Structural (add/remove/swap items)** | Create a new BOM separately → use BOM Update Tool to replace old→new across all parent BOMs |
+| **Last resort amend** | Cancel → Amend (creates copy with `amended_from` link). Only if structural change and no BOM Update Tool workaround |
+
+**`rm_cost_as_per` field** controls rate source on each BOM:
+- **Valuation Rate** (default): weighted avg stock cost → falls back to last SLE → falls back to `Item.valuation_rate`
+- **Last Purchase Rate**: from most recent PO
+- **Price List**: from selected buying price list
+
+**DSPL context:** 0 Purchase Orders means valuation rates use Item master's static `valuation_rate` field (level 3 fallback). To fix rates: update Item.valuation_rate → Update Cost on BOM.
+
 ### BOM Rate Validation Complete (2026-03-30)
 **Status:** Production-ready recommendation with HIGH confidence
 
