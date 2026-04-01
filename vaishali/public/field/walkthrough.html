@@ -167,7 +167,9 @@
     background: rgba(0,0,0,0.05);
     color: var(--ink2);
     font-family: 'SF Mono', 'Fira Code', monospace;
+    text-decoration: none;
   }
+  a.step-screen:hover { background: rgba(0,0,0,0.1); }
 
   .flow-arrow {
     display: flex;
@@ -208,7 +210,10 @@
     font-family: 'SF Mono', 'Fira Code', monospace;
     color: var(--ink3);
     margin-bottom: 6px;
+    text-decoration: none;
+    display: block;
   }
+  a.sc-route:hover { color: var(--ink); }
   .screen-card .sc-desc {
     font-size: 13px;
     color: var(--ink2);
@@ -289,25 +294,58 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
 
-  /* ── Desk links ── */
-  .step-desk {
-    display: block;
-    margin-top: 4px;
-    font-size: 11px;
-    color: var(--blue);
-    text-decoration: none;
-    font-weight: 500;
-  }
-  .step-desk:hover { text-decoration: underline; }
-  .sc-desk {
-    display: inline-block;
+  /* ── Links row (PWA + Desk side by side) ── */
+  .step-links {
+    display: flex;
+    gap: 8px;
     margin-top: 6px;
-    font-size: 11px;
-    color: var(--blue);
-    text-decoration: none;
-    font-weight: 500;
+    justify-content: center;
+    flex-wrap: wrap;
   }
-  .sc-desk:hover { text-decoration: underline; }
+  .step-links a {
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .step-links .sl-pwa {
+    background: rgba(22,163,74,0.1);
+    color: var(--green);
+  }
+  .step-links .sl-pwa:hover { background: rgba(22,163,74,0.18); }
+  .step-links .sl-desk {
+    background: rgba(59,130,246,0.1);
+    color: var(--blue);
+  }
+  .step-links .sl-desk:hover { background: rgba(59,130,246,0.18); }
+
+  /* ── Screen card links row ── */
+  .sc-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .sc-links a {
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .sc-links .sl-pwa {
+    background: rgba(22,163,74,0.1);
+    color: var(--green);
+  }
+  .sc-links .sl-pwa:hover { background: rgba(22,163,74,0.18); }
+  .sc-links .sl-desk {
+    background: rgba(59,130,246,0.1);
+    color: var(--blue);
+  }
+  .sc-links .sl-desk:hover { background: rgba(59,130,246,0.18); }
 
   /* ── Note ── */
   .note {
@@ -525,31 +563,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Sales Order</div>
         <div class="step-desc">Created from submitted Quotation. Sales rep or manager creates in PWA</div>
-        <span class="step-screen">#/sales-orders/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-orders/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Production Dashboard</div>
         <div class="step-desc">Shows pending orders count, work orders, stock items, draft BOMs</div>
-        <span class="step-screen">#/production</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/production" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Work Order</div>
         <div class="step-desc">Created from SO in ERPNext Desk. Triggers BOM-based manufacturing</div>
-        <span class="step-screen">Desk only</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Dispatch</div>
         <div class="step-desc">Track pending deliveries and recent shipments. Create DN from SO</div>
-        <span class="step-screen">#/dispatch</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dispatch" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Desk</a></div>
       </div>
     </div>
   </div>
@@ -562,31 +597,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Service Dashboard</div>
         <div class="step-desc">Overview: open breakdowns, pending installs, visits today, completed</div>
-        <span class="step-screen">#/service</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/service" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Installations</div>
         <div class="step-desc">Track Maintenance Visits — Pending, Scheduled, Completed tabs</div>
-        <span class="step-screen">#/installations</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/installations" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Breakdowns</div>
         <div class="step-desc">Log warranty claims, track open breakdowns. Create new tickets</div>
-        <span class="step-screen">#/breakdowns</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/breakdowns" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Devices</div>
         <div class="step-desc">Equipment register — serial numbers, warranty status, calibration dates</div>
-        <span class="step-screen">#/devices</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/devices" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">Desk</a></div>
       </div>
     </div>
   </div>
@@ -599,30 +631,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Sales Invoice</div>
         <div class="step-desc">Create from DN or SO. All/Draft/Unpaid tabs. Accounts Manager role</div>
-        <span class="step-screen">#/sales-invoices</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-invoices" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Receivables</div>
         <div class="step-desc">Outstanding amount, overdue count, aging analysis. Collection priority</div>
-        <span class="step-screen">#/debtors</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/debtors" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Record Payment</div>
         <div class="step-desc">Pick unpaid invoice, enter amount. Auto-submits Payment Entry</div>
-        <span class="step-screen">#/payments/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/payments/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Revenue</div>
         <div class="step-desc">Total invoiced, collected, outstanding, collection rate. Monthly trend</div>
-        <span class="step-screen">#/revenue</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/revenue" target="_blank">PWA</a></div>
       </div>
     </div>
   </div>
@@ -651,39 +681,35 @@
         <div class="step-num">1</div>
         <div class="step-title">New Visit</div>
         <div class="step-desc">Check in at customer site with GPS. Pick "Cold Call / New Enquiry"</div>
-        <span class="step-screen">#/dcr/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/daily-call-report" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/daily-call-report" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Checkout + Lead</div>
         <div class="step-desc">Toggle "Lead generated". System auto-creates Lead on checkout</div>
-        <span class="step-screen">#/dcr/:id</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Lead Detail<span class="tag-new">new</span></div>
         <div class="step-desc">View lead info, tap to call. Create Opportunity or Quotation</div>
-        <span class="step-screen">#/lead/:id</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Create Opportunity<span class="tag-new">new</span></div>
         <div class="step-desc">Convert lead to opportunity. Track deal value and status</div>
-        <span class="step-screen">#/opportunity/:id</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">5</div>
         <div class="step-title">Create Quotation</div>
         <div class="step-desc">Pre-filled from opportunity. Add items, set rates, send to customer</div>
-        <span class="step-screen">#/quotations/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/quotations/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">Desk</a></div>
       </div>
     </div>
   </div>
@@ -696,35 +722,35 @@
         <div class="step-num">1</div>
         <div class="step-title">New Visit</div>
         <div class="step-desc">Pick "Lead Follow-up" or "Quotation Follow-up" purpose</div>
-        <span class="step-screen">#/dcr/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Select Customer</div>
         <div class="step-desc">System shows open leads, opportunities, quotations for this customer</div>
-        <span class="step-screen">#/dcr/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Pick What</div>
         <div class="step-desc">Tap the lead or quotation you're following up on. DCR links to it</div>
-        <span class="step-screen">#/dcr/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Check In</div>
         <div class="step-desc">Visit is created with follow-up link. Shows in customer timeline</div>
-        <span class="step-screen">#/dcr/:id</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">5</div>
         <div class="step-title">Checkout</div>
         <div class="step-desc">Record outcome, next action. Conversion status auto-updates</div>
-        <span class="step-screen">#/dcr/:id</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
     </div>
   </div>
@@ -737,21 +763,21 @@
         <div class="step-num">1</div>
         <div class="step-title">Quotations</div>
         <div class="step-desc">View all quotations. Filter by Draft / Open / All</div>
-        <span class="step-screen">#/quotations</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/quotations" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Create SO</div>
         <div class="step-desc">Pick a submitted quotation. One tap converts to Sales Order (draft)</div>
-        <span class="step-screen">#/sales-orders/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-orders/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">ERPNext Desk</div>
         <div class="step-desc">Manager reviews and submits SO. Triggers delivery &amp; invoicing chain</div>
-        <span class="step-screen">Desk</span>
+        <div class="step-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Desk</a></div>
       </div>
     </div>
   </div>
@@ -760,38 +786,33 @@
   <div class="screens-grid">
     <div class="screen-card">
       <div class="sc-name">Leads</div>
-      <div class="sc-route">#/leads</div>
       <div class="sc-desc">Browse and create leads. Tap to see detail with conversion actions</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/leads" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Opportunities<span class="tag-new">new</span></div>
-      <div class="sc-route">#/opportunities</div>
       <div class="sc-desc">Open / Replied / All tabs. Tap for detail + Create Quotation</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/opportunities" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Pipeline</div>
-      <div class="sc-route">#/pipeline</div>
       <div class="sc-desc">Sales funnel: visits → leads → quotes → orders with conversion ratios</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/pipeline" target="_blank">PWA</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">My Targets</div>
-      <div class="sc-route">#/targets</div>
       <div class="sc-desc">Personal sales performance vs annual/monthly targets</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/targets" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Follow Ups</div>
-      <div class="sc-route">#/follow-ups</div>
       <div class="sc-desc">Quotations expiring soon — never miss a deal</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/follow-ups" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Customer 360</div>
-      <div class="sc-route">#/customer/:id</div>
       <div class="sc-desc">GSTIN, addresses, contacts, sales timeline — all in one place</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/customer" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/customer" target="_blank">Desk</a></div>
     </div>
   </div>
 </section>
@@ -813,28 +834,28 @@
         <div class="step-num">1</div>
         <div class="step-title">New Visit</div>
         <div class="step-desc">Auto-detected as Service visit. Pick purpose: Installation, Breakdown, AMC, etc.</div>
-        <span class="step-screen">#/dcr/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Service Details</div>
         <div class="step-desc">Enter equipment name, serial number, job card. GPS captured on check-in</div>
-        <span class="step-screen">#/dcr/new</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr/new" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">On-Site Work</div>
         <div class="step-desc">Live duration timer. Add remarks during visit. Save progress anytime</div>
-        <span class="step-screen">#/dcr/:id</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Checkout</div>
         <div class="step-desc">Record discussion, next action + date. GPS captured again on checkout</div>
-        <span class="step-screen">#/dcr/:id</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
     </div>
   </div>
@@ -842,31 +863,28 @@
   <div class="screens-grid">
     <div class="screen-card">
       <div class="sc-name">Service Dashboard</div>
-      <div class="sc-route">#/service</div>
       <div class="sc-desc">Overview of installations, breakdowns, maintenance schedule</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/service" target="_blank">PWA</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Installations</div>
-      <div class="sc-route">#/installations</div>
       <div class="sc-desc">Track equipment installations with status and customer details</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/installations" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Breakdowns</div>
-      <div class="sc-route">#/breakdowns</div>
       <div class="sc-desc">Log and track breakdown reports. Create new breakdown tickets</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/breakdowns" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Devices</div>
-      <div class="sc-route">#/devices</div>
       <div class="sc-desc">Equipment register — serial numbers, warranty, calibration dates</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/devices" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">AMC Tracker</div>
-      <div class="sc-route">#/amc</div>
       <div class="sc-desc">Annual maintenance contracts — due dates, renewals, customer sites</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/amc" target="_blank">PWA</a></div>
     </div>
   </div>
 </section>
@@ -888,29 +906,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Check In</div>
         <div class="step-desc">GPS-stamped attendance from home screen. One tap</div>
-        <span class="step-screen">#/home</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/home" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Field Visits</div>
         <div class="step-desc">Create visits throughout the day. Each tracked with GPS + duration</div>
-        <span class="step-screen">#/dcr</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dcr" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">HR Services</div>
         <div class="step-desc">Apply leave, submit expenses, request advances, view salary slips</div>
-        <span class="step-screen">#/hr</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/hr" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Check Out</div>
         <div class="step-desc">End of day checkout from home screen</div>
-        <span class="step-screen">#/home</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/home" target="_blank">PWA</a></div>
       </div>
     </div>
   </div>
@@ -918,36 +935,33 @@
   <div class="screens-grid">
     <div class="screen-card">
       <div class="sc-name">Home</div>
-      <div class="sc-route">#/home</div>
       <div class="sc-desc">KPIs, quick actions (check in/out, new visit), pending approvals, department nav</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/home" target="_blank">PWA</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Attendance</div>
-      <div class="sc-route">#/attendance</div>
       <div class="sc-desc">Today's check-in/out times, GPS location, working hours</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/attendance" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Leave</div>
-      <div class="sc-route">#/leave</div>
       <div class="sc-desc">Leave balance, history, apply for new leave</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/leave-application" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/leave" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/leave-application" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Expenses</div>
-      <div class="sc-route">#/expense</div>
       <div class="sc-desc">Submit claims, track approval status, view history</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-claim" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/expense" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/expense-claim" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">AI Chat</div>
-      <div class="sc-route">#/chat</div>
       <div class="sc-desc">Ask Vaishali anything about customers, orders, stock, targets</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/chat" target="_blank">PWA</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Profile</div>
-      <div class="sc-route">#/profile</div>
       <div class="sc-desc">Personal info, Telegram linking, sign out</div>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/profile" target="_blank">PWA</a></div>
     </div>
   </div>
 </section>
@@ -969,28 +983,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Home Dashboard</div>
         <div class="step-desc">See team present count, pending approvals, today's visits at a glance</div>
-        <span class="step-screen">#/home</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/home" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Team Overview</div>
         <div class="step-desc">Who's present, in field, absent. Department-level attendance</div>
-        <span class="step-screen">#/team</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/team" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Approvals</div>
         <div class="step-desc">Approve/reject leave, expenses, advances. One-tap actions</div>
-        <span class="step-screen">#/approvals</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/approvals" target="_blank">PWA</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Reports</div>
         <div class="step-desc">Monthly report card: revenue, orders, visits, YTD progress</div>
-        <span class="step-screen">#/monthly-report</span>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/monthly-report" target="_blank">PWA</a></div>
       </div>
     </div>
   </div>
@@ -1002,32 +1016,28 @@
         <div class="step-num">1</div>
         <div class="step-title">Sales Orders</div>
         <div class="step-desc">View all orders. Create from submitted quotations</div>
-        <span class="step-screen">#/sales-orders</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-orders" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">2</div>
         <div class="step-title">Delivery Note</div>
         <div class="step-desc">Create DN from pending delivery SOs. Stock Manager role required</div>
-        <span class="step-screen">#/delivery-notes/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/delivery-notes/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">3</div>
         <div class="step-title">Sales Invoice</div>
         <div class="step-desc">Create invoice from DN or SO. Accounts Manager role required</div>
-        <span class="step-screen">#/sales-invoices/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-invoices/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Desk</a></div>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
         <div class="step-num">4</div>
         <div class="step-title">Record Payment</div>
         <div class="step-desc">Record payment against unpaid invoices. Auto-submitted</div>
-        <span class="step-screen">#/payments/new</span>
-        <a class="step-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Open in Desk →</a>
+        <div class="step-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/payments/new" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Desk</a></div>
       </div>
     </div>
   </div>
@@ -1035,27 +1045,23 @@
   <div class="screens-grid">
     <div class="screen-card">
       <div class="sc-name">Sales Targets</div>
-      <div class="sc-route">#/sales-targets</div>
       <div class="sc-desc">Company-wide targets by product category vs actuals</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/sales-targets" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Budget</div>
-      <div class="sc-route">#/budget</div>
       <div class="sc-desc">Expense budgets — personal + vertical view. Track vs caps</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/budget" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Receivables</div>
-      <div class="sc-route">#/debtors</div>
       <div class="sc-desc">Outstanding invoices, aging analysis, collection priority</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-invoice?outstanding_amount=%5B%22%3E%22%2C0%5D" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/debtors" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-invoice?outstanding_amount=%5B%22%3E%22%2C0%5D" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Revenue</div>
-      <div class="sc-route">#/revenue</div>
       <div class="sc-desc">Revenue dashboard with trends and comparisons</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/revenue" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Desk</a></div>
     </div>
   </div>
 
@@ -1083,45 +1089,38 @@
   <div class="screens-grid">
     <div class="screen-card">
       <div class="sc-name">Budget Admin</div>
-      <div class="sc-route">#/budget</div>
       <div class="sc-desc">All-vertical budget view. Set monthly caps per employee. Top spenders leaderboard</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/budget" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">DSPL Sales Workspace</div>
-      <div class="sc-route">Desk only</div>
       <div class="sc-desc">Number cards, charts, pipeline — sales at a glance</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-sales" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/dspl-sales" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">DSPL Operations Workspace</div>
-      <div class="sc-route">Desk only</div>
       <div class="sc-desc">Work orders, deliveries, service, team — operations dashboard</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-operations" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/dspl-operations" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">DSPL Finance Workspace</div>
-      <div class="sc-route">Desk only</div>
       <div class="sc-desc">Unpaid/overdue invoices, collections, revenue charts</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-finance" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/dspl-finance" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Workflows Guide</div>
-      <div class="sc-route">/app/dspl-workflows</div>
       <div class="sc-desc">Interactive training page. Step-by-step tutorials for Sales, Field, HR, Operations</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-workflows" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-desk" href="https://dgoc.logstop.com/app/dspl-workflows" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Production</div>
-      <div class="sc-route">#/production</div>
       <div class="sc-desc">Work orders, manufacturing progress, BOM tracking</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/production" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">Desk</a></div>
     </div>
     <div class="screen-card">
       <div class="sc-name">Dispatch</div>
-      <div class="sc-route">#/dispatch</div>
       <div class="sc-desc">Dispatch tracker — outbound shipments and delivery status</div>
-      <a class="sc-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">View in Desk →</a>
+      <div class="sc-links"><a class="sl-pwa" href="https://dgoc.logstop.com/field#/dispatch" target="_blank">PWA</a> <a class="sl-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Desk</a></div>
     </div>
   </div>
 </section>
