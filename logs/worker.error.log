@@ -1,4 +1,0 @@
-Usage: bench [OPTIONS] COMMAND [ARGS]...
-Try 'bench --help' for help.
-
-Error: No such command 'worker'.

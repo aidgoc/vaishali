@@ -1,2 +1,10 @@
 __pycache__/
 .claude/
+.DS_Store
+.playwright-mcp/
+*.png
+dump.rdb
+firebase-debug.log
+logs/
+config/
+Procfile
