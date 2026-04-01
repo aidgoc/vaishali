@@ -27,6 +27,7 @@ def setup():
     frappe.db.commit()
     update_dspl_sales_workspace()
     create_dspl_operations_workspace()
+    create_dspl_finance_workspace()
     frappe.db.commit()
     print("DSPL workspace setup complete!")
 
@@ -188,6 +189,83 @@ def create_number_cards():
             "show_percentage_stats": 0,
             "is_standard": 0,
         },
+        # --- Finance ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Unpaid Invoices",
+            "label": "DSPL Unpaid Invoices",
+            "document_type": "Sales Invoice",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Sales Invoice", "docstatus", "=", 1],
+                ["Sales Invoice", "outstanding_amount", ">", 0],
+            ]),
+            "color": "#F97316",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Overdue Invoices",
+            "label": "DSPL Overdue Invoices",
+            "document_type": "Sales Invoice",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Sales Invoice", "docstatus", "=", 1],
+                ["Sales Invoice", "outstanding_amount", ">", 0],
+                ["Sales Invoice", "due_date", "<", "today"],
+            ]),
+            "color": "#EF4444",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Payments This Month",
+            "label": "DSPL Payments This Month",
+            "document_type": "Payment Entry",
+            "function": "Sum",
+            "aggregate_function_based_on": "paid_amount",
+            "filters_json": json.dumps([
+                ["Payment Entry", "docstatus", "=", 1],
+                ["Payment Entry", "posting_date", "Timespan", "this month"],
+                ["Payment Entry", "payment_type", "=", "Receive"],
+            ]),
+            "color": "#22C55E",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Monthly",
+            "is_standard": 0,
+        },
+        # --- Service ---
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Open Warranty Claims",
+            "label": "DSPL Open Warranty Claims",
+            "document_type": "Warranty Claim",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Warranty Claim", "status", "!=", "Resolved"],
+            ]),
+            "color": "#EA580C",
+            "show_percentage_stats": 0,
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Number Card",
+            "name": "DSPL Pending Installations",
+            "label": "DSPL Pending Installations",
+            "document_type": "Maintenance Visit",
+            "function": "Count",
+            "filters_json": json.dumps([
+                ["Maintenance Visit", "maintenance_type", "=", "Scheduled"],
+                ["Maintenance Visit", "docstatus", "<", 1],
+            ]),
+            "color": "#3B82F6",
+            "show_percentage_stats": 0,
+            "is_standard": 0,
+        },
         # --- Operations ---
         {
             "doctype": "Number Card",
@@ -294,6 +372,24 @@ def create_charts():
             ]),
             "type": "Pie",
             "color": "#A855F7",
+            "is_standard": 0,
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "name": "DSPL Monthly Collections",
+            "chart_name": "DSPL Monthly Collections",
+            "chart_type": "Sum",
+            "document_type": "Payment Entry",
+            "based_on": "posting_date",
+            "value_based_on": "paid_amount",
+            "timespan": "Last Year",
+            "time_interval": "Monthly",
+            "filters_json": json.dumps([
+                ["Payment Entry", "docstatus", "=", 1],
+                ["Payment Entry", "payment_type", "=", "Receive"],
+            ]),
+            "type": "Bar",
+            "color": "#22C55E",
             "is_standard": 0,
         },
         {
@@ -418,8 +514,8 @@ def _build_sales_workspace_content():
     ])
 
 
-def _set_workspace_children(workspace, number_card_names, chart_names):
-    """Populate the number_cards and charts child tables on a workspace.
+def _set_workspace_children(workspace, number_card_names, chart_names, shortcuts=None):
+    """Populate the number_cards, charts, and shortcuts child tables on a workspace.
 
     IMPORTANT: Frappe's block.js matches widgets by label == block_name,
     so label must exactly match the name used in the content JSON.
@@ -437,6 +533,11 @@ def _set_workspace_children(workspace, number_card_names, chart_names):
             "chart_name": ch_name,
             "label": ch_name,
         })
+
+    if shortcuts:
+        workspace.set("shortcuts", [])
+        for sc in shortcuts:
+            workspace.append("shortcuts", sc)
 
 
 def update_dspl_sales_workspace():
@@ -497,6 +598,20 @@ def _build_operations_workspace_content():
         {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Stock Below Reorder", "col": 4}},
         {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
 
+        # --- Service Cards ---
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Service</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Open Warranty Claims", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Pending Installations", "col": 4}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+
+        # --- Shortcuts ---
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Quick Links</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Work Order", "col": 3}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Delivery Note", "col": 3}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Warranty Claim", "col": 3}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Maintenance Visit", "col": 3}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+
         # --- HR Cards ---
         {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Team</b></span>", "col": 12}},
         {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Team Present Today", "col": 4}},
@@ -517,11 +632,19 @@ def create_dspl_operations_workspace():
         "DSPL Active Work Orders",
         "DSPL Pending Deliveries",
         "DSPL Stock Below Reorder",
+        "DSPL Open Warranty Claims",
+        "DSPL Pending Installations",
         "DSPL Team Present Today",
         "DSPL Pending Approvals",
     ]
     ops_charts = [
         "DSPL Monthly Orders",
+    ]
+    ops_shortcuts = [
+        {"label": "Work Order", "link_to": "Work Order", "type": "DocType"},
+        {"label": "Delivery Note", "link_to": "Delivery Note", "type": "DocType"},
+        {"label": "Warranty Claim", "link_to": "Warranty Claim", "type": "DocType"},
+        {"label": "Maintenance Visit", "link_to": "Maintenance Visit", "type": "DocType"},
     ]
 
     if not frappe.db.exists("Workspace", ws_name):
@@ -537,14 +660,90 @@ def create_dspl_operations_workspace():
             "public": 1,
             "content": _build_operations_workspace_content(),
         })
-        _set_workspace_children(workspace, ops_number_cards, ops_charts)
+        _set_workspace_children(workspace, ops_number_cards, ops_charts, ops_shortcuts)
         workspace.flags.ignore_links = True
         workspace.insert(ignore_permissions=True)
         print(f"  Created workspace: {ws_name}")
     else:
         workspace = frappe.get_doc("Workspace", ws_name)
         workspace.content = _build_operations_workspace_content()
-        _set_workspace_children(workspace, ops_number_cards, ops_charts)
+        _set_workspace_children(workspace, ops_number_cards, ops_charts, ops_shortcuts)
+        workspace.flags.ignore_links = True
+        workspace.save(ignore_permissions=True)
+        print(f"  Updated workspace: {ws_name}")
+
+
+# ---------------------------------------------------------------------------
+# Workspace: DSPL Finance
+# ---------------------------------------------------------------------------
+
+def _build_finance_workspace_content():
+    """Build the JSON content blocks for the DSPL Finance workspace."""
+    return json.dumps([
+        # --- Header ---
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Finance Overview</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+
+        # --- Number Cards ---
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Unpaid Invoices", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Overdue Invoices", "col": 4}},
+        {"id": _block_id(), "type": "number_card", "data": {"number_card_name": "DSPL Payments This Month", "col": 4}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+
+        # --- Charts ---
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Revenue &amp; Collections</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Monthly Revenue", "col": 6}},
+        {"id": _block_id(), "type": "chart", "data": {"chart_name": "DSPL Monthly Collections", "col": 6}},
+        {"id": _block_id(), "type": "spacer", "data": {"col": 12}},
+
+        # --- Shortcuts ---
+        {"id": _block_id(), "type": "header", "data": {"text": "<span class=\"h4\"><b>Quick Links</b></span>", "col": 12}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Payment Entry", "col": 3}},
+        {"id": _block_id(), "type": "shortcut", "data": {"shortcut_name": "Accounts Receivable", "col": 3}},
+    ])
+
+
+def create_dspl_finance_workspace():
+    """Create or update the DSPL Finance workspace."""
+    ws_name = "DSPL Finance"
+
+    fin_number_cards = [
+        "DSPL Unpaid Invoices",
+        "DSPL Overdue Invoices",
+        "DSPL Payments This Month",
+    ]
+    fin_charts = [
+        "DSPL Monthly Revenue",
+        "DSPL Monthly Collections",
+    ]
+    fin_shortcuts = [
+        {"label": "Sales Invoice", "link_to": "Sales Invoice", "type": "DocType"},
+        {"label": "Payment Entry", "link_to": "Payment Entry", "type": "DocType"},
+        {"label": "Accounts Receivable", "link_to": "Accounts Receivable", "type": "Report"},
+    ]
+
+    if not frappe.db.exists("Workspace", ws_name):
+        workspace = frappe.get_doc({
+            "doctype": "Workspace",
+            "name": ws_name,
+            "label": "DSPL Finance",
+            "title": "DSPL Finance",
+            "module": "Vaishali",
+            "category": "Modules",
+            "icon": "income",
+            "is_standard": 0,
+            "public": 1,
+            "content": _build_finance_workspace_content(),
+        })
+        _set_workspace_children(workspace, fin_number_cards, fin_charts, fin_shortcuts)
+        workspace.flags.ignore_links = True
+        workspace.insert(ignore_permissions=True)
+        print(f"  Created workspace: {ws_name}")
+    else:
+        workspace = frappe.get_doc("Workspace", ws_name)
+        workspace.content = _build_finance_workspace_content()
+        _set_workspace_children(workspace, fin_number_cards, fin_charts, fin_shortcuts)
         workspace.flags.ignore_links = True
         workspace.save(ignore_permissions=True)
         print(f"  Updated workspace: {ws_name}")

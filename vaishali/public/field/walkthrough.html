@@ -278,6 +278,37 @@
     color: var(--ink3);
   }
 
+  /* ── Clickable link nodes ── */
+  a.link-node {
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  a.link-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  /* ── Desk links ── */
+  .step-desk {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .step-desk:hover { text-decoration: underline; }
+  .sc-desk {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .sc-desk:hover { text-decoration: underline; }
+
   /* ── Note ── */
   .note {
     display: flex;
@@ -342,66 +373,66 @@
 <div class="link-diagram">
   <h3>Complete CRM &amp; Sales Chain</h3>
   <div class="link-chain">
-    <div class="link-node visit">
+    <a class="link-node visit" href="https://dgoc.logstop.com/app/daily-call-report" target="_blank">
       <div class="ln-type">Visit</div>
       <div class="ln-name">DCR</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">auto-link</span>
       →
     </div>
-    <div class="link-node lead">
+    <a class="link-node lead" href="https://dgoc.logstop.com/app/lead" target="_blank">
       <div class="ln-type">CRM</div>
       <div class="ln-name">Lead</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">convert</span>
       →
     </div>
-    <div class="link-node opp">
+    <a class="link-node opp" href="https://dgoc.logstop.com/app/opportunity" target="_blank">
       <div class="ln-type">CRM</div>
       <div class="ln-name">Opportunity</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">quote</span>
       →
     </div>
-    <div class="link-node quote">
+    <a class="link-node quote" href="https://dgoc.logstop.com/app/quotation" target="_blank">
       <div class="ln-type">Selling</div>
       <div class="ln-name">Quotation</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">order</span>
       →
     </div>
-    <div class="link-node order">
+    <a class="link-node order" href="https://dgoc.logstop.com/app/sales-order" target="_blank">
       <div class="ln-type">Selling</div>
       <div class="ln-name">Sales Order</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">deliver</span>
       →
     </div>
-    <div class="link-node dn">
+    <a class="link-node dn" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">
       <div class="ln-type">Stock</div>
       <div class="ln-name">Delivery Note</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">invoice</span>
       →
     </div>
-    <div class="link-node inv">
+    <a class="link-node inv" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">
       <div class="ln-type">Accounts</div>
       <div class="ln-name">Sales Invoice</div>
-    </div>
+    </a>
     <div class="link-arrow">
       <span class="la-label">collect</span>
       →
     </div>
-    <div class="link-node pay">
+    <a class="link-node pay" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">
       <div class="ln-type">Accounts</div>
       <div class="ln-name">Payment</div>
-    </div>
+    </a>
   </div>
   <div class="note" style="margin-top:20px; margin-bottom: 0;">
     <span class="note-icon">🔗</span>
@@ -423,18 +454,18 @@
   <div class="link-diagram">
     <h3>8-Stage Lifecycle</h3>
     <div class="link-chain">
-      <div class="link-node order">
+      <a class="link-node order" href="https://dgoc.logstop.com/app/sales-order" target="_blank">
         <div class="ln-type">Sales</div>
         <div class="ln-name">Sales Order</div>
-      </div>
+      </a>
       <div class="link-arrow">
         <span class="la-label">manufacture</span>
         →
       </div>
-      <div class="link-node" style="background: #FEF3C7; color: #92400E;">
+      <a class="link-node" style="background: #FEF3C7; color: #92400E;" href="https://dgoc.logstop.com/app/work-order" target="_blank">
         <div class="ln-type">Production</div>
         <div class="ln-name">Work Order</div>
-      </div>
+      </a>
       <div class="link-arrow">
         <span class="la-label">track</span>
         →
@@ -447,18 +478,18 @@
         <span class="la-label">dispatch</span>
         →
       </div>
-      <div class="link-node dn">
+      <a class="link-node dn" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">
         <div class="ln-type">Stock</div>
         <div class="ln-name">Delivery Note</div>
-      </div>
+      </a>
       <div class="link-arrow">
         <span class="la-label">install</span>
         →
       </div>
-      <div class="link-node" style="background: #DBEAFE; color: #1E40AF;">
+      <a class="link-node" style="background: #DBEAFE; color: #1E40AF;" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">
         <div class="ln-type">Service</div>
         <div class="ln-name">Installation</div>
-      </div>
+      </a>
       <div class="link-arrow">
         <span class="la-label">sign-off</span>
         →
@@ -471,18 +502,18 @@
         <span class="la-label">invoice</span>
         →
       </div>
-      <div class="link-node inv">
+      <a class="link-node inv" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">
         <div class="ln-type">Accounts</div>
         <div class="ln-name">Sales Invoice</div>
-      </div>
+      </a>
       <div class="link-arrow">
         <span class="la-label">collect</span>
         →
       </div>
-      <div class="link-node pay">
+      <a class="link-node pay" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">
         <div class="ln-type">Accounts</div>
         <div class="ln-name">Payment</div>
-      </div>
+      </a>
     </div>
   </div>
 
@@ -495,6 +526,7 @@
         <div class="step-title">Sales Order</div>
         <div class="step-desc">Created from submitted Quotation. Sales rep or manager creates in PWA</div>
         <span class="step-screen">#/sales-orders/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -509,6 +541,7 @@
         <div class="step-title">Work Order</div>
         <div class="step-desc">Created from SO in ERPNext Desk. Triggers BOM-based manufacturing</div>
         <span class="step-screen">Desk only</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -516,6 +549,7 @@
         <div class="step-title">Dispatch</div>
         <div class="step-desc">Track pending deliveries and recent shipments. Create DN from SO</div>
         <span class="step-screen">#/dispatch</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Open in Desk →</a>
       </div>
     </div>
   </div>
@@ -536,6 +570,7 @@
         <div class="step-title">Installations</div>
         <div class="step-desc">Track Maintenance Visits — Pending, Scheduled, Completed tabs</div>
         <span class="step-screen">#/installations</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -543,6 +578,7 @@
         <div class="step-title">Breakdowns</div>
         <div class="step-desc">Log warranty claims, track open breakdowns. Create new tickets</div>
         <span class="step-screen">#/breakdowns</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -550,6 +586,7 @@
         <div class="step-title">Devices</div>
         <div class="step-desc">Equipment register — serial numbers, warranty status, calibration dates</div>
         <span class="step-screen">#/devices</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">Open in Desk →</a>
       </div>
     </div>
   </div>
@@ -563,6 +600,7 @@
         <div class="step-title">Sales Invoice</div>
         <div class="step-desc">Create from DN or SO. All/Draft/Unpaid tabs. Accounts Manager role</div>
         <span class="step-screen">#/sales-invoices</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -577,6 +615,7 @@
         <div class="step-title">Record Payment</div>
         <div class="step-desc">Pick unpaid invoice, enter amount. Auto-submits Payment Entry</div>
         <span class="step-screen">#/payments/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -613,6 +652,7 @@
         <div class="step-title">New Visit</div>
         <div class="step-desc">Check in at customer site with GPS. Pick "Cold Call / New Enquiry"</div>
         <span class="step-screen">#/dcr/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/daily-call-report" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -627,6 +667,7 @@
         <div class="step-title">Lead Detail<span class="tag-new">new</span></div>
         <div class="step-desc">View lead info, tap to call. Create Opportunity or Quotation</div>
         <span class="step-screen">#/lead/:id</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -634,6 +675,7 @@
         <div class="step-title">Create Opportunity<span class="tag-new">new</span></div>
         <div class="step-desc">Convert lead to opportunity. Track deal value and status</div>
         <span class="step-screen">#/opportunity/:id</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -641,6 +683,7 @@
         <div class="step-title">Create Quotation</div>
         <div class="step-desc">Pre-filled from opportunity. Add items, set rates, send to customer</div>
         <span class="step-screen">#/quotations/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">Open in Desk →</a>
       </div>
     </div>
   </div>
@@ -719,11 +762,13 @@
       <div class="sc-name">Leads</div>
       <div class="sc-route">#/leads</div>
       <div class="sc-desc">Browse and create leads. Tap to see detail with conversion actions</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/lead" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Opportunities<span class="tag-new">new</span></div>
       <div class="sc-route">#/opportunities</div>
       <div class="sc-desc">Open / Replied / All tabs. Tap for detail + Create Quotation</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/opportunity" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Pipeline</div>
@@ -734,16 +779,19 @@
       <div class="sc-name">My Targets</div>
       <div class="sc-route">#/targets</div>
       <div class="sc-desc">Personal sales performance vs annual/monthly targets</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Follow Ups</div>
       <div class="sc-route">#/follow-ups</div>
       <div class="sc-desc">Quotations expiring soon — never miss a deal</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/quotation" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Customer 360</div>
       <div class="sc-route">#/customer/:id</div>
       <div class="sc-desc">GSTIN, addresses, contacts, sales timeline — all in one place</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/customer" target="_blank">View in Desk →</a>
     </div>
   </div>
 </section>
@@ -801,16 +849,19 @@
       <div class="sc-name">Installations</div>
       <div class="sc-route">#/installations</div>
       <div class="sc-desc">Track equipment installations with status and customer details</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/maintenance-visit" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Breakdowns</div>
       <div class="sc-route">#/breakdowns</div>
       <div class="sc-desc">Log and track breakdown reports. Create new breakdown tickets</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/warranty-claim" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Devices</div>
       <div class="sc-route">#/devices</div>
       <div class="sc-desc">Equipment register — serial numbers, warranty, calibration dates</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/serial-no" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">AMC Tracker</div>
@@ -838,6 +889,7 @@
         <div class="step-title">Check In</div>
         <div class="step-desc">GPS-stamped attendance from home screen. One tap</div>
         <span class="step-screen">#/home</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -873,16 +925,19 @@
       <div class="sc-name">Attendance</div>
       <div class="sc-route">#/attendance</div>
       <div class="sc-desc">Today's check-in/out times, GPS location, working hours</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/employee-checkin" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Leave</div>
       <div class="sc-route">#/leave</div>
       <div class="sc-desc">Leave balance, history, apply for new leave</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/leave-application" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Expenses</div>
       <div class="sc-route">#/expense</div>
       <div class="sc-desc">Submit claims, track approval status, view history</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-claim" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">AI Chat</div>
@@ -948,6 +1003,7 @@
         <div class="step-title">Sales Orders</div>
         <div class="step-desc">View all orders. Create from submitted quotations</div>
         <span class="step-screen">#/sales-orders</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-order" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -955,6 +1011,7 @@
         <div class="step-title">Delivery Note</div>
         <div class="step-desc">Create DN from pending delivery SOs. Stock Manager role required</div>
         <span class="step-screen">#/delivery-notes/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -962,6 +1019,7 @@
         <div class="step-title">Sales Invoice</div>
         <div class="step-desc">Create invoice from DN or SO. Accounts Manager role required</div>
         <span class="step-screen">#/sales-invoices/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">Open in Desk →</a>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
@@ -969,6 +1027,7 @@
         <div class="step-title">Record Payment</div>
         <div class="step-desc">Record payment against unpaid invoices. Auto-submitted</div>
         <span class="step-screen">#/payments/new</span>
+        <a class="step-desk" href="https://dgoc.logstop.com/app/payment-entry" target="_blank">Open in Desk →</a>
       </div>
     </div>
   </div>
@@ -978,21 +1037,25 @@
       <div class="sc-name">Sales Targets</div>
       <div class="sc-route">#/sales-targets</div>
       <div class="sc-desc">Company-wide targets by product category vs actuals</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-target" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Budget</div>
       <div class="sc-route">#/budget</div>
       <div class="sc-desc">Expense budgets — personal + vertical view. Track vs caps</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Receivables</div>
       <div class="sc-route">#/debtors</div>
       <div class="sc-desc">Outstanding invoices, aging analysis, collection priority</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-invoice?outstanding_amount=%5B%22%3E%22%2C0%5D" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Revenue</div>
       <div class="sc-route">#/revenue</div>
       <div class="sc-desc">Revenue dashboard with trends and comparisons</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/sales-invoice" target="_blank">View in Desk →</a>
     </div>
   </div>
 
@@ -1022,21 +1085,43 @@
       <div class="sc-name">Budget Admin</div>
       <div class="sc-route">#/budget</div>
       <div class="sc-desc">All-vertical budget view. Set monthly caps per employee. Top spenders leaderboard</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/expense-budget" target="_blank">View in Desk →</a>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">DSPL Sales Workspace</div>
+      <div class="sc-route">Desk only</div>
+      <div class="sc-desc">Number cards, charts, pipeline — sales at a glance</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-sales" target="_blank">View in Desk →</a>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">DSPL Operations Workspace</div>
+      <div class="sc-route">Desk only</div>
+      <div class="sc-desc">Work orders, deliveries, service, team — operations dashboard</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-operations" target="_blank">View in Desk →</a>
+    </div>
+    <div class="screen-card">
+      <div class="sc-name">DSPL Finance Workspace</div>
+      <div class="sc-route">Desk only</div>
+      <div class="sc-desc">Unpaid/overdue invoices, collections, revenue charts</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-finance" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Workflows Guide</div>
       <div class="sc-route">/app/dspl-workflows</div>
       <div class="sc-desc">Interactive training page. Step-by-step tutorials for Sales, Field, HR, Operations</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/dspl-workflows" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Production</div>
       <div class="sc-route">#/production</div>
       <div class="sc-desc">Work orders, manufacturing progress, BOM tracking</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/work-order" target="_blank">View in Desk →</a>
     </div>
     <div class="screen-card">
       <div class="sc-name">Dispatch</div>
       <div class="sc-route">#/dispatch</div>
       <div class="sc-desc">Dispatch tracker — outbound shipments and delivery status</div>
+      <a class="sc-desk" href="https://dgoc.logstop.com/app/delivery-note" target="_blank">View in Desk →</a>
     </div>
   </div>
 </section>
