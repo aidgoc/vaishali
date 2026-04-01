@@ -15,7 +15,13 @@ def _get_client():
 
     if provider == "bedrock":
         region = frappe.conf.get("vaishali_bedrock_region") or "us-east-1"
-        return anthropic.AnthropicBedrock(aws_region=region)
+        kwargs = {"aws_region": region}
+        ak = frappe.conf.get("aws_access_key_id")
+        sk = frappe.conf.get("aws_secret_access_key")
+        if ak and sk:
+            kwargs["aws_access_key"] = ak
+            kwargs["aws_secret_key"] = sk
+        return anthropic.AnthropicBedrock(**kwargs)
 
     # Direct Anthropic API
     key = frappe.conf.get("anthropic_api_key") or ""
