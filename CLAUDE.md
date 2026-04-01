@@ -30,11 +30,11 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 38 screen modules, 61 routes, hash router, standalone PWA |
-| **Field API** | `@frappe.whitelist` in `api/field.py` | 42 endpoints with ownership/role checks |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 39 screen modules, 63 routes, hash router, standalone PWA |
+| **Field API** | `@frappe.whitelist` in `api/field.py` | 54 endpoints with ownership/role checks |
 | **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
-| **View Engine** | `views/registry.py` + `views/engine.py` | 14+ composable views, role-filtered, linked doc enrichment |
-| **AI Agent** | `agent/runner.py` (AsyncAnthropic) | Claude with 101 ERPNext tools, knows full ABP |
+| **View Engine** | `views/registry.py` + `views/engine.py` | 15 composable views, role-filtered, linked doc enrichment |
+| **AI Agent** | `agent/runner.py` (Bedrock) | Claude with 101 tools, persistent memory, slash commands, token tracking |
 | **FastAPI slim** | `~/dspl_erp/` on EC2 | Async AI chat + Telegram notifications |
 
 ## Company Context (CRITICAL)
@@ -191,13 +191,18 @@ Chat uses a special flex layout — sets `#app` to `display: flex; flex-directio
 ```
 vaishali/
 ├── api/
-│   ├── field.py          # 35 whitelist endpoints (with ownership/role checks)
+│   ├── field.py          # 54 whitelist endpoints (with ownership/role checks)
 │   ├── linking.py        # DCR-to-Sales auto-linking hooks + setup functions
 │   ├── views.py          # View Engine API
-│   └── chat.py           # AI chat endpoints
-├── agent/                 # AI agent (101 tools)
+│   └── chat.py           # AI chat v2 (6 endpoints: send, history, conversations, clear, usage, commands)
+├── agent/                 # AI agent v2 (101 tools)
+│   ├── runner.py          # Brain loop: DB storage, compaction, memory, commands, token tracking
+│   ├── executor.py        # Tool executor with submit/cancel hardening
+│   ├── tools.py           # 101 tool definitions (26 core + 73 extended in 12 categories)
+│   ├── commands.py        # 6 slash commands (/pipeline, /follow-up, /report, /dcr, /customer, /quotation)
+│   └── prompt.py          # System prompt with memory injection
 ├── views/
-│   ├── registry.py        # 14+ view definitions
+│   ├── registry.py        # 15 view definitions
 │   └── engine.py          # Role-filtered fetcher + linked doc enrichment
 ├── public/
 │   ├── css/
@@ -207,7 +212,7 @@ vaishali/
 │   │   ├── lead.js        # Lead age indicator, Convert to Customer, auto lead_name
 │   │   └── customer.js    # Lifetime value, outstanding amount indicators
 │   └── field/
-│       ├── app.js             # Router (49 routes), transitions, PTR, edge-swipe, splash
+│       ├── app.js             # Router (63 routes), transitions, PTR, edge-swipe, splash
 │       ├── ui.js              # 34 components with ARIA accessibility
 │       ├── api.js             # API path translation + IDB caching
 │       ├── auth.js            # Session, roles, nav tiers
@@ -215,7 +220,7 @@ vaishali/
 │       ├── icons.js           # SVG sprites (aria-hidden)
 │       ├── sw.js              # Service worker v25 (stale-while-revalidate, ignoreSearch)
 │       ├── manifest.json      # PWA manifest (standalone, scope: /)
-│   └── screens/           # 33 screen modules
+│   └── screens/           # 39 screen modules
 │       ├── home.js        # KPI row + action cards + tabbed department nav
 │       ├── attendance.js  # GPS "Location captured" + check-in/check-out
 │       ├── visits.js      # DCR with department-aware form + outcome bottom sheet on checkout
@@ -239,6 +244,12 @@ vaishali/
 ├── setup_workspace.py     # Creates Number Cards, Charts, updates DSPL Sales/Operations workspaces
 ├── hooks.py               # Doc events (DCR/Quotation/SO/Customer linking + Leave/Expense/Advance notifications), fixtures, website routes, app_include_css, doctype_js
 ├── notifications.py       # Telegram notification handlers
+├── vaishali/              # Module doctypes
+│   └── doctype/
+│       ├── expense_budget/        # Monthly expense caps per vertical
+│       ├── sales_target/          # Sales targets per employee/product
+│       ├── vaishali_chat_log/     # AI chat persistence (user, conversation_id, role, content, tokens, cost)
+│       └── vaishali_memory/       # Cross-session AI memory (user, key, content, source, last_used)
 ├── fixtures/
 │   └── custom_field.json  # telegram_chat_id on Employee
 └── www/
@@ -446,18 +457,56 @@ When a field rep creates a follow-up visit (purpose contains "Follow-up") and se
 ### DSPL Sales Workspace
 Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won
 
-## AI (Vaishali) Configuration
+## AI (Vaishali) Configuration — v2
 
 - **Provider:** AWS Bedrock (`AnthropicBedrock` client) — configurable via `vaishali_provider` in site_config
 - **Model:** `us.anthropic.claude-sonnet-4-6` (cross-region inference profile)
 - **Auth:** AWS access keys in site_config (`aws_access_key_id`, `aws_secret_access_key`) — EC2 has no IAM role
 - **Fallback:** Set `vaishali_provider=direct` + `anthropic_api_key` to use Anthropic API directly
-- **Max tool rounds:** 6 (configurable `_MAX_ITERATIONS`)
+- **Max tool rounds:** 10 (configurable `_MAX_ITERATIONS`)
 - **Max tokens per chat:** 16,000 budget
+- **Monthly token budget:** 2M tokens (configurable `vaishali_monthly_token_budget` in site_config)
 - **Browser timeout:** 120s (chat.js)
 - **nginx timeout:** 300s
-- **System prompt:** Includes full ABP (products, targets, CBIs, KSFs, ICP, vision, mission)
-- **Tools:** search_records, get_record, get_count, create_record, update_record, get_view (101 total, dynamic loading)
+- **System prompt:** Includes full ABP + user memories from previous conversations
+- **Tools:** 101 total (26 core always-loaded + 73 extended via discover_tools), 12 categories
+
+### v2 Features (2026-04-01)
+- **Persistent Chat Storage:** `Vaishali Chat Log` DocType replaces Redis cache. Conversations survive restarts, full audit trail with token/cost tracking per message
+- **Context Compaction:** LLM-based conversation summary when history exceeds 80% of token budget. Keeps last 6 messages intact, summarizes older ones
+- **Persistent Memory:** `Vaishali Memory` DocType for cross-session knowledge. `save_memory`/`get_memories` tools. Agent auto-remembers user preferences
+- **Slash Commands:** 6 commands (`/pipeline`, `/follow-up`, `/report`, `/dcr`, `/customer`, `/quotation`) with restricted tool sets for faster execution. Autocomplete in Desk widget + PWA
+- **Token Tracking:** input/output tokens + USD cost tracked per message. Monthly budget enforcement with warn at 80%, block at 100%
+- **Conversation Management:** New conversation button, conversation ID tracking, `get_conversations()` list API, per-conversation clear
+
+### Submit/Cancel Hardening
+- `submit_document`: Checks `is_submittable`, `docstatus==0`, ERPNext role permissions (defense-in-depth)
+- `cancel_document`: Checks `is_submittable`, `docstatus==1`
+- `delete_document`: Admin-only role gate
+- `amend_bom`: Manager/Admin-only role gate
+
+### Role-Based Tool Access
+| Role | Tools | Restrictions |
+|------|-------|-------------|
+| user (field) | 23 | No cancel, no delete, no amend. ERPNext submit permissions enforced |
+| manager | 25 | No delete. Has cancel + amend |
+| admin | 26 | Full access |
+| blocked | 0 | No tools |
+
+### New Files (v2)
+- `vaishali/agent/commands.py` — Slash command registry (6 commands)
+- `vaishali/vaishali/doctype/vaishali_chat_log/` — Chat persistence DocType (16 fields, indexed)
+- `vaishali/vaishali/doctype/vaishali_memory/` — Cross-session memory DocType (7 fields)
+
+### API Endpoints (v2)
+| Endpoint | Purpose |
+|----------|---------|
+| `vaishali.api.chat.send_message` | Send message with optional conversation_id |
+| `vaishali.api.chat.get_history` | Load conversation history from DB |
+| `vaishali.api.chat.get_conversations` | List recent conversations with previews |
+| `vaishali.api.chat.clear_history` | Clear per-conversation or all history |
+| `vaishali.api.chat.get_usage_stats` | Monthly token usage, cost, budget % |
+| `vaishali.api.chat.get_commands` | Slash command list for autocomplete |
 
 ## Conventions
 
