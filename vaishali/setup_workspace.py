@@ -214,7 +214,9 @@ def create_number_cards():
             "filters_json": json.dumps([
                 ["Sales Invoice", "docstatus", "=", 1],
                 ["Sales Invoice", "outstanding_amount", ">", 0],
-                ["Sales Invoice", "due_date", "<", "today"],
+            ]),
+            "dynamic_filters_json": json.dumps([
+                ["Sales Invoice", "due_date", "<", "frappe.datetime.nowdate()"],
             ]),
             "color": "#EF4444",
             "show_percentage_stats": 1,
@@ -318,7 +320,20 @@ def create_number_cards():
             doc.insert(ignore_permissions=True)
             print(f"  Created number card: {card['label']}")
         else:
-            print(f"  Exists: {card['label']}")
+            # Update filters if they changed
+            doc = frappe.get_doc("Number Card", card["label"])
+            changed = False
+            if doc.filters_json != card.get("filters_json", "[]"):
+                doc.filters_json = card.get("filters_json", "[]")
+                changed = True
+            if card.get("dynamic_filters_json") and doc.dynamic_filters_json != card["dynamic_filters_json"]:
+                doc.dynamic_filters_json = card["dynamic_filters_json"]
+                changed = True
+            if changed:
+                doc.save(ignore_permissions=True)
+                print(f"  Updated number card: {card['label']}")
+            else:
+                print(f"  Exists: {card['label']}")
 
 
 # ---------------------------------------------------------------------------
