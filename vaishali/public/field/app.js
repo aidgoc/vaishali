@@ -179,8 +179,8 @@
     { pattern: '#/breakdown/:id',    handler: function (p) { S().breakdownDetail(appEl, p); },    tab: 'home', title: 'Breakdown',     back: '#/breakdowns' },
 
     // Devices
-    { pattern: '#/devices/:id', handler: function (p) { S().deviceDetail(appEl, p); }, tab: 'home', title: 'Devices', back: '#/devices' },
-    { pattern: '#/devices', handler: function () { S().deviceList(appEl); }, tab: 'home', title: 'Devices', back: '#/home' },
+    { pattern: '#/devices/:id', handler: function (p) { S().devicesDetail(appEl, p); }, tab: 'home', title: 'Devices', back: '#/devices' },
+    { pattern: '#/devices', handler: function () { S().devicesList(appEl); }, tab: 'home', title: 'Devices', back: '#/home' },
 
     // Production
     { pattern: '#/production', handler: function () { S().productionDashboard(appEl); }, tab: 'home', title: 'Production', back: '#/home' },

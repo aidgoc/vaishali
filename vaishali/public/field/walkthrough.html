@@ -409,6 +409,191 @@
   </div>
 </div>
 
+<!-- ══════════════════════ ORDER TO CASH ══════════════════════ -->
+<section class="role-section" style="border-bottom: 2px solid var(--red); padding-bottom: 56px;">
+  <div class="role-header">
+    <div class="role-icon" style="background: rgba(22,163,74,0.1); color: var(--green);">💰</div>
+    <div>
+      <div class="role-title">Order to Cash: Full Lifecycle<span class="tag-new">new</span></div>
+      <div class="role-subtitle">End-to-end flow from Sales Order to Payment collection</div>
+    </div>
+  </div>
+
+  <!-- Main lifecycle chain -->
+  <div class="link-diagram">
+    <h3>8-Stage Lifecycle</h3>
+    <div class="link-chain">
+      <div class="link-node order">
+        <div class="ln-type">Sales</div>
+        <div class="ln-name">Sales Order</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">manufacture</span>
+        →
+      </div>
+      <div class="link-node" style="background: #FEF3C7; color: #92400E;">
+        <div class="ln-type">Production</div>
+        <div class="ln-name">Work Order</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">track</span>
+        →
+      </div>
+      <div class="link-node" style="background: #F3E8FF; color: #6B21A8;">
+        <div class="ln-type">Dashboard</div>
+        <div class="ln-name">Production</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">dispatch</span>
+        →
+      </div>
+      <div class="link-node dn">
+        <div class="ln-type">Stock</div>
+        <div class="ln-name">Delivery Note</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">install</span>
+        →
+      </div>
+      <div class="link-node" style="background: #DBEAFE; color: #1E40AF;">
+        <div class="ln-type">Service</div>
+        <div class="ln-name">Installation</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">sign-off</span>
+        →
+      </div>
+      <div class="link-node" style="background: #E0F2FE; color: #0369A1;">
+        <div class="ln-type">Service</div>
+        <div class="ln-name">Complete</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">invoice</span>
+        →
+      </div>
+      <div class="link-node inv">
+        <div class="ln-type">Accounts</div>
+        <div class="ln-name">Sales Invoice</div>
+      </div>
+      <div class="link-arrow">
+        <span class="la-label">collect</span>
+        →
+      </div>
+      <div class="link-node pay">
+        <div class="ln-type">Accounts</div>
+        <div class="ln-name">Payment</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 1: Manufacturing Handoff -->
+  <div class="journey">
+    <div class="journey-label">Stage 1 — Manufacturing handoff<span class="tag-new">new</span></div>
+    <div class="flow green">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Sales Order</div>
+        <div class="step-desc">Created from submitted Quotation. Sales rep or manager creates in PWA</div>
+        <span class="step-screen">#/sales-orders/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Production Dashboard</div>
+        <div class="step-desc">Shows pending orders count, work orders, stock items, draft BOMs</div>
+        <span class="step-screen">#/production</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Work Order</div>
+        <div class="step-desc">Created from SO in ERPNext Desk. Triggers BOM-based manufacturing</div>
+        <span class="step-screen">Desk only</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Dispatch</div>
+        <div class="step-desc">Track pending deliveries and recent shipments. Create DN from SO</div>
+        <span class="step-screen">#/dispatch</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2: Service & Installation -->
+  <div class="journey">
+    <div class="journey-label">Stage 2 — Service and installation<span class="tag-new">new</span></div>
+    <div class="flow orange">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Service Dashboard</div>
+        <div class="step-desc">Overview: open breakdowns, pending installs, visits today, completed</div>
+        <span class="step-screen">#/service</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Installations</div>
+        <div class="step-desc">Track Maintenance Visits — Pending, Scheduled, Completed tabs</div>
+        <span class="step-screen">#/installations</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Breakdowns</div>
+        <div class="step-desc">Log warranty claims, track open breakdowns. Create new tickets</div>
+        <span class="step-screen">#/breakdowns</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Devices</div>
+        <div class="step-desc">Equipment register — serial numbers, warranty status, calibration dates</div>
+        <span class="step-screen">#/devices</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3: Billing & Recovery -->
+  <div class="journey">
+    <div class="journey-label">Stage 3 — Billing and recovery<span class="tag-new">new</span></div>
+    <div class="flow red">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Sales Invoice</div>
+        <div class="step-desc">Create from DN or SO. All/Draft/Unpaid tabs. Accounts Manager role</div>
+        <span class="step-screen">#/sales-invoices</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Receivables</div>
+        <div class="step-desc">Outstanding amount, overdue count, aging analysis. Collection priority</div>
+        <span class="step-screen">#/debtors</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Record Payment</div>
+        <div class="step-desc">Pick unpaid invoice, enter amount. Auto-submits Payment Entry</div>
+        <span class="step-screen">#/payments/new</span>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-title">Revenue</div>
+        <div class="step-desc">Total invoiced, collected, outstanding, collection rate. Monthly trend</div>
+        <span class="step-screen">#/revenue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-icon">🏭</span>
+    <span><strong>Who does what:</strong> Sales reps create SOs from quotations. Operations creates Work Orders in Desk. Stock Managers handle Delivery Notes. Service engineers track installations and breakdowns. Accounts Managers create invoices and record payments. The Revenue and Receivables dashboards give managers full visibility.</span>
+  </div>
+</section>
+
 <!-- ══════════════════════ SALES REP ══════════════════════ -->
 <section class="role-section">
   <div class="role-header">
@@ -860,8 +1045,8 @@
 
 <div class="footer">
   <strong>DSPL Field PWA</strong> &bull; Dynamic Servitech Private Limited<br>
-  Built with Vaishali on Frappe/ERPNext &bull; 58 routes &bull; 37 screen modules<br>
-  <span style="color: var(--ink3); font-size: 12px;">Generated 31 Mar 2026</span>
+  Built with Vaishali on Frappe/ERPNext &bull; 61 routes &bull; 38 screen modules<br>
+  <span style="color: var(--ink3); font-size: 12px;">Updated 1 Apr 2026 — Order-to-Cash lifecycle added</span>
 </div>
 
 </body>
