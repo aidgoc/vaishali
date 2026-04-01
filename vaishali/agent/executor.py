@@ -38,6 +38,12 @@ def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name
                 return json.dumps({"error": "Delete requires admin role"})
             return _delete_document(tool_input)
 
+        # ── BOM Amendment ──
+        elif tool_name == "amend_bom":
+            if user_role not in ("admin", "manager"):
+                return json.dumps({"error": "Amend BOM requires manager or admin role"})
+            return _amend_bom(tool_input)
+
         # ── View Engine ──
         elif tool_name == "query_view":
             from vaishali.views.engine import fetch_view
@@ -201,6 +207,51 @@ def _mark_attendance(inp, employee_id):
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return json.dumps({"success": True, "name": doc.name, "log_type": log_type})
+
+
+def _amend_bom(inp):
+    """Amend a submitted BOM: cancel → create amended copy → apply changes → submit."""
+    bom_name = inp.get("name", "")
+    changes = inp.get("changes", {})
+
+    doc = frappe.get_doc("BOM", bom_name)
+    if doc.docstatus != 1:
+        return json.dumps({"error": f"BOM {bom_name} is not submitted (docstatus={doc.docstatus}). Only submitted BOMs can be amended."})
+
+    # Step 1: Cancel the existing BOM
+    doc.cancel()
+    frappe.db.commit()
+
+    # Step 2: Create amended copy via ERPNext's amend pattern
+    new_doc = frappe.copy_doc(doc)
+    new_doc.amended_from = bom_name
+    new_doc.docstatus = 0
+
+    # Step 3: Apply item-level changes (rate, qty updates)
+    item_changes = changes.get("items", {})
+    for row in new_doc.items:
+        item_key = row.item_code
+        if item_key in item_changes:
+            for field, value in item_changes[item_key].items():
+                row.set(field, value)
+
+    # Apply top-level field changes
+    for field, value in changes.items():
+        if field != "items":
+            new_doc.set(field, value)
+
+    # Step 4: Save and submit the amended BOM
+    new_doc.insert(ignore_permissions=True)
+    new_doc.submit()
+    frappe.db.commit()
+
+    return json.dumps({
+        "success": True,
+        "old_bom": bom_name,
+        "new_bom": new_doc.name,
+        "status": "submitted",
+        "message": f"BOM amended: {bom_name} cancelled → {new_doc.name} submitted"
+    })
 
 
 def _daily_summary(employee_id, employee_name):

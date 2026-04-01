@@ -321,7 +321,7 @@ for _cat in TOOL_CATEGORIES.values():
 CORE_TOOL_NAMES = {
     "search_records", "get_document", "get_count", "search_link",
     "get_report", "business_dashboard",
-    "update_document", "submit_document", "cancel_document", "delete_document",
+    "update_document", "submit_document", "cancel_document", "delete_document", "amend_bom",
     "erp_attach", "semantic_search", "get_print_pdf",
     "get_system_settings",
     "discover_tools",  # meta-tool for loading extended tools
@@ -1868,6 +1868,39 @@ TOOLS = [
                 "name": {"type": "string"},
             },
             "required": ["doctype", "name"],
+        },
+    },
+    # ── BOM Amendment ──
+    {
+        "name": "amend_bom",
+        "description": (
+            "Amend a submitted BOM in one step: cancels the existing BOM, creates an amended copy "
+            "with the requested changes, and submits the new version. Manager/Admin only.\n\n"
+            "Use this when a user wants to change rates, quantities, or items in an active BOM.\n\n"
+            "Example — change rate of item BKA01001 to 150:\n"
+            "{\"name\": \"BOM-BKC01004-001\", \"changes\": {\"items\": {\"BKA01001\": {\"rate\": 150}}}}\n\n"
+            "Example — change quantity of item BKA02003 to 5:\n"
+            "{\"name\": \"BOM-BKC01004-001\", \"changes\": {\"items\": {\"BKA02003\": {\"qty\": 5}}}}\n\n"
+            "Example — update a top-level field like quantity:\n"
+            "{\"name\": \"BOM-BKC01004-001\", \"changes\": {\"quantity\": 10}}"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "The submitted BOM name to amend (e.g. BOM-BKC01004-001)"},
+                "changes": {
+                    "type": "object",
+                    "description": "Changes to apply. Use 'items' key with item_code → {field: value} for item-level changes. Use top-level keys for BOM header fields.",
+                    "properties": {
+                        "items": {
+                            "type": "object",
+                            "description": "Item-level changes keyed by item_code. E.g. {\"BKA01001\": {\"rate\": 150, \"qty\": 3}}",
+                        },
+                        "quantity": {"type": "number", "description": "BOM quantity"},
+                    },
+                },
+            },
+            "required": ["name", "changes"],
         },
     },
     # ── Media & Search ──
