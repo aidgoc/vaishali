@@ -1,4 +1,4 @@
-/* vaishali_chat.js — Floating Vaishali AI chat widget for Desk */
+/* vaishali_chat.js — Floating Vaishali AI chat widget for Desk (v2) */
 (function () {
   'use strict';
 
@@ -50,11 +50,22 @@
       '.vc-suggestions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 0}',
       '.vc-chip{background:#F3F3F3;border:none;border-radius:9999px;padding:6px 12px;font-size:12px;color:#1C1C1E;cursor:pointer;transition:background .15s}',
       '.vc-chip:hover{background:#E8E8E8}',
-      '.vc-input-area{display:flex;align-items:flex-end;gap:8px;padding:12px 16px;border-top:1px solid rgba(0,0,0,.06);flex-shrink:0}',
+      '.vc-working{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:11.5px;color:#636366;background:#FAFAFA;border-top:1px solid rgba(0,0,0,.04)}',
+      '.vc-working-dot{width:6px;height:6px;border-radius:50%;background:#E60005;animation:vc-pulse 1s ease-in-out infinite}',
+      '@keyframes vc-pulse{0%,100%{opacity:1}50%{opacity:.3}}',
+      '.vc-field-highlight{animation:vc-flash 1.5s ease-out}',
+      '@keyframes vc-flash{0%{background:rgba(250,204,21,.4)}100%{background:transparent}}',
+      '.vc-input-area{display:flex;align-items:flex-end;gap:8px;padding:12px 16px;border-top:1px solid rgba(0,0,0,.06);flex-shrink:0;position:relative}',
       '.vc-input{flex:1;border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:8px 12px;font-size:13.5px;resize:none;height:40px;max-height:100px;outline:none;font-family:inherit;line-height:1.4}',
       '.vc-input:focus{border-color:#E60005;box-shadow:0 0 0 2px rgba(230,0,5,.08)}',
       '.vc-send-btn{width:36px;height:36px;border-radius:50%;background:#E60005;color:#fff;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
       '.vc-send-btn:hover{background:#B80004}',
+      '.vc-token-count{font-size:10px;color:#9CA3AF;text-align:right;padding:0 16px 4px}',
+      '.vc-cmd-menu{position:absolute;bottom:100%;left:16px;right:16px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:180px;overflow-y:auto;display:none}',
+      '.vc-cmd-item{padding:8px 12px;cursor:pointer;display:flex;flex-direction:column;gap:1px}',
+      '.vc-cmd-item:hover{background:#F5F5F5}',
+      '.vc-cmd-name{font-size:13px;font-weight:600;color:#E60005}',
+      '.vc-cmd-desc{font-size:11px;color:#636366}',
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -67,11 +78,17 @@
   var _container = null;
   var _msgArea = null;
   var _input = null;
+  var _conversationId = null;
+  var _commands = null;
+  var _cmdMenu = null;
+  var _tokenDisplay = null;
 
   // ─── Markdown renderer (XSS-safe: escape first, then format) ──
   function renderMarkdown(text) {
     if (!text) return '';
+    // Step 1: HTML-escape all user content to prevent XSS
     var s = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Step 2: Apply markdown formatting on the now-safe escaped string
     s = s.replace(/```(\w*)\n([\s\S]*?)```/g, function (_, lang, code) {
       return '<pre class="vc-code-block"><code>' + code.trim() + '</code></pre>';
     });
@@ -101,24 +118,23 @@
   }
 
   // Safely set markdown-rendered content on an element.
-  // renderMarkdown() HTML-escapes all input before applying transforms,
-  // so the resulting HTML contains only our own formatting tags.
+  // renderMarkdown() HTML-escapes ALL input before applying transforms,
+  // so the resulting HTML contains only our own safe formatting tags.
   function setMarkdownHTML(el, text) {
-    el.innerHTML = renderMarkdown(text); // nosec: input is HTML-escaped before markdown transform
+    var safeHTML = renderMarkdown(text);
+    el.innerHTML = safeHTML; // nosec: input is HTML-escaped before markdown transform
   }
 
   // ─── Build widget DOM ────────────────────────────────────────
   function buildWidget() {
     injectStyles();
 
-    // FAB button
     var fab = h('button', 'vc-fab');
     fab.textContent = 'V';
     fab.title = 'Vaishali AI';
     fab.setAttribute('aria-label', 'Open Vaishali AI chat');
     fab.addEventListener('click', togglePanel);
 
-    // Panel
     var panel = h('div', 'vc-panel');
     panel.style.display = 'none';
     panel.setAttribute('role', 'dialog');
@@ -136,6 +152,10 @@
     header.appendChild(titleWrap);
 
     var actions = h('div', 'vc-header-actions');
+    var newBtn = h('button', 'vc-header-btn', { title: 'New conversation' });
+    newBtn.textContent = '+';
+    newBtn.addEventListener('click', newConversation);
+    actions.appendChild(newBtn);
     var clearBtn = h('button', 'vc-header-btn', { title: 'Clear conversation' });
     clearBtn.textContent = '\u2715';
     clearBtn.addEventListener('click', clearChat);
@@ -147,20 +167,25 @@
     header.appendChild(actions);
     panel.appendChild(header);
 
-    // Messages area
     _msgArea = h('div', 'vc-messages');
     panel.appendChild(_msgArea);
 
-    // Input area
+    _tokenDisplay = h('div', 'vc-token-count');
+    panel.appendChild(_tokenDisplay);
+
     var inputArea = h('div', 'vc-input-area');
-    _input = h('textarea', 'vc-input', { placeholder: 'Ask Vaishali...', rows: '1' });
+    _cmdMenu = h('div', 'vc-cmd-menu');
+    inputArea.appendChild(_cmdMenu);
+
+    _input = h('textarea', 'vc-input', { placeholder: 'Ask Vaishali... (type / for commands)', rows: '1' });
     _input.addEventListener('input', function () {
       this.style.height = '40px';
       this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+      handleSlashInput(this.value);
     });
     _input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-      if (e.key === 'Escape') togglePanel();
+      if (e.key === 'Escape') { hideCmdMenu(); togglePanel(); }
     });
     inputArea.appendChild(_input);
     var sendBtn = h('button', 'vc-send-btn');
@@ -169,11 +194,54 @@
     inputArea.appendChild(sendBtn);
     panel.appendChild(inputArea);
 
-    // Container
     _container = h('div', 'vc-widget');
     _container.appendChild(fab);
     _container.appendChild(panel);
     document.body.appendChild(_container);
+  }
+
+  // ─── Slash command autocomplete ──────────────────────────────
+  function loadCommands() {
+    if (_commands) return;
+    frappe.xcall('vaishali.api.chat.get_commands').then(function (r) {
+      _commands = (r && r.commands) || [];
+    }).catch(function () { _commands = []; });
+  }
+
+  function handleSlashInput(value) {
+    if (!_commands || !value.startsWith('/')) {
+      hideCmdMenu();
+      return;
+    }
+    var query = value.toLowerCase();
+    var matches = _commands.filter(function (c) {
+      return c.name.indexOf(query) === 0;
+    });
+    if (matches.length === 0) {
+      hideCmdMenu();
+      return;
+    }
+    _cmdMenu.textContent = '';
+    matches.forEach(function (cmd) {
+      var item = h('div', 'vc-cmd-item');
+      var name = h('div', 'vc-cmd-name');
+      name.textContent = cmd.name;
+      item.appendChild(name);
+      var desc = h('div', 'vc-cmd-desc');
+      desc.textContent = cmd.description;
+      item.appendChild(desc);
+      item.addEventListener('click', function () {
+        _input.value = cmd.name + ' ';
+        _input.focus();
+        hideCmdMenu();
+      });
+      _cmdMenu.appendChild(item);
+    });
+    _cmdMenu.style.display = 'block';
+  }
+
+  function hideCmdMenu() {
+    if (_cmdMenu) _cmdMenu.style.display = 'none';
   }
 
   // ─── Toggle ──────────────────────────────────────────────────
@@ -185,6 +253,7 @@
     fab.style.display = _open ? 'none' : 'flex';
     if (_open) {
       if (!_historyLoaded) loadHistory();
+      loadCommands();
       setTimeout(function () { if (_input) _input.focus(); }, 100);
     }
   }
@@ -205,7 +274,7 @@
       welcome.appendChild(sub);
       _msgArea.appendChild(welcome);
 
-      var suggestions = ['How many open leads?', 'Business dashboard', 'Pending sales orders'];
+      var suggestions = ['How many open leads?', '/pipeline', '/report monthly'];
       var chips = h('div', 'vc-suggestions');
       suggestions.forEach(function (text) {
         var chip = h('button', 'vc-chip');
@@ -272,13 +341,72 @@
     if (_msgArea) _msgArea.scrollTop = _msgArea.scrollHeight;
   }
 
+  // ─── Client action executor (live agent) ──────────────────
+  function executeClientActions(actions) {
+    if (!actions || !actions.length) return;
+    var panel = _container.querySelector('.vc-panel');
+
+    var bar = h('div', 'vc-working');
+    var dot = h('span', 'vc-working-dot');
+    bar.appendChild(dot);
+    var label = document.createElement('span');
+    label.textContent = 'Vaishali is working\u2026';
+    bar.appendChild(label);
+    panel.insertBefore(bar, panel.querySelector('.vc-input-area'));
+
+    var i = 0;
+    function next() {
+      if (i >= actions.length) {
+        bar.remove();
+        scrollBottom();
+        return;
+      }
+      var act = actions[i++];
+      var delay = act.delay || 400;
+
+      if (act.type === 'navigate') {
+        var route = act.route || '';
+        if (route.indexOf('/app/') === 0) route = route.substring(5);
+        frappe.set_route(route);
+        setTimeout(next, delay + 300);
+      } else if (act.type === 'set_value') {
+        if (window.cur_frm) {
+          cur_frm.set_value(act.field, act.value);
+          highlightField(act.field);
+        }
+        setTimeout(next, delay);
+      } else if (act.type === 'highlight') {
+        highlightField(act.field);
+        setTimeout(next, delay);
+      } else if (act.type === 'scroll_to') {
+        if (window.cur_frm) cur_frm.scroll_to_field(act.field);
+        setTimeout(next, delay);
+      } else if (act.type === 'notify') {
+        frappe.show_alert({ message: act.message, indicator: act.variant || 'blue' }, 5);
+        setTimeout(next, delay);
+      } else {
+        setTimeout(next, delay);
+      }
+    }
+    setTimeout(next, 600);
+  }
+
+  function highlightField(fieldname) {
+    if (!window.cur_frm) return;
+    var field = cur_frm.fields_dict[fieldname];
+    if (!field || !field.$wrapper) return;
+    var el = field.$wrapper[0] || field.$wrapper;
+    el.classList.add('vc-field-highlight');
+    setTimeout(function () { el.classList.remove('vc-field-highlight'); }, 1500);
+  }
+
   // ─── API calls ───────────────────────────────────────────────
   function sendMessage() {
     if (_loading || !_input) return;
     var text = _input.value.trim();
     if (!text) return;
+    hideCmdMenu();
 
-    // Remove welcome
     var welcome = _msgArea.querySelector('.vc-welcome');
     if (welcome) welcome.remove();
     var sug = _msgArea.querySelector('.vc-suggestions');
@@ -294,16 +422,31 @@
     _msgArea.appendChild(typing);
     scrollBottom();
 
-    frappe.xcall('vaishali.api.chat.send_message', { message: text })
+    var args = { message: text };
+    if (_conversationId) args.conversation_id = _conversationId;
+
+    frappe.xcall('vaishali.api.chat.send_message', args)
       .then(function (result) {
         typing.remove();
         _loading = false;
+
+        if (result && result.conversation_id) {
+          _conversationId = result.conversation_id;
+        }
+
         var pills = makeToolPills(result && result.tool_calls);
         if (pills) _msgArea.appendChild(pills);
         var aiMsg = (result && result.response) || 'No response received.';
         _messages.push({ role: 'assistant', content: aiMsg });
         _msgArea.appendChild(makeBubble({ role: 'assistant', content: aiMsg }));
+
+        if (result && result.usage && _tokenDisplay) {
+          var total = (result.usage.input || 0) + (result.usage.output || 0);
+          _tokenDisplay.textContent = total.toLocaleString() + ' tokens';
+        }
+
         scrollBottom();
+        executeClientActions(result && result.client_actions);
       })
       .catch(function (err) {
         typing.remove();
@@ -322,6 +465,9 @@
         if (result && result.history && result.history.length) {
           _messages = result.history;
         }
+        if (result && result.conversation_id) {
+          _conversationId = result.conversation_id;
+        }
         renderMessages();
       })
       .catch(function () {
@@ -329,18 +475,28 @@
       });
   }
 
+  function newConversation() {
+    _messages = [];
+    _conversationId = null;
+    renderMessages();
+    if (_tokenDisplay) _tokenDisplay.textContent = '';
+  }
+
   function clearChat() {
     if (!confirm('Clear conversation history?')) return;
-    frappe.xcall('vaishali.api.chat.clear_history')
+    var args = {};
+    if (_conversationId) args.conversation_id = _conversationId;
+    frappe.xcall('vaishali.api.chat.clear_history', args)
       .then(function () {
         _messages = [];
+        _conversationId = null;
         renderMessages();
+        if (_tokenDisplay) _tokenDisplay.textContent = '';
       });
   }
 
   // ─── Init ────────────────────────────────────────────────────
   $(document).ready(function () {
-    // Skip on mobile (PWA available), on /field PWA, and for guests
     if (window.innerWidth < 768) return;
     if (window.location.pathname.indexOf('/field') === 0) return;
     if (!window.frappe || frappe.session.user === 'Guest') return;

@@ -1,0 +1,81 @@
+{
+  "actions": [],
+  "autoname": "hash",
+  "creation": "2026-04-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "user",
+    "key",
+    "column_break_1",
+    "source",
+    "last_used",
+    "section_break_content",
+    "content"
+  ],
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "User",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "key",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Key",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "source",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Source",
+      "options": "auto\nuser\nsystem",
+      "default": "auto"
+    },
+    {
+      "fieldname": "last_used",
+      "fieldtype": "Datetime",
+      "label": "Last Used"
+    },
+    {
+      "fieldname": "section_break_content",
+      "fieldtype": "Section Break",
+      "label": "Content"
+    },
+    {
+      "fieldname": "content",
+      "fieldtype": "Long Text",
+      "label": "Content",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-04-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "Vaishali Memory",
+  "naming_rule": "Random",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 0
+}

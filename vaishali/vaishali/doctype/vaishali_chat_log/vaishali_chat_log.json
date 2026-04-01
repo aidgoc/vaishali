@@ -1,0 +1,136 @@
+{
+  "actions": [],
+  "autoname": "hash",
+  "creation": "2026-04-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "user",
+    "employee",
+    "conversation_id",
+    "column_break_1",
+    "role",
+    "model",
+    "section_break_content",
+    "content",
+    "tool_calls",
+    "client_actions",
+    "section_break_tokens",
+    "input_tokens",
+    "output_tokens",
+    "column_break_2",
+    "estimated_cost",
+    "token_count"
+  ],
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "User",
+      "options": "User",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "label": "Employee",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "conversation_id",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Conversation ID",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "role",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Role",
+      "options": "user\nassistant\nsystem\ntool_result",
+      "reqd": 1
+    },
+    {
+      "fieldname": "model",
+      "fieldtype": "Data",
+      "label": "Model"
+    },
+    {
+      "fieldname": "section_break_content",
+      "fieldtype": "Section Break",
+      "label": "Content"
+    },
+    {
+      "fieldname": "content",
+      "fieldtype": "Long Text",
+      "label": "Content"
+    },
+    {
+      "fieldname": "tool_calls",
+      "fieldtype": "JSON",
+      "label": "Tool Calls"
+    },
+    {
+      "fieldname": "client_actions",
+      "fieldtype": "JSON",
+      "label": "Client Actions"
+    },
+    {
+      "fieldname": "section_break_tokens",
+      "fieldtype": "Section Break",
+      "label": "Token Usage"
+    },
+    {
+      "fieldname": "input_tokens",
+      "fieldtype": "Int",
+      "label": "Input Tokens"
+    },
+    {
+      "fieldname": "output_tokens",
+      "fieldtype": "Int",
+      "label": "Output Tokens"
+    },
+    {
+      "fieldname": "column_break_2",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "estimated_cost",
+      "fieldtype": "Currency",
+      "label": "Estimated Cost (USD)"
+    },
+    {
+      "fieldname": "token_count",
+      "fieldtype": "Int",
+      "label": "Total Tokens"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-04-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "Vaishali Chat Log",
+  "naming_rule": "Random",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "track_changes": 0
+}

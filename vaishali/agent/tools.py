@@ -330,6 +330,8 @@ CORE_TOOL_NAMES = {
     "submit_expense_for_employee", "request_advance_for_employee",
     "team_status", "my_daily_summary",
     "query_view",  # View Engine access
+    # Memory tools (always available)
+    "save_memory", "get_memories",
 }
 
 # The discover_tools meta-tool definition
@@ -2682,6 +2684,37 @@ TOOLS = [
             "required": ["view_name"],
         },
     },
+    # ── Memory Tools ──
+    {
+        "name": "save_memory",
+        "description": (
+            "Save a fact or preference for future conversations. Use when you learn something "
+            "about the user or their workflow that should persist across sessions.\n\n"
+            "Examples: preferred report format, key customer names, common queries, workflow preferences."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Topic identifier, e.g. 'preferred_format', 'key_customer_tata'",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The knowledge to remember for future conversations",
+                },
+            },
+            "required": ["key", "content"],
+        },
+    },
+    {
+        "name": "get_memories",
+        "description": "Retrieve all saved memories/preferences for the current user. Use to recall past context.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
 ]
 
 
@@ -4845,6 +4878,13 @@ def get_tools_for_role(role, categories=None):
                 names.update(TOOL_CATEGORIES[cat]["tools"])
         tools = [_TOOL_LOOKUP[n] for n in names if n in _TOOL_LOOKUP]
         return _filter_by_role(tools, role)
+
+
+def get_tools_by_name(names):
+    """Get specific tools by name. Used by slash commands for restricted tool sets."""
+    if not _TOOL_LOOKUP:
+        _build_tool_lookup()
+    return [_TOOL_LOOKUP[n] for n in names if n in _TOOL_LOOKUP]
 
 
 def get_all_tools_for_role(role):

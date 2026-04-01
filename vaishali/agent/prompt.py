@@ -19,6 +19,12 @@ You have FULL access to the company's ERPNext ERP system via tools. You are an e
 Before using any ERP name or code, search first. Do not invent or assume.
 
 Current user: **{employee_name}** (role: **{role}**)
+
+# MEMORY
+You have access to `save_memory` and `get_memories` tools. Use `save_memory` to persist useful facts about the user (preferences, key customers, common queries) that should survive across conversations. This is your cross-session knowledge store.
+
+# SLASH COMMANDS
+Users may type slash commands like /pipeline, /follow-up, /report, /dcr, /customer, /quotation. When you receive an expanded command prompt, focus on executing it efficiently with the available tools.
 """
 
     if erp_roles:

@@ -7,11 +7,35 @@ COMPANY = "Dynamic Servitech Private Limited"
 ABBR = "DSPL"
 
 
-def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name=""):
+def _doctype_to_route(doctype):
+    return doctype.lower().replace(" ", "-")
+
+
+def _add_action(action):
+    if not hasattr(frappe.local, "vaishali_actions"):
+        frappe.local.vaishali_actions = []
+    frappe.local.vaishali_actions.append(action)
+
+
+def get_pending_actions():
+    return getattr(frappe.local, "vaishali_actions", [])
+
+
+def clear_pending_actions():
+    frappe.local.vaishali_actions = []
+
+
+def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name="", user=None):
     """Execute a tool call. Returns JSON string."""
     try:
+        # ── Memory ──
+        if tool_name == "save_memory":
+            return _save_memory(tool_input, user or frappe.session.user)
+        elif tool_name == "get_memories":
+            return _get_memories(user or frappe.session.user)
+
         # ── Search & Read ──
-        if tool_name == "search_records":
+        elif tool_name == "search_records":
             return _search_records(tool_input)
         elif tool_name == "get_document":
             return _get_document(tool_input)
@@ -104,11 +128,17 @@ def _search_records(inp):
 
     data = frappe.get_list(doctype, filters=filters, fields=fields,
                            order_by=order_by, limit_page_length=limit)
+    if data:
+        if len(data) == 1:
+            _add_action({"type": "navigate", "route": "/app/" + _doctype_to_route(doctype) + "/" + str(data[0].get("name", ""))})
+        else:
+            _add_action({"type": "navigate", "route": "/app/" + _doctype_to_route(doctype)})
     return json.dumps(data, default=str)
 
 
 def _get_document(inp):
     doc = frappe.get_doc(inp["doctype"], inp["name"])
+    _add_action({"type": "navigate", "route": "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name})
     return json.dumps(doc.as_dict(), default=str)
 
 
@@ -174,6 +204,10 @@ def _update_document(inp):
         doc.set(key, value)
     doc.save()
     frappe.db.commit()
+    route = "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name
+    _add_action({"type": "navigate", "route": route})
+    for field in inp.get("values", {}):
+        _add_action({"type": "highlight", "field": field, "delay": 400})
     return json.dumps({"success": True, "name": doc.name})
 
 
@@ -181,6 +215,9 @@ def _submit_document(inp):
     doc = frappe.get_doc(inp["doctype"], inp["name"])
     doc.submit()
     frappe.db.commit()
+    route = "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name
+    _add_action({"type": "navigate", "route": route})
+    _add_action({"type": "notify", "message": inp["doctype"] + " " + doc.name + " submitted", "variant": "green"})
     return json.dumps({"success": True, "name": doc.name, "docstatus": 1})
 
 
@@ -269,3 +306,41 @@ def _daily_summary(employee_id, employee_name):
         "visits_today": visits,
         "checked_in": any(c.log_type == "IN" for c in checkins),
     }, default=str)
+
+
+# ── Memory Tools ─────────────────────────────────────────────────
+
+def _save_memory(inp, user):
+    """Save or update a persistent memory for the user."""
+    key = inp.get("key", "").strip()
+    content = inp.get("content", "").strip()
+    if not key or not content:
+        return json.dumps({"error": "Both key and content are required"})
+
+    from frappe.utils import now_datetime
+    existing = frappe.db.exists("Vaishali Memory", {"user": user, "key": key})
+    if existing:
+        doc = frappe.get_doc("Vaishali Memory", existing)
+        doc.content = content
+        doc.last_used = now_datetime()
+        doc.save(ignore_permissions=True)
+    else:
+        doc = frappe.new_doc("Vaishali Memory")
+        doc.user = user
+        doc.key = key
+        doc.content = content
+        doc.source = "auto"
+        doc.last_used = now_datetime()
+        doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return json.dumps({"success": True, "key": key, "action": "updated" if existing else "created"})
+
+
+def _get_memories(user):
+    """Get all memories for the user."""
+    memories = frappe.get_all("Vaishali Memory",
+        filters={"user": user},
+        fields=["key", "content", "source", "last_used"],
+        order_by="last_used desc",
+        limit_page_length=20)
+    return json.dumps(memories, default=str)

@@ -1,65 +1,55 @@
-/* chat.js — Vaishali AI chat screen for DSPL Org OS */
+/* chat.js — Vaishali AI chat screen for DSPL Org OS (v2) */
 (function () {
   'use strict';
 
   var api = window.fieldAPI;
   var el = UI.el;
 
-  // Chat API call — calls /api/ai/* directly (nginx proxies to FastAPI).
-  // Uses apiCall with extended timeout (120s) because Claude brain loop
-  // with tool calls can take 30-60 seconds for complex queries.
   function chatCall(method, path, body) {
     return api.apiCall(method, path, body, { timeout: 120000 });
   }
 
-  // ─── Session ID ─────────────────────────────────────────────────
-  // Persisted in localStorage so chat history survives page reloads.
-  var _SESSION_KEY = 'vaishali_chat_session_id';
-  var _sessionId = localStorage.getItem(_SESSION_KEY);
-  if (!_sessionId) {
-    _sessionId = api.generateId();
-    localStorage.setItem(_SESSION_KEY, _sessionId);
-  }
+  // ─── Conversation ID ─────────────────────────────────────────────
+  var _CONV_KEY = 'vaishali_conversation_id';
+  var _conversationId = localStorage.getItem(_CONV_KEY) || '';
 
   // ─── State ──────────────────────────────────────────────────────
-  var _messages = [];      // [{role, content}]
+  var _messages = [];
   var _isLoading = false;
   var _chatContainer = null;
   var _inputEl = null;
+  var _commands = null;
+  var _cmdMenu = null;
 
   // ─── Simple markdown renderer (HTML-escaped first for XSS safety) ──
+  // Security note: ALL input is HTML-entity-escaped in Step 1 before
+  // any markdown formatting tags are applied in Step 2. This ensures
+  // the resulting string only contains our own safe formatting tags
+  // (<strong>, <em>, <code>, <pre>, <li>, <ul>, <br>).
   function renderMarkdown(text) {
     if (!text) return '';
-    // Step 1: Escape all HTML entities to prevent XSS
+    // Step 1: HTML-escape all entities to prevent XSS
     var s = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // Step 2: Apply markdown formatting on the escaped string
-    // Code blocks (```...```)
+    // Step 2: Apply markdown formatting on the now-safe string
     s = s.replace(/```(\w*)\n([\s\S]*?)```/g, function (_, lang, code) {
       return '<pre class="chat-code-block"><code>' + code.trim() + '</code></pre>';
     });
-    // Inline code
     s = s.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>');
-    // Bold
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    // Italic
     s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    // Headers
     s = s.replace(/^### (.+)$/gm, '<strong style="font-size:1em">$1</strong>');
     s = s.replace(/^## (.+)$/gm, '<strong style="font-size:1.05em">$1</strong>');
     s = s.replace(/^# (.+)$/gm, '<strong style="font-size:1.1em">$1</strong>');
-    // Unordered lists
     s = s.replace(/^- (.+)$/gm, '<li>$1</li>');
     s = s.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul class="chat-list">$1</ul>');
-    // Line breaks (outside of pre blocks)
     s = s.replace(/\n/g, '<br>');
     return s;
   }
 
-  // Safely set rendered markdown on an element.
-  // Input is always HTML-escaped first in renderMarkdown(), so this is safe.
+  // Set pre-escaped markdown-rendered content on an element.
   function setMarkdownContent(element, text) {
-    var rendered = renderMarkdown(text);
-    element.innerHTML = rendered;  // nosec: input is HTML-escaped before markdown transform
+    var safeHTML = renderMarkdown(text);
+    element.innerHTML = safeHTML;  // safe: input HTML-escaped before markdown transform
   }
 
   // ─── Message bubble ─────────────────────────────────────────────
@@ -68,7 +58,6 @@
     var wrapper = el('div', { className: 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-ai') });
 
     if (!isUser) {
-      // AI avatar
       var avatar = el('div', { className: 'chat-avatar' });
       avatar.textContent = 'V';
       wrapper.appendChild(avatar);
@@ -84,7 +73,6 @@
     return wrapper;
   }
 
-  // ─── Typing indicator ──────────────────────────────────────────
   function typingIndicator() {
     var wrapper = el('div', { className: 'chat-msg chat-msg-ai', id: 'chat-typing' });
     var avatar = el('div', { className: 'chat-avatar' });
@@ -99,7 +87,6 @@
     return wrapper;
   }
 
-  // ─── Tool call pill ────────────────────────────────────────────
   function toolCallPills(toolCalls) {
     if (!toolCalls || toolCalls.length === 0) return null;
     var container = el('div', { className: 'chat-tools' });
@@ -117,11 +104,50 @@
     return container;
   }
 
-  // ─── Scroll to bottom ──────────────────────────────────────────
   function scrollToBottom() {
     if (_chatContainer) {
       _chatContainer.scrollTop = _chatContainer.scrollHeight;
     }
+  }
+
+  // ─── Slash command autocomplete ──────────────────────────────────
+  function loadCommands() {
+    if (_commands) return Promise.resolve();
+    return api.apiCall('GET', '/api/method/vaishali.api.chat.get_commands').then(function (resp) {
+      _commands = (resp.data && resp.data.message && resp.data.message.commands) || [];
+    }).catch(function () { _commands = []; });
+  }
+
+  function handleSlashInput(value) {
+    if (!_commands || !_cmdMenu || !value.startsWith('/')) {
+      hideCmdMenu();
+      return;
+    }
+    var query = value.toLowerCase();
+    var matches = _commands.filter(function (c) { return c.name.indexOf(query) === 0; });
+    if (matches.length === 0) { hideCmdMenu(); return; }
+
+    _cmdMenu.textContent = '';
+    matches.forEach(function (cmd) {
+      var item = el('div', { className: 'chat-cmd-item', style: 'padding:8px 12px;cursor:pointer' });
+      var name = el('div', { style: 'font-size:13px;font-weight:600;color:#E60005' });
+      name.textContent = cmd.name;
+      item.appendChild(name);
+      var desc = el('div', { style: 'font-size:11px;color:#636366' });
+      desc.textContent = cmd.description;
+      item.appendChild(desc);
+      item.addEventListener('click', function () {
+        _inputEl.value = cmd.name + ' ';
+        _inputEl.focus();
+        hideCmdMenu();
+      });
+      _cmdMenu.appendChild(item);
+    });
+    _cmdMenu.style.display = 'block';
+  }
+
+  function hideCmdMenu() {
+    if (_cmdMenu) _cmdMenu.style.display = 'none';
   }
 
   // ─── Send message ──────────────────────────────────────────────
@@ -129,29 +155,28 @@
     if (_isLoading || !_inputEl) return;
     var text = _inputEl.value.trim();
     if (!text) return;
+    hideCmdMenu();
 
-    // Remove welcome if present
     var welcome = _chatContainer.querySelector('.chat-welcome');
     if (welcome) welcome.remove();
     var suggestions = _chatContainer.querySelector('.chat-suggestions');
     if (suggestions) suggestions.remove();
 
-    // Add user message
     _messages.push({ role: 'user', content: text });
     _chatContainer.appendChild(messageBubble({ role: 'user', content: text }));
     _inputEl.value = '';
     _inputEl.style.height = '44px';
 
-    // Show typing
     _isLoading = true;
     _chatContainer.appendChild(typingIndicator());
     scrollToBottom();
     _updateInputState();
 
-    // Call API — POST directly to /api/ai/chat (proxied by nginx to FastAPI)
-    chatCall('POST', '/api/ai/chat', { message: text, session_id: _sessionId })
+    var body = { message: text };
+    if (_conversationId) body.conversation_id = _conversationId;
+
+    chatCall('POST', '/api/ai/chat', body)
       .then(function (resp) {
-        // Remove typing indicator
         var typing = document.getElementById('chat-typing');
         if (typing) typing.remove();
         _isLoading = false;
@@ -162,10 +187,12 @@
           _chatContainer.appendChild(messageBubble({ role: 'assistant', content: errMsg }));
         } else {
           var data = resp.data || {};
-          // Show tool call pills if any
+          if (data.conversation_id) {
+            _conversationId = data.conversation_id;
+            localStorage.setItem(_CONV_KEY, _conversationId);
+          }
           var pills = toolCallPills(data.tool_calls);
           if (pills) _chatContainer.appendChild(pills);
-          // Show response
           var aiMsg = data.response || 'No response received.';
           _messages.push({ role: 'assistant', content: aiMsg });
           _chatContainer.appendChild(messageBubble({ role: 'assistant', content: aiMsg }));
@@ -195,38 +222,55 @@
 
   // ─── Load history ──────────────────────────────────────────────
   function loadHistory() {
-    return chatCall('GET', '/api/ai/history?session_id=' + encodeURIComponent(_sessionId)).then(function (resp) {
+    var path = '/api/ai/history';
+    if (_conversationId) path += '?conversation_id=' + encodeURIComponent(_conversationId);
+    return chatCall('GET', path).then(function (resp) {
       if (resp.data && resp.data.history) {
         _messages = resp.data.history;
+      }
+      if (resp.data && resp.data.conversation_id) {
+        _conversationId = resp.data.conversation_id;
+        localStorage.setItem(_CONV_KEY, _conversationId);
       }
     }).catch(function () {
       _messages = [];
     });
   }
 
-  // ─── Clear history ─────────────────────────────────────────────
+  function newConversation() {
+    _messages = [];
+    _conversationId = '';
+    localStorage.removeItem(_CONV_KEY);
+    var appEl = document.getElementById('app');
+    if (appEl) renderChat(appEl);
+  }
+
   function clearHistory() {
-    chatCall('DELETE', '/api/ai/history?session_id=' + encodeURIComponent(_sessionId)).then(function () {
-      _messages = [];
-      var appEl = document.getElementById('app');
-      if (appEl) renderChat(appEl);
+    var path = '/api/ai/history';
+    if (_conversationId) path += '?conversation_id=' + encodeURIComponent(_conversationId);
+    chatCall('DELETE', path).then(function () {
+      newConversation();
     });
   }
 
   // ─── Render ────────────────────────────────────────────────────
   function renderChat(container) {
     container.textContent = '';
-
-    // Chat needs a special layout — flex column filling #app completely
     container.style.padding = '0';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
 
-    // Header bar (pinned top inside chat)
     var headerTitle = el('div', { className: 'chat-header-title' }, [
       el('span', { textContent: 'Vaishali' }),
       el('span', { className: 'chat-header-sub', textContent: 'DSPL AI Assistant' }),
     ]);
+    var headerActions = el('div', { style: 'display:flex;gap:8px' });
+    var newBtn = el('button', {
+      className: 'chat-clear-btn',
+      textContent: 'New',
+      onClick: newConversation,
+    });
+    headerActions.appendChild(newBtn);
     var clearBtn = el('button', {
       className: 'chat-clear-btn',
       title: 'Clear conversation',
@@ -235,34 +279,31 @@
         if (confirm('Clear conversation history?')) clearHistory();
       },
     });
+    headerActions.appendChild(clearBtn);
     var header = el('div', { className: 'chat-header' }, [
       el('div', { className: 'chat-header-left' }, [headerTitle]),
-      clearBtn,
+      headerActions,
     ]);
     container.appendChild(header);
 
-    // Chat messages area (scrollable middle)
     _chatContainer = el('div', { className: 'chat-messages' });
     container.appendChild(_chatContainer);
 
-    // Render existing messages
     if (_messages.length === 0) {
-      // Welcome state
       var welcomeIcon = el('div', { className: 'chat-welcome-icon' });
       welcomeIcon.textContent = 'V';
       var welcome = el('div', { className: 'chat-welcome' }, [
         welcomeIcon,
         el('div', { className: 'chat-welcome-title', textContent: 'Hi! I\'m Vaishali' }),
-        el('div', { className: 'chat-welcome-sub', textContent: 'Your DSPL ERP assistant. Ask me anything about your data, create records, run reports, and more.' }),
+        el('div', { className: 'chat-welcome-sub', textContent: 'Your DSPL ERP assistant. Type / for commands.' }),
       ]);
       _chatContainer.appendChild(welcome);
 
-      // Suggestion chips
       var suggestions = [
-        'Show my attendance this month',
+        '/pipeline',
+        '/follow-up',
         'Business dashboard overview',
         'How many pending sales orders?',
-        'Apply for leave',
       ];
       var chipsRow = el('div', { className: 'chat-suggestions' });
       for (var i = 0; i < suggestions.length; i++) {
@@ -285,19 +326,21 @@
       }
     }
 
-    // Input area
-    var inputArea = el('div', { className: 'chat-input-area' });
+    var inputArea = el('div', { className: 'chat-input-area', style: 'position:relative' });
+    _cmdMenu = el('div', {});
+    _cmdMenu.style.cssText = 'position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:180px;overflow-y:auto;display:none;z-index:10';
+    inputArea.appendChild(_cmdMenu);
+
     _inputEl = el('textarea', {
       className: 'chat-input',
-      placeholder: 'Ask Vaishali...',
+      placeholder: 'Ask Vaishali... (type / for commands)',
       rows: 1,
     });
-    // Auto-resize textarea
     _inputEl.addEventListener('input', function () {
       this.style.height = '44px';
       this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+      handleSlashInput(this.value);
     });
-    // Send on Enter (shift+enter for newline)
     _inputEl.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -318,10 +361,9 @@
     scrollToBottom();
   }
 
-  // ─── Route registration ────────────────────────────────────────
   window.Screens = window.Screens || {};
   window.Screens.chat = function (appEl) {
-    loadHistory().then(function () {
+    Promise.all([loadHistory(), loadCommands()]).then(function () {
       renderChat(appEl);
     });
   };
