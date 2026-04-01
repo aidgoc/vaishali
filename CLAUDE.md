@@ -448,12 +448,16 @@ Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Activ
 
 ## AI (Vaishali) Configuration
 
-- **Model:** claude-sonnet-4-6 (Anthropic direct)
-- **Max tool rounds:** 15
+- **Provider:** AWS Bedrock (`AnthropicBedrock` client) — configurable via `vaishali_provider` in site_config
+- **Model:** `us.anthropic.claude-sonnet-4-6` (cross-region inference profile)
+- **Auth:** AWS access keys in site_config (`aws_access_key_id`, `aws_secret_access_key`) — EC2 has no IAM role
+- **Fallback:** Set `vaishali_provider=direct` + `anthropic_api_key` to use Anthropic API directly
+- **Max tool rounds:** 6 (configurable `_MAX_ITERATIONS`)
+- **Max tokens per chat:** 16,000 budget
 - **Browser timeout:** 120s (chat.js)
 - **nginx timeout:** 300s
 - **System prompt:** Includes full ABP (products, targets, CBIs, KSFs, ICP, vision, mission)
-- **Tools:** search_records, get_record, get_count, create_record, update_record, get_view
+- **Tools:** search_records, get_record, get_count, create_record, update_record, get_view (101 total, dynamic loading)
 
 ## Conventions
 
