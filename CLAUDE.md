@@ -48,7 +48,18 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - **ERPNext apps:** frappe, erpnext, hrms, india_compliance, payments, vaishali
 - **HSN items:** disable, never delete
 - **Currency:** INR only, format ₹X,XX,XXX (en-IN locale)
-- **Data:** 1,896 customers, 1,807 suppliers, 6,456 items, 8,242 contacts, 189 employees
+- **Data (1 Apr 2026):** 1,896 customers, 1,807 suppliers, 6,471 items, 10,697 contacts, 179 active employees
+- **Fiscal Year:** 2026-27 (Apr 1, 2026 → Mar 31, 2027) — active
+- **System:** 201 accounts, 4 cost centers, 9 sales tax + 8 purchase tax templates, 2 price lists, 14 warehouses
+
+### FY 2026-27 Readiness (Audited 1 Apr 2026)
+- **Sales:** 2,076 open leads, 8 opportunities, 15 open quotations, 37 submitted SOs
+- **Production:** 245 BOMs (242 active), 2 work orders
+- **Stock:** 14 warehouses, 29 stock entries, 5 items below reorder
+- **Purchase:** Not yet used (0 POs, 0 receipts, 0 invoices)
+- **Accounts:** 1,017 draft SIs (needs cleanup), 0 submitted SIs, 267 draft PEs, 50 GL entries
+- **Service:** Empty (0 warranty claims, 0 maintenance visits, 0 serial numbers)
+- **Gaps:** Item Prices (only 24/6,471), draft SI/PE cleanup needed, Purchase workflow unused, Serial Nos not registered
 
 ## BOM Migration from Krisp (2026-03-30)
 - Migrated 229 Krisp recipes to ERPNext multi-level BOMs
@@ -288,10 +299,11 @@ Registered via `doctype_js` in hooks.py:
 - **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator, sales timeline (DCRs + Opps + Quotations + SOs)
 
 ### Workspaces (`setup_workspace.py`)
-Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent):
+Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent, updates existing cards if filters changed):
 - **DSPL Sales:** 7 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won) + Monthly Revenue bar chart + Quotation Pipeline donut + Lead Source Breakdown pie
-- **DSPL Operations:** 3 ops cards (Work Orders, Deliveries, Stock Below Reorder) + 2 HR cards (Team Present, Pending Approvals) + Monthly Orders line chart
-- 12 Number Cards + 4 Dashboard Charts total, all prefixed "DSPL"
+- **DSPL Operations:** 7 Number Cards (Work Orders, Deliveries, Stock Below Reorder, Open Warranty Claims, Pending Installations, Team Present, Pending Approvals) + Monthly Orders chart + 4 shortcuts (Work Order, Delivery Note, Warranty Claim, Maintenance Visit)
+- **DSPL Finance:** 3 Number Cards (Unpaid Invoices, Overdue Invoices, Payments This Month) + 2 charts (Monthly Revenue, Monthly Collections) + 3 shortcuts (Sales Invoice, Payment Entry, Accounts Receivable)
+- 17 Number Cards + 5 Dashboard Charts total, all prefixed "DSPL"
 
 #### Frappe v15 Workspace Gotchas (CRITICAL for programmatic creation)
 1. **Number Card autonames from `label`** — the explicit `name` field is ignored; set `label` to desired doc name
@@ -301,6 +313,8 @@ Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setu
 5. **Child tables required alongside content JSON** — workspace has both `content` (layout positioning) and child tables (`number_cards`, `charts`, `shortcuts`) that register widgets; content alone = blank
 6. **Child table `label` must exactly match content JSON `block_name`** — `block.js` looks up widgets via `obj.label == __(block_name)`; mismatched labels silently skip the widget
 7. **Commit between card creation and workspace save** — `frappe.db.commit()` needed so link validation can find newly created cards; also use `workspace.flags.ignore_links = True` as safety
+8. **Number Card `filters_json` does NOT evaluate `"today"`** — use `dynamic_filters_json` with `"frappe.datetime.nowdate()"` for runtime-evaluated date filters
+9. **Static assets under `/assets/` are cached with `max-age=31536000`** — `git pull` alone won't update; need `bench build --app vaishali` + nginx restart
 
 ## API Security Model
 
