@@ -1,4 +1,4 @@
-"""Vaishali Agent Runner — brain/worker loop using Anthropic SDK."""
+"""Vaishali Agent Runner — brain/worker loop using Anthropic SDK (direct or Bedrock)."""
 import frappe
 import json
 
@@ -7,17 +7,21 @@ _MAX_ITERATIONS = 6
 _MAX_TOOL_RESULT_CHARS = 4000
 
 
-def _get_api_key():
-    """Get Anthropic API key from site config."""
+def _get_client():
+    """Get Anthropic client — Bedrock (IAM role) or direct API key."""
+    import anthropic
+
+    provider = frappe.conf.get("vaishali_provider") or "bedrock"
+
+    if provider == "bedrock":
+        region = frappe.conf.get("vaishali_bedrock_region") or "us-east-1"
+        return anthropic.AnthropicBedrock(aws_region=region)
+
+    # Direct Anthropic API
     key = frappe.conf.get("anthropic_api_key") or ""
     if not key:
         frappe.throw("Anthropic API key not configured. Set anthropic_api_key in site_config.json")
-    return key
-
-
-def _get_openrouter_key():
-    """Get OpenRouter API key from site config (optional — used for worker models)."""
-    return frappe.conf.get("openrouter_api_key") or ""
+    return anthropic.Anthropic(api_key=key)
 
 
 def _truncate(s, max_len=_MAX_TOOL_RESULT_CHARS):
@@ -36,8 +40,8 @@ def run_agent(message, employee=None, role="user", user=None):
     from vaishali.agent.tools import get_tools_for_role, TOOL_CATEGORIES
     from vaishali.agent.executor import execute_tool
 
-    client = anthropic.Anthropic(api_key=_get_api_key())
-    brain_model = frappe.conf.get("vaishali_brain_model") or "claude-sonnet-4-6"
+    client = _get_client()
+    brain_model = frappe.conf.get("vaishali_brain_model") or "us.anthropic.claude-sonnet-4-6"
 
     emp_name = employee.employee_name if employee else "User"
     emp_id = employee.name if employee else ""
