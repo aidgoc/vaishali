@@ -25,102 +25,15 @@ def clear_pending_actions():
     frappe.local.vaishali_actions = []
 
 
-def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name="", user=None):
-    """Execute a tool call. Returns JSON string."""
-    try:
-        # ── Memory ──
-        if tool_name == "save_memory":
-            return _save_memory(tool_input, user or frappe.session.user)
-        elif tool_name == "get_memories":
-            return _get_memories(user or frappe.session.user)
-
-        # ── Search & Read ──
-        elif tool_name == "search_records":
-            return _search_records(tool_input)
-        elif tool_name == "get_document":
-            return _get_document(tool_input)
-        elif tool_name == "get_count":
-            return _get_count(tool_input)
-        elif tool_name == "search_link":
-            return _search_link(tool_input)
-        elif tool_name == "get_report":
-            return _get_report(tool_input)
-        elif tool_name == "business_dashboard":
-            return _business_dashboard(tool_input)
-
-        # ── Write ──
-        elif tool_name == "update_document":
-            return _update_document(tool_input)
-        elif tool_name == "submit_document":
-            return _submit_document(tool_input, user_role)
-        elif tool_name == "cancel_document":
-            if user_role not in ("admin", "manager"):
-                return json.dumps({"error": "Cancel requires manager or admin role"})
-            return _cancel_document(tool_input)
-        elif tool_name == "delete_document":
-            if user_role != "admin":
-                return json.dumps({"error": "Delete requires admin role"})
-            return _delete_document(tool_input)
-
-        # ── BOM Amendment ──
-        elif tool_name == "amend_bom":
-            if user_role not in ("admin", "manager"):
-                return json.dumps({"error": "Amend BOM requires manager or admin role"})
-            return _amend_bom(tool_input)
-
-        # ── View Engine ──
-        elif tool_name == "query_view":
-            from vaishali.views.engine import fetch_view
-            view_name = tool_input.get("view_name", "")
-            context_id = tool_input.get("context_id")
-            result = fetch_view(view_name, context_id, role=user_role)
-            result_str = json.dumps(result, default=str)
-            if len(result_str) > 4000:
-                result_str = result_str[:4000] + "\n\n[... truncated]"
-            return result_str
-
-        # ── Self-service tools ──
-        elif tool_name == "chat_mark_attendance":
-            return _mark_attendance(tool_input, employee_id)
-        elif tool_name == "my_daily_summary":
-            return _daily_summary(employee_id, employee_name)
-
-        # ── Discovery ──
-        elif tool_name == "discover_tools":
-            from vaishali.agent.tools import TOOL_CATEGORIES
-            cat = tool_input.get("category", "")
-            if cat in TOOL_CATEGORIES:
-                tools = TOOL_CATEGORIES[cat]["tools"]
-                return json.dumps({"category": cat, "tools": tools,
-                                   "message": f"Loaded {len(tools)} tools from {cat}"})
-            return json.dumps({"error": f"Unknown category: {cat}",
-                               "available": list(TOOL_CATEGORIES.keys())})
-
-        # ── System ──
-        elif tool_name == "get_system_settings":
-            return json.dumps({"company": COMPANY, "currency": "INR"})
-
-        else:
-            return json.dumps({"error": f"Tool not implemented: {tool_name}"})
-
-    except frappe.PermissionError:
-        return json.dumps({"error": f"Permission denied for {tool_name}. Your role doesn't have access."})
-    except frappe.DoesNotExistError as e:
-        return json.dumps({"error": f"Record not found: {str(e)[:200]}"})
-    except Exception as e:
-        return json.dumps({"error": f"{tool_name} failed: {str(e)[:200]}"})
-
-
 # ── Tool Implementations ──────────────────────────────────────────
 
-def _search_records(inp):
+def _search_records(inp, **kw):
     doctype = inp.get("doctype", "")
     filters = inp.get("filters", [])
     fields = inp.get("fields", ["name"])
     order_by = inp.get("order_by", "creation desc")
     limit = min(inp.get("limit", 20), 100)
 
-    # Add company filter for doctypes that have it
     if not any(f[0] == "company" for f in filters):
         meta = frappe.get_meta(doctype)
         if meta.has_field("company"):
@@ -136,13 +49,13 @@ def _search_records(inp):
     return json.dumps(data, default=str)
 
 
-def _get_document(inp):
+def _get_document(inp, **kw):
     doc = frappe.get_doc(inp["doctype"], inp["name"])
     _add_action({"type": "navigate", "route": "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name})
     return json.dumps(doc.as_dict(), default=str)
 
 
-def _get_count(inp):
+def _get_count(inp, **kw):
     filters = inp.get("filters", [])
     if not any(f[0] == "company" for f in filters):
         meta = frappe.get_meta(inp["doctype"])
@@ -152,7 +65,7 @@ def _get_count(inp):
     return json.dumps({"count": count})
 
 
-def _search_link(inp):
+def _search_link(inp, **kw):
     results = frappe.call("frappe.client.get_list",
         doctype=inp["doctype"],
         filters=[["name", "like", f"%{inp.get('txt', '')}%"]],
@@ -161,7 +74,7 @@ def _search_link(inp):
     return json.dumps([{"value": r["name"]} for r in results], default=str)
 
 
-def _get_report(inp):
+def _get_report(inp, **kw):
     report_name = inp.get("report_name", "")
     filters = inp.get("filters", {})
     if "company" not in filters:
@@ -171,7 +84,7 @@ def _get_report(inp):
     return json.dumps(result or {}, default=str)
 
 
-def _business_dashboard(inp):
+def _business_dashboard(inp, **kw):
     today = date.today()
     month_start = today.replace(day=1).isoformat()
 
@@ -198,39 +111,34 @@ def _business_dashboard(inp):
     }, default=str)
 
 
-def _update_document(inp):
+def _update_document(inp, **kw):
     doc = frappe.get_doc(inp["doctype"], inp["name"])
-    for key, value in inp.get("values", {}).items():
+    for key, value in inp.get("values", inp.get("data", {})).items():
         doc.set(key, value)
     doc.save()
     frappe.db.commit()
     route = "/app/" + _doctype_to_route(inp["doctype"]) + "/" + doc.name
     _add_action({"type": "navigate", "route": route})
-    for field in inp.get("values", {}):
+    for field in inp.get("values", inp.get("data", {})):
         _add_action({"type": "highlight", "field": field, "delay": 400})
     return json.dumps({"success": True, "name": doc.name})
 
 
-def _submit_document(inp, user_role="user"):
+def _submit_document(inp, user_role="user", **kw):
     doctype = inp["doctype"]
     name = inp["name"]
 
-    # Guard 1: verify the DocType is submittable
     meta = frappe.get_meta(doctype)
     if not meta.is_submittable:
         return json.dumps({"error": f"{doctype} is not a submittable DocType. Only submittable documents (Sales Order, Invoice, etc.) can be submitted."})
 
     doc = frappe.get_doc(doctype, name)
 
-    # Guard 2: verify document is in Draft state
     if doc.docstatus != 0:
         status = {1: "already submitted", 2: "cancelled"}.get(doc.docstatus, f"docstatus={doc.docstatus}")
         return json.dumps({"error": f"{doctype} {name} is {status}. Only Draft documents (docstatus=0) can be submitted."})
 
-    # Guard 3: role gate — field users can only submit if ERPNext permits their roles
-    # (ERPNext enforces this internally, but we add an extra gate for the "user" tier)
     if user_role == "user":
-        # Check if the current Frappe user actually has submit permission
         if not frappe.has_permission(doctype, "submit", doc):
             return json.dumps({"error": f"You don't have permission to submit {doctype}. Ask a manager to submit this document."})
 
@@ -242,7 +150,7 @@ def _submit_document(inp, user_role="user"):
     return json.dumps({"success": True, "name": doc.name, "docstatus": 1})
 
 
-def _cancel_document(inp):
+def _cancel_document(inp, **kw):
     doctype = inp["doctype"]
     name = inp["name"]
     meta = frappe.get_meta(doctype)
@@ -257,13 +165,13 @@ def _cancel_document(inp):
     return json.dumps({"success": True, "name": doc.name, "docstatus": 2})
 
 
-def _delete_document(inp):
+def _delete_document(inp, **kw):
     frappe.delete_doc(inp["doctype"], inp["name"])
     frappe.db.commit()
     return json.dumps({"success": True})
 
 
-def _mark_attendance(inp, employee_id):
+def _mark_attendance(inp, employee_id="", **kw):
     from datetime import datetime
     log_type = inp.get("log_type", "IN")
     doc = frappe.new_doc("Employee Checkin")
@@ -275,7 +183,7 @@ def _mark_attendance(inp, employee_id):
     return json.dumps({"success": True, "name": doc.name, "log_type": log_type})
 
 
-def _amend_bom(inp):
+def _amend_bom(inp, **kw):
     """Amend a submitted BOM: cancel → create amended copy → apply changes → submit."""
     bom_name = inp.get("name", "")
     changes = inp.get("changes", {})
@@ -284,16 +192,13 @@ def _amend_bom(inp):
     if doc.docstatus != 1:
         return json.dumps({"error": f"BOM {bom_name} is not submitted (docstatus={doc.docstatus}). Only submitted BOMs can be amended."})
 
-    # Step 1: Cancel the existing BOM
     doc.cancel()
     frappe.db.commit()
 
-    # Step 2: Create amended copy via ERPNext's amend pattern
     new_doc = frappe.copy_doc(doc)
     new_doc.amended_from = bom_name
     new_doc.docstatus = 0
 
-    # Step 3: Apply item-level changes (rate, qty updates)
     item_changes = changes.get("items", {})
     for row in new_doc.items:
         item_key = row.item_code
@@ -301,12 +206,10 @@ def _amend_bom(inp):
             for field, value in item_changes[item_key].items():
                 row.set(field, value)
 
-    # Apply top-level field changes
     for field, value in changes.items():
         if field != "items":
             new_doc.set(field, value)
 
-    # Step 4: Save and submit the amended BOM
     new_doc.insert(ignore_permissions=True)
     new_doc.submit()
     frappe.db.commit()
@@ -320,7 +223,7 @@ def _amend_bom(inp):
     })
 
 
-def _daily_summary(employee_id, employee_name):
+def _daily_summary(inp, employee_id="", employee_name="", **kw):
     today = date.today().isoformat()
     checkins = frappe.get_list("Employee Checkin",
         filters={"employee": employee_id, "time": [">=", f"{today} 00:00:00"]},
@@ -337,9 +240,7 @@ def _daily_summary(employee_id, employee_name):
     }, default=str)
 
 
-# ── Memory Tools ─────────────────────────────────────────────────
-
-def _save_memory(inp, user):
+def _save_memory(inp, user="", **kw):
     """Save or update a persistent memory for the user."""
     key = inp.get("key", "").strip()
     content = inp.get("content", "").strip()
@@ -365,7 +266,7 @@ def _save_memory(inp, user):
     return json.dumps({"success": True, "key": key, "action": "updated" if existing else "created"})
 
 
-def _get_memories(user):
+def _get_memories(inp, user="", **kw):
     """Get all memories for the user."""
     memories = frappe.get_all("Vaishali Memory",
         filters={"user": user},
@@ -373,3 +274,97 @@ def _get_memories(user):
         order_by="last_used desc",
         limit_page_length=20)
     return json.dumps(memories, default=str)
+
+
+def _query_view(inp, user_role="user", **kw):
+    from vaishali.views.engine import fetch_view
+    view_name = inp.get("view_name", "")
+    context_id = inp.get("context_id")
+    result = fetch_view(view_name, context_id, role=user_role)
+    result_str = json.dumps(result, default=str)
+    if len(result_str) > 4000:
+        result_str = result_str[:4000] + "\n\n[... truncated]"
+    return result_str
+
+
+def _discover_tools(inp, **kw):
+    from vaishali.agent.tools import TOOL_CATEGORIES
+    cat = inp.get("category", "")
+    if cat in TOOL_CATEGORIES:
+        tools = TOOL_CATEGORIES[cat]["tools"]
+        return json.dumps({"category": cat, "tools": tools,
+                           "message": f"Loaded {len(tools)} tools from {cat}"})
+    return json.dumps({"error": f"Unknown category: {cat}",
+                       "available": list(TOOL_CATEGORIES.keys())})
+
+
+def _get_system_settings(inp, **kw):
+    return json.dumps({"company": COMPANY, "currency": "INR"})
+
+
+# ── Dispatch Table ────────────────────────────────────────────────
+
+TOOL_HANDLERS = {
+    # Memory
+    "save_memory": _save_memory,
+    "get_memories": _get_memories,
+    # Search & Read
+    "search_records": _search_records,
+    "get_document": _get_document,
+    "get_count": _get_count,
+    "search_link": _search_link,
+    "get_report": _get_report,
+    "business_dashboard": _business_dashboard,
+    # Write
+    "update_document": _update_document,
+    "submit_document": _submit_document,
+    "cancel_document": _cancel_document,
+    "delete_document": _delete_document,
+    # BOM
+    "amend_bom": _amend_bom,
+    # View Engine
+    "query_view": _query_view,
+    # Self-service
+    "chat_mark_attendance": _mark_attendance,
+    "my_daily_summary": _daily_summary,
+    # Discovery
+    "discover_tools": _discover_tools,
+    # System
+    "get_system_settings": _get_system_settings,
+}
+
+# Role gates — checked before dispatch
+_ROLE_GATES = {
+    "cancel_document": ("admin", "manager"),
+    "delete_document": ("admin",),
+    "amend_bom": ("admin", "manager"),
+}
+
+
+def execute_tool(tool_name, tool_input, user_role, employee_id="", employee_name="", user=None):
+    """Execute a tool call. Returns JSON string."""
+    try:
+        # Role gate check
+        allowed_roles = _ROLE_GATES.get(tool_name)
+        if allowed_roles and user_role not in allowed_roles:
+            role_str = " or ".join(allowed_roles)
+            return json.dumps({"error": f"{tool_name} requires {role_str} role"})
+
+        handler = TOOL_HANDLERS.get(tool_name)
+        if not handler:
+            return json.dumps({"error": f"Tool not implemented: {tool_name}"})
+
+        return handler(
+            tool_input,
+            user_role=user_role,
+            employee_id=employee_id or "",
+            employee_name=employee_name,
+            user=user or frappe.session.user,
+        )
+
+    except frappe.PermissionError:
+        return json.dumps({"error": f"Permission denied for {tool_name}. Your role doesn't have access."})
+    except frappe.DoesNotExistError as e:
+        return json.dumps({"error": f"Record not found: {str(e)[:200]}"})
+    except Exception as e:
+        return json.dumps({"error": f"{tool_name} failed: {str(e)[:200]}"})

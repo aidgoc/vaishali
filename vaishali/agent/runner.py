@@ -1,13 +1,12 @@
-"""Vaishali Agent Runner v2 — persistent storage, compaction, memory, commands, cost tracking."""
+"""Vaishali Agent Runner v3 — Claude Code style agentic loop. No artificial limits."""
 import frappe
 import json
 import time
 import uuid
 
-_MAX_TOKENS_PER_CHAT = 16000
-_MAX_ITERATIONS = 10
-_MAX_TOOL_RESULT_CHARS = 4000
-_MAX_HISTORY_MESSAGES = 30
+# Sonnet 4.5 on Bedrock supports 1M context. Compact at 80%.
+_CONTEXT_WINDOW = 1_000_000
+_COMPACT_THRESHOLD = int(_CONTEXT_WINDOW * 0.8)
 
 # Sonnet pricing (USD per million tokens)
 _INPUT_COST_PER_M = 3.0
@@ -15,19 +14,32 @@ _OUTPUT_COST_PER_M = 15.0
 
 
 def _get_client():
-    """Get Anthropic client — Bedrock (IAM role) or direct API key."""
+    """Get Anthropic client — Bedrock (env vars or site_config) or direct API.
+
+    Supports same env vars as Claude Code:
+      CLAUDE_CODE_USE_BEDROCK=1
+      AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+    Falls back to site_config.json values.
+    """
+    import os
     import anthropic
 
     provider = frappe.conf.get("vaishali_provider") or "bedrock"
+    use_bedrock_env = os.environ.get("CLAUDE_CODE_USE_BEDROCK")
 
-    if provider == "bedrock":
-        region = frappe.conf.get("vaishali_bedrock_region") or "us-east-1"
+    if provider == "bedrock" or use_bedrock_env:
+        region = (os.environ.get("AWS_REGION")
+                  or os.environ.get("AWS_DEFAULT_REGION")
+                  or frappe.conf.get("vaishali_bedrock_region")
+                  or "us-east-1")
         kwargs = {"aws_region": region}
-        ak = frappe.conf.get("aws_access_key_id")
-        sk = frappe.conf.get("aws_secret_access_key")
+
+        ak = os.environ.get("AWS_ACCESS_KEY_ID") or frappe.conf.get("aws_access_key_id")
+        sk = os.environ.get("AWS_SECRET_ACCESS_KEY") or frappe.conf.get("aws_secret_access_key")
         if ak and sk:
             kwargs["aws_access_key"] = ak
             kwargs["aws_secret_key"] = sk
+
         return anthropic.AnthropicBedrock(**kwargs)
 
     key = frappe.conf.get("anthropic_api_key") or ""
@@ -36,17 +48,23 @@ def _get_client():
     return anthropic.Anthropic(api_key=key)
 
 
-def _truncate(s, max_len=_MAX_TOOL_RESULT_CHARS):
-    if len(s) <= max_len:
-        return s
-    return s[:max_len] + f"\n\n[... truncated, {len(s)} chars total]"
-
-
 def _estimate_tokens(text):
     """Rough token estimate: ~4 chars per token."""
     if not text:
         return 0
     return len(text) // 4
+
+
+def _estimate_messages_tokens(messages):
+    """Estimate total tokens across all messages."""
+    total = 0
+    for m in messages:
+        content = m.get("content", "")
+        if isinstance(content, str):
+            total += _estimate_tokens(content)
+        elif isinstance(content, list):
+            total += _estimate_tokens(json.dumps(content))
+    return total
 
 
 def _new_conversation_id():
@@ -64,15 +82,15 @@ def _table_exists(doctype):
 
 # ── DB History ──────────────────────────────────────────────────────
 
-def _load_history(user, conversation_id, limit=_MAX_HISTORY_MESSAGES):
-    """Load chat history from DB for a conversation."""
+def _load_history(user, conversation_id):
+    """Load full chat history from DB for a conversation."""
     if not _table_exists("Vaishali Chat Log"):
         return []
     logs = frappe.get_all("Vaishali Chat Log",
         filters={"user": user, "conversation_id": conversation_id},
         fields=["role", "content"],
         order_by="creation asc",
-        limit_page_length=limit)
+        limit_page_length=0)
     return [{"role": l.role, "content": l.content} for l in logs]
 
 
@@ -102,28 +120,33 @@ def _save_message(user, conversation_id, role, content,
 
 # ── Context Compaction ──────────────────────────────────────────────
 
-def _compact_history(messages, client, model, max_tokens=12000):
-    """Compact old messages into a summary if over token budget."""
-    total = sum(_estimate_tokens(m.get("content", "") if isinstance(m.get("content"), str) else json.dumps(m.get("content", "")))
-                for m in messages)
-    if total < int(max_tokens * 0.8):
+def _compact_if_needed(messages, client, model):
+    """Compact messages when approaching context window. Called every iteration like Claude Code."""
+    total = _estimate_messages_tokens(messages)
+    if total < _COMPACT_THRESHOLD:
         return messages
 
-    # Keep last 6 messages, compact the rest
-    keep_count = min(6, len(messages))
+    # Keep last 20 messages (recent tool calls + responses), compact everything before
+    keep_count = min(20, len(messages))
     if len(messages) <= keep_count:
         return messages
 
     to_compact = messages[:-keep_count]
     to_keep = messages[-keep_count:]
 
-    # Build summary text from old messages
     parts = []
     for m in to_compact:
         role = m.get("role", "")
         content = m.get("content", "")
         if isinstance(content, str) and content:
-            parts.append(f"{role}: {content[:500]}")
+            parts.append(f"{role}: {content[:2000]}")
+        elif isinstance(content, list):
+            # Tool results — extract text content
+            for block in content:
+                if isinstance(block, dict):
+                    c = block.get("content", "") or block.get("text", "")
+                    if c:
+                        parts.append(f"tool_result: {c[:1000]}")
 
     conversation_text = "\n".join(parts)
     if not conversation_text.strip():
@@ -132,13 +155,14 @@ def _compact_history(messages, client, model, max_tokens=12000):
     try:
         summary_resp = client.messages.create(
             model=model,
-            max_tokens=600,
-            system="You are a conversation summarizer. Summarize concisely, preserving all key facts, decisions, and pending actions.",
-            messages=[{"role": "user", "content": f"Summarize this conversation:\n\n{conversation_text[:6000]}"}]
+            max_tokens=4096,
+            system="You are a conversation summarizer. Produce a detailed summary preserving ALL key facts, data values, decisions, tool results, and pending actions. Do not lose any information that would be needed to continue the conversation.",
+            messages=[{"role": "user", "content": f"Summarize this conversation:\n\n{conversation_text[:40000]}"}]
         )
         summary = "".join(b.text for b in summary_resp.content if hasattr(b, "text"))
     except Exception:
-        return messages[-12:]
+        # Fallback: just keep more recent messages
+        return messages[-(keep_count + 10):]
 
     return [{"role": "user", "content": f"[Previous conversation summary]\n{summary}"}] + to_keep
 
@@ -195,13 +219,13 @@ def _expand_command(cmd_name, args):
     return prompt, cmd.get("tools")
 
 
-# ── Budget Check ────────────────────────────────────────────────────
+# ── Budget Tracking ────────────────────────────────────────────────
 
-def _check_budget(user):
-    """Check if user/site is within monthly token budget. Returns (ok, usage, budget)."""
-    budget = int(frappe.conf.get("vaishali_monthly_token_budget") or 2_000_000)
+def _track_budget(user):
+    """Track monthly token usage. Returns (usage, budget) for logging. No blocking."""
+    budget = int(frappe.conf.get("vaishali_monthly_token_budget") or 10_000_000)
     if not _table_exists("Vaishali Chat Log"):
-        return (True, 0, budget)
+        return (0, budget)
     from datetime import date
     month_start = date.today().replace(day=1).isoformat()
     try:
@@ -211,14 +235,14 @@ def _check_budget(user):
             WHERE creation >= %s
         """, (month_start,), as_dict=True)[0].total
     except Exception:
-        return (True, 0, budget)
-    return (usage < budget, int(usage), budget)
+        return (0, budget)
+    return (int(usage), budget)
 
 
-# ── Main Agent Loop ─────────────────────────────────────────────────
+# ── Main Agent Loop — Claude Code style ────────────────────────────
 
 def run_agent(message, employee=None, role="user", user=None, conversation_id=None):
-    """Run the Vaishali agent. Returns {response, tool_calls, client_actions, conversation_id, usage}."""
+    """Run the Vaishali agent. Loops until the model emits end_turn — no artificial limits."""
     try:
         import anthropic
     except ImportError:
@@ -236,11 +260,8 @@ def run_agent(message, employee=None, role="user", user=None, conversation_id=No
     emp_name = employee.employee_name if employee else "User"
     emp_id = employee.name if employee else None
 
-    # Budget check
-    ok, usage, budget = _check_budget(user)
-    if not ok:
-        return {"response": f"Monthly AI budget reached ({usage:,} / {budget:,} tokens). Contact admin.",
-                "tool_calls": [], "client_actions": [], "conversation_id": conversation_id or ""}
+    # Budget tracking (log only, never block)
+    _track_budget(user)
 
     # Conversation ID
     if not conversation_id:
@@ -262,19 +283,15 @@ def run_agent(message, employee=None, role="user", user=None, conversation_id=No
     # Save user message to DB (original, not expanded)
     _save_message(user, conversation_id, "user", original_message, employee=emp_id)
 
-    # Load history from DB
+    # Load full history from DB
     history = _load_history(user, conversation_id)
     messages = [{"role": h["role"], "content": h["content"]}
                 for h in history
                 if h["role"] in ("user", "assistant") and isinstance(h.get("content"), str)]
-    messages = messages[-_MAX_HISTORY_MESSAGES:]
 
     # If we expanded a command, replace the last message with the expanded prompt
     if cmd and messages:
         messages[-1] = {"role": "user", "content": message}
-
-    # Compact if needed
-    messages = _compact_history(messages, client, brain_model)
 
     # Tools — use restricted set for commands, full set otherwise
     if command_tools:
@@ -288,93 +305,98 @@ def run_agent(message, employee=None, role="user", user=None, conversation_id=No
     total_input = 0
     total_output = 0
 
-    for iteration in range(_MAX_ITERATIONS):
+    # ── Agentic loop: run until end_turn ──
+    while True:
+        # Compact if approaching context window (like Claude Code)
+        messages = _compact_if_needed(messages, client, brain_model)
+
         try:
-            kwargs = {"model": brain_model, "max_tokens": 2048,
-                      "system": system, "messages": messages[-12:]}
+            kwargs = {"model": brain_model, "max_tokens": 8192,
+                      "system": system, "messages": messages}
             if tools:
                 kwargs["tools"] = tools
             response = client.messages.create(**kwargs)
         except Exception as e:
-            return {"response": f"Error: {str(e)[:200]}", "tool_calls": tool_calls_log,
-                    "client_actions": get_pending_actions(), "conversation_id": conversation_id}
+            err_msg = str(e)[:500]
+            # If context too long even after compaction, try aggressive trim
+            if "too long" in err_msg.lower() or "token" in err_msg.lower():
+                messages = messages[-6:]
+                try:
+                    kwargs["messages"] = messages
+                    response = client.messages.create(**kwargs)
+                except Exception as e2:
+                    return _finish(f"Error: {str(e2)[:300]}", user, conversation_id,
+                                   emp_id, brain_model, tool_calls_log,
+                                   total_input, total_output)
+            else:
+                return _finish(f"Error: {err_msg}", user, conversation_id,
+                               emp_id, brain_model, tool_calls_log,
+                               total_input, total_output)
 
         # Token tracking
         if hasattr(response, "usage"):
             total_input += response.usage.input_tokens
             total_output += response.usage.output_tokens
 
-        total_tokens = total_input + total_output
-        if total_tokens > _MAX_TOKENS_PER_CHAT:
-            text = "I've used the maximum processing budget for this message."
-            _save_message(user, conversation_id, "assistant", text,
-                         employee=emp_id, model=brain_model,
-                         tool_calls=tool_calls_log,
-                         client_actions=get_pending_actions(),
-                         input_tokens=total_input, output_tokens=total_output)
-            return {"response": text, "tool_calls": tool_calls_log,
-                    "client_actions": get_pending_actions(),
-                    "conversation_id": conversation_id,
-                    "usage": {"input": total_input, "output": total_output}}
-
-        if response.stop_reason == "tool_use":
-            content_blocks = _serialize(response.content)
-            messages.append({"role": "assistant", "content": content_blocks})
-            tool_results = []
-
-            for block in response.content:
-                if block.type == "tool_use":
-                    t0 = time.time()
-                    tool_calls_log.append({"name": block.name, "status": "running"})
-
-                    result = execute_tool(
-                        block.name, block.input, role,
-                        employee_id=emp_id or "", employee_name=emp_name, user=user)
-
-                    duration_ms = int((time.time() - t0) * 1000)
-                    tool_calls_log[-1]["status"] = "error" if isinstance(result, str) and result.startswith("\u274c") else "done"
-                    tool_calls_log[-1]["duration_ms"] = duration_ms
-
-                    # Dynamic tool loading
-                    if block.name == "discover_tools":
-                        try:
-                            disc = json.loads(result)
-                            cat = disc.get("category")
-                            if cat and cat in TOOL_CATEGORIES:
-                                loaded_categories.add(cat)
-                                tools = get_tools_for_role(role, categories=loaded_categories)
-                        except Exception:
-                            pass
-
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": _truncate(result),
-                    })
-
-            messages.append({"role": "user", "content": tool_results})
-        else:
+        # ── end_turn: model is done ──
+        if response.stop_reason != "tool_use":
             text = "".join(b.text for b in response.content if hasattr(b, "text"))
             if not text:
-                text = "Request processed."
+                text = "Done."
+            return _finish(text, user, conversation_id, emp_id, brain_model,
+                           tool_calls_log, total_input, total_output)
 
-            _save_message(user, conversation_id, "assistant", text,
-                         employee=emp_id, model=brain_model,
-                         tool_calls=tool_calls_log,
-                         client_actions=get_pending_actions(),
-                         input_tokens=total_input, output_tokens=total_output)
+        # ── tool_use: execute tools and loop back ──
+        content_blocks = _serialize(response.content)
+        messages.append({"role": "assistant", "content": content_blocks})
+        tool_results = []
 
-            return {"response": text, "tool_calls": tool_calls_log,
-                    "client_actions": get_pending_actions(),
-                    "conversation_id": conversation_id,
-                    "usage": {"input": total_input, "output": total_output}}
+        for block in response.content:
+            if block.type == "tool_use":
+                t0 = time.time()
+                tool_calls_log.append({"name": block.name, "status": "running"})
 
-    text = "Max processing steps reached."
+                result = execute_tool(
+                    block.name, block.input, role,
+                    employee_id=emp_id or "", employee_name=emp_name, user=user)
+
+                duration_ms = int((time.time() - t0) * 1000)
+                is_error = isinstance(result, str) and result.startswith("\u274c")
+                tool_calls_log[-1]["status"] = "error" if is_error else "done"
+                tool_calls_log[-1]["duration_ms"] = duration_ms
+
+                # Dynamic tool loading
+                if block.name == "discover_tools":
+                    try:
+                        disc = json.loads(result)
+                        cat = disc.get("category")
+                        if cat and cat in TOOL_CATEGORIES:
+                            loaded_categories.add(cat)
+                            tools = get_tools_for_role(role, categories=loaded_categories)
+                    except Exception:
+                        pass
+
+                # No truncation — send full tool results
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
+                })
+
+        messages.append({"role": "user", "content": tool_results})
+
+
+def _finish(text, user, conversation_id, emp_id, model, tool_calls_log,
+            total_input, total_output):
+    """Save final response and return result dict."""
+    from vaishali.agent.executor import get_pending_actions
+
     _save_message(user, conversation_id, "assistant", text,
-                 employee=emp_id, model=brain_model,
+                 employee=emp_id, model=model,
                  tool_calls=tool_calls_log,
                  client_actions=get_pending_actions(),
                  input_tokens=total_input, output_tokens=total_output)
+
     return {"response": text, "tool_calls": tool_calls_log,
             "client_actions": get_pending_actions(),
             "conversation_id": conversation_id,
