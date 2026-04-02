@@ -214,10 +214,24 @@ vaishali/
 │   └── chat.py           # AI chat v2 (6 endpoints: send, history, conversations, clear, usage, commands)
 ├── agent/                 # AI agent v2 (101 tools)
 │   ├── runner.py          # Brain loop: DB storage, compaction, memory, commands, token tracking
-│   ├── executor.py        # Tool executor with submit/cancel hardening
-│   ├── tools.py           # 101 tool definitions (26 core + 73 extended in 12 categories)
+│   ├── executor.py        # Tool executor: dispatch dict + role gates + submit/cancel hardening
 │   ├── commands.py        # 6 slash commands (/pipeline, /follow-up, /report, /dcr, /customer, /quotation)
-│   └── prompt.py          # System prompt with memory injection
+│   ├── prompt.py          # Full system prompt: company knowledge, domain rules, tool ecosystem
+│   └── tools/             # Tool schema package (was single 4,897-line tools.py)
+│       ├── __init__.py    # Categories, role filtering, get_tools_for_role(), two-tier loading
+│       ├── core.py        # 25 core tool schemas (always loaded)
+│       ├── accounting.py  # 4 tools: journal entries, payment entries, invoices
+│       ├── inventory.py   # 6 tools: stock entries, warehouses, BOMs, quality, landed costs
+│       ├── sales_crm.py   # 6 tools: leads, opportunities, quotations, sales orders
+│       ├── buying.py      # 5 tools: purchase orders, receipts, RFQs, material requests
+│       ├── hr.py          # 13 tools: employees, attendance, leave, salary, payroll
+│       ├── master_data.py # 5 tools: customers, suppliers, items, addresses, contacts
+│       ├── projects.py    # 3 tools: projects, tasks, timesheets
+│       ├── assets.py      # 3 tools: fixed assets, movements, maintenance
+│       ├── manufacturing.py # 3 tools: work orders, job cards, production plans
+│       ├── pricing.py     # 3 tools: budgets, pricing rules, subscriptions
+│       ├── system_config.py # 17 tools: custom fields, workflows, permissions, print formats
+│       └── communication.py # 5 tools: email, bulk updates, export, rename, amend
 ├── views/
 │   ├── registry.py        # 15 view definitions
 │   └── engine.py          # Role-filtered fetcher + linked doc enrichment
@@ -510,7 +524,11 @@ Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Activ
 | admin | 26 | Full access |
 | blocked | 0 | No tools |
 
-### New Files (v2)
+### Agent Code Structure (v2.1 — refactored 2 Apr 2026)
+- `vaishali/agent/runner.py` — Agentic brain loop (unbounded, Claude Code style), compaction, memory injection
+- `vaishali/agent/executor.py` — Dispatch dict (`TOOL_HANDLERS`) + `_ROLE_GATES` dict, no if-elif chain
+- `vaishali/agent/prompt.py` — Single source of truth: company knowledge, domain rules, tool ecosystem, search rules
+- `vaishali/agent/tools/` — Tool schema package (14 files, was single 4,897-line `tools.py`)
 - `vaishali/agent/commands.py` — Slash command registry (6 commands)
 - `vaishali/vaishali/doctype/vaishali_chat_log/` — Chat persistence DocType (16 fields, indexed)
 - `vaishali/vaishali/doctype/vaishali_memory/` — Cross-session memory DocType (7 fields)
