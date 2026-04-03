@@ -54,7 +54,7 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 ### FY 2026-27 Readiness (Audited 1 Apr 2026)
 - **Sales:** 2,076 open leads, 8 opportunities, 15 open quotations, 37 submitted SOs
-- **Production:** 245 BOMs (242 active), 2 work orders
+- **Production:** 227 BOMs (227 active, all DSPL), 0 work orders (reconciled 3 Apr 2026, 452 cancelled BOMs from migration)
 - **Stock:** 14 warehouses, 29 stock entries, 5 items below reorder
 - **Purchase:** Not yet used (0 POs, 0 receipts, 0 invoices)
 - **Accounts:** 1,017 draft SIs (needs cleanup), 0 submitted SIs, 267 draft PEs, 50 GL entries
@@ -63,7 +63,7 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 ## BOM Migration from Krisp (2026-03-30, reconciled 2026-04-03)
 - **216 Krisp recipes reconciled** with ERPNext BOMs (100% items + quantities match)
-- **489/495 raw material rates verified** against Krisp frontend (98.3% exact, 12 fixed)
+- **489 raw material rates verified** against Krisp frontend (477 exact, 12 fixed, 6 not in Krisp)
 - **227 submitted BOMs** total (215 Krisp-matched + 12 EN-only), 0 draft, 0 orphans
 - 28 missing sub-assembly items created, 3 code padding fixes, 2 self-refs stripped
 - ERPNext requires child BOMs to be SUBMITTED before linking via bom_no
@@ -93,7 +93,7 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 **Results:**
 - 477/489 exact matches (97.5%), 12 mismatches fixed (Item master `valuation_rate` updated + BOM cost cascaded)
-- All 227 submitted BOMs have `total_cost > 0`, cost range ₹6.80 to ₹250,042.29
+- All 227 submitted BOMs have `total_cost > 0`, cost range ₹6.80 to ₹232,166.64
 - 67 items have `valuation_rate = 0` — these are newly created sub-assemblies (BK* codes) with BOM-derived costs, not raw materials
 
 **Operational Use:**
