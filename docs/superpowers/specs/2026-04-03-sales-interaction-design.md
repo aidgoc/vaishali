@@ -50,7 +50,7 @@ Communication was considered (Option C) but rejected:
 ### 1. Sales Interaction DocType
 
 **Module:** Vaishali
-**Is Submittable:** No (save-only, like DCR)
+**Is Submittable:** Yes (provides audit trail, prevents edits after submission)
 **Quick Entry:** Yes
 **Track Changes:** Yes
 **Naming:** `SI-.YYYY.-.#####` (e.g. SI-2026-00042)
@@ -82,7 +82,6 @@ Communication was considered (Option C) but rejected:
 | Quotation | `quotation` | Link | Quotation | | Link to active quotation |
 | Sales Order | `sales_order` | Link | Sales Order | | Set when order confirmed |
 | Conversion Stage | `conversion_stage` | Select | Open\nLead Created\nOpportunity\nProposal Sent\nNegotiation\nVerbal Commitment\nQuoted\nWon\nLost\nStalled | | Auto-updated + manual override |
-| Deal Value | `deal_value` | Currency | | | Expected order value (for forecasting) |
 | Win Probability | `win_probability` | Percent | | | Auto-set from stage, manual override |
 | **Next Steps Section** | | | | | |
 | Next Action | `next_action` | Small Text | | | What to do next |
@@ -144,21 +143,30 @@ When a DCR is checked out with outcomes:
 
 ### 4. Forecasting Model
 
+Value comes from the **linked Quotation** (or Opportunity), not from the interaction itself. No duplicate data entry.
+
 ```
-Weighted Pipeline = Σ (deal_value × win_probability) for all open interactions
+Weighted Pipeline = Σ (quotation_amount × win_probability) for all open interactions with linked quotations
 ```
+
+**Value resolution order:**
+1. Linked Quotation → `grand_total`
+2. Linked Opportunity → `opportunity_amount`
+3. No link → excluded from forecast (interaction exists but no value attached)
 
 **API endpoint:** `vaishali.api.field.get_sales_forecast`
 
 ```python
 def get_sales_forecast(period="month", employee=None, department=None):
-    """Returns weighted pipeline forecast."""
-    # Sum deal_value * win_probability for non-closed interactions
+    """Returns weighted pipeline forecast.
+    Value pulled from linked Quotation/Opportunity, NOT stored on interaction."""
+    # For each open interaction with a linked quotation:
+    #   forecast_value = quotation.grand_total × interaction.win_probability
     # Group by stage, employee, product
     # Compare to sales targets
     return {
-        "total_pipeline": 1500000,      # Sum of all deal values
-        "weighted_forecast": 525000,    # Sum of deal_value × probability
+        "total_pipeline": 1500000,      # Sum of linked quotation values
+        "weighted_forecast": 525000,    # Sum of value × probability
         "by_stage": {
             "Opportunity": {"count": 8, "value": 400000, "weighted": 80000},
             "Negotiation": {"count": 3, "value": 600000, "weighted": 300000},
@@ -237,9 +245,9 @@ Slash command: `/forecast` — shows weighted pipeline vs target
 
 ---
 
-## Open Questions
+## Decisions (2026-04-03)
 
-1. **Should Sales Interaction be submittable?** Currently No (like DCR). Submittable adds audit trail but friction.
-2. **Should we backfill from existing DCRs?** ~2,800 completed DCRs could create historical Sales Interactions for timeline continuity.
-3. **Deal value source:** Manual entry or auto-pull from linked Quotation amount?
-4. **Stalled detection:** 14 days no interaction → auto-Stalled. Is 14 days right for DSPL's sales cycle?
+1. **Submittable:** Yes — provides audit trail, prevents post-submission edits
+2. **Backfill:** No — existing DCRs stay as-is, new interactions start fresh
+3. **Deal value:** Pulled from linked Quotation/Opportunity — no duplicate field on interaction
+4. **Stalled threshold:** 14 days no interaction → auto-Stalled (confirmed for DSPL sales cycle)
