@@ -30,8 +30,8 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 39 screen modules, 63 routes, hash router, standalone PWA |
-| **Field API** | `@frappe.whitelist` in `api/field.py` | 54 endpoints with ownership/role checks |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 40 screen modules, 66 routes, hash router, standalone PWA |
+| **Field API** | `@frappe.whitelist` in `api/field.py` | 57 endpoints with ownership/role checks |
 | **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
 | **View Engine** | `views/registry.py` + `views/engine.py` | 15 composable views, role-filtered, linked doc enrichment |
 | **AI Agent** | `agent/runner.py` (Bedrock) | Claude with 101 tools, persistent memory, slash commands, token tracking |
@@ -254,6 +254,7 @@ vaishali/
 │       ├── customer-timeline.js # Sales timeline: DCRs, Opportunities, Quotations, SOs by customer
 │       ├── monthly-report.js # Revenue, orders, visits, YTD progress, conversion funnel
 │       ├── opportunity.js  # Opportunity list + detail + Create Quotation
+│       ├── interactions.js # Sales Interaction list + new + detail (phone/email/WhatsApp follow-ups)
 │       ├── chat.js        # Vaishali AI (120s timeout)
 │       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
 │       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
@@ -266,7 +267,8 @@ vaishali/
 │       ├── expense_budget/        # Monthly expense caps per vertical
 │       ├── sales_target/          # Sales targets per employee/product
 │       ├── vaishali_chat_log/     # AI chat persistence (user, conversation_id, role, content, tokens, cost)
-│       └── vaishali_memory/       # Cross-session AI memory (user, key, content, source, last_used)
+│       ├── vaishali_memory/       # Cross-session AI memory (user, key, content, source, last_used)
+│       └── sales_interaction/     # Phone/email/WhatsApp sales follow-ups (submittable, 35 fields)
 ├── fixtures/
 │   └── custom_field.json  # telegram_chat_id on Employee
 └── www/
@@ -390,6 +392,9 @@ PWA uses clean paths translated to Frappe methods:
 | `POST /api/field/opportunities` | `vaishali.api.field.create_opportunity_from_lead` |
 | `GET /api/field/opportunity/:id` | `vaishali.api.field.get_opportunity` |
 | `GET /api/field/lead-sources` | `vaishali.api.field.get_lead_sources` |
+| `GET /api/field/interactions` | `vaishali.api.field.get_interactions` |
+| `POST /api/field/interactions` | `vaishali.api.field.create_interaction` |
+| `GET /api/field/interaction/:id` | `vaishali.api.field.get_interaction` |
 
 ## Auth Model
 
