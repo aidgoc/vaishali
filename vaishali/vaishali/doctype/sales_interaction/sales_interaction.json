@@ -1,0 +1,308 @@
+{
+  "actions": [],
+  "autoname": "SI-.YYYY.-.#####",
+  "creation": "2026-04-03 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "channel",
+    "direction",
+    "column_break_info",
+    "employee",
+    "employee_name",
+    "duration_minutes",
+    "section_break_customer",
+    "customer",
+    "customer_name",
+    "lead",
+    "lead_name",
+    "column_break_contact",
+    "contact",
+    "contact_phone",
+    "section_break_outcome",
+    "purpose",
+    "summary",
+    "column_break_outcome",
+    "outcome",
+    "section_break_pipeline",
+    "opportunity",
+    "quotation",
+    "sales_order",
+    "column_break_pipeline",
+    "conversion_stage",
+    "win_probability",
+    "section_break_next",
+    "next_action",
+    "next_action_date",
+    "column_break_next",
+    "reminder_sent",
+    "section_break_linking",
+    "daily_call_report",
+    "amended_from"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "channel",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Channel",
+      "options": "Phone Call\nEmail\nWhatsApp\nVideo Call\nIn Person",
+      "reqd": 1
+    },
+    {
+      "default": "Outgoing",
+      "fieldname": "direction",
+      "fieldtype": "Select",
+      "label": "Direction",
+      "options": "Outgoing\nIncoming",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_info",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Employee",
+      "options": "Employee",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fetch_from": "employee.employee_name",
+      "fieldname": "employee_name",
+      "fieldtype": "Data",
+      "label": "Employee Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "duration_minutes",
+      "fieldtype": "Int",
+      "label": "Duration (min)"
+    },
+    {
+      "fieldname": "section_break_customer",
+      "fieldtype": "Section Break",
+      "label": "Customer / Lead"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Customer",
+      "options": "Customer",
+      "search_index": 1
+    },
+    {
+      "fetch_from": "customer.customer_name",
+      "fieldname": "customer_name",
+      "fieldtype": "Data",
+      "label": "Customer Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "lead",
+      "fieldtype": "Link",
+      "label": "Lead",
+      "options": "Lead",
+      "search_index": 1
+    },
+    {
+      "fetch_from": "lead.lead_name",
+      "fieldname": "lead_name",
+      "fieldtype": "Data",
+      "label": "Lead Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_contact",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "contact",
+      "fieldtype": "Link",
+      "label": "Contact Person",
+      "options": "Contact"
+    },
+    {
+      "fieldname": "contact_phone",
+      "fieldtype": "Data",
+      "label": "Contact Phone",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "section_break_outcome",
+      "fieldtype": "Section Break",
+      "label": "Outcome"
+    },
+    {
+      "fieldname": "purpose",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Purpose",
+      "options": "Follow-up\nNew Enquiry\nQuotation Discussion\nNegotiation\nOrder Confirmation\nPayment Follow-up\nRelationship\nComplaint\nOther",
+      "reqd": 1
+    },
+    {
+      "fieldname": "summary",
+      "fieldtype": "Small Text",
+      "label": "Summary",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_outcome",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "outcome",
+      "fieldtype": "Select",
+      "label": "Outcome",
+      "options": "\nPositive\nNeutral\nNegative\nNo Response"
+    },
+    {
+      "fieldname": "section_break_pipeline",
+      "fieldtype": "Section Break",
+      "label": "Pipeline"
+    },
+    {
+      "fieldname": "opportunity",
+      "fieldtype": "Link",
+      "label": "Opportunity",
+      "options": "Opportunity"
+    },
+    {
+      "fieldname": "quotation",
+      "fieldtype": "Link",
+      "label": "Quotation",
+      "options": "Quotation"
+    },
+    {
+      "fieldname": "sales_order",
+      "fieldtype": "Link",
+      "label": "Sales Order",
+      "options": "Sales Order"
+    },
+    {
+      "fieldname": "column_break_pipeline",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "Open",
+      "fieldname": "conversion_stage",
+      "fieldtype": "Select",
+      "label": "Conversion Stage",
+      "options": "Open\nLead Created\nOpportunity\nProposal Sent\nNegotiation\nVerbal Commitment\nQuoted\nWon\nLost\nStalled"
+    },
+    {
+      "default": "5",
+      "fieldname": "win_probability",
+      "fieldtype": "Percent",
+      "label": "Win Probability"
+    },
+    {
+      "fieldname": "section_break_next",
+      "fieldtype": "Section Break",
+      "label": "Next Steps"
+    },
+    {
+      "fieldname": "next_action",
+      "fieldtype": "Small Text",
+      "label": "Next Action"
+    },
+    {
+      "fieldname": "next_action_date",
+      "fieldtype": "Date",
+      "label": "Next Action Date"
+    },
+    {
+      "fieldname": "column_break_next",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "fieldname": "reminder_sent",
+      "fieldtype": "Check",
+      "label": "Reminder Sent",
+      "read_only": 1
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "section_break_linking",
+      "fieldtype": "Section Break",
+      "label": "Linked Documents"
+    },
+    {
+      "fieldname": "daily_call_report",
+      "fieldtype": "Link",
+      "label": "Daily Call Report",
+      "options": "Daily Call Report"
+    },
+    {
+      "fieldname": "amended_from",
+      "fieldtype": "Link",
+      "label": "Amended From",
+      "no_copy": 1,
+      "options": "Sales Interaction",
+      "print_hide": 1,
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-04-03 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "Sales Interaction",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Sales Manager",
+      "submit": 1,
+      "cancel": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Sales User",
+      "submit": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "date",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "customer_name",
+  "track_changes": 1
+}

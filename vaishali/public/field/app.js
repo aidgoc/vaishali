@@ -150,6 +150,11 @@
     { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },  tab: 'home', title: 'Add Stock',    back: '#/stock' },
     { pattern: '#/stock',        handler: function () { S().stockList(appEl); },    tab: 'home', title: 'Stock Levels', back: '#/home' },
 
+    // Sales Interactions
+    { pattern: '#/interactions/new', handler: function () { S().interactionNew(appEl); },           tab: 'home', title: 'Log Interaction', back: '#/interactions' },
+    { pattern: '#/interactions',     handler: function () { S().interactionList(appEl); },          tab: 'home', title: 'Interactions',    back: '#/home' },
+    { pattern: '#/interaction/:id',  handler: function (p) { S().interactionDetail(appEl, p); },    tab: 'home', title: 'Interaction',     back: '#/interactions' },
+
     // Sales
     { pattern: '#/pipeline',   handler: function () { S().pipeline(appEl); },       tab: 'home', title: 'Pipeline',   back: '#/home' },
     { pattern: '#/targets',    handler: function () { S().myTargets(appEl); },      tab: 'home', title: 'My Targets', back: '#/home' },

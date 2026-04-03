@@ -1817,3 +1817,82 @@ def create_opportunity_from_lead(lead_name):
     opp.insert(ignore_permissions=True)
     frappe.db.commit()
     return opp.as_dict()
+
+
+# ── Sales Interactions ─────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_interactions(search=None, customer=None, limit=50):
+    """List sales interactions for the current employee (or team for managers)."""
+    emp = _get_employee()
+    tier = _get_nav_tier()
+
+    filters = [["docstatus", "=", 1]]
+
+    if customer:
+        filters.append(["customer", "=", customer])
+    elif tier == "field":
+        filters.append(["employee", "=", emp.name])
+    elif tier in ("manager", "admin"):
+        pass  # see all
+
+    if search:
+        filters.append(["summary", "like", f"%{search}%"])
+
+    return frappe.get_list("Sales Interaction",
+        filters=filters,
+        fields=["name", "date", "channel", "direction", "employee", "employee_name",
+                "customer", "customer_name", "lead", "lead_name",
+                "purpose", "summary", "outcome", "conversion_stage",
+                "next_action", "next_action_date", "docstatus"],
+        order_by="date desc, creation desc",
+        limit_page_length=int(limit))
+
+
+@frappe.whitelist()
+def get_interaction(interaction_id):
+    """Get a single sales interaction."""
+    emp = _get_employee()
+    doc = frappe.get_doc("Sales Interaction", interaction_id)
+    tier = _get_nav_tier()
+    if tier == "field" and doc.employee != emp.name:
+        frappe.throw(_("Access denied"), frappe.PermissionError)
+    return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def create_interaction(**kwargs):
+    """Create a new sales interaction from the PWA."""
+    emp = _get_employee()
+
+    doc = frappe.new_doc("Sales Interaction")
+    doc.employee = emp.name
+
+    allowed_fields = [
+        "date", "channel", "direction", "duration_minutes",
+        "customer", "lead", "contact", "contact_phone",
+        "purpose", "summary", "outcome",
+        "opportunity", "quotation", "sales_order",
+        "conversion_stage", "win_probability",
+        "next_action", "next_action_date",
+        "daily_call_report",
+    ]
+    for field in allowed_fields:
+        val = kwargs.get(field)
+        if val is not None and val != "":
+            if field == "date" and "T" in str(val):
+                val = str(val).replace("T", " ").replace("Z", "").split(".")[0][:10]
+            doc.set(field, val)
+
+    if not doc.date:
+        doc.date = frappe.utils.today()
+
+    if doc.customer and not frappe.db.exists("Customer", doc.customer):
+        frappe.throw(_("Customer '{0}' not found").format(doc.customer))
+    if doc.lead and not frappe.db.exists("Lead", doc.lead):
+        frappe.throw(_("Lead '{0}' not found").format(doc.lead))
+
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()

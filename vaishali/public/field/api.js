@@ -411,6 +411,20 @@
       else if (path === '/api/field/unpaid-invoices') path = '/api/method/vaishali.api.field.get_unpaid_invoices';
       else if (path === '/api/field/payments' && method === 'POST') path = '/api/method/vaishali.api.field.create_payment_entry';
 
+      // Sales Interactions
+      else if (path === '/api/field/interactions' || path.indexOf('/api/field/interactions?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_interaction';
+        } else {
+          var intQS = ''; var intQI = path.indexOf('?'); if (intQI !== -1) intQS = path.substring(intQI);
+          path = '/api/method/vaishali.api.field.get_interactions' + intQS;
+        }
+      }
+      else if (path.match(/^\/api\/field\/interaction\/[^/]+$/)) {
+        var intId = path.replace('/api/field/interaction/', '');
+        path = '/api/method/vaishali.api.field.get_interaction?interaction_id=' + encodeURIComponent(intId);
+      }
+
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);
 
