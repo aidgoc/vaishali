@@ -61,13 +61,15 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - **Service:** Empty (0 warranty claims, 0 maintenance visits, 0 serial numbers)
 - **Gaps:** Item Prices (only 24/6,471), draft SI/PE cleanup needed, Purchase workflow unused, Serial Nos not registered
 
-## BOM Migration from Krisp (2026-03-30)
-- Migrated 229 Krisp recipes to ERPNext multi-level BOMs
-- Final: 244 BOMs (112 multi-level, 130 flat), 601 sub-assembly links
+## BOM Migration from Krisp (2026-03-30, reconciled 2026-04-03)
+- **216 Krisp recipes reconciled** with ERPNext BOMs (100% items + quantities match)
+- **489/495 raw material rates verified** against Krisp frontend (98.3% exact, 12 fixed)
+- **227 submitted BOMs** total (215 Krisp-matched + 12 EN-only), 0 draft, 0 orphans
+- 28 missing sub-assembly items created, 3 code padding fixes, 2 self-refs stripped
 - ERPNext requires child BOMs to be SUBMITTED before linking via bom_no
-- Krisp data: operproditems.bson=recipes, store field->invstoreitems (E* codes)
+- Krisp data: `operproditems.bson`=recipes, `store` field->`invstoreitems` (E* codes)
 - Sub-assembly code mapping: Krisp K* -> ERPNext BK* (prefix B), or name match
-- Scripts at /tmp/bom_migration.py, /tmp/bom_multilevel.py, /tmp/bom_fix_remaining.py
+- Canonical scripts: `/tmp/bom_fix_all.py` (cancel+recreate), `/tmp/bom_compare_all.py` (verify), `/tmp/bom_final_cleanup.py` (WO cleanup + ref fixes)
 
 ### BOM Update/Fix Procedures (CRITICAL)
 **NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades breakage.
@@ -86,20 +88,13 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 **DSPL context:** 0 Purchase Orders means valuation rates use Item master's static `valuation_rate` field (level 3 fallback). To fix rates: update Item.valuation_rate → Update Cost on BOM.
 
-### BOM Rate Validation Complete (2026-03-30)
-**Status:** Production-ready recommendation with HIGH confidence
+### BOM Rate Validation (2026-04-03) — COMPLETE
+**Status:** Fully validated. 489 raw material rates cross-checked against Krisp frontend via Playwright.
 
-**Validation Approach:** Spot-checked 12 recipes across 8 product categories (61% coverage) using Path B methodology — cost reasonableness vs. component complexity analysis.
-
-**Sample Coverage:** LOAD (3), D SERIES (2), ANGLE (2), WIND (1), ATB (1), E-DASH (1), E-SLI (1), LR-TM (1)
-
-**Key Findings:**
-- Cost range: ₹94.00 (3-component PCB) to ₹11,367.72 (66-component Line Rider)
-- All costs proportional to component count and material type
-- 10 of 12 recipes submitted BOMs, 2 draft (no cost concerns)
-- Zero outliers or suspicious rates detected
-- Krisp unsuitable baseline (98.8% zero-rate systemic issue in settsalerates.bson)
-- ERPNext confirmed as authoritative source for DSPL operations
+**Results:**
+- 477/489 exact matches (97.5%), 12 mismatches fixed (Item master `valuation_rate` updated + BOM cost cascaded)
+- All 227 submitted BOMs have `total_cost > 0`, cost range ₹6.80 to ₹250,042.29
+- 67 items have `valuation_rate = 0` — these are newly created sub-assemblies (BK* codes) with BOM-derived costs, not raw materials
 
 **Operational Use:**
 - ✅ Quotations and Sales Orders pricing
@@ -107,19 +102,10 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - ✅ Margin analysis and decision-making
 - ⚠️ NOT for component-level supplier negotiations (requires supplier invoice data)
 
-**Next Steps:**
-1. Submit BKD07001 (₹2,875.72) and BKJ05001 (₹11,367.72) draft BOMs before manufacturing
-2. Document BKJ05001 sub-assembly structure
-3. Establish supplier cost baseline module for future validations
-
 **Validation Deliverables:**
-- `docs/validation/selected_recipes.json` — Recipe selection rationale and sample
-- `docs/validation/extracted_boms.json` — Complete BOM component details (2,692 lines)
-- `docs/validation/validation_findings.md` — Per-recipe operational context analysis
-- `docs/validation/validation_findings.json` — Structured validation data
-- `docs/validation/COMPREHENSIVE_VALIDATION_REPORT.md` — Executive summary report (1,450 words)
-
-**Recommendation:** PROCEED WITH CONDITIONS — ERPNext BOM rates production-ready for DSPL operations.
+- `docs/validation/` — Original 12-recipe spot-check (2026-03-30)
+- `/tmp/bom_comparison_v2.json` — Full 216-recipe structural comparison
+- `/tmp/full_rate_comparison.json` — 489-item rate comparison report
 
 ## PWA Structure (Installable Standalone App)
 
