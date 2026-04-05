@@ -87,6 +87,29 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 **CRITICAL: Never trust Krisp BSON quantities** — always scrape the frontend via Playwright.
 **Krisp frontend data:** `/tmp/krisp_qty_all.json` (223 recipes with real quantities)
 
+### BOM Sub-Assembly Nesting Analysis (2026-04-05) — PENDING PRODUCTION REVIEW
+**Finding:** 60 sub-assemblies have parent-specific variations in Krisp (196 instances across 398 checks, 50.8% match rate). Krisp allows per-parent recipe customization; ERPNext has one shared BOM per item.
+
+**Impact:** ERPNext BOMs use standalone Krisp recipes. When a sub-assembly appears inside a parent product, Krisp may show different items/quantities than the standalone recipe. This is a modeling difference, not a data error.
+
+**Top 5 sub-assemblies to investigate with production team:**
+| Sub-assembly | Varies in | Example variation |
+|---|---|---|
+| BKH02003 Installation Kit D Series | 37 parents | 5 distinct variants: bolt count 0/8/10, extra adapter in some |
+| BKB01001 Interface Box D Series | 22 parents | 7 items differ in some parents (connectors, hardware) |
+| BKD02001 Sensor ASMBL ATB (D) | 11 parents | Component swaps |
+| BKH02004 PCB ASMB D Series Display | 8 parents | Component count differences |
+| BKJ02002 Line Rider LR-B | 7 parents | Part substitutions |
+
+**Recommended approach:**
+1. Ignore 55 minor sub-assemblies (bolt/cable-tie count diffs — handled at production)
+2. Ask production lead for top 5: "Do you build this differently per product?"
+3. If yes → create variant item codes (e.g., BKH02003-A, BKH02003-B) with separate BOMs
+4. If no → standalone BOM is correct, Krisp variations are historical drift
+5. Use ERPNext Work Order material overrides for occasional per-order variations
+
+**Report:** Interactive HTML in `/tmp/bom_nesting_report.html`, data in `/tmp/bom_report_data.json`
+
 ### BOM Update/Fix Procedures (CRITICAL)
 **NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades breakage.
 
