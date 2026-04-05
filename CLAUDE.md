@@ -54,22 +54,38 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 ### FY 2026-27 Readiness (Audited 1 Apr 2026)
 - **Sales:** 2,076 open leads, 8 opportunities, 15 open quotations, 37 submitted SOs
-- **Production:** 227 BOMs (227 active, all DSPL), 0 work orders (reconciled 3 Apr 2026, 452 cancelled BOMs from migration)
+- **Production:** 227 BOMs (227 active, all DSPL, quantities verified 5 Apr 2026), 0 work orders
 - **Stock:** 14 warehouses, 29 stock entries, 5 items below reorder
 - **Purchase:** Not yet used (0 POs, 0 receipts, 0 invoices)
 - **Accounts:** 1,017 draft SIs (needs cleanup), 0 submitted SIs, 267 draft PEs, 50 GL entries
 - **Service:** Empty (0 warranty claims, 0 maintenance visits, 0 serial numbers)
 - **Gaps:** Item Prices (only 24/6,471), draft SI/PE cleanup needed, Purchase workflow unused, Serial Nos not registered
 
-## BOM Migration from Krisp (2026-03-30, reconciled 2026-04-03)
-- **216 Krisp recipes reconciled** with ERPNext BOMs (100% items + quantities match)
+## BOM Migration from Krisp (2026-03-30, reconciled 2026-04-03, qty fix 2026-04-05)
+- **215/216 Krisp recipes reconciled** with ERPNext BOMs (items + quantities match). 1 structural mismatch remaining.
 - **489 raw material rates verified** against Krisp frontend (477 exact, 12 fixed, 6 not in Krisp)
-- **227 submitted BOMs** total (215 Krisp-matched + 12 EN-only), 0 draft, 0 orphans
-- 28 missing sub-assembly items created, 3 code padding fixes, 2 self-refs stripped
+- **227 submitted BOMs** total (215 Krisp-matched + 12 EN-only), 0 draft, 0 duplicates
+- 29 items created (28 sub-assemblies + BKF06002), 3 code padding fixes, 2 self-refs stripped
 - ERPNext requires child BOMs to be SUBMITTED before linking via bom_no
 - Krisp data: `operproditems.bson`=recipes, `store` field->`invstoreitems` (E* codes)
 - Sub-assembly code mapping: Krisp K* -> ERPNext BK* (prefix B), or name match
-- Canonical scripts: `/tmp/bom_fix_all.py` (cancel+recreate), `/tmp/bom_compare_all.py` (verify), `/tmp/bom_final_cleanup.py` (WO cleanup + ref fixes)
+- Canonical scripts: `/tmp/bom_fix_qty.py` (qty fix), `/tmp/krisp_scrape_qty_v2.py` (Playwright scraper), `/tmp/compare_krisp_vs_erpnext.py` (comparison)
+
+### BOM Quantity Fix (2026-04-05) — COMPLETE
+**Root cause:** Krisp BSON export (`operproditems.bson`) stored `qty=1` for ALL recipe items. The original `bom_fix_all.py` used this data, creating all 216 BOMs with wrong quantities.
+
+**Fix process:**
+1. Scraped all 223 Krisp recipes via Playwright from `dgoc.krisperp.com` frontend (Operations → Recipe/Reusable BoMs)
+2. Krisp frontend requires **expand-all → collapse-all → expand-all** trick to display correct quantities
+3. Quantities are in `input[type="number"]` fields inside `.rt-tr-group` ReactTable rows (not visible in innerText)
+4. Compared 216 mapped recipes against ERPNext: found 187 qty mismatches (735 individual items wrong)
+5. Cancelled 201 BOMs top-down, recreated bottom-up with correct frontend quantities
+6. Created missing item `BKF06002` (ACD ASSEMBLY CKD DTC 3300 PRO) for 2 remaining BOMs
+7. Updated all BOM costs, cleaned up 42 duplicate old BOMs
+8. **Final result:** 215/216 perfect matches, 0 qty mismatches, all costs updated
+
+**CRITICAL: Never trust Krisp BSON quantities** — always scrape the frontend via Playwright.
+**Krisp frontend data:** `/tmp/krisp_qty_all.json` (223 recipes with real quantities)
 
 ### BOM Update/Fix Procedures (CRITICAL)
 **NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades breakage.
@@ -88,12 +104,12 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 
 **DSPL context:** 0 Purchase Orders means valuation rates use Item master's static `valuation_rate` field (level 3 fallback). To fix rates: update Item.valuation_rate → Update Cost on BOM.
 
-### BOM Rate Validation (2026-04-03) — COMPLETE
-**Status:** Fully validated. 489 raw material rates cross-checked against Krisp frontend via Playwright.
+### BOM Rate Validation (2026-04-03, costs updated 2026-04-05) — COMPLETE
+**Status:** Fully validated. 489 raw material rates cross-checked against Krisp frontend via Playwright. All BOM costs recalculated after quantity fix.
 
 **Results:**
 - 477/489 exact matches (97.5%), 12 mismatches fixed (Item master `valuation_rate` updated + BOM cost cascaded)
-- All 227 submitted BOMs have `total_cost > 0`, cost range ₹6.80 to ₹232,166.64
+- All 227 submitted BOMs have `total_cost > 0`, cost range ₹308.59 to ₹240,848.00 (post qty-fix)
 - 67 items have `valuation_rate = 0` — these are newly created sub-assemblies (BK* codes) with BOM-derived costs, not raw materials
 
 **Operational Use:**
