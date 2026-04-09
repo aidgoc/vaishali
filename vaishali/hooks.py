@@ -36,6 +36,7 @@ doc_events = {
         "on_submit": [
             "vaishali.api.linking.link_sales_order_to_dcr",
             "vaishali.notifications.on_sales_order_submit",
+            "vaishali.notifications.on_sales_order_submit_production",
         ],
     },
     "Delivery Note": {

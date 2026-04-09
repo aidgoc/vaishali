@@ -1492,21 +1492,35 @@ def get_devices(search=None, status=None, customer=None):
 
 @frappe.whitelist()
 def get_sales_orders(status=None):
-    """List sales orders. Managers see all, field staff see own."""
+    """List sales orders. Managers see all, field staff see own.
+    Manufacturing roles see orders but without financial data."""
     tier = _get_nav_tier()
+    user_roles = frappe.get_roles()
+    is_production = ("Manufacturing User" in user_roles or "Manufacturing Manager" in user_roles)
+    is_sales = ("Sales User" in user_roles or "Sales Manager" in user_roles
+                or "Accounts User" in user_roles or "Accounts Manager" in user_roles)
+
     filters = [["company", "=", COMPANY], ["docstatus", "<", 2]]
-    if tier == "field":
+    if tier == "field" and not is_production:
         filters.append(["owner", "=", frappe.session.user])
     if status and status != "All":
         if status == "Draft":
             filters.append(["docstatus", "=", 0])
         else:
             filters.append(["status", "=", status])
+
+    if is_production and not is_sales:
+        fields = ["name", "customer", "customer_name", "status",
+                  "transaction_date", "delivery_date", "per_delivered",
+                  "docstatus"]
+    else:
+        fields = ["name", "customer", "customer_name", "grand_total", "status",
+                  "transaction_date", "delivery_date", "per_delivered", "per_billed",
+                  "docstatus"]
+
     return frappe.get_list("Sales Order",
         filters=filters,
-        fields=["name", "customer", "customer_name", "grand_total", "status",
-                "transaction_date", "delivery_date", "per_delivered", "per_billed",
-                "docstatus"],
+        fields=fields,
         order_by="transaction_date desc",
         limit_page_length=100)
 

@@ -36,6 +36,22 @@ def _get_managers():
     return managers
 
 
+def _get_users_with_role(*roles):
+    """Return employee IDs for all active users with any of the given roles."""
+    emp_ids = []
+    for role in roles:
+        users = frappe.get_all("Has Role",
+            filters={"role": role, "parenttype": "User"},
+            pluck="parent")
+        for user in users:
+            if user in ("Administrator", "Guest"):
+                continue
+            emp_id = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "name")
+            if emp_id and emp_id not in emp_ids:
+                emp_ids.append(emp_id)
+    return emp_ids
+
+
 def _get_leave_approvers(employee):
     """Return employee IDs of department-level leave approvers.
 
@@ -143,6 +159,29 @@ def on_sales_order_submit(doc, method):
         f"{doc.customer_name} — ₹{doc.grand_total:,.0f}."
     )
     for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_sales_order_submit_production(doc, method):
+    """Notify production team when a Sales Order is submitted. No financial data."""
+    production_staff = _get_users_with_role("Manufacturing User", "Manufacturing Manager")
+    if not production_staff:
+        return
+
+    items_list = []
+    for item in doc.items:
+        items_list.append(f"  • {item.item_name or item.item_code} — {item.qty} {item.uom}")
+    items_text = "\n".join(items_list[:10])
+    if len(doc.items) > 10:
+        items_text += f"\n  ... and {len(doc.items) - 10} more items"
+
+    msg = (
+        f"New Sales Order {doc.name}\n"
+        f"Customer: {doc.customer_name}\n"
+        f"Delivery: {doc.delivery_date or 'Not set'}\n"
+        f"Items:\n{items_text}"
+    )
+    for emp_id in production_staff:
         _notify(emp_id, msg)
 
 

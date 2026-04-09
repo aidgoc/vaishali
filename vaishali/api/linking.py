@@ -288,3 +288,126 @@ def on_quotation_status_change(doc, method):
         for dcr_name in dcrs:
             frappe.db.set_value("Daily Call Report", dcr_name, "conversion_status", "Lost",
                                update_modified=False)
+
+
+def setup_production_so_access():
+    """Grant Manufacturing User/Manager read-only access to Sales Order with financial fields hidden.
+
+    Uses Frappe permlevel system: financial fields set to permlevel=1, manufacturing roles
+    only get permlevel=0 read access. Sales/Accounts roles get permlevel=0+1.
+
+    Run: bench --site dgoc.logstop.com execute vaishali.api.linking.setup_production_so_access
+    """
+    # ── 1. Add DocPerm for Manufacturing roles (permlevel=0, read-only) ──
+    for role in ("Manufacturing User", "Manufacturing Manager"):
+        existing = frappe.db.exists("DocPerm", {
+            "parent": "Sales Order", "role": role, "permlevel": 0
+        })
+        if not existing:
+            so_meta = frappe.get_doc("DocType", "Sales Order")
+            so_meta.append("permissions", {
+                "role": role,
+                "permlevel": 0,
+                "read": 1, "write": 0, "create": 0, "submit": 0,
+                "cancel": 0, "amend": 0, "delete": 0,
+                "print": 1, "email": 0, "report": 1,
+                "share": 0, "export": 1,
+            })
+            so_meta.save(ignore_permissions=True)
+            print(f"  Added DocPerm: {role} → Sales Order (read-only, permlevel=0)")
+        else:
+            print(f"  DocPerm already exists: {role} → Sales Order")
+
+    frappe.db.commit()
+
+    # ── 2. Set permlevel=1 on financial fields via Property Setter ──
+    so_financial_fields = [
+        "total", "net_total", "grand_total", "rounded_total", "rounding_adjustment",
+        "discount_amount", "base_total", "base_net_total", "base_grand_total",
+        "base_rounded_total", "base_discount_amount", "total_taxes_and_charges",
+        "base_total_taxes_and_charges", "in_words", "base_in_words",
+        "conversion_rate", "currency", "price_list_currency", "plc_conversion_rate",
+        "selling_price_list", "payment_terms_template", "tc_name", "terms",
+        "payment_schedule",
+        # Section breaks for financial areas
+        "totals", "base_total_field", "currency_and_price_list",
+        "payment_terms_section", "terms_section_break",
+    ]
+
+    soi_financial_fields = [
+        "rate", "amount", "net_rate", "net_amount",
+        "base_rate", "base_amount", "base_net_rate", "base_net_amount",
+        "price_list_rate", "discount_percentage", "discount_amount",
+        "margin_type", "margin_rate_or_amount", "rate_with_margin",
+        "pricing_rules",
+    ]
+
+    # Sales Taxes and Charges — hide entire child table
+    tax_fields = [
+        "charge_type", "account_head", "description", "rate",
+        "tax_amount", "total", "base_tax_amount", "base_total",
+        "tax_amount_after_discount_amount",
+    ]
+
+    def _set_permlevel(doc_type, fieldname, permlevel=1):
+        ps_name = frappe.db.get_value("Property Setter", {
+            "doc_type": doc_type, "field_name": fieldname, "property": "permlevel"
+        })
+        if ps_name:
+            frappe.db.set_value("Property Setter", ps_name, "value", str(permlevel))
+        else:
+            ps = frappe.new_doc("Property Setter")
+            ps.doctype_or_field = "DocField"
+            ps.doc_type = doc_type
+            ps.field_name = fieldname
+            ps.property = "permlevel"
+            ps.property_type = "Int"
+            ps.value = str(permlevel)
+            ps.save(ignore_permissions=True)
+
+    set_count = 0
+    for fn in so_financial_fields:
+        if frappe.db.exists("DocField", {"parent": "Sales Order", "fieldname": fn}):
+            _set_permlevel("Sales Order", fn)
+            set_count += 1
+
+    for fn in soi_financial_fields:
+        if frappe.db.exists("DocField", {"parent": "Sales Order Item", "fieldname": fn}):
+            _set_permlevel("Sales Order Item", fn)
+            set_count += 1
+
+    for fn in tax_fields:
+        if frappe.db.exists("DocField", {"parent": "Sales Taxes and Charges", "fieldname": fn}):
+            _set_permlevel("Sales Taxes and Charges", fn)
+            set_count += 1
+
+    # Also hide the taxes section in Sales Order
+    if frappe.db.exists("DocField", {"parent": "Sales Order", "fieldname": "taxes_section"}):
+        _set_permlevel("Sales Order", "taxes_section")
+        set_count += 1
+    if frappe.db.exists("DocField", {"parent": "Sales Order", "fieldname": "taxes"}):
+        _set_permlevel("Sales Order", "taxes")
+        set_count += 1
+
+    print(f"  Set permlevel=1 on {set_count} financial fields")
+
+    # ── 3. Grant permlevel=1 read to sales/accounts roles (so they still see everything) ──
+    for role in ("Sales User", "Sales Manager", "Accounts User", "Accounts Manager"):
+        existing = frappe.db.exists("DocPerm", {
+            "parent": "Sales Order", "role": role, "permlevel": 1
+        })
+        if not existing:
+            so_meta = frappe.get_doc("DocType", "Sales Order")
+            so_meta.append("permissions", {
+                "role": role,
+                "permlevel": 1,
+                "read": 1, "write": 1,
+            })
+            so_meta.save(ignore_permissions=True)
+            print(f"  Added DocPerm: {role} → Sales Order (permlevel=1, read+write)")
+        else:
+            print(f"  DocPerm already exists: {role} → Sales Order permlevel=1")
+
+    frappe.db.commit()
+    frappe.clear_cache(doctype="Sales Order")
+    print("  Done. Sales Order permissions updated.")

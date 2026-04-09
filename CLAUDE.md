@@ -1,20 +1,16 @@
-# CLAUDE.md — Vaishali (DSPL Org OS)
+# Vaishali — DSPL Org OS
 
-## What This Is
+Custom Frappe v15 app for **Dynamic Servitech Private Limited** (DSPL) — crane safety electronics, equipment rental, wire rope testing. AI-native ERP layer: PWA for field staff, View Engine for dashboards, AI agent (Claude) for natural language ERP queries.
 
-Custom Frappe v15 app for **Dynamic Servitech Private Limited** (DSPL) — a crane rental, industrial equipment sales/service, and manufacturing company. Vaishali is their AI-native ERP layer: a PWA for field staff, a View Engine for composable dashboards, and an AI agent (Claude) for natural language ERP queries.
-
-**Live at:** https://dgoc.logstop.com/field (self-hosted AWS EC2)
-**ERPNext desk:** https://dgoc.logstop.com/app
-**Frappe Cloud (source):** https://dcepl.logstop.com (data synced to EC2)
+**Live:** https://dgoc.logstop.com/field | **Desk:** https://dgoc.logstop.com/app | **Frappe Cloud:** https://dcepl.logstop.com
 
 ## Architecture
 
 ```
 Browser (PWA)  ──cookie──>  Frappe/ERPNext (gunicorn :8000)
-                              ├── vaishali.api.field.*    (42 whitelist endpoints)
-                              ├── vaishali.api.views.*    (View Engine)
-                              ├── vaishali.api.chat.*     (AI chat)
+                              ├── vaishali.api.field.*    (57 whitelist endpoints)
+                              ├── vaishali.api.views.*    (View Engine: 15 composable views)
+                              ├── vaishali.api.chat.*     (AI chat v2: 6 endpoints)
                               └── vaishali.views.engine   (role-filtered data fetcher)
 
 Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:8443)
@@ -26,589 +22,119 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
                               └── forwards cookie to Frappe for auth
 ```
 
-### Key Layers
-
 | Layer | Tech | Purpose |
 |-------|------|---------|
-| **PWA** | Vanilla JS SPA, `el()` DOM builder | 40 screen modules, 66 routes, hash router, standalone PWA |
+| **PWA** | Vanilla JS SPA, `el()` DOM builder | 40 screens, 66 routes, hash router, standalone PWA |
 | **Field API** | `@frappe.whitelist` in `api/field.py` | 57 endpoints with ownership/role checks |
 | **Linking** | `api/linking.py` doc_events | DCR → Lead → Opportunity auto-creation + SO/Quotation backlink |
-| **View Engine** | `views/registry.py` + `views/engine.py` | 15 composable views, role-filtered, linked doc enrichment |
-| **AI Agent** | `agent/runner.py` (Bedrock) | Claude with 101 tools, persistent memory, slash commands, token tracking |
+| **View Engine** | `views/registry.py` + `views/engine.py` | 15 composable views, role-filtered |
+| **AI Agent** | `agent/runner.py` (Bedrock) | Claude with 101 tools, persistent memory, slash commands |
 | **FastAPI slim** | `~/dspl_erp/` on EC2 | Async AI chat + Telegram notifications |
 
-## Company Context (CRITICAL)
+**Detailed docs per layer:**
+- PWA design system, UI kit, screen patterns → `vaishali/public/field/CLAUDE.md`
+- AI agent config, tools, role gates → `vaishali/agent/CLAUDE.md`
+- API security, path translation, DCR linking → `vaishali/api/CLAUDE.md`
 
-- **Company:** Dynamic Servitech Private Limited (DSPL)
-- **Business:** Crane safety electronics (SLIs, load monitors, IoT), equipment rental, wire rope testing
+## Company Context
+
 - **Products:** ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT Systems, TPS
-- **BOM Item Prefixes:** Both DSPL and DCEPL use Krisp-derived BK*/BL* codes in BOMs; no EPS/ESS/ERS prefixes
-- **Annual Target:** ₹10.09 Crore (FY 2026-27)
+- **BOM Item Prefixes:** Krisp-derived BK*/BL* codes; no EPS/ESS/ERS prefixes
+- **Annual Target:** ₹10.09 Crore (FY 2026-27, Apr–Mar)
 - **Sales Team:** Raghuvir, Aniket, NJG, BNG (Bangalore)
 - **ERPNext apps:** frappe, erpnext, hrms, india_compliance, payments, vaishali
 - **HSN items:** disable, never delete
 - **Currency:** INR only, format ₹X,XX,XXX (en-IN locale)
-- **Data (1 Apr 2026):** 1,896 customers, 1,807 suppliers, 6,471 items, 10,697 contacts, 179 active employees
-- **Fiscal Year:** 2026-27 (Apr 1, 2026 → Mar 31, 2027) — active
-- **System:** 201 accounts, 4 cost centers, 9 sales tax + 8 purchase tax templates, 2 price lists, 14 warehouses
-
-### FY 2026-27 Readiness (Audited 1 Apr 2026)
-- **Sales:** 2,076 open leads, 8 opportunities, 15 open quotations, 37 submitted SOs
-- **Production:** 227 BOMs (227 active, all DSPL, quantities verified 5 Apr 2026), 0 work orders
-- **Stock:** 14 warehouses, 29 stock entries, 5 items below reorder
-- **Purchase:** Not yet used (0 POs, 0 receipts, 0 invoices)
-- **Accounts:** 1,017 draft SIs (needs cleanup), 0 submitted SIs, 267 draft PEs, 50 GL entries
-- **Service:** Empty (0 warranty claims, 0 maintenance visits, 0 serial numbers)
-- **Gaps:** Item Prices (only 24/6,471), draft SI/PE cleanup needed, Purchase workflow unused, Serial Nos not registered
-
-## BOM Migration from Krisp (2026-03-30, reconciled 2026-04-03, qty fix 2026-04-05)
-- **215/216 Krisp recipes reconciled** with ERPNext BOMs (items + quantities match). 1 structural mismatch remaining.
-- **489 raw material rates verified** against Krisp frontend (477 exact, 12 fixed, 6 not in Krisp)
-- **227 submitted BOMs** total (215 Krisp-matched + 12 EN-only), 0 draft, 0 duplicates
-- 29 items created (28 sub-assemblies + BKF06002), 3 code padding fixes, 2 self-refs stripped
-- ERPNext requires child BOMs to be SUBMITTED before linking via bom_no
-- Krisp data: `operproditems.bson`=recipes, `store` field->`invstoreitems` (E* codes)
-- Sub-assembly code mapping: Krisp K* -> ERPNext BK* (prefix B), or name match
-- Canonical scripts: `/tmp/bom_fix_qty.py` (qty fix), `/tmp/krisp_scrape_qty_v2.py` (Playwright scraper), `/tmp/compare_krisp_vs_erpnext.py` (comparison)
-
-### BOM Quantity Fix (2026-04-05) — COMPLETE
-**Root cause:** Krisp BSON export (`operproditems.bson`) stored `qty=1` for ALL recipe items. The original `bom_fix_all.py` used this data, creating all 216 BOMs with wrong quantities.
-
-**Fix process:**
-1. Scraped all 223 Krisp recipes via Playwright from `dgoc.krisperp.com` frontend (Operations → Recipe/Reusable BoMs)
-2. Krisp frontend requires **expand-all → collapse-all → expand-all** trick to display correct quantities
-3. Quantities are in `input[type="number"]` fields inside `.rt-tr-group` ReactTable rows (not visible in innerText)
-4. Compared 216 mapped recipes against ERPNext: found 187 qty mismatches (735 individual items wrong)
-5. Cancelled 201 BOMs top-down, recreated bottom-up with correct frontend quantities
-6. Created missing item `BKF06002` (ACD ASSEMBLY CKD DTC 3300 PRO) for 2 remaining BOMs
-7. Updated all BOM costs, cleaned up 42 duplicate old BOMs
-8. **Final result:** 215/216 perfect matches, 0 qty mismatches, all costs updated
-
-**CRITICAL: Never trust Krisp BSON quantities** — always scrape the frontend via Playwright.
-**Krisp frontend data:** `/tmp/krisp_qty_all.json` (223 recipes with real quantities)
-
-### BOM Sub-Assembly Nesting Analysis (2026-04-05) — PENDING PRODUCTION REVIEW
-**Finding:** 60 sub-assemblies have parent-specific variations in Krisp (196 instances across 398 checks, 50.8% match rate). Krisp allows per-parent recipe customization; ERPNext has one shared BOM per item.
-
-**Impact:** ERPNext BOMs use standalone Krisp recipes. When a sub-assembly appears inside a parent product, Krisp may show different items/quantities than the standalone recipe. This is a modeling difference, not a data error.
-
-**Top 5 sub-assemblies to investigate with production team:**
-| Sub-assembly | Varies in | Example variation |
-|---|---|---|
-| BKH02003 Installation Kit D Series | 37 parents | 5 distinct variants: bolt count 0/8/10, extra adapter in some |
-| BKB01001 Interface Box D Series | 22 parents | 7 items differ in some parents (connectors, hardware) |
-| BKD02001 Sensor ASMBL ATB (D) | 11 parents | Component swaps |
-| BKH02004 PCB ASMB D Series Display | 8 parents | Component count differences |
-| BKJ02002 Line Rider LR-B | 7 parents | Part substitutions |
-
-**Recommended approach:**
-1. Ignore 55 minor sub-assemblies (bolt/cable-tie count diffs — handled at production)
-2. Ask production lead for top 5: "Do you build this differently per product?"
-3. If yes → create variant item codes (e.g., BKH02003-A, BKH02003-B) with separate BOMs
-4. If no → standalone BOM is correct, Krisp variations are historical drift
-5. Use ERPNext Work Order material overrides for occasional per-order variations
-
-**Report:** Interactive HTML in `/tmp/bom_nesting_report.html`, data in `/tmp/bom_report_data.json`
-
-### BOM Update/Fix Procedures (CRITICAL)
-**NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades breakage.
-
-| Fix Type | Procedure |
-|----------|-----------|
-| **Wrong rates** | Fix Item master `valuation_rate` → click "Update Cost" on the BOM (works on submitted BOMs without cancel) |
-| **Bulk rate fix** | Fix Item prices → Manufacturing > BOM Update Tool > "Update latest price in all BOMs" |
-| **Structural (add/remove/swap items)** | Create a new BOM separately → use BOM Update Tool to replace old→new across all parent BOMs |
-| **Last resort amend** | Cancel → Amend (creates copy with `amended_from` link). Only if structural change and no BOM Update Tool workaround |
-
-**`rm_cost_as_per` field** controls rate source on each BOM:
-- **Valuation Rate** (default): weighted avg stock cost → falls back to last SLE → falls back to `Item.valuation_rate`
-- **Last Purchase Rate**: from most recent PO
-- **Price List**: from selected buying price list
-
-**DSPL context:** 0 Purchase Orders means valuation rates use Item master's static `valuation_rate` field (level 3 fallback). To fix rates: update Item.valuation_rate → Update Cost on BOM.
-
-### BOM Rate Validation (2026-04-03, costs updated 2026-04-05) — COMPLETE
-**Status:** Fully validated. 489 raw material rates cross-checked against Krisp frontend via Playwright. All BOM costs recalculated after quantity fix.
-
-**Results:**
-- 477/489 exact matches (97.5%), 12 mismatches fixed (Item master `valuation_rate` updated + BOM cost cascaded)
-- All 227 submitted BOMs have `total_cost > 0`, cost range ₹308.59 to ₹240,848.00 (post qty-fix)
-- 67 items have `valuation_rate = 0` — these are newly created sub-assemblies (BK* codes) with BOM-derived costs, not raw materials
-
-**Operational Use:**
-- ✅ Quotations and Sales Orders pricing
-- ✅ Manufacturing cost tracking
-- ✅ Margin analysis and decision-making
-- ⚠️ NOT for component-level supplier negotiations (requires supplier invoice data)
-
-**Validation Deliverables:**
-- `docs/validation/` — Original 12-recipe spot-check (2026-03-30)
-- `/tmp/bom_comparison_v2.json` — Full 216-recipe structural comparison
-- `/tmp/full_rate_comparison.json` — 489-item rate comparison report
-
-## PWA Structure (Installable Standalone App)
-
-The PWA at `/field` uses a **standalone HTML document** (not `{%- extends "templates/web.html" -%}`). Frappe renders `www/field.html` via `www/field.py` which injects CSRF token and boot context via Jinja.
-
-### Installability
-- **Manifest:** `/assets/vaishali/field/manifest.json` with `display: standalone`, `scope: /`, `start_url: /field`
-- **Service Worker:** `/assets/vaishali/field/sw.js` registered with `{ scope: '/' }` — nginx sends `Service-Worker-Allowed: /` header
-- **SW version:** v25, precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true` for cache-busted URLs
-- **Apple PWA:** `apple-mobile-web-app-capable`, `apple-touch-icon`, safe-area insets on header/nav
-- **Splash screen:** Branded loading with animated progress bar, dismisses on boot
-- **All scripts use `defer`** — non-blocking HTML parsing
-
-### Three-Zone Flexbox Layout
-```
-body { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-#app-header  — fixed 56px + safe-area-inset-top, router renders back button + title
-#app         — flex: 1, overflow-y: auto, 20px 16px padding, scrollable content
-#bottom-nav  — fixed 64px + safe-area-inset-bottom, 3 tabs: Home, AI, Me
-```
-
-### Design System — "Notion-Inspired Clean"
-- **White page background** (`#FFFFFF`), cards use `--surface-1` (`#F8F8F8`) for contrast
-- **No card borders** — whitespace separation; when borders exist: `rgba(0,0,0,0.04)`
-- **No decorative shadows** — only input focus ring and toggle thumb
-- **No scale transforms on `:active`** — use `background: rgba(0,0,0,0.04)` or `filter: brightness()`
-- **Typography:** `-0.04em` letter-spacing on headings, `15px` body text, `12px/500` sentence-case section labels (NOT uppercase)
-- **Button radius:** `8px` (not 12px — less bubbly)
-- **Tab bar:** underline-style (2px bottom border), not pill-shaped
-- **Toasts:** dark floating pill (no colored left border)
-- **Avatars:** Notion-style tinted color palette (8 pastels), rounded-square shape, deterministic from name
-- **Skeletons:** thin horizontal bars at varying widths (80%, 60%, 40%), not card-shaped blocks
-- **Focus indicators:** `:focus-visible` red outline (2px, 2px offset) for keyboard users
-- **Contrast:** `--ink-tertiary: #6B6B70` (WCAG AA 4.5:1 on white)
-
-### Transitions & Gestures
-- **iOS-style navigation:** two-layer ghost transition (old screen parallax-slides left 30% while new slides in from right), Apple ease-out curve
-- **Edge-swipe back:** swipe from left 24px edge, circular chevron indicator, 80px threshold
-- **Pull-to-refresh:** SVG circular arc progress, rubber-band resistance (0.45x), spinning/done states, spring-back
-- **Header crossfade** on route changes
-- **Staggered content reveal:** each child cascades in with 40ms delay (excluded for `.ptr-container`)
-- **Nav dot:** spring-animated active indicator
-- **`prefers-reduced-motion`** disables all animations
-
-### Router Owns the Header
-Screens do NOT render their own headers. Each route has `title` and `back`:
-```js
-{ pattern: '#/attendance', title: 'Attendance', back: '#/home', handler: ... }
-```
-`_renderRoute()` renders the header with crossfade, creates ghost snapshot for transitions, clears `#app`, resets inline styles, and calls the screen handler.
-
-### Screen Pattern
-```js
-(function () {
-  'use strict';
-  var api = window.fieldAPI;
-  var el = UI.el;
-  window.Screens = window.Screens || {};
-  window.Screens.myScreen = function (appEl) {
-    appEl.appendChild(UI.skeleton(3));
-    api.apiCall('GET', '/api/field/my-endpoint').then(function (res) {
-      appEl.textContent = '';
-      // render content
-    });
-  };
-})();
-```
-
-**DO NOT use `UI.page()` — it was removed. The router handles all headers.**
-
-### Home Screen Layout (Manager)
-```
-[Greeting (28px/700) with time + date + department]
-[KPI Row: Team Present | Approvals | Visits Today]
-[2x2 Action Cards: Check In/Out, New Visit, Leave, Expenses]
-[HR services (sentence-case heading): Leave, Salary, Expenses, Advances grid]
-[Pending approvals: list cards with tinted avatars]
-[Departments: Sales | Operations | Finance (underline tabs)]
-```
-
-### Chat Screen
-Chat uses a special flex layout — sets `#app` to `display: flex; flex-direction: column; padding: 0` so the chat header pins to top, messages scroll, and input pins to bottom. `_renderRoute` resets these inline styles on navigation away.
-
-## File Structure
-
-```
-vaishali/
-├── api/
-│   ├── field.py          # 54 whitelist endpoints (with ownership/role checks)
-│   ├── linking.py        # DCR-to-Sales auto-linking hooks + setup functions
-│   ├── views.py          # View Engine API
-│   └── chat.py           # AI chat v2 (6 endpoints: send, history, conversations, clear, usage, commands)
-├── agent/                 # AI agent v2 (101 tools)
-│   ├── runner.py          # Brain loop: DB storage, compaction, memory, commands, token tracking
-│   ├── executor.py        # Tool executor: dispatch dict + role gates + submit/cancel hardening
-│   ├── commands.py        # 6 slash commands (/pipeline, /follow-up, /report, /dcr, /customer, /quotation)
-│   ├── prompt.py          # Full system prompt: company knowledge, domain rules, tool ecosystem
-│   └── tools/             # Tool schema package (was single 4,897-line tools.py)
-│       ├── __init__.py    # Categories, role filtering, get_tools_for_role(), two-tier loading
-│       ├── core.py        # 25 core tool schemas (always loaded)
-│       ├── accounting.py  # 4 tools: journal entries, payment entries, invoices
-│       ├── inventory.py   # 6 tools: stock entries, warehouses, BOMs, quality, landed costs
-│       ├── sales_crm.py   # 6 tools: leads, opportunities, quotations, sales orders
-│       ├── buying.py      # 5 tools: purchase orders, receipts, RFQs, material requests
-│       ├── hr.py          # 13 tools: employees, attendance, leave, salary, payroll
-│       ├── master_data.py # 5 tools: customers, suppliers, items, addresses, contacts
-│       ├── projects.py    # 3 tools: projects, tasks, timesheets
-│       ├── assets.py      # 3 tools: fixed assets, movements, maintenance
-│       ├── manufacturing.py # 3 tools: work orders, job cards, production plans
-│       ├── pricing.py     # 3 tools: budgets, pricing rules, subscriptions
-│       ├── system_config.py # 17 tools: custom fields, workflows, permissions, print formats
-│       └── communication.py # 5 tools: email, bulk updates, export, rename, amend
-├── views/
-│   ├── registry.py        # 15 view definitions
-│   └── engine.py          # Role-filtered fetcher + linked doc enrichment
-├── public/
-│   ├── css/
-│   │   └── vaishali.css   # Desk theme (571 lines, Notion-inspired, scoped to light mode)
-│   ├── js/
-│   │   ├── quotation.js   # Mark as Lost dialog, auto valid_till, customer count
-│   │   ├── lead.js        # Lead age indicator, Convert to Customer, auto lead_name
-│   │   └── customer.js    # Lifetime value, outstanding amount indicators
-│   └── field/
-│       ├── app.js             # Router (63 routes), transitions, PTR, edge-swipe, splash
-│       ├── ui.js              # 34 components with ARIA accessibility
-│       ├── api.js             # API path translation + IDB caching
-│       ├── auth.js            # Session, roles, nav tiers
-│       ├── style.css          # Notion-inspired design system + transitions
-│       ├── icons.js           # SVG sprites (aria-hidden)
-│       ├── sw.js              # Service worker v25 (stale-while-revalidate, ignoreSearch)
-│       ├── manifest.json      # PWA manifest (standalone, scope: /)
-│   └── screens/           # 39 screen modules
-│       ├── home.js        # KPI row + action cards + tabbed department nav
-│       ├── attendance.js  # GPS "Location captured" + check-in/check-out
-│       ├── visits.js      # DCR with department-aware form + outcome bottom sheet on checkout
-│       ├── lead.js        # Lead list + creation + inline validation
-│       ├── quotation.js   # Quotation with item picker + inline validation
-│       ├── stock.js       # Stock update with camera
-│       ├── sales-target.js # Personal performance + product targets + progress bars
-│       ├── monthly-report.js # Revenue, orders, visits, YTD progress
-│       ├── pipeline.js    # Sales funnel + pipeline board
-│       ├── follow-ups.js  # Quotation expiry tracking
-│       ├── my-targets.js  # Personal targets with progress bars + kpiRow
-│       ├── customer-search.js # Full customer list (1,896) with search
-│       ├── customer-detail.js # Customer 360: info, GSTIN, addresses, contacts, tap-to-call
-│       ├── customer-timeline.js # Sales timeline: DCRs, Opportunities, Quotations, SOs by customer
-│       ├── monthly-report.js # Revenue, orders, visits, YTD progress, conversion funnel
-│       ├── opportunity.js  # Opportunity list + detail + Create Quotation
-│       ├── interactions.js # Sales Interaction list + new + detail (phone/email/WhatsApp follow-ups)
-│       ├── chat.js        # Vaishali AI (120s timeout)
-│       ├── profile.js     # Work/Contact sections, sign-out confirmation, Telegram
-│       ├── hr-hub.js      # List cards with descriptions (Leave, Expenses, Advances, Salary)
-│       └── ... (leave, expense, advance, salary, approvals, team, etc.)
-├── setup_workspace.py     # Creates Number Cards, Charts, updates DSPL Sales/Operations workspaces
-├── hooks.py               # Doc events (DCR/Quotation/SO/Customer linking + Leave/Expense/Advance notifications), fixtures, website routes, app_include_css, doctype_js
-├── notifications.py       # Telegram notification handlers
-├── vaishali/              # Module doctypes
-│   └── doctype/
-│       ├── expense_budget/        # Monthly expense caps per vertical
-│       ├── sales_target/          # Sales targets per employee/product
-│       ├── vaishali_chat_log/     # AI chat persistence (user, conversation_id, role, content, tokens, cost)
-│       ├── vaishali_memory/       # Cross-session AI memory (user, key, content, source, last_used)
-│       └── sales_interaction/     # Phone/email/WhatsApp sales follow-ups (submittable, 35 fields)
-├── fixtures/
-│   └── custom_field.json  # telegram_chat_id on Employee
-└── www/
-    ├── field.html         # Standalone HTML, defer scripts, Jinja cache-busting
-    └── field.py           # CSRF + boot context
-```
-
-## UI Component Kit (`ui.js`)
-
-```js
-UI.el(tag, attrs, children)       // Core DOM builder
-UI.card(children, opts)           // Surface card (borderless on white page)
-UI.statCard(value, label)         // KPI stat (22px/700 value, 12px sentence-case label)
-UI.kpiRow(items)                  // Horizontal stats card with vertical dividers
-UI.actionCard(opts)               // Card with 32px icon container + label + value
-UI.listCard(opts)                 // Full-width row with dividers
-UI.detailRow(label, value)        // Label-value pair
-UI.detailCard(rows)               // Card of label-value rows
-UI.pill(text, color)              // Status badge (green/yellow/red/blue/gray)
-UI.avatar(name, size)             // Tinted rounded-square initials (8-color palette)
-UI.amount(value)                  // ₹ formatted currency
-UI.btn(text, opts)                // Button (8px radius, primary/success/danger/outline)
-UI.actionBar(buttons)             // Button row
-UI.field(label, inputEl)          // Form field wrapper with <label>
-UI.textInput(placeholder, opts)   // Text input
-UI.dateInput(label, value)        // Date input
-UI.textarea(placeholder, opts)    // Textarea
-UI.select(label, options, value)  // Dropdown select
-UI.searchInput(placeholder, fn)   // Debounced search
-UI.toggle(label, checked, fn)     // Toggle switch (role=switch, aria-checked, keyboard)
-UI.grid(children, cols)           // CSS grid
-UI.divider()                      // Horizontal line
-UI.sectionHeading(text)           // 12px sentence-case section label (NOT uppercase)
-UI.tabs(items, active, onChange)   // Underline-style tab bar
-UI.skeleton(count)                // Thin shimmer bars at varying widths
-UI.empty(icon, text, ctaOpts)     // Empty state (minimal text, optional CTA)
-UI.error(text)                    // Error box
-UI.toast(text, type)              // Dark floating pill (role=alert)
-UI.nav(tabs, active)              // Bottom navigation
-UI.updateNavActive(tab)           // Update nav highlight
-UI.fab(onClick)                   // Floating action button (aria-label)
-UI.bottomSheet(title, content)    // Modal sheet (role=dialog, Escape key, focus trap)
-UI.fieldError(inputEl, message)   // Inline form validation (red border + error text)
-```
-
-## ERPNext Desk Customization
-
-### Theme (`public/css/vaishali.css`)
-Loaded via `app_include_css` in hooks.py. 571-line CSS override scoped to `body[data-theme="light"]`:
-- White page, `rgba(0,0,0,0.04)` borders, 10px card radius, `-0.04em` headings
-- Red primary (`#E60005`), 8px button radius, sentence-case everywhere
-- Covers: navbar, sidebar, workspace, cards, list view, form view, buttons, pills, modals, kanban
-
-### Client Scripts (`public/js/`)
-Registered via `doctype_js` in hooks.py:
-- **Quotation:** "Mark as Lost" dialog (lost_reason_category: Price/Technical/Budget/Other + lost_remark, sets quotation_temperature=Lost), auto `valid_till` (30 days), customer quotation count indicator
-- **Lead:** Age indicator (days, color-coded), "Convert to Customer" button, auto `lead_name` from company
-- **Customer:** Lifetime value indicator (sum of invoices), outstanding amount indicator, sales timeline (DCRs + Opps + Quotations + SOs)
-
-### Workspaces (`setup_workspace.py`)
-Created via `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent, updates existing cards if filters changed):
-- **DSPL Sales:** 7 Number Cards (Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won) + Monthly Revenue bar chart + Quotation Pipeline donut + Lead Source Breakdown pie
-- **DSPL Operations:** 7 Number Cards (Work Orders, Deliveries, Stock Below Reorder, Open Warranty Claims, Pending Installations, Team Present, Pending Approvals) + Monthly Orders chart + 4 shortcuts (Work Order, Delivery Note, Warranty Claim, Maintenance Visit)
-- **DSPL Finance:** 3 Number Cards (Unpaid Invoices, Overdue Invoices, Payments This Month) + 2 charts (Monthly Revenue, Monthly Collections) + 3 shortcuts (Sales Invoice, Payment Entry, Accounts Receivable)
-- 17 Number Cards + 5 Dashboard Charts total, all prefixed "DSPL"
-
-#### Frappe v15 Workspace Gotchas (CRITICAL for programmatic creation)
-1. **Number Card autonames from `label`** — the explicit `name` field is ignored; set `label` to desired doc name
-2. **Dashboard Chart autonames from `chart_name`** — same pattern; `name` is ignored
-3. **Content JSON blocks need `id` fields** — random 10-char alphanumeric strings (Editor.js requirement)
-4. **Content JSON headers use `<span class="h4"><b>...</b></span>`** format (not raw `<b>` tags)
-5. **Child tables required alongside content JSON** — workspace has both `content` (layout positioning) and child tables (`number_cards`, `charts`, `shortcuts`) that register widgets; content alone = blank
-6. **Child table `label` must exactly match content JSON `block_name`** — `block.js` looks up widgets via `obj.label == __(block_name)`; mismatched labels silently skip the widget
-7. **Commit between card creation and workspace save** — `frappe.db.commit()` needed so link validation can find newly created cards; also use `workspace.flags.ignore_links = True` as safety
-8. **Number Card `filters_json` does NOT evaluate `"today"`** — use `dynamic_filters_json` with `"frappe.datetime.nowdate()"` for runtime-evaluated date filters
-9. **Static assets under `/assets/` are cached with `max-age=31536000`** — `git pull` alone won't update; need `bench build --app vaishali` + nginx restart
-
-## API Security Model
-
-All endpoints in `field.py` enforce:
-- **Ownership checks:** `get_dcr()`, `checkout_dcr()` verify `doc.employee == current_employee`
-- **Role gates:** `create_stock_entry()` blocked for field tier; `create_quotation()` requires sales/marketing dept or manager+
-- **Approver verification:** `process_approval()` checks `doc.leave_approver`/`doc.expense_approver`/reporting hierarchy
-- **Data scoping:** `get_approvals()` Employee Advances filtered by direct reports only
-- **Service-only endpoints:** `verify_telegram_token()` restricted to service account
-
-## API Path Translation (`api.js`)
-
-PWA uses clean paths translated to Frappe methods:
-
-| PWA Path | Frappe Method |
-|----------|--------------|
-| `GET /api/field/attendance/today` | `vaishali.api.field.attendance_today` |
-| `POST /api/field/attendance` | `vaishali.api.field.create_checkin` |
-| `POST /api/field/dcr` | `vaishali.api.field.create_dcr` |
-| `GET /api/field/customers` | `vaishali.api.field.get_customers` (all 1,896, no limit) |
-| `GET /api/field/view/customer_360/{id}` | View Engine (overview + addresses + contacts + transactions) |
-| `GET /api/field/view/X` | `vaishali.api.views.get_view?view_name=X` |
-| `POST /api/field/lead` | `vaishali.api.field.create_lead` |
-| `POST /api/field/quotations` | `vaishali.api.field.create_quotation` |
-| `GET /api/field/sales-targets` | `vaishali.api.field.get_sales_targets` |
-| `GET /api/field/sales-funnel` | `vaishali.api.field.get_sales_funnel` |
-| `GET /api/field/monthly-report` | `vaishali.api.field.get_monthly_report` |
-| `GET /api/field/customer-timeline/{id}` | `vaishali.api.field.get_customer_timeline` |
-| `GET /api/field/conversion-funnel` | `vaishali.api.field.get_conversion_funnel` |
-| `POST /api/field/dcr/{id}/checkout` | `vaishali.api.field.checkout_dcr` (extracts dcr_id from path) |
-| `POST /api/ai/chat` | FastAPI (nginx proxy, 120s timeout) |
-| `GET /api/field/sales-orders` | `vaishali.api.field.get_sales_orders` |
-| `POST /api/field/sales-orders` | `vaishali.api.field.create_sales_order_from_quotation` |
-| `GET /api/field/submitted-quotations` | `vaishali.api.field.get_submitted_quotations` |
-| `GET /api/field/delivery-notes` | `vaishali.api.field.get_delivery_notes` |
-| `POST /api/field/delivery-notes` | `vaishali.api.field.create_delivery_note_from_so` |
-| `GET /api/field/pending-delivery-orders` | `vaishali.api.field.get_pending_delivery_orders` |
-| `GET /api/field/sales-invoices` | `vaishali.api.field.get_sales_invoices` |
-| `POST /api/field/sales-invoices` | `vaishali.api.field.create_sales_invoice` |
-| `GET /api/field/billable-documents` | `vaishali.api.field.get_billable_documents` |
-| `GET /api/field/unpaid-invoices` | `vaishali.api.field.get_unpaid_invoices` |
-| `POST /api/field/payments` | `vaishali.api.field.create_payment_entry` |
-| `GET /api/field/customer-open-items` | `vaishali.api.field.get_customer_open_items` |
-| `GET /api/field/opportunities` | `vaishali.api.field.get_opportunities` |
-| `POST /api/field/opportunities` | `vaishali.api.field.create_opportunity_from_lead` |
-| `GET /api/field/opportunity/:id` | `vaishali.api.field.get_opportunity` |
-| `GET /api/field/lead-sources` | `vaishali.api.field.get_lead_sources` |
-| `GET /api/field/interactions` | `vaishali.api.field.get_interactions` |
-| `POST /api/field/interactions` | `vaishali.api.field.create_interaction` |
-| `GET /api/field/interaction/:id` | `vaishali.api.field.get_interaction` |
-
-## Auth Model
-
-- **Browser → Frappe:** Cookie auth (native Frappe session)
-- **FastAPI → Frappe:** API key pair + Host header (vaishali@frappeflo.com service account)
-- **Nav tiers:** `field` (basic staff), `manager` (HR/Sales/Stock managers), `admin` (System Manager)
-- **Bottom nav:** 3 tabs for everyone (Home, AI, Me)
-- **View Engine:** Role-based section filtering (sales/field/accounts/service/manager/admin)
-
-## DCR-to-Sales Linking (`api/linking.py`)
-
-Auto-links Daily Call Reports through the full sales chain: Visit → Lead → Opportunity → Quotation → Sales Order.
-
-### How It Works
-- **DCR checkout** captures outcome checkboxes (lead_generated, opportunity_generated, order_received) + discussion/next-action fields via bottom sheet in PWA
-- **on_dcr_update** hook auto-creates Lead (if lead_generated=1) and Opportunity (if opportunity_generated=1), sets conversion_status
-- **link_quotation_to_dcr** on Quotation submit backlinks to matching DCR via Opportunity or customer+90-day window
-- **link_sales_order_to_dcr** on SO submit backlinks via linked Quotation or customer+90-day fallback
-- **on_customer_created** retroactively links new Customer to recent DCR visits
-- **on_quotation_status_change** updates DCR conversion_status when Quotation wins/loses
-
-### DCR Custom Fields (14 fields)
-`lead_generated`, `opportunity_generated`, `order_received` (checkboxes), `discussion_remarks`, `next_action`, `next_action_date`, `lead`, `opportunity`, `quotation`, `sales_order` (Link fields), `conversion_status` (Select: Open/Lead Created/Opportunity/Quoted/Won/Lost), `follow_up_doctype`, `follow_up_name` (Data, hidden — set when rep picks a lead/opp/quote to follow up on during visit creation; auto-wires to corresponding Link field)
-
-### Quotation Custom Fields (3 fields)
-`quotation_temperature` (Select: Hot/Warm/Cold/Lost), `lost_reason_category` (Select: Price/Technical/Budget/Other), `lost_remark` (Small Text)
-
-### Setup Functions (idempotent)
-```bash
-bench --site dgoc.logstop.com execute vaishali.api.linking.setup_dcr_fields
-bench --site dgoc.logstop.com execute vaishali.api.linking.setup_quotation_fields
-bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
-```
-
-### Conversion Funnel API
-`get_conversion_funnel(period, employee, department)` — counts DCRs by conversion_status stage, returns `{visits, leads, opportunities, quoted, won, lost}`. Used by monthly-report.js and View Engine `conversion_funnel` view.
-
-### Gotcha: Lead/Opportunity `notes` Field
-`notes` is a **child table** (Table field) in Lead and Opportunity. Use `doc.append("notes", {"note": "..."})`, NOT `doc.notes = "..."`. The latter causes `'str' object has no attribute 'modified'`.
-
-### CRM Flow: DCR Follow-up Linking (2026-03-31)
-When a field rep creates a follow-up visit (purpose contains "Follow-up") and selects a customer, the PWA fetches `get_customer_open_items` showing open leads/quotations/opportunities. The rep picks which one they're visiting about. On check-in:
-- `follow_up_doctype` + `follow_up_name` are set (Data fields, hidden)
-- The corresponding Link field (`lead`/`opportunity`/`quotation`) is also set automatically
-- This connects the visit to the existing `linking.py` conversion chain
-
-**Lead → Opportunity:** `create_opportunity_from_lead` uses `erpnext.crm.doctype.lead.lead.make_opportunity`
-**Opportunity → Quotation:** Navigates to `#/quotations/new?opportunity=X&customer=Y` with pre-fill
-**Lead → Quotation:** Navigates to `#/quotations/new?lead=X&lead_name=Y` with pre-fill
-
-### Gotchas Discovered (2026-03-31)
-- **`UI.bottomSheet()` returns but doesn't append** — caller must `document.body.appendChild(sheet)`
-- **`new Date().toISOString()` in PWA** → MySQL rejects `T`/`Z` chars; server must convert to `YYYY-MM-DD HH:MM:SS`
-- **Router query params** — `matchRoute()` must strip `?params` before comparing to route patterns: `hash.split('?')[0]`
-- **DCR department validation** — only accepts Sales/Service/Office; admin users with other departments need fallback
-- **Lead Source** — it's a DocType (not a Select), dropdown must fetch from `get_lead_sources` API, not hardcode
-- **`doc.set(field, value)`** silently ignores fields not on the DocType — always verify custom fields exist before relying on persistence
+- **System:** 201 accounts, 4 cost centers, 9+8 tax templates, 2 price lists, 14 warehouses
 
 ## ERPNext Customizations
 
 ### Custom Fields
 | DocType | Field | Purpose |
 |---------|-------|---------|
-| Item | ABP Product (Select) | Map to business plan products |
-| Item | ABP Category (Select) | Tower Crane, EOT, MRT, Mobile, etc. |
-| Quotation | Lost Reason (Select) | Track why quotations are lost |
-| Quotation | Lost To Competitor (Data) | Who won the deal |
-| Quotation | quotation_temperature (Select) | Hot/Warm/Cold/Lost temperature |
-| Quotation | lost_reason_category (Select) | Price/Technical/Budget/Other |
-| Quotation | lost_remark (Small Text) | Detail on why quotation was lost |
+| Item | ABP Product / ABP Category (Select) | Business plan product mapping |
+| Quotation | quotation_temperature (Select) | Hot/Warm/Cold/Lost |
+| Quotation | lost_reason_category / lost_remark | Price/Technical/Budget/Other + detail |
 | Lead | Zone (Select) | North/South/East/West/Central |
-| Customer | Zone (Select) | Geographic presence |
-| Customer | ICP Score (Rating) | Ideal Customer Profile match |
-| Daily Call Report | 12 fields | See DCR-to-Sales Linking section above |
+| Customer | Zone (Select), ICP Score (Rating) | Geographic presence, ideal customer match |
+| Daily Call Report | 14 custom fields | DCR-to-Sales linking (see `vaishali/api/CLAUDE.md`) |
+| Employee | telegram_chat_id (fixture) | Telegram notification linking |
 
-### Notifications
+### Desk Client Scripts (`public/js/`, registered via `doctype_js` in hooks.py)
+- **Quotation:** "Mark as Lost" dialog (lost_reason_category + lost_remark, sets temperature=Lost), auto `valid_till` (30 days), customer quotation count indicator
+- **Lead:** Age indicator (days, color-coded), "Convert to Customer" button, auto `lead_name` from company
+- **Customer:** Lifetime value indicator (sum of invoices), outstanding amount, sales timeline
+
+### Desk Theme (`public/css/vaishali.css`)
+571-line CSS override scoped to `body[data-theme="light"]`:
+- White page, `rgba(0,0,0,0.04)` borders, 10px card radius, `-0.04em` headings
+- Red primary (`#E60005`), 8px button radius, sentence-case everywhere
+- Covers: navbar, sidebar, workspace, cards, list/form view, buttons, pills, modals, kanban
+
+### Workspaces (`setup_workspace.py`)
+Run: `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (idempotent)
+- **DSPL Sales:** 7 Number Cards + Monthly Revenue bar + Quotation Pipeline donut + Lead Source pie
+- **DSPL Operations:** 7 Number Cards + Monthly Orders chart + 4 shortcuts
+- **DSPL Finance:** 3 Number Cards + 2 charts + 3 shortcuts
+- 17 Number Cards + 5 Dashboard Charts total, all prefixed "DSPL"
+
+#### Workspace Gotchas (Frappe v15)
+1. Number Card autonames from `label` — explicit `name` field is ignored
+2. Dashboard Chart autonames from `chart_name` — same pattern
+3. Content JSON blocks need `id` fields (random 10-char alphanum, Editor.js requirement)
+4. Content JSON headers: `<span class="h4"><b>...</b></span>` format
+5. Both content JSON AND child tables (`number_cards`, `charts`, `shortcuts`) required — content alone = blank
+6. Child table `label` must exactly match content JSON `block_name`
+7. `frappe.db.commit()` between card creation and workspace save
+8. Number Card `filters_json` does NOT evaluate `"today"` — use `dynamic_filters_json`
+9. Static `/assets/` cached 1 year — need `bench build` + restart after changes
+
+### Notifications (hooks.py)
 - Quotation expiring (3 days before valid_till)
 - New Sales Order submitted
 - Overdue Invoice (7 days after due)
 - Lead assigned to new owner
 
-### DSPL Sales Workspace
-Number cards: Open Quotations, Orders This Month, Outstanding Receivables, Active Leads, Visits This Month, Leads Generated, Visits Won
+## BOM Management
 
-## AI (Vaishali) Configuration — v2
+**NEVER cancel submitted BOMs** — they link to Work Orders, Production Plans, parent BOMs. Cancelling cascades.
 
-- **Provider:** AWS Bedrock (`AnthropicBedrock` client) — configurable via `vaishali_provider` in site_config
-- **Model:** `us.anthropic.claude-sonnet-4-6` (cross-region inference profile)
-- **Auth:** AWS access keys in site_config (`aws_access_key_id`, `aws_secret_access_key`) — EC2 has no IAM role
-- **Fallback:** Set `vaishali_provider=direct` + `anthropic_api_key` to use Anthropic API directly
-- **Max tool rounds:** 10 (configurable `_MAX_ITERATIONS`)
-- **Max tokens per chat:** 16,000 budget
-- **Monthly token budget:** 2M tokens (configurable `vaishali_monthly_token_budget` in site_config)
-- **Browser timeout:** 120s (chat.js)
-- **nginx timeout:** 300s
-- **System prompt:** Includes full ABP + user memories from previous conversations
-- **Tools:** 101 total (26 core always-loaded + 73 extended via discover_tools), 12 categories
+| Fix Type | Procedure |
+|----------|-----------|
+| **Wrong rates** | Fix Item master `valuation_rate` → click "Update Cost" on the BOM (works on submitted BOMs, no cancel) |
+| **Bulk rate fix** | Fix Item prices → Manufacturing > BOM Update Tool > "Update latest price in all BOMs" |
+| **Structural (add/remove/swap items)** | Create new BOM → BOM Update Tool to replace old→new across parents |
+| **Last resort amend** | Cancel → Amend (creates copy with `amended_from`). Only if BOM Update Tool won't work |
 
-### v2 Features (2026-04-01)
-- **Persistent Chat Storage:** `Vaishali Chat Log` DocType replaces Redis cache. Conversations survive restarts, full audit trail with token/cost tracking per message
-- **Context Compaction:** LLM-based conversation summary when history exceeds 80% of token budget. Keeps last 6 messages intact, summarizes older ones
-- **Persistent Memory:** `Vaishali Memory` DocType for cross-session knowledge. `save_memory`/`get_memories` tools. Agent auto-remembers user preferences
-- **Slash Commands:** 6 commands (`/pipeline`, `/follow-up`, `/report`, `/dcr`, `/customer`, `/quotation`) with restricted tool sets for faster execution. Autocomplete in Desk widget + PWA
-- **Token Tracking:** input/output tokens + USD cost tracked per message. Monthly budget enforcement with warn at 80%, block at 100%
-- **Conversation Management:** New conversation button, conversation ID tracking, `get_conversations()` list API, per-conversation clear
+**`rm_cost_as_per`** controls rate source: Valuation Rate (default, falls back to Item.valuation_rate) | Last Purchase Rate | Price List
 
-### Submit/Cancel Hardening
-- `submit_document`: Checks `is_submittable`, `docstatus==0`, ERPNext role permissions (defense-in-depth)
-- `cancel_document`: Checks `is_submittable`, `docstatus==1`
-- `delete_document`: Admin-only role gate
-- `amend_bom`: Manager/Admin-only role gate
-
-### Role-Based Tool Access
-| Role | Tools | Restrictions |
-|------|-------|-------------|
-| user (field) | 23 | No cancel, no delete, no amend. ERPNext submit permissions enforced |
-| manager | 25 | No delete. Has cancel + amend |
-| admin | 26 | Full access |
-| blocked | 0 | No tools |
-
-### Agent Code Structure (v2.1 — refactored 2 Apr 2026)
-- `vaishali/agent/runner.py` — Agentic brain loop (unbounded, Claude Code style), compaction, memory injection
-- `vaishali/agent/executor.py` — Dispatch dict (`TOOL_HANDLERS`) + `_ROLE_GATES` dict, no if-elif chain
-- `vaishali/agent/prompt.py` — Single source of truth: company knowledge, domain rules, tool ecosystem, search rules
-- `vaishali/agent/tools/` — Tool schema package (14 files, was single 4,897-line `tools.py`)
-- `vaishali/agent/commands.py` — Slash command registry (6 commands)
-- `vaishali/vaishali/doctype/vaishali_chat_log/` — Chat persistence DocType (16 fields, indexed)
-- `vaishali/vaishali/doctype/vaishali_memory/` — Cross-session memory DocType (7 fields)
-
-### API Endpoints (v2)
-| Endpoint | Purpose |
-|----------|---------|
-| `vaishali.api.chat.send_message` | Send message with optional conversation_id |
-| `vaishali.api.chat.get_history` | Load conversation history from DB |
-| `vaishali.api.chat.get_conversations` | List recent conversations with previews |
-| `vaishali.api.chat.clear_history` | Clear per-conversation or all history |
-| `vaishali.api.chat.get_usage_stats` | Monthly token usage, cost, budget % |
-| `vaishali.api.chat.get_commands` | Slash command list for autocomplete |
+**DSPL context:** 0 Purchase Orders → valuation rates use Item master's static `valuation_rate` (level 3 fallback). To fix rates: update Item.valuation_rate → Update Cost on BOM.
 
 ## Conventions
 
 - **No jQuery, no React** — vanilla JS with `el()` builder only
-- **No innerHTML** — always use `el()` or `textContent`
-- **No UI.page()** — router handles all headers
+- **No innerHTML** — always `el()` or `textContent`
+- **No UI.page()** — router handles all headers (removed)
 - **No card borders** — whitespace separation on white page
 - **No decorative shadows** — flat surfaces only
 - **No scale transforms on :active** — use `background: rgba(0,0,0,0.04)` or `filter: brightness()`
 - **No UPPERCASE section headings** — always sentence case ("Pending approvals" not "PENDING APPROVALS")
 - **Status colors:** green=completed, orange=in-progress, red=open/overdue, blue=default (pills only)
 - **Currency:** Always `₹` + `toLocaleString('en-IN')`
-- **Icons:** Use `icon('name')` from icons.js — all icons have `aria-hidden="true"`
-- **Form validation:** Use `UI.fieldError(input, message)` for inline validation
-- **Chat layout:** Overrides `#app` inline styles — must reset on navigation away
+- **Icons:** `icon('name')` from icons.js — all `aria-hidden="true"`
+- **Form validation:** `UI.fieldError(input, message)` for inline validation
 - **Cache busting:** Jinja `?v={{ _v }}` on all script/CSS tags (minute-level timestamp)
-- **API limits:** Use `limit_page_length=0` for full lists (customers, quotations), reasonable caps for search endpoints
-- **Accessibility:** `:focus-visible` outlines, ARIA roles on interactive components, `prefers-reduced-motion` support
-- **Timer cleanup:** All `setInterval` calls must track timers and clear on `hashchange` navigation
+- **API limits:** `limit_page_length=0` for full lists, reasonable caps for search
+- **Accessibility:** `:focus-visible` outlines, ARIA roles, `prefers-reduced-motion` support
+- **Timer cleanup:** All `setInterval` must track timers and clear on `hashchange` navigation
 
 ## Infrastructure
 
-- **EC2 instance:** `dspl-erp-server`, instance ID `i-08deae9f14e3cc99e`, IP `35.154.17.172`, region `ap-south-1`
-- **SSH:** EC2 Instance Connect (no PEM key on this machine). Pattern:
-  ```bash
-  ssh-keygen -t rsa -f /tmp/dspl-temp-key -N "" -q
-  aws ec2-instance-connect send-ssh-public-key --instance-id i-08deae9f14e3cc99e --instance-os-user ubuntu --ssh-public-key file:///tmp/dspl-temp-key.pub --region ap-south-1
-  ssh -i /tmp/dspl-temp-key -o StrictHostKeyChecking=no ubuntu@35.154.17.172
-  ```
-  Keys expire in ~60s — chain SCP+SSH in one command.
+- **EC2:** `dspl-erp-server`, ID `i-08deae9f14e3cc99e`, IP `35.154.17.172`, region `ap-south-1`
+- **SSH:** EC2 Instance Connect (no PEM key). Keys expire in ~60s — chain SCP+SSH in one command.
 - **Server git remote:** `upstream` (not `origin`)
 - **Frappe Cloud:** `dcepl.logstop.com` (source of truth for data, synced to EC2)
 - **nginx:** `Service-Worker-Allowed: /` header on sw.js, gzip enabled
-
-## Project Memory
-
-Read `.claude-memory/` for persistent context across sessions — user profile, working preferences, data inventory across 3 systems (ERPNext, Frappe Cloud, Krisp ERP), EPS revenue data, and roadmap. Credentials are redacted — ask the user when needed.
 
 ## Development
 
@@ -639,3 +165,7 @@ redis-cli FLUSHALL && sudo -u frappe bash -c 'cd /home/frappe/frappe-bench && be
 # Script MUST start with: import os; os.chdir('/home/frappe/frappe-bench/sites')
 # Then: import frappe; frappe.init(site='dgoc.logstop.com'); frappe.connect()
 ```
+
+## Project Memory
+
+Read `.claude-memory/` for persistent context: user profile, data inventory, EPS revenue, roadmap.
