@@ -282,6 +282,35 @@ def sync_apollo_list():
     if not list_id:
         return
 
+    # Check list has contacts before searching (Apollo returns all contacts if list is empty)
+    try:
+        labels_resp = requests.get(
+            f"{APOLLO_BASE}/labels",
+            headers={"x-api-key": key},
+            timeout=10,
+        )
+        labels_resp.raise_for_status()
+        labels = labels_resp.json()
+        if isinstance(labels, dict):
+            labels = labels.get("labels", [])
+
+        target_label = None
+        for lb in labels:
+            if lb.get("_id") == list_id:
+                target_label = lb
+                break
+
+        if not target_label:
+            frappe.log_error(f"Apollo list {list_id} not found", "Apollo Integration")
+            return
+
+        cached_count = target_label.get("cached_count", 0)
+        if cached_count == 0:
+            return  # List is empty, nothing to sync
+    except Exception as e:
+        frappe.log_error(f"Apollo labels check failed: {e}", "Apollo Integration")
+        return
+
     try:
         result = _apollo_post("mixed_people/api_search", {
             "contact_label_ids": [list_id],
