@@ -5,6 +5,8 @@ Setup functions (run once via bench execute):
     bench --site dgoc.logstop.com execute vaishali.api.linking.setup_dcr_fields
     bench --site dgoc.logstop.com execute vaishali.api.linking.setup_quotation_fields
     bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
+    bench --site dgoc.logstop.com execute vaishali.api.linking.setup_apollo_fields
+    bench --site dgoc.logstop.com execute vaishali.api.linking.setup_production_so_access
 """
 import frappe
 from frappe.utils import add_days
@@ -288,6 +290,59 @@ def on_quotation_status_change(doc, method):
         for dcr_name in dcrs:
             frappe.db.set_value("Daily Call Report", dcr_name, "conversion_status", "Lost",
                                update_modified=False)
+
+
+def setup_apollo_fields():
+    """Add Apollo.io enrichment fields to Lead DocType. Idempotent.
+
+    Run: bench --site dgoc.logstop.com execute vaishali.api.linking.setup_apollo_fields
+    """
+    dt = "Lead"
+    fields = [
+        {"dt": dt, "fieldname": "apollo_section", "fieldtype": "Section Break",
+         "label": "Apollo.io Data", "insert_after": "notes", "collapsible": 1},
+        {"dt": dt, "fieldname": "apollo_id", "fieldtype": "Data",
+         "label": "Apollo ID", "insert_after": "apollo_section", "read_only": 1,
+         "no_copy": 1},
+        {"dt": dt, "fieldname": "apollo_enriched", "fieldtype": "Check",
+         "label": "Enriched from Apollo", "insert_after": "apollo_id",
+         "read_only": 1, "no_copy": 1},
+        {"dt": dt, "fieldname": "apollo_col", "fieldtype": "Column Break",
+         "insert_after": "apollo_enriched"},
+        {"dt": dt, "fieldname": "designation", "fieldtype": "Data",
+         "label": "Designation", "insert_after": "apollo_col"},
+        {"dt": dt, "fieldname": "website", "fieldtype": "Data",
+         "label": "Website", "insert_after": "designation",
+         "options": "URL"},
+        {"dt": dt, "fieldname": "industry", "fieldtype": "Data",
+         "label": "Industry", "insert_after": "website"},
+        {"dt": dt, "fieldname": "linkedin_url", "fieldtype": "Data",
+         "label": "LinkedIn URL", "insert_after": "industry",
+         "options": "URL"},
+    ]
+
+    for f in fields:
+        cf_name = frappe.db.get_value("Custom Field", {"dt": f["dt"], "fieldname": f["fieldname"]})
+        if cf_name:
+            print(f"  Already exists: {f['dt']}.{f['fieldname']}")
+            continue
+        doc = frappe.new_doc("Custom Field")
+        for k, v in f.items():
+            doc.set(k, v)
+        doc.insert(ignore_permissions=True)
+        print(f"  Created: {f['dt']}.{f['fieldname']}")
+
+    # Create Lead Source "Apollo" if not exists
+    if not frappe.db.exists("Lead Source", "Apollo"):
+        ls = frappe.new_doc("Lead Source")
+        ls.source_name = "Apollo"
+        ls.insert(ignore_permissions=True)
+        print("  Created Lead Source: Apollo")
+    else:
+        print("  Lead Source 'Apollo' already exists")
+
+    frappe.db.commit()
+    print("  Done. Apollo fields added to Lead.")
 
 
 def setup_production_so_access():

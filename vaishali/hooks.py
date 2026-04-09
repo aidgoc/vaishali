@@ -86,3 +86,13 @@ module_config = [
         ]
     }
 ]
+
+# Apollo.io scheduled sync (every 30 minutes)
+scheduler_events = {
+    "cron": {
+        "*/30 * * * *": [
+            "vaishali.api.apollo.bulk_enrich_leads",
+            "vaishali.api.apollo.sync_apollo_list",
+        ],
+    },
+}
