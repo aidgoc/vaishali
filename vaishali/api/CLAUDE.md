@@ -97,6 +97,19 @@ bench --site dgoc.logstop.com execute vaishali.api.linking.setup_quotation_field
 bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
 ```
 
+## Apollo.io Integration (`apollo.py`)
+
+Lead enrichment and import via Apollo.io API (`api.apollo.io/api/v1`). Auth: `x-api-key` header from `frappe.conf.apollo_api_key`.
+
+| Function | Purpose |
+|----------|---------|
+| `enrich_lead(lead_name)` | Whitelist — enrich existing Lead from Apollo (desk button) |
+| `import_from_apollo(email, ...)` | Whitelist — search Apollo, create Lead |
+| `bulk_enrich_leads()` | Scheduler — batch 10 unenriched leads via `/people/bulk_match` |
+| `sync_apollo_list()` | Scheduler — pull from "Push to CRM" list (checks count first) |
+
+Custom fields on Lead: `apollo_id`, `designation`, `apollo_website`, `apollo_industry`, `linkedin_url`, `apollo_enriched`.
+
 ## Gotchas
 
 - **Lead/Opportunity `notes` field** is a **child table** (Table field). Use `doc.append("notes", {"note": "..."})`, NOT `doc.notes = "..."`. The latter causes `'str' object has no attribute 'modified'`.
@@ -104,3 +117,6 @@ bench --site dgoc.logstop.com execute vaishali.api.linking.migrate_existing_dcrs
 - **Number Card `filters_json`** does NOT evaluate `"today"` — use `dynamic_filters_json` with `"frappe.datetime.nowdate()"`
 - **Lead Source** is a DocType (not a Select) — dropdown must fetch from `get_lead_sources` API, not hardcode
 - **DCR department validation** only accepts Sales/Service/Office; admin users with other departments need fallback
+- **Non-developer-mode DocPerm:** Use `frappe.permissions.add_permission` + `update_permission_property`, not DocType.save()
+- **Lead `website` field** exists as standard — prefix custom fields (e.g., `apollo_website`)
+- **Apollo `mixed_people/api_search`** returns ALL contacts when list is empty — check `cached_count` via `/labels` first

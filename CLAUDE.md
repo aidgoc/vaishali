@@ -36,6 +36,8 @@ Browser (PWA)  ──cookie──>  nginx ──/api/ai/*──> FastAPI slim (:
 - AI agent config, tools, role gates → `vaishali/agent/CLAUDE.md`
 - API security, path translation, DCR linking → `vaishali/api/CLAUDE.md`
 
+**Slash commands:** `/deploy`, `/health-check`, `/apollo-sync`, `/setup`
+
 ## Company Context
 
 - **Products:** ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT Systems, TPS
@@ -91,9 +93,25 @@ Run: `bench --site dgoc.logstop.com execute vaishali.setup_workspace.setup` (ide
 
 ### Notifications (hooks.py)
 - Quotation expiring (3 days before valid_till)
-- New Sales Order submitted
+- New Sales Order submitted (managers get financial, production team gets items only)
 - Overdue Invoice (7 days after due)
 - Lead assigned to new owner
+
+### Production Team SO Access
+Manufacturing User/Manager roles have read-only access to Sales Order with financial fields hidden (permlevel=1 on 54 fields). Setup: `vaishali.api.linking.setup_production_so_access`
+
+## Apollo.io Integration (`api/apollo.py`)
+
+Lead enrichment and import via Apollo.io API. Config in site_config: `apollo_api_key`, `apollo_list_id`, `apollo_sync_enabled`.
+
+| Feature | Endpoint | Trigger |
+|---------|----------|---------|
+| Enrich Lead | `vaishali.api.apollo.enrich_lead` | "Enrich from Apollo" button on Lead form |
+| Import contact | `vaishali.api.apollo.import_from_apollo` | "Import from Apollo" dialog on Lead list |
+| Bulk enrich | `vaishali.api.apollo.bulk_enrich_leads` | Scheduler (every 30min), 10 leads/run |
+| List sync | `vaishali.api.apollo.sync_apollo_list` | Scheduler (every 30min), "Push to CRM" list |
+
+Custom fields on Lead: `apollo_id`, `designation`, `apollo_website`, `apollo_industry`, `linkedin_url`, `apollo_enriched`. Lead Source: "Apollo".
 
 ## BOM Management
 
