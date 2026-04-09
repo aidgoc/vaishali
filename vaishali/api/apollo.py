@@ -56,8 +56,8 @@ def _map_person_to_lead(person, org=None):
         "email_id": person.get("email") or "",
         "mobile_no": phone or "",
         "designation": person.get("title") or "",
-        "website": org.get("website_url") or person.get("website_url") or "",
-        "industry": org.get("industry") or "",
+        "apollo_website": org.get("website_url") or person.get("website_url") or "",
+        "apollo_industry": org.get("industry") or "",
         "linkedin_url": person.get("linkedin_url") or "",
         "apollo_id": person.get("id") or "",
         "apollo_enriched": 1,
@@ -112,7 +112,7 @@ def enrich_lead(lead_name):
     # Update lead fields (only fill blanks, don't overwrite existing data)
     updated = []
     for field in ("company_name", "email_id", "mobile_no", "designation",
-                  "website", "industry", "linkedin_url", "apollo_id"):
+                  "apollo_website", "apollo_industry", "linkedin_url", "apollo_id"):
         if data.get(field) and not lead.get(field):
             lead.set(field, data[field])
             updated.append(field)
@@ -170,7 +170,7 @@ def import_from_apollo(email=None, first_name=None, last_name=None, domain=None)
 
     lead = frappe.new_doc("Lead")
     for field in ("lead_name", "company_name", "email_id", "mobile_no",
-                  "designation", "website", "industry", "linkedin_url",
+                  "designation", "apollo_website", "apollo_industry", "linkedin_url",
                   "apollo_id", "apollo_enriched"):
         if data.get(field):
             lead.set(field, data[field])
@@ -252,7 +252,7 @@ def bulk_enrich_leads():
         lead = frappe.get_doc("Lead", leads[i].name)
 
         for field in ("company_name", "email_id", "mobile_no", "designation",
-                      "website", "industry", "linkedin_url", "apollo_id"):
+                      "apollo_website", "apollo_industry", "linkedin_url", "apollo_id"):
             if data.get(field) and not lead.get(field):
                 lead.set(field, data[field])
 
@@ -311,7 +311,7 @@ def sync_apollo_list():
 
         lead = frappe.new_doc("Lead")
         for field in ("lead_name", "company_name", "email_id", "mobile_no",
-                      "designation", "website", "industry", "linkedin_url",
+                      "designation", "apollo_website", "apollo_industry", "linkedin_url",
                       "apollo_id", "apollo_enriched"):
             if data.get(field):
                 lead.set(field, data[field])
