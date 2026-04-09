@@ -299,21 +299,19 @@ def setup_production_so_access():
     Run: bench --site dgoc.logstop.com execute vaishali.api.linking.setup_production_so_access
     """
     # ── 1. Add DocPerm for Manufacturing roles (permlevel=0, read-only) ──
+    from frappe.permissions import add_permission, update_permission_property
     for role in ("Manufacturing User", "Manufacturing Manager"):
         existing = frappe.db.exists("DocPerm", {
             "parent": "Sales Order", "role": role, "permlevel": 0
         })
         if not existing:
-            so_meta = frappe.get_doc("DocType", "Sales Order")
-            so_meta.append("permissions", {
-                "role": role,
-                "permlevel": 0,
-                "read": 1, "write": 0, "create": 0, "submit": 0,
-                "cancel": 0, "amend": 0, "delete": 0,
-                "print": 1, "email": 0, "report": 1,
-                "share": 0, "export": 1,
-            })
-            so_meta.save(ignore_permissions=True)
+            add_permission("Sales Order", role, permlevel=0)
+            update_permission_property("Sales Order", role, 0, "read", 1)
+            update_permission_property("Sales Order", role, 0, "write", 0)
+            update_permission_property("Sales Order", role, 0, "create", 0)
+            update_permission_property("Sales Order", role, 0, "print", 1)
+            update_permission_property("Sales Order", role, 0, "report", 1)
+            update_permission_property("Sales Order", role, 0, "export", 1)
             print(f"  Added DocPerm: {role} → Sales Order (read-only, permlevel=0)")
         else:
             print(f"  DocPerm already exists: {role} → Sales Order")
@@ -397,13 +395,9 @@ def setup_production_so_access():
             "parent": "Sales Order", "role": role, "permlevel": 1
         })
         if not existing:
-            so_meta = frappe.get_doc("DocType", "Sales Order")
-            so_meta.append("permissions", {
-                "role": role,
-                "permlevel": 1,
-                "read": 1, "write": 1,
-            })
-            so_meta.save(ignore_permissions=True)
+            add_permission("Sales Order", role, permlevel=1)
+            update_permission_property("Sales Order", role, 1, "read", 1)
+            update_permission_property("Sales Order", role, 1, "write", 1)
             print(f"  Added DocPerm: {role} → Sales Order (permlevel=1, read+write)")
         else:
             print(f"  DocPerm already exists: {role} → Sales Order permlevel=1")
