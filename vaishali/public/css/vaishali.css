@@ -574,9 +574,8 @@ body[data-theme="light"] .kanban-card:hover {
    13. BOM LIST VIEW — wider Item Name column
    ═══════════════════════════════════════════════════════════════ */
 
-/* Swap column order: Item Name first, ID second */
+/* Item Name column — expand + show full text */
 body[data-theme="light"] [data-page-route*="BOM"] .level-left > .list-row-col.ellipsis:nth-child(3) {
-  order: -1 !important;
   flex: 3 !important;
   white-space: normal !important;
   overflow: visible !important;
@@ -590,8 +589,7 @@ body[data-theme="light"] [data-page-route*="BOM"] .list-row .level-left.ellipsis
   text-overflow: unset !important;
 }
 
-/* ID column — shrink and push after Item Name */
+/* ID column — shrink to make room */
 body[data-theme="light"] [data-page-route*="BOM"] .list-row .list-row-col.list-subject {
   flex: 2 !important;
-  order: 0 !important;
 }
