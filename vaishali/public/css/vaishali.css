@@ -574,9 +574,16 @@ body[data-theme="light"] .kanban-card:hover {
    13. BOM LIST VIEW — wider Item Name column
    ═══════════════════════════════════════════════════════════════ */
 
-/* Item Name column (col 3) — expand + show full text */
-body[data-theme="light"] [data-page-route*="BOM"] .list-row > .list-row-col.ellipsis:nth-child(3) {
+/* Item Name column — expand + show full text */
+body[data-theme="light"] [data-page-route*="BOM"] .level-left > .list-row-col.ellipsis:nth-child(3) {
   flex: 3 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+/* The level-left wrapper also has ellipsis — override it */
+body[data-theme="light"] [data-page-route*="BOM"] .list-row .level-left.ellipsis {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: unset !important;
