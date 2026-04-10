@@ -146,6 +146,15 @@ Custom fields on Lead: `apollo_id`, `designation`, `apollo_website`, `apollo_ind
 - **Accessibility:** `:focus-visible` outlines, ARIA roles, `prefers-reduced-motion` support
 - **Timer cleanup:** All `setInterval` must track timers and clear on `hashchange` navigation
 
+## CSS/Asset Cache Chain (CRITICAL)
+
+Three layers cache desk CSS — ALL must be busted when updating `vaishali.css`:
+1. **nginx:** `max-age=31536000` on `/assets/` — restart nginx
+2. **Service Worker:** `ignoreSearch: true` caches CSS ignoring `?v=` params — bump `CACHE_NAME` in `sw.js`
+3. **Browser:** disk cache — change `app_include_css` query param in `hooks.py`
+
+**After CSS changes:** bump `?v=` in hooks.py + bump SW version in sw.js + `bench build` + restart nginx + flush Redis.
+
 ## Infrastructure
 
 - **EC2:** `dspl-erp-server`, ID `i-08deae9f14e3cc99e`, IP `35.154.17.172`, region `ap-south-1`
@@ -153,6 +162,7 @@ Custom fields on Lead: `apollo_id`, `designation`, `apollo_website`, `apollo_ind
 - **Server git remote:** `upstream` (not `origin`)
 - **Frappe Cloud:** `dcepl.logstop.com` (source of truth for data, synced to EC2)
 - **nginx:** `Service-Worker-Allowed: /` header on sw.js, gzip enabled
+- **SW version:** v26 (`dspl-field-v26`), scope `/`, `ignoreSearch: true`
 
 ## Development
 

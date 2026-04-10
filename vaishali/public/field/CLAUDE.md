@@ -8,8 +8,9 @@ Installable standalone PWA at `/field`. Vanilla JS SPA, hash router, 40 screens,
 
 ### Installability
 - **Manifest:** `manifest.json` — `display: standalone`, `scope: /`, `start_url: /field`
-- **Service Worker:** `sw.js` v25, registered with `{ scope: '/' }` — nginx sends `Service-Worker-Allowed: /` header
-- Precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true` for cache-busted URLs
+- **Service Worker:** `sw.js` v26, registered with `{ scope: '/' }` — nginx sends `Service-Worker-Allowed: /` header
+- Precaches core + 5 critical screens, stale-while-revalidate with `ignoreSearch: true`
+- **CRITICAL:** `ignoreSearch: true` means `?v=` cache-busting params are ignored — must bump `CACHE_NAME` version in sw.js to clear stale assets
 - **Apple PWA:** `apple-mobile-web-app-capable`, `apple-touch-icon`, safe-area insets on header/nav
 - **Splash screen:** Branded loading with animated progress bar, dismisses on boot
 
