@@ -10,5 +10,149 @@
         "read_only": 1,
         "module": "Vaishali",
         "description": "Linked via DSPL Field App profile"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-section_break_dspl",
+        "dt": "Warranty Claim",
+        "fieldname": "section_break_dspl",
+        "fieldtype": "Section Break",
+        "label": "DSPL Service Management",
+        "insert_after": "company",
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-priority",
+        "dt": "Warranty Claim",
+        "fieldname": "priority",
+        "fieldtype": "Select",
+        "label": "Priority",
+        "options": "\nP1 - Safety\nP2 - Down\nP3 - Degraded\nP4 - Minor",
+        "insert_after": "section_break_dspl",
+        "in_list_view": 1,
+        "in_standard_filter": 1,
+        "module": "Vaishali",
+        "description": "P1=Safety (24hr), P2=Down (48hr), P3=Degraded (5d), P4=Minor (15d)"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-response_due_date",
+        "dt": "Warranty Claim",
+        "fieldname": "response_due_date",
+        "fieldtype": "Date",
+        "label": "Response Due Date",
+        "insert_after": "priority",
+        "read_only": 1,
+        "module": "Vaishali",
+        "description": "Auto-calculated from priority SLA"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-resolution_due_date",
+        "dt": "Warranty Claim",
+        "fieldname": "resolution_due_date",
+        "fieldtype": "Date",
+        "label": "Resolution Due Date",
+        "insert_after": "response_due_date",
+        "read_only": 1,
+        "module": "Vaishali",
+        "description": "Auto-calculated from priority SLA"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-column_break_dspl",
+        "dt": "Warranty Claim",
+        "fieldname": "column_break_dspl",
+        "fieldtype": "Column Break",
+        "insert_after": "resolution_due_date",
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-site_contact_name",
+        "dt": "Warranty Claim",
+        "fieldname": "site_contact_name",
+        "fieldtype": "Data",
+        "label": "Site Contact Name",
+        "insert_after": "column_break_dspl",
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-site_contact_phone",
+        "dt": "Warranty Claim",
+        "fieldname": "site_contact_phone",
+        "fieldtype": "Data",
+        "label": "Site Contact Phone",
+        "options": "Phone",
+        "insert_after": "site_contact_name",
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-section_break_rca",
+        "dt": "Warranty Claim",
+        "fieldname": "section_break_rca",
+        "fieldtype": "Section Break",
+        "label": "Root Cause Analysis",
+        "insert_after": "site_contact_phone",
+        "collapsible": 1,
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-rca_category",
+        "dt": "Warranty Claim",
+        "fieldname": "rca_category",
+        "fieldtype": "Select",
+        "label": "Root Cause Category",
+        "options": "\nDesign Defect\nManufacturing Defect\nComponent Quality\nInstallation Error\nCustomer Misuse\nEnvironmental\nSupplier Issue\nFirmware Bug",
+        "insert_after": "section_break_rca",
+        "in_standard_filter": 1,
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-rca_details",
+        "dt": "Warranty Claim",
+        "fieldname": "rca_details",
+        "fieldtype": "Text",
+        "label": "RCA Details (5-Why)",
+        "insert_after": "rca_category",
+        "module": "Vaishali",
+        "description": "Document the 5-Why analysis here"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-column_break_rca",
+        "dt": "Warranty Claim",
+        "fieldname": "column_break_rca",
+        "fieldtype": "Column Break",
+        "insert_after": "rca_details",
+        "module": "Vaishali"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-capa_reference",
+        "dt": "Warranty Claim",
+        "fieldname": "capa_reference",
+        "fieldtype": "Link",
+        "label": "CAPA Reference",
+        "options": "CAPA",
+        "insert_after": "column_break_rca",
+        "module": "Vaishali",
+        "description": "Linked Corrective and Preventive Action"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Warranty Claim-first_response_date",
+        "dt": "Warranty Claim",
+        "fieldname": "first_response_date",
+        "fieldtype": "Date",
+        "label": "First Response Date",
+        "insert_after": "capa_reference",
+        "module": "Vaishali",
+        "description": "Date service engineer was dispatched or remote diagnosis started"
     }
 ]

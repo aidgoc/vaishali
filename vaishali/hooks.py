@@ -51,6 +51,10 @@ doc_events = {
     "Customer": {
         "after_insert": "vaishali.api.linking.on_customer_created",
     },
+    "Warranty Claim": {
+        "validate": "vaishali.complaint.on_warranty_claim_save",
+        "after_insert": "vaishali.complaint.on_warranty_claim_update",
+    },
     "Leave Application": {
         "on_submit": "vaishali.notifications.on_leave_application_submit",
         "on_update": "vaishali.notifications.on_leave_application_update",
@@ -88,11 +92,16 @@ module_config = [
 ]
 
 # Apollo.io scheduled sync (every 30 minutes)
+# SLA breach + CAPA overdue checks (daily at 9 AM)
 scheduler_events = {
     "cron": {
         "*/30 * * * *": [
             "vaishali.api.apollo.bulk_enrich_leads",
             "vaishali.api.apollo.sync_apollo_list",
+        ],
+        "0 9 * * *": [
+            "vaishali.complaint.check_sla_breaches",
+            "vaishali.complaint.check_capa_overdue",
         ],
     },
 }

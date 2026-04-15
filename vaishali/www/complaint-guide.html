@@ -1,0 +1,482 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Site Complaint & CAPA Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .priority-p1 { background: #fee; color: #c00; font-weight: 600; }
+  .cg .priority-p2 { background: #fff3e0; color: #e65100; font-weight: 600; }
+  .cg .priority-p3 { background: #fff8e1; color: #f57f17; font-weight: 600; }
+  .cg .priority-p4 { background: #f1f8e9; color: #558b2f; font-weight: 600; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Site Complaint & Corrective Action Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#step1">Step 1: Receive and log complaint</a></li>
+      <li><a href="#step2">Step 2: Classify severity</a></li>
+      <li><a href="#step3">Step 3: Diagnose</a></li>
+      <li><a href="#step4">Step 4: Fix and confirm</a></li>
+      <li><a href="#step5">Step 5: Root cause analysis</a></li>
+      <li><a href="#step6">Step 6: CAPA (preventive action)</a></li>
+      <li><a href="#step7">Step 7: Close and review</a></li>
+      <li><a href="#roles">Who does what (RACI)</a></li>
+      <li><a href="#erp">How to use the ERP system</a></li>
+      <li><a href="#sla">SLA targets</a></li>
+      <li><a href="#exceptions">Exceptions and edge cases</a></li>
+      <li><a href="#checklist">Field engineer checklist</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    Every site complaint about DSPL products (ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT, TPS)
+    must be recorded, investigated, fixed, and closed with a root cause analysis. This ensures:
+  </p>
+  <ul>
+    <li>Customers get timely response and resolution</li>
+    <li>We find the root cause, not just a quick fix</li>
+    <li>Preventive actions stop the same problem from recurring</li>
+    <li>Management has visibility into complaint trends</li>
+  </ul>
+
+  <div class="warning">
+    Our products are safety-critical (crane overload protection, driver monitoring).
+    P1 (Safety) complaints must be responded to within 24 hours.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Customer reports complaint (phone / WhatsApp / email / DCR)
+       |
+       v
+  [1. LOG] Create Warranty Claim in ERP
+       |
+       v
+  [2. CLASSIFY] Assign P1/P2/P3/P4 priority
+       |
+       +--- P1 Safety --- dispatch within 24 hrs
+       +--- P2 Down ----- dispatch within 48 hrs
+       +--- P3 Degraded - dispatch within 5 days
+       +--- P4 Minor ---- next visit / 15 days
+       |
+       v
+  [3. DIAGNOSE] Field visit or remote diagnosis
+       |
+       v
+  [4. FIX] Replace part / recalibrate / update firmware
+       |
+       v
+  [5. RCA] 5-Why root cause analysis
+       |
+       v
+  [6. CAPA] Create corrective + preventive action plan
+       |
+       v
+  [7. CLOSE] Customer confirms, effectiveness review after 30 days</div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step1">3. Step 1: Receive and log complaint</h2>
+
+  <div class="step-card">
+    <h3>Log the complaint in ERP</h3>
+    <div class="who">Who: Service Coordinator &nbsp;|&nbsp; When: Within 4 hours of receiving complaint</div>
+    <ol>
+      <li>Go to <strong>Support > Warranty Claim > New</strong></li>
+      <li>Fill in these fields:</li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Customer</td><td>Select customer from dropdown</td><td>Reliance Industries Ltd</td></tr>
+      <tr><td>Item</td><td>Which product has the issue</td><td>ACD-100</td></tr>
+      <tr><td>Serial No</td><td>Unit serial number (on label)</td><td>ACD-2024-00142</td></tr>
+      <tr><td>Complaint Date</td><td>Date customer reported</td><td>2026-04-15</td></tr>
+      <tr><td>Complaint</td><td>Describe the problem in detail</td><td>"Load indicator showing 20% higher reading than actual load"</td></tr>
+      <tr><td>Territory</td><td>Customer's region</td><td>West</td></tr>
+      <tr><td>Site Contact Name</td><td>Person at site to contact</td><td>Ramesh Patil</td></tr>
+      <tr><td>Site Contact Phone</td><td>Their phone number</td><td>98765-XXXXX</td></tr>
+    </table>
+    <ol start="3">
+      <li>Attach photos or videos if the customer shared any</li>
+      <li>Click <strong>Save</strong></li>
+    </ol>
+
+    <div class="tip">
+      The system will automatically assign a Warranty Claim ID (e.g., WC-00045) and notify managers via Telegram.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step2">4. Step 2: Classify severity</h2>
+
+  <div class="step-card">
+    <h3>Set the priority</h3>
+    <div class="who">Who: Service Head &nbsp;|&nbsp; When: Within 4 hours of logging</div>
+    <p>Open the Warranty Claim and set the <strong>Priority</strong> field based on this table:</p>
+  </div>
+
+  <table>
+    <tr><th>Priority</th><th>When to use</th><th>Response SLA</th><th>Resolution SLA</th></tr>
+    <tr class="priority-p1"><td>P1 — Safety</td><td>Equipment unsafe, potential accident, total safety system failure</td><td>24 hours</td><td>48 hours</td></tr>
+    <tr class="priority-p2"><td>P2 — Down</td><td>Equipment non-functional, customer operations stopped</td><td>48 hours</td><td>5 working days</td></tr>
+    <tr class="priority-p3"><td>P3 — Degraded</td><td>Partial malfunction, workaround exists, intermittent issue</td><td>5 working days</td><td>10 working days</td></tr>
+    <tr class="priority-p4"><td>P4 — Minor</td><td>Cosmetic, display glitch, minor calibration drift</td><td>15 working days</td><td>20 working days</td></tr>
+  </table>
+
+  <div class="tip">
+    When you save after setting priority, the system auto-calculates "Response Due Date" and "Resolution Due Date".
+    If these dates are breached, managers get a daily Telegram alert at 9 AM.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step3">5. Step 3: Diagnose</h2>
+
+  <div class="step-card">
+    <h3>Field visit or remote diagnosis</h3>
+    <div class="who">Who: Service Engineer &nbsp;|&nbsp; When: Per SLA from priority</div>
+    <ol>
+      <li>Create a <strong>Maintenance Visit</strong> linked to the Warranty Claim</li>
+      <li>At the site, check:</li>
+    </ol>
+
+    <table>
+      <tr><th>Check</th><th>ACD / DRM</th><th>E-DASH / F-Dash</th><th>WWSI / MRT</th><th>TPS</th></tr>
+      <tr><td>Sensor calibration</td><td>Yes</td><td>—</td><td>Yes</td><td>—</td></tr>
+      <tr><td>Wiring and connections</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Display readings</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Firmware version</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Power supply</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Environmental damage</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Load cell condition</td><td>Yes</td><td>—</td><td>Yes</td><td>—</td></tr>
+      <tr><td>Camera / display unit</td><td>—</td><td>Yes</td><td>—</td><td>—</td></tr>
+    </table>
+
+    <ol start="3">
+      <li>Take photos of: wiring, installation, display readings, damage</li>
+      <li>Note the firmware version</li>
+      <li>Set <strong>First Response Date</strong> in the Warranty Claim</li>
+      <li>For remote: request customer to share photos/video via WhatsApp</li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step4">6. Step 4: Fix and confirm</h2>
+
+  <div class="step-card">
+    <h3>Apply the corrective action</h3>
+    <div class="who">Who: Service Engineer &nbsp;|&nbsp; When: During the visit</div>
+    <ol>
+      <li>Apply the fix:
+        <ul>
+          <li><strong>Part replacement:</strong> Swap PCB / sensor / display from service kit</li>
+          <li><strong>Recalibration:</strong> Recalibrate with reference weights</li>
+          <li><strong>Firmware update:</strong> Flash latest firmware</li>
+          <li><strong>Rewiring:</strong> Fix installation defects</li>
+        </ul>
+      </li>
+      <li>Test the system under load to confirm the fix works</li>
+      <li>Get customer sign-off (signature or WhatsApp confirmation)</li>
+      <li>In ERPNext:
+        <ul>
+          <li>Update Warranty Claim status to <strong>Work In Progress</strong></li>
+          <li>Fill in <strong>Resolution Details</strong></li>
+          <li>If a part was replaced: create a <strong>Stock Entry</strong> (Material Issue)</li>
+          <li>Note the old part serial number</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="warning">
+      Return the defective part to the factory for failure analysis (Step 5).
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step5">7. Step 5: Root cause analysis (RCA)</h2>
+
+  <div class="step-card">
+    <h3>Find the root cause using 5-Why</h3>
+    <div class="who">Who: Production Head / R&D &nbsp;|&nbsp; When: Within 5 working days</div>
+    <ol>
+      <li>Examine the returned defective part</li>
+      <li>In the Warranty Claim, expand the <strong>Root Cause Analysis</strong> section</li>
+      <li>Select the <strong>Root Cause Category</strong>:</li>
+    </ol>
+
+    <table>
+      <tr><th>Category</th><th>Examples</th></tr>
+      <tr><td>Design Defect</td><td>Circuit design flaw, insufficient protection</td></tr>
+      <tr><td>Manufacturing Defect</td><td>Soldering error, assembly mistake</td></tr>
+      <tr><td>Component Quality</td><td>Failed capacitor, substandard PCB</td></tr>
+      <tr><td>Installation Error</td><td>Wrong wiring, incorrect mounting</td></tr>
+      <tr><td>Customer Misuse</td><td>Overloading, water exposure, wrong power supply</td></tr>
+      <tr><td>Environmental</td><td>Extreme heat, corrosion, vibration damage</td></tr>
+      <tr><td>Supplier Issue</td><td>Defective component batch from supplier</td></tr>
+      <tr><td>Firmware Bug</td><td>Software error causing incorrect readings</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Write the <strong>5-Why analysis</strong> in the RCA Details field. Example:</li>
+    </ol>
+
+    <div class="flow" style="font-family: inherit; font-size: 0.85rem;">WHY 1: Why did the load reading show 20% higher?
+  → The load cell output was drifting over time.
+
+WHY 2: Why was the load cell output drifting?
+  → Moisture had entered the load cell housing.
+
+WHY 3: Why did moisture enter the housing?
+  → The O-ring seal had degraded.
+
+WHY 4: Why did the O-ring degrade?
+  → The O-ring material was not rated for outdoor exposure.
+
+WHY 5: Why was a non-outdoor-rated O-ring used?
+  → The BOM specified a generic O-ring without IP rating.
+
+ROOT CAUSE: BOM specification error — no IP-rated seal for outdoor units.</div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step6">8. Step 6: CAPA (Corrective and Preventive Action)</h2>
+
+  <div class="step-card">
+    <h3>Create a CAPA record</h3>
+    <div class="who">Who: Production Head &nbsp;|&nbsp; When: Within 10 working days of RCA</div>
+    <ol>
+      <li>Go to <strong>Vaishali > CAPA > New</strong></li>
+      <li>Fill in:</li>
+    </ol>
+
+    <table>
+      <tr><th>Section</th><th>Field</th><th>What to enter</th></tr>
+      <tr><td rowspan="4">Header</td><td>Warranty Claim</td><td>Link to the original complaint</td></tr>
+      <tr><td>Item</td><td>The product (auto-fills from WC)</td></tr>
+      <tr><td>Customer</td><td>The customer (auto-fills from WC)</td></tr>
+      <tr><td>Serial No</td><td>The unit serial number</td></tr>
+      <tr><td rowspan="3">Root Cause</td><td>Root Cause Category</td><td>Same as Warranty Claim RCA</td></tr>
+      <tr><td>Why 1–5</td><td>The 5-Why questions and answers</td></tr>
+      <tr><td>Root Cause Summary</td><td>One paragraph summary</td></tr>
+      <tr><td rowspan="3">Corrective</td><td>Corrective Action Taken</td><td>What was done to fix THIS unit</td></tr>
+      <tr><td>Completed By</td><td>Service engineer who fixed it</td></tr>
+      <tr><td>Completion Date</td><td>When the fix was applied</td></tr>
+      <tr><td rowspan="3">Preventive</td><td>Preventive Action Plan</td><td>What will change to prevent recurrence</td></tr>
+      <tr><td>Owner</td><td>Person responsible for implementing</td></tr>
+      <tr><td>Target Date</td><td>When the preventive action must be done</td></tr>
+    </table>
+
+    <ol start="3">
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+      <li>The system automatically links the CAPA back to the Warranty Claim</li>
+    </ol>
+
+    <h3>Preventive action examples by root cause</h3>
+    <table>
+      <tr><th>Root Cause</th><th>Typical preventive action</th></tr>
+      <tr><td>Design Defect</td><td>PCB redesign, circuit change, component upgrade</td></tr>
+      <tr><td>Manufacturing Defect</td><td>Jig/fixture update, process step added, QC checkpoint</td></tr>
+      <tr><td>Component Quality</td><td>Supplier change, incoming inspection tightened</td></tr>
+      <tr><td>Installation Error</td><td>Installation manual updated, installer training</td></tr>
+      <tr><td>Customer Misuse</td><td>User training, warning label, interlock added</td></tr>
+      <tr><td>Firmware Bug</td><td>Code fix, regression test, OTA update to all units</td></tr>
+      <tr><td>Supplier Issue</td><td>Vendor audit, alternate source qualification</td></tr>
+    </table>
+  </div>
+
+  <div class="warning">
+    If the same failure has occurred 3 or more times on the same product, escalate to the Managing Director for a design review.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step7">9. Step 7: Close and review</h2>
+
+  <div class="step-card">
+    <h3>Close the complaint and verify effectiveness</h3>
+    <div class="who">Who: Service Coordinator (close) + Service Head (review) &nbsp;|&nbsp; When: After fix + 30 days</div>
+
+    <h3>Closing the complaint</h3>
+    <ol>
+      <li>Call customer to confirm equipment is running normally</li>
+      <li>Set Warranty Claim status to <strong>Resolved</strong></li>
+      <li>Set the <strong>Resolution Date</strong></li>
+    </ol>
+
+    <h3>Effectiveness review (30 days later)</h3>
+    <ol>
+      <li>Open the CAPA record</li>
+      <li>Check: has the same failure recurred on any unit?</li>
+      <li>Check: were the preventive actions actually implemented?</li>
+      <li>Fill in the Effectiveness Review section:
+        <ul>
+          <li><strong>Review Date</strong></li>
+          <li><strong>Recurrence Found</strong> — check if yes</li>
+          <li><strong>Reviewed By</strong></li>
+          <li><strong>Review Remarks</strong></li>
+        </ul>
+      </li>
+      <li>Set CAPA Status:
+        <ul>
+          <li><strong>Verified Effective</strong> — no recurrence, actions completed</li>
+          <li><strong>Reopened</strong> — recurrence found (managers auto-notified)</li>
+        </ul>
+      </li>
+      <li>Click <strong>Amend</strong> to update the submitted CAPA</li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="roles">10. Who does what (RACI)</h2>
+
+  <table>
+    <tr><th>Step</th><th style="color:#E60005">Responsible<br>(does it)</th><th>Accountable<br>(owns it)</th><th>Consulted</th><th>Informed</th></tr>
+    <tr><td>1. Log complaint</td><td>Service Coordinator</td><td>Service Head</td><td>—</td><td>Sales Owner</td></tr>
+    <tr><td>2. Set priority</td><td>Service Head</td><td>Service Head</td><td>Production</td><td>Customer</td></tr>
+    <tr><td>3. Diagnose</td><td>Service Engineer</td><td>Service Head</td><td>R&D</td><td>Customer</td></tr>
+    <tr><td>4. Fix</td><td>Service Engineer</td><td>Service Head</td><td>Production</td><td>Customer, Sales</td></tr>
+    <tr><td>5. RCA</td><td>Production / R&D</td><td>Production Head</td><td>Service Engineer</td><td>Service Head</td></tr>
+    <tr><td>6. CAPA</td><td>Production Head</td><td>MD / Director</td><td>R&D, Quality</td><td>Service Head</td></tr>
+    <tr><td>7. Close</td><td>Service Coordinator</td><td>Service Head</td><td>Sales Owner</td><td>Customer</td></tr>
+    <tr><td>8. Review</td><td>Service Head</td><td>MD</td><td>Production</td><td>—</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="erp">11. How to use the ERP system</h2>
+
+  <h3>Creating a Warranty Claim</h3>
+  <ol>
+    <li>Log in to <strong>dgoc.logstop.com</strong></li>
+    <li>Search for <strong>"Warranty Claim"</strong> in the top search bar</li>
+    <li>Click <strong>+ Add Warranty Claim</strong></li>
+    <li>Fill in the fields (see Step 1 above)</li>
+    <li>Click <strong>Save</strong></li>
+  </ol>
+
+  <h3>Setting priority and SLA</h3>
+  <ol>
+    <li>Open the Warranty Claim</li>
+    <li>Scroll to <strong>DSPL Service Management</strong> section</li>
+    <li>Select the <strong>Priority</strong> (P1/P2/P3/P4)</li>
+    <li>Response Due Date and Resolution Due Date auto-calculate on save</li>
+  </ol>
+
+  <h3>Creating a CAPA</h3>
+  <ol>
+    <li>Search for <strong>"CAPA"</strong> in the top search bar</li>
+    <li>Click <strong>+ Add CAPA</strong></li>
+    <li>Link it to the Warranty Claim (the CAPA auto-links back)</li>
+    <li>Fill in all sections (RCA, Corrective, Preventive)</li>
+    <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+  </ol>
+
+  <h3>Checking overdue complaints</h3>
+  <ul>
+    <li>Managers receive a <strong>daily Telegram alert at 9 AM</strong> for any complaints past their SLA</li>
+    <li>To check manually: go to <strong>Warranty Claim list</strong>, filter by Status = Open and sort by Complaint Date</li>
+  </ul>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="sla">12. SLA targets</h2>
+
+  <table>
+    <tr><th>Metric</th><th>Target</th><th>How measured</th></tr>
+    <tr><td>P1 response time</td><td>Within 24 hours</td><td>Complaint Date to First Response Date</td></tr>
+    <tr><td>Average resolution time</td><td>Under 10 working days</td><td>Complaint Date to Resolution Date</td></tr>
+    <tr><td>First-visit fix rate</td><td>Above 80%</td><td>Resolved in single Maintenance Visit</td></tr>
+    <tr><td>CAPA closure rate</td><td>Above 90% within 30 days</td><td>CAPA open vs. closed count</td></tr>
+    <tr><td>Repeat complaint rate</td><td>Below 5%</td><td>Same product + failure within 6 months</td></tr>
+    <tr><td>Open complaints backlog</td><td>Under 10 at any time</td><td>Warranty Claims in Open/WIP status</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="exceptions">13. Exceptions and edge cases</h2>
+
+  <table>
+    <tr><th>Situation</th><th>What to do</th></tr>
+    <tr><td>Customer is in a remote location (500+ km)</td><td>Remote diagnosis first via video call. Ship replacement unit for P1/P2. Schedule site visit on next trip.</td></tr>
+    <tr><td>Complaint during warranty period</td><td>Standard process. No charge. Track warranty expiry in the claim.</td></tr>
+    <tr><td>Complaint after warranty expired</td><td>Inform customer of charges before dispatch. Create a Quotation for service + parts.</td></tr>
+    <tr><td>Same issue, 3rd time</td><td>Auto-escalate to MD. Consider product recall or design review.</td></tr>
+    <tr><td>Customer refuses field visit</td><td>Remote diagnosis only. Document refusal. Do not close until confirmed resolved.</td></tr>
+    <tr><td>Third-party installation issue</td><td>Investigate installation quality. Feed back to installer training programme.</td></tr>
+    <tr><td>Bulk failure (5+ units, same issue)</td><td>Batch recall process. Proactively contact all customers with affected serial numbers.</td></tr>
+    <tr><td>Customer threatens legal action</td><td>Escalate immediately to MD. Do not admit liability. Document everything.</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="checklist">14. Field engineer checklist</h2>
+
+  <h3>Before leaving for site</h3>
+  <ul class="checklist">
+    <li>Warranty Claim number noted</li>
+    <li>Customer contact details confirmed</li>
+    <li>Product type and serial number known</li>
+    <li>Service kit stocked (spare PCBs, sensors, fuses, cables)</li>
+    <li>Laptop with latest firmware loaded</li>
+    <li>Calibration weights / reference tools packed</li>
+    <li>Camera / phone for documentation</li>
+  </ul>
+
+  <h3>At the site</h3>
+  <ul class="checklist">
+    <li>Photograph the installation (wiring, mounting, environment)</li>
+    <li>Note firmware version displayed</li>
+    <li>Run diagnostic checks per product checklist (see Step 3)</li>
+    <li>Record all readings and error codes</li>
+    <li>Apply fix and test under load</li>
+    <li>Get customer sign-off (signature or WhatsApp message)</li>
+    <li>Collect defective part for RCA (label with WC number)</li>
+  </ul>
+
+  <h3>After returning</h3>
+  <ul class="checklist">
+    <li>Update Warranty Claim in ERP (status, resolution details, first response date)</li>
+    <li>Attach site photos to the Warranty Claim</li>
+    <li>Hand over defective part to Production for RCA</li>
+    <li>If part replaced: create Stock Entry (Material Issue)</li>
+    <li>Update Maintenance Visit with work done</li>
+  </ul>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/complaint-guide
+  </p>
+</div>
+{% endblock %}

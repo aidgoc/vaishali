@@ -1,0 +1,351 @@
+{
+  "actions": [],
+  "autoname": "CAPA-.YYYY.-.#####",
+  "creation": "2026-04-15 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "complaint_date",
+    "warranty_claim",
+    "item",
+    "item_name",
+    "column_break_info",
+    "customer",
+    "customer_name",
+    "serial_no",
+    "territory",
+    "section_break_rca",
+    "rca_category",
+    "rca_why1",
+    "rca_why2",
+    "rca_why3",
+    "rca_why4",
+    "rca_why5",
+    "column_break_rca",
+    "root_cause_summary",
+    "section_break_corrective",
+    "corrective_action",
+    "corrective_completed_by",
+    "corrective_completion_date",
+    "column_break_corrective",
+    "corrective_remarks",
+    "section_break_preventive",
+    "preventive_action",
+    "preventive_owner",
+    "preventive_target_date",
+    "column_break_preventive",
+    "preventive_remarks",
+    "section_break_affected",
+    "affected_units",
+    "proactive_action_taken",
+    "section_break_review",
+    "capa_status",
+    "effectiveness_review_date",
+    "column_break_review",
+    "recurrence_found",
+    "reviewed_by",
+    "review_remarks",
+    "amended_from"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "complaint_date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Complaint Date",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "warranty_claim",
+      "fieldtype": "Link",
+      "label": "Warranty Claim",
+      "options": "Warranty Claim",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "item",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Item",
+      "options": "Item",
+      "search_index": 1
+    },
+    {
+      "fetch_from": "item.item_name",
+      "fieldname": "item_name",
+      "fieldtype": "Data",
+      "label": "Item Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_info",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Customer",
+      "options": "Customer",
+      "search_index": 1
+    },
+    {
+      "fetch_from": "customer.customer_name",
+      "fieldname": "customer_name",
+      "fieldtype": "Data",
+      "label": "Customer Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "serial_no",
+      "fieldtype": "Data",
+      "label": "Serial No"
+    },
+    {
+      "fieldname": "territory",
+      "fieldtype": "Link",
+      "label": "Territory",
+      "options": "Territory"
+    },
+    {
+      "fieldname": "section_break_rca",
+      "fieldtype": "Section Break",
+      "label": "Root Cause Analysis (5-Why)"
+    },
+    {
+      "fieldname": "rca_category",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Root Cause Category",
+      "options": "\nDesign Defect\nManufacturing Defect\nComponent Quality\nInstallation Error\nCustomer Misuse\nEnvironmental\nSupplier Issue\nFirmware Bug",
+      "reqd": 1
+    },
+    {
+      "fieldname": "rca_why1",
+      "fieldtype": "Small Text",
+      "label": "Why 1: Why did the failure occur?"
+    },
+    {
+      "fieldname": "rca_why2",
+      "fieldtype": "Small Text",
+      "label": "Why 2"
+    },
+    {
+      "fieldname": "rca_why3",
+      "fieldtype": "Small Text",
+      "label": "Why 3"
+    },
+    {
+      "fieldname": "rca_why4",
+      "fieldtype": "Small Text",
+      "label": "Why 4"
+    },
+    {
+      "fieldname": "rca_why5",
+      "fieldtype": "Small Text",
+      "label": "Why 5 (Root Cause)"
+    },
+    {
+      "fieldname": "column_break_rca",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "root_cause_summary",
+      "fieldtype": "Text",
+      "label": "Root Cause Summary",
+      "reqd": 1,
+      "description": "One-paragraph summary of the root cause"
+    },
+    {
+      "fieldname": "section_break_corrective",
+      "fieldtype": "Section Break",
+      "label": "Corrective Action (fix this unit)"
+    },
+    {
+      "fieldname": "corrective_action",
+      "fieldtype": "Text",
+      "label": "Corrective Action Taken",
+      "reqd": 1,
+      "description": "What was done to fix this specific unit/complaint"
+    },
+    {
+      "fieldname": "corrective_completed_by",
+      "fieldtype": "Link",
+      "label": "Completed By",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "corrective_completion_date",
+      "fieldtype": "Date",
+      "label": "Completion Date"
+    },
+    {
+      "fieldname": "column_break_corrective",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "corrective_remarks",
+      "fieldtype": "Small Text",
+      "label": "Remarks"
+    },
+    {
+      "fieldname": "section_break_preventive",
+      "fieldtype": "Section Break",
+      "label": "Preventive Action (prevent recurrence)"
+    },
+    {
+      "fieldname": "preventive_action",
+      "fieldtype": "Text",
+      "label": "Preventive Action Plan",
+      "description": "Design change, process change, supplier change, training, etc."
+    },
+    {
+      "fieldname": "preventive_owner",
+      "fieldtype": "Link",
+      "label": "Owner",
+      "options": "Employee",
+      "description": "Person responsible for implementing preventive action"
+    },
+    {
+      "fieldname": "preventive_target_date",
+      "fieldtype": "Date",
+      "label": "Target Completion Date"
+    },
+    {
+      "fieldname": "column_break_preventive",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "preventive_remarks",
+      "fieldtype": "Small Text",
+      "label": "Remarks"
+    },
+    {
+      "fieldname": "section_break_affected",
+      "fieldtype": "Section Break",
+      "label": "Affected Units",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "affected_units",
+      "fieldtype": "Text",
+      "label": "Other Units at Risk",
+      "description": "Serial numbers or batch info for units with the same potential issue"
+    },
+    {
+      "fieldname": "proactive_action_taken",
+      "fieldtype": "Text",
+      "label": "Proactive Action Taken",
+      "description": "Recall, field update, customer advisory, etc."
+    },
+    {
+      "fieldname": "section_break_review",
+      "fieldtype": "Section Break",
+      "label": "Effectiveness Review"
+    },
+    {
+      "default": "Open",
+      "fieldname": "capa_status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Status",
+      "options": "Open\nIn Progress\nCompleted\nVerified Effective\nReopened",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "effectiveness_review_date",
+      "fieldtype": "Date",
+      "label": "Review Date",
+      "description": "30 days after preventive action implemented"
+    },
+    {
+      "fieldname": "column_break_review",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "fieldname": "recurrence_found",
+      "fieldtype": "Check",
+      "label": "Recurrence Found"
+    },
+    {
+      "fieldname": "reviewed_by",
+      "fieldtype": "Link",
+      "label": "Reviewed By",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "review_remarks",
+      "fieldtype": "Small Text",
+      "label": "Review Remarks"
+    },
+    {
+      "fieldname": "amended_from",
+      "fieldtype": "Link",
+      "label": "Amended From",
+      "no_copy": 1,
+      "options": "CAPA",
+      "print_hide": 1,
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-04-15 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vaishali",
+  "name": "CAPA",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Manufacturing Manager",
+      "submit": 1,
+      "cancel": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Manufacturing User",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Sales Manager"
+    },
+    {
+      "read": 1,
+      "role": "Sales User"
+    }
+  ],
+  "sort_field": "complaint_date",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "customer_name",
+  "track_changes": 1
+}
