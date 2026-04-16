@@ -268,9 +268,9 @@ VIEWS = {
         "description": "Production overview — pending orders, work orders, stock, BOM status",
         "context_doctype": None,
         "sections": {
-            "manufacturing": ["pending_orders", "work_orders", "stock_levels", "bom_status"],
+            "manufacturing": ["pending_orders", "active_work_orders", "overdue_work_orders", "stock_levels", "bom_status"],
             "field": ["pending_orders"],
-            "manager": ["pending_orders", "work_orders", "stock_levels", "bom_status"],
+            "manager": ["pending_orders", "active_work_orders", "overdue_work_orders", "stock_levels", "bom_status"],
             "admin": ["*"],
         },
         "section_defs": {
@@ -285,13 +285,29 @@ VIEWS = {
                 "order_by": "delivery_date asc",
                 "limit": 100,
             },
-            "work_orders": {
+            "active_work_orders": {
                 "doctype": "Work Order",
-                "fields": ["name", "production_item", "qty", "produced_qty",
-                           "status", "expected_delivery_date", "sales_order"],
-                "filters": [],
-                "order_by": "creation desc",
+                "fields": ["name", "production_item", "item_name", "qty", "produced_qty",
+                           "status", "planned_start_date", "expected_delivery_date",
+                           "sales_order", "bom_no"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["status", "in", ["Not Started", "In Process"]],
+                ],
+                "order_by": "planned_start_date asc",
                 "limit": 100,
+            },
+            "overdue_work_orders": {
+                "doctype": "Work Order",
+                "fields": ["name", "production_item", "item_name", "qty", "produced_qty",
+                           "status", "planned_start_date", "expected_delivery_date"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["status", "in", ["Not Started", "In Process"]],
+                    ["planned_start_date", "<", "today"],
+                ],
+                "order_by": "planned_start_date asc",
+                "limit": 50,
             },
             "stock_levels": {
                 "doctype": "Bin",

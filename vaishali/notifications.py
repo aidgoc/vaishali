@@ -439,3 +439,119 @@ def check_pending_purchase_invoices():
     )
     for emp_id in accounts_staff:
         _notify(emp_id, msg)
+
+
+# ── Manufacturing Notifications ─────────────────────────────
+
+
+def on_work_order_submit(doc, method):
+    """Notify production team when a Work Order is submitted."""
+    production_staff = _get_users_with_role("Manufacturing User", "Manufacturing Manager")
+    if not production_staff:
+        production_staff = _get_managers()
+
+    msg = (
+        f"Work Order {doc.name} submitted\n"
+        f"Item: {doc.item_name or doc.production_item}\n"
+        f"Qty: {doc.qty} {doc.stock_uom}\n"
+        f"BOM: {doc.bom_no}\n"
+        f"Start: {doc.planned_start_date or 'Not set'}"
+    )
+    for emp_id in production_staff:
+        _notify(emp_id, msg)
+
+
+def on_work_order_complete(doc, method):
+    """Notify managers when a Work Order is completed (all qty manufactured)."""
+    if doc.status != "Completed":
+        return
+    managers = _get_managers()
+    msg = (
+        f"Work Order {doc.name} completed\n"
+        f"Item: {doc.item_name or doc.production_item}\n"
+        f"Qty produced: {doc.produced_qty} / {doc.qty}"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_stock_entry_submit(doc, method):
+    """Notify production team on Manufacture stock entries."""
+    if doc.stock_entry_type != "Manufacture":
+        return
+    production_staff = _get_users_with_role("Manufacturing User", "Manufacturing Manager")
+    if not production_staff:
+        production_staff = _get_managers()
+
+    items_list = []
+    for item in doc.items[:8]:
+        if item.is_finished_item:
+            items_list.append(f"  [FG] {item.item_name or item.item_code} x {item.qty}")
+    items_text = "\n".join(items_list) if items_list else "  (see Stock Entry for details)"
+
+    msg = (
+        f"Manufacturing entry {doc.name}\n"
+        f"Work Order: {doc.work_order or 'N/A'}\n"
+        f"Finished goods:\n{items_text}"
+    )
+    for emp_id in production_staff:
+        _notify(emp_id, msg)
+
+
+def on_production_plan_submit(doc, method):
+    """Notify production team when a Production Plan is submitted."""
+    production_staff = _get_users_with_role("Manufacturing User", "Manufacturing Manager")
+    if not production_staff:
+        production_staff = _get_managers()
+
+    items_count = len(doc.po_items) if hasattr(doc, 'po_items') else 0
+    msg = (
+        f"Production Plan {doc.name} submitted\n"
+        f"Posting date: {doc.posting_date}\n"
+        f"Items to manufacture: {items_count}\n"
+        f"Get items from: {doc.get_items_from or 'Manual'}"
+    )
+    for emp_id in production_staff:
+        _notify(emp_id, msg)
+
+
+# ── Scheduled: Manufacturing Alerts ─────────────────────────
+
+
+def check_overdue_work_orders():
+    """Run daily at 9 AM. Alert production about Work Orders past planned start date."""
+    from frappe.utils import today, date_diff
+
+    today_date = today()
+
+    overdue = frappe.get_all(
+        "Work Order",
+        filters={
+            "docstatus": 1,
+            "status": ["in", ["Not Started", "In Process"]],
+            "planned_start_date": ["<", today_date],
+        },
+        fields=["name", "production_item", "item_name", "qty",
+                "produced_qty", "planned_start_date", "status"],
+        limit_page_length=50,
+    )
+
+    if not overdue:
+        return
+
+    production_staff = _get_users_with_role("Manufacturing Manager")
+    if not production_staff:
+        production_staff = _get_managers()
+
+    lines = []
+    for wo in overdue:
+        days = date_diff(today_date, wo.planned_start_date)
+        progress = f"{wo.produced_qty}/{wo.qty}" if wo.produced_qty else "not started"
+        lines.append(
+            f"  {wo.name} - {wo.item_name or wo.production_item} "
+            f"({progress}) - {days}d overdue"
+        )
+
+    msg = f"Overdue Work Orders ({len(overdue)}):\n" + "\n".join(lines)
+    for emp_id in production_staff:
+        _notify(emp_id, msg)

@@ -1,0 +1,440 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Manufacturing Workflow Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Manufacturing Workflow Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#step1">Step 1: Receiving Sales Orders</a></li>
+      <li><a href="#step2">Step 2: Production Plan</a></li>
+      <li><a href="#step3">Step 3: Work Order</a></li>
+      <li><a href="#step4">Step 4: Material Issue (Stock Entry)</a></li>
+      <li><a href="#step5">Step 5: Manufacture (Stock Entry)</a></li>
+      <li><a href="#step6">Step 6: Quality check</a></li>
+      <li><a href="#bom">BOM management</a></li>
+      <li><a href="#dashboards">Dashboards</a></li>
+      <li><a href="#raci">Who does what (RACI)</a></li>
+      <li><a href="#notifications">Telegram notifications</a></li>
+      <li><a href="#tips">Tips for production team</a></li>
+      <li><a href="#so-access">How to access Sales Orders</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL manufactures 8 product lines of crane safety electronics — ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT Systems, and TPS.
+    These are built from 246 active Bills of Materials (BOMs) using BK*/BL* item codes across a catalogue of 6,502 items.
+  </p>
+  <ul>
+    <li>Manufacturing cycle: Sales Order → Production Plan → Work Order → Material Issue → Manufacture → Finished Goods</li>
+    <li>Production team sees Sales Orders (items and quantities only — no prices or financial data)</li>
+    <li>All manufacturing notifications are delivered via Telegram</li>
+    <li>Production lead: Vivek Kulkarni (production.dgoc@gmail.com)</li>
+  </ul>
+
+  <div class="warning">
+    Never cancel submitted BOMs — they are linked to Work Orders, Production Plans, and parent BOMs. Cancelling cascades and can corrupt data. See the <a href="#bom" style="color:#e65100">BOM management</a> section for the correct procedures.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Sales Order submitted (by Sales team)
+     |
+     v
+[1. PRODUCTION PLAN] What to make, how many
+     |
+     +--- "Get Items from Sales Orders" auto-populates
+     +--- "Get Sub Assembly Items" expands BOM tree
+     |
+     v
+[2. WORK ORDER] One per product / sub-assembly / batch
+     |
+     v
+[3. MATERIAL ISSUE] Transfer raw materials from Stores → WIP warehouse
+     |  (Stock Entry: Material Transfer for Manufacture)
+     v
+[4. MANUFACTURE] Consume raw materials, produce finished goods
+     |  (Stock Entry: Manufacture)
+     v
+[5. QUALITY CHECK] Manual inspection (future: Quality Inspection DocType)
+     |
+     v
+[6. DELIVERY NOTE] Ship finished goods to customer</div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step1">3. Step 1: Receiving Sales Orders</h2>
+
+  <div class="step-card">
+    <h3>Review incoming orders</h3>
+    <div class="who">Who: Production Team &nbsp;|&nbsp; When: On Sales Order submission</div>
+    <ol>
+      <li>You receive a <strong>Telegram notification</strong> when a Sales Order is submitted — it lists items, quantities, and delivery date (no prices)</li>
+      <li>Open the Sales Order in ERPNext: <strong>Selling > Sales Order</strong></li>
+      <li>Check the following:</li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to look for</th></tr>
+      <tr><td>Items</td><td>Which products to manufacture (ACD, DRM, DJ, E-DASH, etc.)</td></tr>
+      <tr><td>Quantity</td><td>How many units of each product</td></tr>
+      <tr><td>Delivery Date</td><td>When the customer expects delivery — use this to prioritize</td></tr>
+      <tr><td>Customer</td><td>Customer name (for reference only)</td></tr>
+    </table>
+    <ol start="4">
+      <li>Prioritize production based on delivery dates — earliest first</li>
+      <li>You can also view pending orders in the PWA at <strong>#/production</strong></li>
+    </ol>
+
+    <div class="tip">
+      Sales Orders are read-only for production. Financial fields (rate, amount, total, taxes, payment terms) are hidden — you only see items and quantities.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step2">4. Step 2: Production Plan</h2>
+
+  <div class="step-card">
+    <h3>Create a Production Plan</h3>
+    <div class="who">Who: Production Head &nbsp;|&nbsp; When: After receiving Sales Order</div>
+    <ol>
+      <li>Go to <strong>Manufacturing > Production Plan > New</strong></li>
+      <li>Set the <strong>Posting Date</strong></li>
+      <li>Click <strong>"Get Items from Sales Orders"</strong> — this auto-populates items from pending Sales Orders</li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Posting Date</td><td>Date of the production plan</td><td>2026-04-16</td></tr>
+      <tr><td>Items (auto-filled)</td><td>Products from Sales Orders</td><td>ACD-100, qty 5</td></tr>
+      <tr><td>Planned Qty</td><td>Quantity to manufacture</td><td>5</td></tr>
+      <tr><td>BOM No</td><td>Bill of Materials to use (auto-selected)</td><td>BOM-BKA08001-001</td></tr>
+    </table>
+    <ol start="4">
+      <li>Click <strong>"Get Sub Assembly Items"</strong> to expand sub-assemblies from the BOM tree</li>
+      <li>Review the complete list of items and sub-assemblies</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      You can also create a Production Plan manually without a Sales Order — useful for building stock or producing spare parts.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step3">5. Step 3: Work Order</h2>
+
+  <div class="step-card">
+    <h3>Create Work Orders from Production Plan</h3>
+    <div class="who">Who: Production Team &nbsp;|&nbsp; When: After Production Plan is submitted</div>
+    <ol>
+      <li>Open the submitted Production Plan</li>
+      <li>Click <strong>"Create Work Orders"</strong> — one Work Order is created per product/sub-assembly per batch</li>
+      <li>Alternatively, create standalone: <strong>Manufacturing > Work Order > New</strong></li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Production Item</td><td>The item to manufacture</td><td>BKA08001</td></tr>
+      <tr><td>Qty to Manufacture</td><td>Number of units</td><td>5</td></tr>
+      <tr><td>BOM No</td><td>Which BOM to use</td><td>BOM-BKA08001-001</td></tr>
+      <tr><td>Planned Start Date</td><td>When production should begin</td><td>2026-04-17</td></tr>
+      <tr><td>Expected Delivery Date</td><td>When production should complete</td><td>2026-04-22</td></tr>
+      <tr><td>FG Warehouse</td><td>Where finished goods go</td><td>Finished Goods - DSPL</td></tr>
+      <tr><td>WIP Warehouse</td><td>Work-in-progress warehouse</td><td>Work In Progress - DSPL</td></tr>
+    </table>
+    <ol start="4">
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <h3>Work Order status lifecycle</h3>
+    <table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td>Not Started</td><td>Work Order submitted but production not yet begun</td></tr>
+      <tr><td>In Process</td><td>Material transfer done, manufacturing in progress</td></tr>
+      <tr><td>Completed</td><td>All units manufactured</td></tr>
+      <tr><td>Stopped</td><td>Production halted (can be resumed)</td></tr>
+    </table>
+
+    <div class="warning">
+      Always set the <strong>Planned Start Date</strong> on every Work Order. If a Work Order is past its planned start date without completion, managers receive a daily alert at 9 AM via Telegram.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step4">6. Step 4: Material Issue (Stock Entry)</h2>
+
+  <div class="step-card">
+    <h3>Transfer raw materials to WIP warehouse</h3>
+    <div class="who">Who: Stores / Production Team &nbsp;|&nbsp; When: Before starting manufacture</div>
+    <ol>
+      <li>Open the Work Order</li>
+      <li>Click <strong>"Transfer Raw Materials"</strong> button — this creates a Stock Entry of type "Material Transfer for Manufacture"</li>
+      <li>The system auto-populates items and quantities from the BOM</li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th></tr>
+      <tr><td>Source Warehouse</td><td>Where raw materials are stored (e.g., Stores - DSPL)</td></tr>
+      <tr><td>Target Warehouse</td><td>Work In Progress warehouse (e.g., Work In Progress - DSPL)</td></tr>
+      <tr><td>Items</td><td>Auto-populated from BOM — verify quantities</td></tr>
+    </table>
+    <ol start="4">
+      <li>Verify that all items are in stock — the system will warn if stock is insufficient</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      Always use the "Transfer Raw Materials" button from the Work Order instead of creating a Stock Entry manually. This ensures proper linking and quantity tracking.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step5">7. Step 5: Manufacture (Stock Entry)</h2>
+
+  <div class="step-card">
+    <h3>Record finished goods production</h3>
+    <div class="who">Who: Production Team &nbsp;|&nbsp; When: After manufacturing is complete</div>
+    <ol>
+      <li>Open the Work Order</li>
+      <li>Click <strong>"Finish"</strong> button — this creates a Stock Entry of type "Manufacture"</li>
+      <li>The system auto-populates:
+        <ul>
+          <li><strong>Source section:</strong> Raw materials consumed (from WIP warehouse)</li>
+          <li><strong>Target section:</strong> Finished good produced (to FG warehouse)</li>
+        </ul>
+      </li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th></tr>
+      <tr><td>Items (consumed)</td><td>Auto-populated — raw materials consumed from WIP warehouse</td></tr>
+      <tr><td>Finished Item</td><td>Auto-populated — the product being manufactured</td></tr>
+      <tr><td>Qty</td><td>Number of units produced</td></tr>
+      <tr><td>Target Warehouse</td><td>Finished Goods warehouse (e.g., Finished Goods - DSPL)</td></tr>
+    </table>
+    <ol start="4">
+      <li>Verify quantities match what was actually produced</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      On submit, the production team receives a Telegram notification confirming the manufacture entry. The Work Order status automatically updates to "Completed" when all units are manufactured.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step6">8. Step 6: Quality check</h2>
+
+  <div class="step-card">
+    <h3>Inspect finished goods</h3>
+    <div class="who">Who: Quality Team &nbsp;|&nbsp; When: After manufacture, before dispatch</div>
+    <p>
+      Quality inspection is currently a <strong>manual process</strong>. Each finished unit should be inspected before being cleared for dispatch.
+    </p>
+    <ol>
+      <li>Verify product functionality against the product specification sheet</li>
+      <li>Check all connections, displays, and sensor readings</li>
+      <li>Run a load test where applicable (ACD, DRM, WWSI, MRT)</li>
+      <li>Record any defects or deviations</li>
+      <li>If a unit fails inspection, log the issue and route to rework</li>
+    </ol>
+
+    <h3>Future enhancements</h3>
+    <ul>
+      <li><strong>Quality Inspection DocType:</strong> Can be added as a gate before finished goods acceptance</li>
+      <li><strong>CAPA integration:</strong> Manufacturing defects will feed into the CAPA system (see <a href="/complaint-guide" style="color:#E60005">Complaint & CAPA Guide</a>)</li>
+      <li><strong>Serial number tracking:</strong> Each unit will be assigned a serial number for traceability</li>
+    </ul>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="bom">9. BOM management</h2>
+
+  <div class="step-card">
+    <h3>Managing Bills of Materials</h3>
+    <div class="who">Who: Production Head &nbsp;|&nbsp; When: As needed</div>
+    <p>DSPL has <strong>246 active BOMs</strong> using BK*/BL* item codes migrated from Krisp. Follow these rules strictly:</p>
+  </div>
+
+  <div class="warning">
+    NEVER cancel submitted BOMs — they are linked to Work Orders, Production Plans, and parent BOMs. Cancelling cascades and corrupts linked documents.
+  </div>
+
+  <table>
+    <tr><th>Fix type</th><th>Procedure</th></tr>
+    <tr>
+      <td>Wrong rates</td>
+      <td>Fix the Item master's <strong>valuation_rate</strong> → open the BOM → click <strong>"Update Cost"</strong> (works on submitted BOMs, no cancel needed)</td>
+    </tr>
+    <tr>
+      <td>Bulk rate fix</td>
+      <td>Fix Item prices → go to <strong>Manufacturing > BOM Update Tool</strong> → click <strong>"Update latest price in all BOMs"</strong></td>
+    </tr>
+    <tr>
+      <td>Structural change (add/remove/swap items)</td>
+      <td>Create a <strong>new BOM</strong> separately → use <strong>BOM Update Tool</strong> to replace old BOM with new BOM across all parents</td>
+    </tr>
+    <tr>
+      <td>Last resort amend</td>
+      <td>Cancel → Amend (creates a copy with <code>amended_from</code>). Only if BOM Update Tool cannot handle the change</td>
+    </tr>
+  </table>
+
+  <h3>Rate source (<code>rm_cost_as_per</code>)</h3>
+  <table>
+    <tr><th>Setting</th><th>Where rates come from</th></tr>
+    <tr><td>Valuation Rate (default)</td><td>Item master's <code>valuation_rate</code> field — this is what DSPL uses (0 Purchase Orders means no stock valuation)</td></tr>
+    <tr><td>Last Purchase Rate</td><td>Rate from the most recent Purchase Invoice/Receipt</td></tr>
+    <tr><td>Price List</td><td>Rate from the specified Price List</td></tr>
+  </table>
+
+  <div class="tip">
+    To fix rates across all BOMs: update each Item's <code>valuation_rate</code> in the Item master, then use BOM Update Tool to propagate. No BOM cancellations needed.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="dashboards">10. Dashboards</h2>
+
+  <div class="step-card">
+    <h3>Where to monitor production</h3>
+    <div class="who">Who: Production Team / Production Head &nbsp;|&nbsp; When: Daily</div>
+  </div>
+
+  <table>
+    <tr><th>Dashboard</th><th>Location</th><th>What it shows</th></tr>
+    <tr><td>Production Dashboard</td><td>PWA: <strong>#/production</strong></td><td>Pending orders, active Work Orders, overdue Work Orders, stock levels, draft BOMs</td></tr>
+    <tr><td>Dispatch Tracker</td><td>PWA: <strong>#/dispatch</strong></td><td>Pending deliveries, recent shipments</td></tr>
+    <tr><td>DSPL Operations</td><td>ERPNext Desk: <strong>DSPL Operations</strong> workspace</td><td>7 Number Cards, Monthly Orders chart, 4 shortcuts</td></tr>
+    <tr><td>Manufacturing module</td><td>ERPNext Desk: <strong>Manufacturing</strong></td><td>Production Plan, Work Order, BOM, Stock Entry lists</td></tr>
+  </table>
+
+  <div class="tip">
+    Check the production dashboard daily to catch overdue Work Orders and pending Sales Orders.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="raci">11. Who does what (RACI)</h2>
+
+  <table>
+    <tr><th>Step</th><th style="color:#E60005">Responsible<br>(does it)</th><th>Accountable<br>(owns it)</th><th>Consulted</th><th>Informed</th></tr>
+    <tr><td>Production Plan</td><td>Production Head</td><td>Production Head</td><td>Sales (delivery dates)</td><td>Management</td></tr>
+    <tr><td>Work Order</td><td>Production Team</td><td>Production Head</td><td>—</td><td>Management</td></tr>
+    <tr><td>Material Issue</td><td>Stores</td><td>Production Head</td><td>—</td><td>Accounts</td></tr>
+    <tr><td>Manufacture</td><td>Production Team</td><td>Production Head</td><td>Quality</td><td>Management</td></tr>
+    <tr><td>Quality Check</td><td>Quality</td><td>Production Head</td><td>—</td><td>Service</td></tr>
+    <tr><td>Delivery Note</td><td>Stores / Dispatch</td><td>Production Head</td><td>Sales</td><td>Customer, Accounts</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="notifications">12. Telegram notifications</h2>
+
+  <p>All manufacturing notifications are delivered via Telegram to the production team:</p>
+
+  <table>
+    <tr><th>Event</th><th>Who is notified</th><th>What the message contains</th><th>Trigger</th></tr>
+    <tr><td>Sales Order submitted</td><td>Production team</td><td>Items, quantities, delivery date — no prices</td><td>On SO submit</td></tr>
+    <tr><td>Production Plan submitted</td><td>Production team</td><td>Items to produce, planned quantities</td><td>On PP submit</td></tr>
+    <tr><td>Work Order submitted</td><td>Production team</td><td>Production item, qty, planned start date</td><td>On WO submit</td></tr>
+    <tr><td>Work Order completed</td><td>Managers</td><td>Production item, qty completed</td><td>On WO status change to Completed</td></tr>
+    <tr><td>Manufacture entry submitted</td><td>Production team</td><td>Finished item, qty produced</td><td>On Stock Entry (Manufacture) submit</td></tr>
+    <tr><td>Overdue Work Orders</td><td>Managers</td><td>List of WOs past planned_start_date</td><td>Daily at 9 AM</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="tips">13. Tips for production team</h2>
+
+  <div class="step-card">
+    <h3>Best practices</h3>
+    <div class="who">Who: All production staff</div>
+    <ul>
+      <li><strong>Always create Work Orders from Production Plan</strong> (not standalone) for full traceability back to Sales Orders</li>
+      <li><strong>Set planned_start_date on every Work Order</strong> so overdue tracking works correctly</li>
+      <li><strong>Use the "Transfer Raw Materials" button</strong> from the Work Order to auto-populate items from BOM — do not create Stock Entries manually</li>
+      <li><strong>Use the "Finish" button</strong> from the Work Order to auto-populate the manufacture entry</li>
+      <li><strong>Check the production dashboard daily</strong> for pending orders and overdue Work Orders</li>
+      <li><strong>Never cancel submitted BOMs</strong> — use the BOM Update Tool instead (see <a href="#bom" style="color:#E60005">BOM management</a>)</li>
+      <li><strong>Keep WIP and FG warehouses separate</strong> for accurate costing and stock tracking</li>
+      <li><strong>Verify stock before material transfer</strong> — the system warns on insufficient stock but catching shortages early avoids production delays</li>
+    </ul>
+  </div>
+
+  <div class="warning">
+    If you encounter a BOM error or need to change BOM structure, contact the Production Head. Do not attempt to cancel or amend BOMs yourself.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="so-access">14. How to access Sales Orders</h2>
+
+  <div class="step-card">
+    <h3>Production team Sales Order access</h3>
+    <div class="who">Who: Production Team (Manufacturing User / Manufacturing Manager roles)</div>
+    <p>The production team has <strong>read-only access</strong> to Sales Orders. This is configured via Custom DocPerm with financial fields hidden at a separate permission level.</p>
+
+    <h3>What you can see</h3>
+    <table>
+      <tr><th>Visible</th><th>Hidden (54 financial fields)</th></tr>
+      <tr><td>Item names and codes</td><td>Rate (per unit price)</td></tr>
+      <tr><td>Quantities</td><td>Amount (line total)</td></tr>
+      <tr><td>Delivery dates</td><td>Grand Total</td></tr>
+      <tr><td>Customer name</td><td>Taxes and charges</td></tr>
+      <tr><td>Sales Order status</td><td>Payment terms</td></tr>
+      <tr><td>Item descriptions</td><td>Discount fields</td></tr>
+    </table>
+
+    <h3>How to view</h3>
+    <ol>
+      <li>Log in to <strong>dgoc.logstop.com</strong></li>
+      <li>Go to <strong>Selling > Sales Order</strong> or search "Sales Order" in the search bar</li>
+      <li>Click on any Sales Order to view details</li>
+      <li>You can filter by status, delivery date, or customer</li>
+    </ol>
+
+    <div class="tip">
+      The Telegram notification on Sales Order submit includes the items list only — no prices. This is intentional for production planning without financial data exposure.
+    </div>
+  </div>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/manufacturing-guide
+  </p>
+</div>
+{% endblock %}

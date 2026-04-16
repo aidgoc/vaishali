@@ -70,6 +70,16 @@ doc_events = {
     "Purchase Invoice": {
         "on_submit": "vaishali.notifications.on_purchase_invoice_submit",
     },
+    "Work Order": {
+        "on_submit": "vaishali.notifications.on_work_order_submit",
+        "on_update_after_submit": "vaishali.notifications.on_work_order_complete",
+    },
+    "Stock Entry": {
+        "on_submit": "vaishali.notifications.on_stock_entry_submit",
+    },
+    "Production Plan": {
+        "on_submit": "vaishali.notifications.on_production_plan_submit",
+    },
     "Leave Application": {
         "on_submit": "vaishali.notifications.on_leave_application_submit",
         "on_update": "vaishali.notifications.on_leave_application_update",
@@ -120,6 +130,7 @@ scheduler_events = {
             "vaishali.notifications.check_expiring_quotations",
             "vaishali.notifications.check_overdue_purchase_orders",
             "vaishali.notifications.check_pending_purchase_invoices",
+            "vaishali.notifications.check_overdue_work_orders",
         ],
     },
 }
