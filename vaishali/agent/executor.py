@@ -310,7 +310,6 @@ def _get_leave_balance(inp, employee_id="", **kw):
     if not emp:
         return json.dumps({"error": "Employee ID not found"})
 
-    from frappe.utils import getdate, get_year_start, get_year_end
     today = date.today()
 
     # Get leave allocations for current period
@@ -321,18 +320,19 @@ def _get_leave_balance(inp, employee_id="", **kw):
             "from_date": ["<=", today.isoformat()],
             "to_date": [">=", today.isoformat()],
         },
-        fields=["leave_type", "total_leaves_allocated", "new_leaves_allocated"])
+        fields=["leave_type", "total_leaves_allocated", "new_leaves_allocated",
+                "from_date", "to_date"])
 
     result = []
     for alloc in allocations:
-        # Count approved leaves taken
+        # Count approved leaves taken within the allocation period
         taken = frappe.db.sql("""
             SELECT IFNULL(SUM(total_leave_days), 0) as taken
             FROM `tabLeave Application`
             WHERE employee = %s AND leave_type = %s
               AND docstatus = 1 AND status = 'Approved'
               AND from_date >= %s AND to_date <= %s
-        """, (emp, alloc.leave_type, get_year_start(today), get_year_end(today)), as_dict=True)
+        """, (emp, alloc.leave_type, alloc.from_date, alloc.to_date), as_dict=True)
 
         leaves_taken = taken[0].taken if taken else 0
         balance = alloc.total_leaves_allocated - leaves_taken
