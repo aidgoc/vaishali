@@ -42,7 +42,7 @@ TOOL_CATEGORIES = {
     },
     "service_quality": {
         "description": "Quality inspections, warranty claims, CAPA (corrective/preventive actions)",
-        "tools": ["create_quality_inspection"],
+        "tools": ["create_quality_inspection", "create_warranty_claim", "create_capa"],
     },
     "sales_crm": {
         "description": "Leads, opportunities, quotations, sales orders, delivery notes",
@@ -115,6 +115,9 @@ CORE_TOOL_NAMES = {
     "submit_expense_for_employee", "request_advance_for_employee",
     "team_status", "my_daily_summary",
     "query_view",  # View Engine access
+    # Enhanced self-service tools
+    "get_leave_balance", "list_pending_approvals", "approve_document",
+    "daily_action_items", "check_stock",
     # Memory tools (always available)
     "save_memory", "get_memories",
 }

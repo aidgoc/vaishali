@@ -506,7 +506,16 @@ CORE_TOOLS = [
                         "amc_tracker",
                         "my_targets",
                         "follow_ups",
-                        "customer_visits"
+                        "customer_visits",
+                        "production_dashboard",
+                        "dispatch_tracker",
+                        "service_dashboard",
+                        "installation_tracker",
+                        "breakdown_log",
+                        "procurement_dashboard",
+                        "creditor_dashboard",
+                        "conversion_funnel",
+                        "revenue_dashboard"
                     ]
                 },
                 "context_id": {
@@ -517,6 +526,77 @@ CORE_TOOLS = [
             "required": [
                 "view_name"
             ]
+        }
+    },
+    {
+        "name": "get_leave_balance",
+        "description": "Get the current leave balance for an employee. Shows remaining leaves by type (Casual, Sick, Privilege, etc.) for the current year. Use when someone asks 'how many leaves do I have?' or 'check my leave balance'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "employee_id": {
+                    "type": "string",
+                    "description": "Employee ID. Leave empty to use the current user's employee ID."
+                }
+            }
+        }
+    },
+    {
+        "name": "list_pending_approvals",
+        "description": "Show all documents pending the current user's approval — leave applications, expense claims, employee advances. Manager/admin only.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    {
+        "name": "approve_document",
+        "description": "Approve or reject a pending document (Leave Application, Expense Claim). Manager/admin only.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "doctype": {
+                    "type": "string",
+                    "enum": ["Leave Application", "Expense Claim"],
+                    "description": "Type of document to approve"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Document name/ID (e.g., HR-LAP-00042)"
+                },
+                "action": {
+                    "type": "string",
+                    "enum": ["Approve", "Reject"],
+                    "description": "Approve or Reject"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Reason for rejection (required when rejecting)"
+                }
+            },
+            "required": ["doctype", "name", "action"]
+        }
+    },
+    {
+        "name": "daily_action_items",
+        "description": "Get today's prioritized action items for the current user. Combines: expiring quotations, overdue customer visits, pending approvals (managers), SLA-breaching warranty claims, overdue work orders. Use for '/today' command or 'what should I do?'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    {
+        "name": "check_stock",
+        "description": "Check stock availability for an item across all warehouses. Returns warehouse-wise actual and projected quantities.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "item_code": {
+                    "type": "string",
+                    "description": "Item code to check stock for"
+                }
+            },
+            "required": ["item_code"]
         }
     },
     {

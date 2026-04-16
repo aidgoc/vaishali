@@ -31,6 +31,26 @@ COMMANDS = {
         "prompt": "Show full customer details for: {args}. Use query_view with customer_360 view.",
         "tools": ["query_view", "search_records", "get_document"],
     },
+    "/today": {
+        "description": "Today's prioritized action items",
+        "prompt": "Show today's prioritized action items using the daily_action_items tool. Present results grouped by priority (critical first, then high, then medium). For each item, suggest the specific next action. {args}",
+        "tools": ["daily_action_items", "search_records", "get_count"],
+    },
+    "/approvals": {
+        "description": "Pending approvals for managers",
+        "prompt": "Show all documents pending my approval using list_pending_approvals. Show each item with a clear approve/reject option. {args}",
+        "tools": ["list_pending_approvals", "approve_document"],
+    },
+    "/stock": {
+        "description": "Check stock for an item",
+        "prompt": "Check stock availability using check_stock tool for: {args}. Show warehouse-wise breakdown.",
+        "tools": ["check_stock", "search_records"],
+    },
+    "/leave": {
+        "description": "Check leave balance",
+        "prompt": "Show leave balance using get_leave_balance tool. Display remaining leaves by type in a clear table. {args}",
+        "tools": ["get_leave_balance"],
+    },
 }
 
 

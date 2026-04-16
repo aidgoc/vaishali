@@ -302,6 +302,214 @@ def _get_system_settings(inp, **kw):
     return json.dumps({"company": COMPANY, "currency": "INR"})
 
 
+# ── Leave Balance ────────────────────────────────────────────────
+
+def _get_leave_balance(inp, employee_id="", **kw):
+    """Get leave balance for an employee."""
+    emp = inp.get("employee_id") or employee_id
+    if not emp:
+        return json.dumps({"error": "Employee ID not found"})
+
+    from frappe.utils import getdate, get_year_start, get_year_end
+    today = date.today()
+
+    # Get leave allocations for current period
+    allocations = frappe.get_all("Leave Allocation",
+        filters={
+            "employee": emp,
+            "docstatus": 1,
+            "from_date": ["<=", today.isoformat()],
+            "to_date": [">=", today.isoformat()],
+        },
+        fields=["leave_type", "total_leaves_allocated", "new_leaves_allocated"])
+
+    result = []
+    for alloc in allocations:
+        # Count approved leaves taken
+        taken = frappe.db.sql("""
+            SELECT IFNULL(SUM(total_leave_days), 0) as taken
+            FROM `tabLeave Application`
+            WHERE employee = %s AND leave_type = %s
+              AND docstatus = 1 AND status = 'Approved'
+              AND from_date >= %s AND to_date <= %s
+        """, (emp, alloc.leave_type, get_year_start(today), get_year_end(today)), as_dict=True)
+
+        leaves_taken = taken[0].taken if taken else 0
+        balance = alloc.total_leaves_allocated - leaves_taken
+
+        result.append({
+            "leave_type": alloc.leave_type,
+            "allocated": alloc.total_leaves_allocated,
+            "taken": leaves_taken,
+            "balance": balance,
+        })
+
+    return json.dumps({"employee": emp, "balances": result}, default=str)
+
+
+# ── Approvals ────────────────────────────────────────────────────
+
+def _list_pending_approvals(inp, user="", **kw):
+    """List all documents pending the current user's approval."""
+    pending = []
+
+    # Leave Applications
+    leaves = frappe.get_all("Leave Application",
+        filters={"docstatus": 0, "status": "Open", "leave_approver": user},
+        fields=["name", "employee_name", "leave_type", "from_date", "to_date",
+                "total_leave_days", "posting_date"],
+        order_by="posting_date desc", limit_page_length=20)
+    for l in leaves:
+        pending.append({"type": "Leave Application", "name": l.name,
+                        "summary": f"{l.employee_name}: {l.leave_type} {l.from_date} to {l.to_date} ({l.total_leave_days}d)"})
+
+    # Expense Claims
+    expenses = frappe.get_all("Expense Claim",
+        filters={"docstatus": 0, "approval_status": "Draft", "expense_approver": user},
+        fields=["name", "employee_name", "total_claimed_amount", "posting_date"],
+        order_by="posting_date desc", limit_page_length=20)
+    for e in expenses:
+        pending.append({"type": "Expense Claim", "name": e.name,
+                        "summary": f"{e.employee_name}: ₹{e.total_claimed_amount:,.0f}"})
+
+    return json.dumps({"pending_count": len(pending), "items": pending}, default=str)
+
+
+def _approve_document(inp, user="", **kw):
+    """Approve or reject a Leave Application or Expense Claim."""
+    doctype = inp.get("doctype")
+    name = inp.get("name")
+    action = inp.get("action")
+    reason = inp.get("reason", "")
+
+    if doctype not in ("Leave Application", "Expense Claim"):
+        return json.dumps({"error": "Only Leave Application and Expense Claim can be approved via chat"})
+
+    doc = frappe.get_doc(doctype, name)
+
+    if doctype == "Leave Application":
+        if action == "Approve":
+            doc.status = "Approved"
+        else:
+            doc.status = "Rejected"
+            if reason:
+                doc.add_comment("Comment", f"Rejected: {reason}")
+        doc.save(ignore_permissions=True)
+        doc.submit()
+        frappe.db.commit()
+        return json.dumps({"success": True, "doctype": doctype, "name": name,
+                           "status": doc.status})
+
+    elif doctype == "Expense Claim":
+        if action == "Approve":
+            doc.approval_status = "Approved"
+        else:
+            doc.approval_status = "Rejected"
+            if reason:
+                doc.add_comment("Comment", f"Rejected: {reason}")
+        doc.save(ignore_permissions=True)
+        doc.submit()
+        frappe.db.commit()
+        return json.dumps({"success": True, "doctype": doctype, "name": name,
+                           "status": doc.approval_status})
+
+
+# ── Daily Action Items ───────────────────────────────────────────
+
+def _daily_action_items(inp, employee_id="", user="", user_role="user", **kw):
+    """Get prioritized daily action items for the user."""
+    from frappe.utils import add_days
+    today_str = date.today().isoformat()
+    items = []
+
+    # 1. Expiring quotations (within 3 days)
+    threshold = add_days(today_str, 3)
+    expiring = frappe.get_all("Quotation",
+        filters={"status": "Open", "docstatus": 1, "valid_till": ["between", [today_str, threshold]], "owner": user},
+        fields=["name", "party_name", "grand_total", "valid_till"],
+        limit_page_length=10)
+    for q in expiring:
+        items.append({"priority": "high", "category": "Quotation Expiry",
+                      "action": f"Follow up on {q.name} — {q.party_name} (₹{q.grand_total:,.0f}, expires {q.valid_till})"})
+
+    # 2. Pending approvals (managers only)
+    if user_role in ("manager", "admin"):
+        leaves = frappe.db.count("Leave Application",
+            {"docstatus": 0, "status": "Open", "leave_approver": user})
+        expenses = frappe.db.count("Expense Claim",
+            {"docstatus": 0, "approval_status": "Draft", "expense_approver": user})
+        if leaves:
+            items.append({"priority": "high", "category": "Approvals",
+                          "action": f"{leaves} leave application(s) pending your approval"})
+        if expenses:
+            items.append({"priority": "high", "category": "Approvals",
+                          "action": f"{expenses} expense claim(s) pending your approval"})
+
+    # 3. SLA-breaching warranty claims
+    sla_breach = frappe.get_all("Warranty Claim",
+        filters={"status": ["in", ["Open", "Work In Progress"]],
+                 "resolution_due_date": ["<", today_str]},
+        fields=["name", "customer_name", "priority"],
+        limit_page_length=10)
+    for wc in sla_breach:
+        items.append({"priority": "critical", "category": "SLA Breach",
+                      "action": f"Warranty Claim {wc.name} — {wc.customer_name} ({wc.priority}) past resolution SLA"})
+
+    # 4. Overdue work orders (manufacturing roles)
+    if user_role in ("manager", "admin") or "Manufacturing" in (frappe.get_roles(user) or []):
+        overdue_wo = frappe.get_all("Work Order",
+            filters={"docstatus": 1, "status": ["in", ["Not Started", "In Process"]],
+                     "planned_start_date": ["<", today_str]},
+            fields=["name", "item_name", "production_item"],
+            limit_page_length=5)
+        for wo in overdue_wo:
+            items.append({"priority": "medium", "category": "Overdue Work Order",
+                          "action": f"{wo.name} — {wo.item_name or wo.production_item} past planned start"})
+
+    # 5. Overdue purchase orders
+    overdue_po = frappe.get_all("Purchase Order",
+        filters={"docstatus": 1, "status": ["in", ["To Receive and Bill", "To Receive"]],
+                 "schedule_date": ["<", today_str]},
+        fields=["name", "supplier_name"],
+        limit_page_length=5)
+    for po in overdue_po:
+        items.append({"priority": "medium", "category": "Overdue PO",
+                      "action": f"{po.name} — {po.supplier_name} past expected delivery"})
+
+    # Sort by priority
+    priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    items.sort(key=lambda x: priority_order.get(x["priority"], 9))
+
+    return json.dumps({"date": today_str, "total_items": len(items), "items": items}, default=str)
+
+
+# ── Stock Check ──────────────────────────────────────────────────
+
+def _check_stock(inp, **kw):
+    """Check stock availability across warehouses."""
+    item_code = inp.get("item_code", "")
+    if not item_code:
+        return json.dumps({"error": "item_code is required"})
+
+    bins = frappe.get_all("Bin",
+        filters={"item_code": item_code},
+        fields=["warehouse", "actual_qty", "projected_qty", "reserved_qty"],
+        order_by="actual_qty desc")
+
+    item_name = frappe.db.get_value("Item", item_code, "item_name")
+
+    total_actual = sum(b.actual_qty for b in bins)
+    total_projected = sum(b.projected_qty for b in bins)
+
+    return json.dumps({
+        "item_code": item_code,
+        "item_name": item_name,
+        "total_actual_qty": total_actual,
+        "total_projected_qty": total_projected,
+        "warehouses": [dict(b) for b in bins],
+    }, default=str)
+
+
 # ── Dispatch Table ────────────────────────────────────────────────
 
 TOOL_HANDLERS = {
@@ -327,6 +535,11 @@ TOOL_HANDLERS = {
     # Self-service
     "chat_mark_attendance": _mark_attendance,
     "my_daily_summary": _daily_summary,
+    "get_leave_balance": _get_leave_balance,
+    "list_pending_approvals": _list_pending_approvals,
+    "approve_document": _approve_document,
+    "daily_action_items": _daily_action_items,
+    "check_stock": _check_stock,
     # Discovery
     "discover_tools": _discover_tools,
     # System
@@ -338,6 +551,8 @@ _ROLE_GATES = {
     "cancel_document": ("admin", "manager"),
     "delete_document": ("admin",),
     "amend_bom": ("admin", "manager"),
+    "list_pending_approvals": ("admin", "manager"),
+    "approve_document": ("admin", "manager"),
 }
 
 

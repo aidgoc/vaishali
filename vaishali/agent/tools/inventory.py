@@ -346,5 +346,58 @@ INVENTORY_TOOLS = [
                 "taxes"
             ]
         }
+    },
+    {
+        "name": "create_warranty_claim",
+        "description": "Create a Warranty Claim (site complaint) for a product issue reported by a customer. Sets priority and auto-calculates SLA dates.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "customer": {"type": "string", "description": "Customer name (Link)"},
+                "item_code": {"type": "string", "description": "Item code of the product with issue"},
+                "serial_no": {"type": "string", "description": "Serial number of the unit"},
+                "complaint_date": {"type": "string", "description": "Date complaint was reported (YYYY-MM-DD)"},
+                "complaint": {"type": "string", "description": "Detailed description of the problem"},
+                "priority": {
+                    "type": "string",
+                    "enum": ["P1 - Safety", "P2 - Down", "P3 - Degraded", "P4 - Minor"],
+                    "description": "P1=Safety(24h), P2=Down(48h), P3=Degraded(5d), P4=Minor(15d)"
+                },
+                "territory": {"type": "string", "description": "Customer territory"},
+                "site_contact_name": {"type": "string"},
+                "site_contact_phone": {"type": "string"}
+            },
+            "required": ["customer", "complaint"]
+        }
+    },
+    {
+        "name": "create_capa",
+        "description": "Create a CAPA (Corrective and Preventive Action) linked to a Warranty Claim. Records root cause analysis and planned corrective/preventive actions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "warranty_claim": {"type": "string", "description": "Warranty Claim ID to link to"},
+                "customer": {"type": "string"},
+                "item": {"type": "string", "description": "Item code"},
+                "serial_no": {"type": "string"},
+                "rca_category": {
+                    "type": "string",
+                    "enum": ["Design Defect", "Manufacturing Defect", "Component Quality",
+                             "Installation Error", "Customer Misuse", "Environmental",
+                             "Supplier Issue", "Firmware Bug"]
+                },
+                "root_cause_summary": {"type": "string", "description": "One-paragraph root cause summary"},
+                "rca_why1": {"type": "string"},
+                "rca_why2": {"type": "string"},
+                "rca_why3": {"type": "string"},
+                "rca_why4": {"type": "string"},
+                "rca_why5": {"type": "string"},
+                "corrective_action": {"type": "string", "description": "What was done to fix this unit"},
+                "preventive_action": {"type": "string", "description": "What will change to prevent recurrence"},
+                "preventive_target_date": {"type": "string", "description": "Target date for preventive action (YYYY-MM-DD)"},
+                "submit": {"type": "boolean", "description": "Submit the CAPA after creation"}
+            },
+            "required": ["warranty_claim", "rca_category", "root_cause_summary", "corrective_action"]
+        }
     }
 ]
