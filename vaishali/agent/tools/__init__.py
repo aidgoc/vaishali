@@ -36,9 +36,13 @@ TOOL_CATEGORIES = {
         "tools": ["create_journal_entry", "create_payment_entry", "create_sales_invoice", "create_purchase_invoice"],
     },
     "inventory": {
-        "description": "Stock entries, warehouses, BOMs, stock reconciliation, quality inspection, landed costs",
+        "description": "Stock entries, warehouses, BOMs, stock reconciliation, landed costs",
         "tools": ["create_stock_entry", "create_warehouse", "create_bom", "stock_reconciliation",
-                  "create_quality_inspection", "create_landed_cost_voucher"],
+                  "create_landed_cost_voucher"],
+    },
+    "service_quality": {
+        "description": "Quality inspections, warranty claims, CAPA (corrective/preventive actions)",
+        "tools": ["create_quality_inspection"],
     },
     "sales_crm": {
         "description": "Leads, opportunities, quotations, sales orders, delivery notes",

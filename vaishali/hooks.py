@@ -75,7 +75,13 @@ doc_events = {
         "on_update_after_submit": "vaishali.notifications.on_work_order_complete",
     },
     "Stock Entry": {
-        "on_submit": "vaishali.notifications.on_stock_entry_submit",
+        "on_submit": [
+            "vaishali.notifications.on_stock_entry_submit",
+            "vaishali.notifications.on_stock_entry_general",
+        ],
+    },
+    "Quality Inspection": {
+        "on_submit": "vaishali.notifications.on_quality_inspection_submit",
     },
     "Production Plan": {
         "on_submit": "vaishali.notifications.on_production_plan_submit",

@@ -1,0 +1,337 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Inventory & Stock Management Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .priority-p1 { background: #fee; color: #c00; font-weight: 600; }
+  .cg .priority-p2 { background: #fff3e0; color: #e65100; font-weight: 600; }
+  .cg .priority-p3 { background: #fff8e1; color: #f57f17; font-weight: 600; }
+  .cg .priority-p4 { background: #f1f8e9; color: #558b2f; font-weight: 600; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Inventory & Stock Management Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#stock-entry-types">Stock Entry types</a></li>
+      <li><a href="#stock-reconciliation">Stock Reconciliation</a></li>
+      <li><a href="#warehouses">Warehouses</a></li>
+      <li><a href="#pwa">PWA access</a></li>
+      <li><a href="#dashboards">Dashboards</a></li>
+      <li><a href="#telegram">Telegram notifications</a></li>
+      <li><a href="#tips">Tips and best practices</a></li>
+      <li><a href="#reports">Key reports</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL manages 6,502 items across 14 warehouses — from raw electronic components (BK*/BL* coded items)
+    to finished crane safety products (ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT, TPS).
+    Accurate stock levels are critical because:
+  </p>
+  <ul>
+    <li>Production depends on knowing what raw materials are available</li>
+    <li>Sales needs projected quantity to promise delivery dates</li>
+    <li>Finance requires accurate valuation for balance sheet and costing</li>
+    <li>Safety-critical products cannot ship with missing or wrong components</li>
+  </ul>
+
+  <div class="warning">
+    Every stock movement must go through a Stock Entry in ERPNext. Never move physical stock without a corresponding system entry — it creates phantom variances that compound over time.
+  </div>
+
+  <p>
+    Stock moves in ERPNext are recorded through <strong>Stock Entries</strong>, each with a specific purpose type.
+    The system uses FIFO (First In, First Out) valuation by default.
+  </p>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Goods arrive from supplier
+     |
+     v
+[Material Receipt] → Stores-DSPL (increases stock)
+     |
+     v
+Production needs raw materials
+     |
+     v
+[Material Transfer] → Stores-DSPL to WIP-DSPL
+     |
+     v
+[Manufacture] → Consume raw materials, produce finished goods
+     |            (from Work Order)
+     v
+Finished goods move to FG warehouse
+     |
+     v
+[Material Transfer] → WIP-DSPL to Finished Goods-DSPL
+     |
+     v
+Customer order fulfilled
+     |
+     v
+[Material Issue] or Delivery Note → Finished Goods-DSPL (decreases stock)
+     |
+     v
+Monthly / quarterly: [Stock Reconciliation] to match physical count</div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="stock-entry-types">3. Stock Entry types</h2>
+
+  <div class="step-card">
+    <h3>Material Receipt</h3>
+    <div class="who">Purpose: Goods received from supplier &nbsp;|&nbsp; Effect: Increases stock</div>
+    <ol>
+      <li>Go to <strong>Stock > Stock Entry > New</strong></li>
+      <li>Set Purpose to <strong>Material Receipt</strong></li>
+      <li>Set the <strong>Target Warehouse</strong> (usually Stores-DSPL)</li>
+      <li>Add items: item code, quantity received, basic rate</li>
+      <li>Attach supplier delivery challan or invoice reference</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+    <div class="tip">
+      If you have a Purchase Order, create the Material Receipt from the Purchase Receipt instead — it auto-fills items, rates, and links back to the PO.
+    </div>
+  </div>
+
+  <div class="step-card">
+    <h3>Material Issue</h3>
+    <div class="who">Purpose: Consume stock (non-production) &nbsp;|&nbsp; Effect: Decreases stock</div>
+    <ol>
+      <li>Go to <strong>Stock > Stock Entry > New</strong></li>
+      <li>Set Purpose to <strong>Material Issue</strong></li>
+      <li>Set the <strong>Source Warehouse</strong> (where items are stored)</li>
+      <li>Add items and quantities to be consumed</li>
+      <li>Add a reason in remarks (e.g., "Service kit for WC-00045")</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+    <div class="warning">
+      Check the projected quantity before issuing. If available qty is insufficient, the system will block the submission.
+    </div>
+  </div>
+
+  <div class="step-card">
+    <h3>Material Transfer</h3>
+    <div class="who">Purpose: Move stock between warehouses &nbsp;|&nbsp; Effect: Neutral (source decreases, target increases)</div>
+    <ol>
+      <li>Go to <strong>Stock > Stock Entry > New</strong></li>
+      <li>Set Purpose to <strong>Material Transfer</strong></li>
+      <li>Set the <strong>Source Warehouse</strong> and <strong>Target Warehouse</strong></li>
+      <li>Add items and quantities to transfer</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+    <div class="tip">
+      Common transfers: Stores-DSPL to WIP-DSPL (production start), WIP-DSPL to Finished Goods-DSPL (production complete without Work Order).
+    </div>
+  </div>
+
+  <div class="step-card">
+    <h3>Manufacture</h3>
+    <div class="who">Purpose: Consume raw materials, produce finished goods &nbsp;|&nbsp; Effect: Source items decrease, target item increases</div>
+    <ol>
+      <li>Create a <strong>Work Order</strong> for the item to be manufactured (links to BOM)</li>
+      <li>From the Work Order, click <strong>Start</strong> to create a Stock Entry</li>
+      <li>The system auto-fills:
+        <ul>
+          <li>Source items from the BOM (raw materials from Stores-DSPL)</li>
+          <li>Target item (finished good to Finished Goods-DSPL)</li>
+          <li>Quantities per the BOM</li>
+        </ul>
+      </li>
+      <li>Verify quantities and click <strong>Submit</strong></li>
+    </ol>
+    <div class="warning">
+      Always use "from Work Order" for manufacture entries. Do not create standalone manufacture Stock Entries — they bypass BOM validation and cost tracking.
+    </div>
+  </div>
+
+  <div class="step-card">
+    <h3>Repack</h3>
+    <div class="who">Purpose: Convert one item to another (repackaging, kitting) &nbsp;|&nbsp; Effect: Source item decreases, target item increases</div>
+    <ol>
+      <li>Go to <strong>Stock > Stock Entry > New</strong></li>
+      <li>Set Purpose to <strong>Repack</strong></li>
+      <li>Add source items (what you are consuming) with the Source Warehouse</li>
+      <li>Add target items (what you are creating) with the Target Warehouse</li>
+      <li>Set quantities for both source and target</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+    <div class="tip">
+      Use Repack when you are repackaging bulk items into smaller units or combining items into a kit without a formal BOM.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="stock-reconciliation">4. Stock Reconciliation</h2>
+
+  <div class="step-card">
+    <h3>Adjust stock to match physical count</h3>
+    <div class="who">Who: Store Manager / Accounts &nbsp;|&nbsp; When: Monthly or quarterly physical count</div>
+    <ol>
+      <li>Conduct a physical stock count of the warehouse</li>
+      <li>Go to <strong>Stock > Stock Reconciliation > New</strong></li>
+      <li>Select the <strong>Company</strong> (Dynamic Servitech Private Limited)</li>
+      <li>Set the <strong>Posting Date</strong> and <strong>Posting Time</strong></li>
+      <li>Add items with their:
+        <ul>
+          <li><strong>Item Code</strong></li>
+          <li><strong>Warehouse</strong></li>
+          <li><strong>Quantity</strong> (the actual physical count)</li>
+          <li><strong>Valuation Rate</strong> (current rate per unit)</li>
+        </ul>
+      </li>
+      <li>The system shows the difference between system qty and entered qty</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong> to adjust</li>
+    </ol>
+  </div>
+
+  <div class="warning">
+    Stock Reconciliation creates automatic stock adjustments. Review differences carefully before submitting — large variances should be investigated, not blindly reconciled.
+  </div>
+
+  <div class="tip">
+    Schedule reconciliation: monthly for high-value items (finished goods, PCBs), quarterly for low-value items (fasteners, cables, packaging).
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="warehouses">5. Warehouses</h2>
+
+  <table>
+    <tr><th>Warehouse</th><th>Purpose</th><th>What goes here</th></tr>
+    <tr><td><strong>Stores - DSPL</strong></td><td>Main receiving warehouse</td><td>All incoming raw materials and components from suppliers</td></tr>
+    <tr><td><strong>Finished Goods - DSPL</strong></td><td>Finished goods storage</td><td>Completed products ready for dispatch (ACD, DRM, E-DASH, etc.)</td></tr>
+    <tr><td><strong>Work In Progress - DSPL</strong></td><td>Manufacturing floor</td><td>Items currently being assembled or tested</td></tr>
+  </table>
+
+  <p>Additional warehouses exist for specific purposes (service stock, rejected items, transit, etc.). All warehouse names must end with <strong>" - DSPL"</strong> to comply with ERPNext's company-suffix naming convention.</p>
+
+  <div class="tip">
+    To create a new warehouse: Stock > Warehouse > New. Set the parent warehouse group and ensure the name ends with " - DSPL". Only System Managers can create warehouses.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="pwa">6. PWA access</h2>
+
+  <div class="step-card">
+    <h3>Field app stock view</h3>
+    <div class="who">Where: dgoc.logstop.com/field &nbsp;|&nbsp; Route: #/stock</div>
+    <p>
+      The field PWA provides a mobile-friendly stock view at <strong>#/stock</strong>. Field staff can:
+    </p>
+    <ul>
+      <li>Search items by name or item code (BK*/BL* codes)</li>
+      <li>View current stock across warehouses</li>
+      <li>Check projected quantity (includes reserved and ordered)</li>
+    </ul>
+    <p>
+      Access is role-based — field engineers see stock levels but cannot create Stock Entries from the PWA.
+      Stock Entries must be created from the desk (dgoc.logstop.com/app).
+    </p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="dashboards">7. Dashboards</h2>
+
+  <div class="step-card">
+    <h3>Stock monitoring</h3>
+    <div class="who">Where: DSPL Operations workspace &nbsp;|&nbsp; View: stock_levels</div>
+    <ul>
+      <li><strong>DSPL Operations workspace:</strong> Number Cards showing stock summary, pending receipts, and pending issues</li>
+      <li><strong>Stock Levels view:</strong> Available in the production dashboard — shows item-wise stock across all warehouses</li>
+      <li><strong>Bin Report:</strong> Stock > Bin — shows actual qty, planned qty, reserved qty, and projected qty per item per warehouse</li>
+    </ul>
+    <div class="tip">
+      The Bin report is the most detailed view. Use it to check why projected quantity differs from actual quantity — it shows reserved (for Sales Orders), ordered (from Purchase Orders), and planned (from Work Orders) quantities.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="telegram">8. Telegram notifications</h2>
+
+  <table>
+    <tr><th>Event</th><th>Who gets notified</th><th>What the message contains</th></tr>
+    <tr><td>Stock Entry submitted (Material Receipt)</td><td>Managers</td><td>Items received, quantities, target warehouse</td></tr>
+    <tr><td>Stock Entry submitted (Material Issue)</td><td>Managers</td><td>Items consumed, quantities, source warehouse, reason</td></tr>
+    <tr><td>Stock Entry submitted (Material Transfer)</td><td>Managers</td><td>Items moved, from/to warehouses, quantities</td></tr>
+    <tr><td>Stock Entry submitted (Manufacture)</td><td>Production team</td><td>Item manufactured, quantity, linked Work Order</td></tr>
+  </table>
+
+  <div class="tip">
+    Telegram notifications require the employee's <strong>telegram_chat_id</strong> to be set in their Employee record. Ask HR or IT to link your Telegram account.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="tips">9. Tips and best practices</h2>
+
+  <ul>
+    <li><strong>Always use "from Work Order"</strong> for manufacture entries — it ensures BOM quantities are followed and costs are tracked correctly</li>
+    <li><strong>Check projected qty before issuing</strong> — projected qty accounts for reserved (SO), ordered (PO), and planned (WO) quantities</li>
+    <li><strong>Reconcile monthly</strong> — at minimum, reconcile finished goods and high-value components monthly</li>
+    <li><strong>FIFO valuation</strong> — DSPL uses First In, First Out. The oldest stock is consumed first for costing purposes</li>
+    <li><strong>Attach references</strong> — always link Stock Entries to source documents (Purchase Receipt, Work Order, Delivery Note) for traceability</li>
+    <li><strong>Rejected items</strong> — move rejected incoming goods to a separate warehouse (Rejected - DSPL), never mix with good stock</li>
+    <li><strong>Minimum stock levels</strong> — set reorder levels on critical items (PCBs, display units) so the system alerts when stock runs low</li>
+    <li><strong>Batch tracking</strong> — for components where supplier batch matters (ICs, sensors), enable batch tracking on the Item master</li>
+  </ul>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="reports">10. Key reports</h2>
+
+  <table>
+    <tr><th>Report</th><th>Where to find it</th><th>What it shows</th></tr>
+    <tr><td><strong>Stock Balance</strong></td><td>Stock > Stock Balance</td><td>Current qty and value per item per warehouse. The go-to report for "how much do we have?"</td></tr>
+    <tr><td><strong>Stock Ledger</strong></td><td>Stock > Stock Ledger</td><td>Every stock transaction in chronological order. Use to trace where stock went.</td></tr>
+    <tr><td><strong>Stock Projected Qty</strong></td><td>Stock > Stock Projected Qty</td><td>Actual + ordered - reserved - planned. Shows future availability.</td></tr>
+    <tr><td><strong>Item-wise Price List Rate</strong></td><td>Stock > Item-wise Price List Rate</td><td>Current valuation rate per item. Useful for BOM costing verification.</td></tr>
+    <tr><td><strong>Stock Analytics</strong></td><td>Stock > Stock Analytics</td><td>Trend analysis — stock movement over time by item, warehouse, or item group.</td></tr>
+    <tr><td><strong>Stock Ageing</strong></td><td>Stock > Stock Ageing</td><td>How long items have been sitting in stock. Flags slow-moving inventory.</td></tr>
+    <tr><td><strong>Warehouse-wise Stock Balance</strong></td><td>Stock > Stock Balance (group by Warehouse)</td><td>Total stock value per warehouse. Useful for warehouse-level audits.</td></tr>
+  </table>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/inventory-guide
+  </p>
+</div>
+{% endblock %}

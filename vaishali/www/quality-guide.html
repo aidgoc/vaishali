@@ -1,0 +1,344 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Quality Inspection Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .priority-p1 { background: #fee; color: #c00; font-weight: 600; }
+  .cg .priority-p2 { background: #fff3e0; color: #e65100; font-weight: 600; }
+  .cg .priority-p3 { background: #fff8e1; color: #f57f17; font-weight: 600; }
+  .cg .priority-p4 { background: #f1f8e9; color: #558b2f; font-weight: 600; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Quality Inspection Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#incoming">Step 1: Incoming inspection</a></li>
+      <li><a href="#in-process">Step 2: In-process inspection</a></li>
+      <li><a href="#outgoing">Step 3: Outgoing inspection</a></li>
+      <li><a href="#qi-fields">Quality Inspection fields</a></li>
+      <li><a href="#capa">Linking to CAPA</a></li>
+      <li><a href="#telegram">Telegram notifications</a></li>
+      <li><a href="#raci">Who does what (RACI)</a></li>
+      <li><a href="#tips">Tips and best practices</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL manufactures safety-critical crane electronics — Anti-Collision Devices, driver monitoring systems,
+    wind speed indicators, and load moment indicators. A defective product in the field can cause equipment
+    failure or endanger lives. Quality inspection at every stage is not optional.
+  </p>
+  <ul>
+    <li>Every incoming component must be inspected before entering production</li>
+    <li>Every assembly stage has in-process checkpoints</li>
+    <li>Every finished unit must pass a full functional test before shipping</li>
+    <li>Rejected items trigger investigation and feed into the CAPA system</li>
+  </ul>
+
+  <div class="warning">
+    Our products protect crane operators and site workers. A missed defect can cause serious injury.
+    Never skip an inspection step, even under delivery pressure.
+  </div>
+
+  <p>
+    The full quality loop connects to the complaint and CAPA process documented at
+    <a href="/complaint-guide" style="color: #E60005;">/complaint-guide</a>.
+  </p>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Goods arrive from supplier (Purchase Receipt)
+     |
+     v
+[1. INCOMING INSPECTION] Quality Inspection linked to Purchase Receipt
+     |
+     +--- Accepted --- move to Stores-DSPL
+     +--- Rejected --- quarantine, notify managers, raise Warranty Claim against supplier
+     |
+     v
+Production starts (Work Order → Stock Entry)
+     |
+     v
+[2. IN-PROCESS INSPECTION] Quality Inspection linked to Stock Entry / Work Order
+     |
+     +--- Accepted --- continue assembly
+     +--- Rejected --- rework or scrap, investigate root cause
+     |
+     v
+Finished goods ready for dispatch (Delivery Note)
+     |
+     v
+[3. OUTGOING INSPECTION] Quality Inspection linked to Delivery Note
+     |
+     +--- Accepted --- ship to customer
+     +--- Rejected --- rework, re-test
+     |
+     v
+Customer feedback / site complaint
+     |
+     v
+[4. CAPA] Root cause analysis → corrective + preventive action
+     |
+     v
+[5. EFFECTIVENESS REVIEW] 30-day follow-up</div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="incoming">3. Step 1: Incoming inspection</h2>
+
+  <div class="step-card">
+    <h3>Inspect goods received from supplier</h3>
+    <div class="who">Who: Quality Inspector / Store Manager &nbsp;|&nbsp; When: Before accepting into Stores-DSPL</div>
+    <ol>
+      <li>When a Purchase Receipt is created, go to <strong>Stock > Quality Inspection > New</strong></li>
+      <li>Set <strong>Inspection Type</strong> to <strong>Incoming</strong></li>
+      <li>Link the <strong>Reference Type</strong> to <strong>Purchase Receipt</strong> and select the reference document</li>
+      <li>Select the <strong>Item Code</strong> being inspected</li>
+      <li>Perform the following checks:</li>
+    </ol>
+
+    <table>
+      <tr><th>Check</th><th>What to verify</th><th>Method</th></tr>
+      <tr><td>Visual inspection</td><td>Physical damage, packaging integrity, labelling</td><td>Visual</td></tr>
+      <tr><td>Component specs</td><td>Part number matches PO, correct rating/value</td><td>Datasheet comparison</td></tr>
+      <tr><td>Electrical testing</td><td>Resistance, capacitance, voltage rating (for electronic components)</td><td>Multimeter / LCR meter</td></tr>
+      <tr><td>Quantity verification</td><td>Received qty matches challan qty</td><td>Physical count</td></tr>
+      <tr><td>Batch/lot verification</td><td>Batch number matches supplier certificate</td><td>Certificate of conformity</td></tr>
+    </table>
+
+    <ol start="6">
+      <li>Add readings in the <strong>Readings</strong> table (specification, value, min/max, status)</li>
+      <li>Set overall status: <strong>Accepted</strong> or <strong>Rejected</strong></li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="warning">
+      If Rejected: quarantine the items in a separate location. Do not mix with accepted stock. Notify managers immediately. Create a Warranty Claim against the supplier for defective goods.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="in-process">4. Step 2: In-process inspection</h2>
+
+  <div class="step-card">
+    <h3>Inspect during manufacturing</h3>
+    <div class="who">Who: Production Supervisor / Quality Inspector &nbsp;|&nbsp; When: During assembly (Stock Entry from Work Order)</div>
+    <ol>
+      <li>Go to <strong>Stock > Quality Inspection > New</strong></li>
+      <li>Set <strong>Inspection Type</strong> to <strong>In Process</strong></li>
+      <li>Link the <strong>Reference Type</strong> to <strong>Stock Entry</strong> and select the manufacture entry</li>
+      <li>Perform the following checks:</li>
+    </ol>
+
+    <table>
+      <tr><th>Check</th><th>What to verify</th><th>Pass criteria</th></tr>
+      <tr><td>Assembly quality</td><td>All components correctly placed and oriented</td><td>Matches assembly drawing</td></tr>
+      <tr><td>Solder joints</td><td>No cold joints, bridges, or missing solder</td><td>IPC-A-610 Class 2 minimum</td></tr>
+      <tr><td>Calibration</td><td>Sensor outputs within spec range</td><td>Within min/max tolerance</td></tr>
+      <tr><td>Firmware flash</td><td>Correct firmware version loaded</td><td>Version matches release notes</td></tr>
+      <tr><td>Power-on test</td><td>Board powers up, display initialises</td><td>No errors on startup</td></tr>
+    </table>
+
+    <ol start="5">
+      <li>Record readings with min/max values for objective pass/fail</li>
+      <li>Set status: <strong>Accepted</strong> (continue to next stage) or <strong>Rejected</strong> (rework or scrap)</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      Link the Quality Inspection to the Work Order in the remarks field for traceability back to the production batch.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="outgoing">5. Step 3: Outgoing inspection</h2>
+
+  <div class="step-card">
+    <h3>Final test before shipping to customer</h3>
+    <div class="who">Who: Quality Inspector / Production Head &nbsp;|&nbsp; When: Before creating Delivery Note</div>
+    <ol>
+      <li>Go to <strong>Stock > Quality Inspection > New</strong></li>
+      <li>Set <strong>Inspection Type</strong> to <strong>Outgoing</strong></li>
+      <li>Link the <strong>Reference Type</strong> to <strong>Delivery Note</strong> and select the document</li>
+      <li>Run full functional tests per product type:</li>
+    </ol>
+
+    <table>
+      <tr><th>Check</th><th>ACD / DRM</th><th>E-DASH / F-Dash</th><th>WWSI / MRT</th><th>TPS</th></tr>
+      <tr><td>Sensor calibration</td><td>Yes</td><td>—</td><td>Yes</td><td>—</td></tr>
+      <tr><td>Wiring and connections</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Display readings</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Firmware version</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Power supply</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Load cell condition</td><td>Yes</td><td>—</td><td>Yes</td><td>—</td></tr>
+      <tr><td>Camera / display unit</td><td>—</td><td>Yes</td><td>—</td><td>—</td></tr>
+    </table>
+
+    <ol start="5">
+      <li>Perform calibration verification with reference weights (ACD, DRM, WWSI, MRT)</li>
+      <li>Record all readings with min/max values</li>
+      <li>Set status: <strong>Accepted</strong> (approve for dispatch) or <strong>Rejected</strong> (rework and re-test)</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="warning">
+      No unit ships without an Accepted outgoing Quality Inspection. This is a hard gate — the Delivery Note should not be submitted until QI is Accepted.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="qi-fields">6. Quality Inspection fields</h2>
+
+  <div class="step-card">
+    <h3>Key fields in the Quality Inspection form</h3>
+    <div class="who">DocType: Quality Inspection</div>
+
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td><strong>inspection_type</strong></td><td>Select</td><td>Incoming, Outgoing, or In Process</td></tr>
+      <tr><td><strong>item_code</strong></td><td>Link (Item)</td><td>The item being inspected</td></tr>
+      <tr><td><strong>reference_type</strong></td><td>Select</td><td>Purchase Receipt, Delivery Note, or Stock Entry</td></tr>
+      <tr><td><strong>reference_name</strong></td><td>Dynamic Link</td><td>The specific document (e.g., PR-00123)</td></tr>
+      <tr><td><strong>inspected_by</strong></td><td>Link (User)</td><td>The person performing the inspection</td></tr>
+      <tr><td><strong>status</strong></td><td>Select</td><td>Accepted or Rejected</td></tr>
+      <tr><td><strong>remarks</strong></td><td>Text</td><td>Additional notes, observations, or failure details</td></tr>
+    </table>
+
+    <h3>Readings child table</h3>
+    <table>
+      <tr><th>Field</th><th>Description</th><th>Example</th></tr>
+      <tr><td><strong>specification</strong></td><td>What is being measured</td><td>Load cell output at 1000kg</td></tr>
+      <tr><td><strong>value</strong></td><td>Measured value</td><td>2.003 mV/V</td></tr>
+      <tr><td><strong>min_value</strong></td><td>Minimum acceptable value</td><td>1.990</td></tr>
+      <tr><td><strong>max_value</strong></td><td>Maximum acceptable value</td><td>2.010</td></tr>
+      <tr><td><strong>status</strong></td><td>Accepted or Rejected (per reading)</td><td>Accepted</td></tr>
+    </table>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="capa">7. Linking to CAPA</h2>
+
+  <div class="step-card">
+    <h3>When Quality Inspection is Rejected</h3>
+    <div class="who">Who: Quality Inspector + Production Head &nbsp;|&nbsp; When: Immediately after rejection</div>
+    <ol>
+      <li>Investigate the root cause of the rejection</li>
+      <li>If the failure is systematic (not a one-off), create a <strong>CAPA record</strong></li>
+      <li>In the CAPA, document:</li>
+    </ol>
+
+    <table>
+      <tr><th>CAPA section</th><th>What to fill</th></tr>
+      <tr><td>Root Cause</td><td>5-Why analysis of why the defect occurred</td></tr>
+      <tr><td>Corrective Action</td><td>What was done to fix the immediate issue (rework, replace, scrap)</td></tr>
+      <tr><td>Preventive Action</td><td>What will change to prevent recurrence (process, supplier, design)</td></tr>
+      <tr><td>Owner</td><td>Person responsible for implementing the preventive action</td></tr>
+      <tr><td>Target Date</td><td>Deadline for completing the preventive action</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Submit the CAPA and track until closure</li>
+      <li>After 30 days, conduct an <strong>effectiveness review</strong>:
+        <ul>
+          <li>Has the same defect recurred?</li>
+          <li>Were the preventive actions implemented?</li>
+          <li>Set status to Verified Effective or Reopened</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p>See the full CAPA process at <a href="/complaint-guide#step6" style="color: #E60005;">/complaint-guide</a>.</p>
+  </div>
+
+  <div class="warning">
+    If the same failure occurs 3 or more times across different batches, escalate to the Managing Director for a design review and potential batch recall.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="telegram">8. Telegram notifications</h2>
+
+  <table>
+    <tr><th>Event</th><th>Who gets notified</th><th>What the message contains</th></tr>
+    <tr><td>QI Accepted (any type)</td><td>Production team</td><td>Item, inspection type, reference document, inspector</td></tr>
+    <tr class="priority-p1"><td>QI Rejected (any type)</td><td>Production team + Managers</td><td>Item, inspection type, reference document, failure details, inspector (escalation)</td></tr>
+  </table>
+
+  <div class="tip">
+    Rejected QI notifications are treated as escalations — both the production team and managers receive them so that corrective action starts immediately.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="raci">9. Who does what (RACI)</h2>
+
+  <table>
+    <tr><th>Step</th><th style="color:#E60005">Responsible<br>(does it)</th><th>Accountable<br>(owns it)</th><th>Consulted</th><th>Informed</th></tr>
+    <tr><td>1. Incoming inspection</td><td>Quality Inspector</td><td>Store Manager</td><td>Production</td><td>Purchase team</td></tr>
+    <tr><td>2. In-process inspection</td><td>Production Supervisor</td><td>Production Head</td><td>Quality Inspector</td><td>—</td></tr>
+    <tr><td>3. Outgoing inspection</td><td>Quality Inspector</td><td>Production Head</td><td>R&D</td><td>Sales, Customer</td></tr>
+    <tr><td>4. Rejected item handling</td><td>Quality Inspector</td><td>Production Head</td><td>Store Manager</td><td>Managers</td></tr>
+    <tr><td>5. CAPA creation</td><td>Production Head</td><td>MD / Director</td><td>R&D, Quality</td><td>Service Head</td></tr>
+    <tr><td>6. Effectiveness review</td><td>Quality Inspector</td><td>Production Head</td><td>R&D</td><td>MD</td></tr>
+    <tr><td>7. Supplier escalation</td><td>Purchase team</td><td>Production Head</td><td>Quality Inspector</td><td>MD</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="tips">10. Tips and best practices</h2>
+
+  <ul>
+    <li><strong>Always link QI to the source document</strong> — Purchase Receipt for incoming, Delivery Note for outgoing, Stock Entry for in-process. Unlinked QIs lose traceability.</li>
+    <li><strong>Use min/max values in readings</strong> — objective pass/fail criteria eliminate subjective judgement and make audits straightforward</li>
+    <li><strong>Rejected items: quarantine immediately</strong> — move to a separate physical location and tag with the QI number. Never mix with accepted stock.</li>
+    <li><strong>Review QI rejection trends monthly</strong> — aggregate rejections by item, supplier, and failure type. This feeds directly into CAPA priorities.</li>
+    <li><strong>Incoming inspection sampling</strong> — for high-volume, low-risk items (fasteners, packaging), inspect a sample per AQL tables. For critical components (PCBs, sensors, load cells), inspect 100%.</li>
+    <li><strong>Calibrate test equipment</strong> — multimeters, LCR meters, and reference weights must be calibrated annually. Record calibration dates.</li>
+    <li><strong>Photo documentation</strong> — photograph defects found during inspection and attach to the QI record. Visual evidence is invaluable for RCA.</li>
+    <li><strong>Supplier scorecard</strong> — track incoming QI acceptance rate per supplier. Suppliers below 95% acceptance should be audited or replaced.</li>
+    <li><strong>Do not ship under pressure</strong> — if a unit fails outgoing inspection, it goes back to production. Customer delivery dates are renegotiated, not quality standards.</li>
+  </ul>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/quality-guide
+  </p>
+</div>
+{% endblock %}

@@ -39,7 +39,7 @@ You have access to 87+ ERP tools organized in two tiers:
 - **Core tools** (always available): search_records, get_document, get_count, search_link, get_report, business_dashboard, update_document, submit_document, cancel_document, delete_document, erp_attach, semantic_search, get_print_pdf, get_system_settings
 - **Extended tools** (load on demand): Use `discover_tools(category=...)` to load specialized tools when needed.
 
-Categories: accounting, inventory, sales_crm, buying, hr, master_data, projects, assets, manufacturing, pricing_budgets, system_config, communication.
+Categories: accounting, inventory, service_quality, sales_crm, buying, hr, master_data, projects, assets, manufacturing, pricing_budgets, system_config, communication.
 
 **IMPORTANT**: When user asks to CREATE something (invoice, employee, item, etc.), FIRST call discover_tools with the right category, THEN use the loaded tool.
 """
@@ -128,6 +128,44 @@ _DOMAIN_RULES = f"""
 - Flow: BOM → Work Order → Job Card → Stock Entry (Manufacture)
 - fg_warehouse = where finished goods go
 - wip_warehouse = where work-in-progress materials are
+- **NEVER cancel submitted BOMs** — cascades to Work Orders and Production Plans
+- Rate fixes: Update Item.valuation_rate → click "Update Cost" on BOM
+- Structural changes: Create new BOM → BOM Update Tool to replace old→new
+
+# SERVICE & COMPLAINT RULES
+- Warranty Claim: records site complaints about DSPL products (ACD, DRM, E-DASH, etc.)
+- Custom fields on Warranty Claim: priority (P1-P4), response_due_date, resolution_due_date,
+  site_contact_name, site_contact_phone, rca_category, rca_details, capa_reference, first_response_date
+- Priority SLAs: P1 Safety (24h/48h), P2 Down (48h/5d), P3 Degraded (5d/10d), P4 Minor (15d/20d)
+- RCA categories: Design Defect, Manufacturing Defect, Component Quality, Installation Error,
+  Customer Misuse, Environmental, Supplier Issue, Firmware Bug
+- **CAPA DocType** (Corrective and Preventive Action): links to Warranty Claim, has 5-Why RCA,
+  corrective action, preventive action, effectiveness review
+- CAPA Status: Open → In Progress → Completed → Verified Effective / Reopened
+- CAPA is submittable — submit to lock in the record, amend to update after review
+- Maintenance Visit: tracks field service visits, linked to Warranty Claim
+- Quality Inspection: Incoming (purchase receipt), Outgoing (delivery), In Process (manufacturing)
+
+# NOTIFICATION SYSTEM
+All Telegram notifications fire via doc_events in hooks.py:
+- Sales: SO/DN/SI/PE submit, quotation expiry (daily)
+- Purchase: MR/PO/PR/PI submit, supplier payment, overdue PO/PI (daily)
+- Manufacturing: WO submit/complete, SE Manufacture, Production Plan, overdue WO (daily)
+- Service: new Warranty Claim, SLA breach (daily), CAPA overdue (daily)
+- Finance: JE submit, overdue SI (daily), draft document reminder (weekly Monday)
+- Quality: QI submit (pass/fail), rejection escalation to managers
+- HR: leave submit/approve, expense submit/approve, budget cap alerts, advance submit
+
+# USER GUIDES (web pages)
+Staff can access these guides for step-by-step instructions:
+- /sales-guide — DCR to payment cycle
+- /hr-guide — leave, expenses, attendance, salary
+- /complaint-guide — site complaints and CAPA
+- /purchase-guide — MR to supplier payment
+- /manufacturing-guide — SO to finished goods
+- /finance-guide — invoicing, bank recon, month-end close
+- /inventory-guide — stock entries, reconciliation, warehouses
+- /quality-guide — quality inspection process
 
 # PROJECT MANAGEMENT RULES
 - Tasks belong to Projects

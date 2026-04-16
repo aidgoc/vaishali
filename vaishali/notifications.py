@@ -557,6 +557,60 @@ def check_overdue_work_orders():
         _notify(emp_id, msg)
 
 
+# ── Inventory & Quality Notifications ───────────────────────
+
+
+def on_stock_entry_general(doc, method):
+    """Notify on non-Manufacture stock entries (Material Receipt, Issue, Transfer)."""
+    if doc.stock_entry_type == "Manufacture":
+        return  # handled by on_stock_entry_submit
+    if doc.stock_entry_type not in ("Material Receipt", "Material Issue", "Material Transfer"):
+        return
+
+    managers = _get_managers()
+    items_list = []
+    for item in doc.items[:8]:
+        items_list.append(f"  {item.item_name or item.item_code} x {item.qty} ({item.uom})")
+    items_text = "\n".join(items_list)
+    if len(doc.items) > 8:
+        items_text += f"\n  ... and {len(doc.items) - 8} more"
+
+    msg = (
+        f"Stock Entry {doc.name} ({doc.stock_entry_type})\n"
+        f"Items:\n{items_text}"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_quality_inspection_submit(doc, method):
+    """Notify production + managers on Quality Inspection results."""
+    production_staff = _get_users_with_role("Manufacturing Manager", "Quality Manager")
+    if not production_staff:
+        production_staff = _get_managers()
+
+    status_emoji = "PASS" if doc.status == "Accepted" else "FAIL"
+    msg = (
+        f"Quality Inspection {doc.name} — {status_emoji}\n"
+        f"Item: {doc.item_name or doc.item_code}\n"
+        f"Type: {doc.inspection_type}\n"
+        f"Status: {doc.status}\n"
+        f"Reference: {doc.reference_type} {doc.reference_name}"
+    )
+    if doc.status == "Rejected" and doc.remarks:
+        msg += f"\nRemarks: {doc.remarks[:200]}"
+
+    for emp_id in production_staff:
+        _notify(emp_id, msg)
+
+    # Also notify managers on rejection
+    if doc.status == "Rejected":
+        managers = _get_managers()
+        for emp_id in managers:
+            if emp_id not in production_staff:
+                _notify(emp_id, msg)
+
+
 # ── Finance Notifications ───────────────────────────────────
 
 
