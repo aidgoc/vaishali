@@ -196,6 +196,7 @@ def get_me():
         "company": doc.company, "image": doc.image,
         "date_of_joining": str(doc.date_of_joining) if doc.date_of_joining else None,
         "status": doc.status,
+        "telegram_chat_id": doc.telegram_chat_id,
     }
 
 
