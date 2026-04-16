@@ -218,3 +218,61 @@ def on_payment_entry_submit(doc, method):
     )
     for emp_id in managers:
         _notify(emp_id, msg)
+
+
+# ── Scheduled: Quotation Expiry Alerts ──────────────────────
+
+
+def check_expiring_quotations():
+    """Run daily at 9 AM. Alert sales owners about quotations expiring within 3 days."""
+    from frappe.utils import today, add_days
+
+    today_date = today()
+    threshold = add_days(today_date, 3)
+
+    expiring = frappe.get_all(
+        "Quotation",
+        filters={
+            "status": "Open",
+            "docstatus": 1,
+            "valid_till": ["between", [today_date, threshold]],
+        },
+        fields=["name", "party_name", "grand_total", "valid_till", "owner"],
+        limit_page_length=50,
+    )
+
+    if not expiring:
+        return
+
+    # Group by owner for batched notifications
+    by_owner = {}
+    for q in expiring:
+        by_owner.setdefault(q.owner, []).append(q)
+
+    for owner, quotes in by_owner.items():
+        emp_id = frappe.db.get_value("Employee", {"user_id": owner, "status": "Active"}, "name")
+        if not emp_id:
+            continue
+
+        lines = []
+        for q in quotes:
+            from frappe.utils import date_diff
+            days_left = date_diff(q.valid_till, today_date)
+            urgency = "TODAY" if days_left == 0 else f"in {days_left}d"
+            lines.append(f"  {q.name} — {q.party_name} — ₹{q.grand_total:,.0f} (expires {urgency})")
+
+        msg = f"Quotation expiry alert ({len(quotes)}):\n" + "\n".join(lines)
+        _notify(emp_id, msg)
+
+    # Also notify managers with the full list
+    managers = _get_managers()
+    all_lines = []
+    for q in expiring:
+        from frappe.utils import date_diff
+        days_left = date_diff(q.valid_till, today_date)
+        urgency = "TODAY" if days_left == 0 else f"in {days_left}d"
+        all_lines.append(f"  {q.name} — {q.party_name} — ₹{q.grand_total:,.0f} (expires {urgency})")
+
+    msg = f"Quotation expiry alert ({len(expiring)}):\n" + "\n".join(all_lines)
+    for emp_id in managers:
+        _notify(emp_id, msg)

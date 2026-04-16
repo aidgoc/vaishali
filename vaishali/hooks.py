@@ -102,6 +102,7 @@ scheduler_events = {
         "0 9 * * *": [
             "vaishali.complaint.check_sla_breaches",
             "vaishali.complaint.check_capa_overdue",
+            "vaishali.notifications.check_expiring_quotations",
         ],
     },
 }

@@ -1,0 +1,535 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Sales Cycle Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "&#9744; "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Sales Cycle Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — End-to-end sales process from field visit to payment</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#step1">Step 1: Daily Call Report (DCR)</a></li>
+      <li><a href="#step2">Step 2: Lead management</a></li>
+      <li><a href="#step3">Step 3: Opportunity</a></li>
+      <li><a href="#step4">Step 4: Quotation</a></li>
+      <li><a href="#step5">Step 5: Sales Order</a></li>
+      <li><a href="#step6">Step 6: Delivery Note</a></li>
+      <li><a href="#step7">Step 7: Sales Invoice</a></li>
+      <li><a href="#step8">Step 8: Payment Entry</a></li>
+      <li><a href="#pwa">PWA field app</a></li>
+      <li><a href="#dashboards">Dashboards and views</a></li>
+      <li><a href="#apollo">Apollo.io integration</a></li>
+      <li><a href="#telegram">Telegram notifications</a></li>
+      <li><a href="#tips">Tips for the sales team</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL sells crane safety electronics and monitoring systems to industrial customers across India.
+    Every sale follows a structured cycle tracked end-to-end in ERPNext — from the first field visit
+    through to payment collection.
+  </p>
+
+  <h3>Products</h3>
+  <table>
+    <tr><th>Product</th><th>Description</th></tr>
+    <tr><td>ACD</td><td>Automatic Crane Display — load monitoring and safety cutoff</td></tr>
+    <tr><td>DRM-3400</td><td>Driver monitoring and recording module</td></tr>
+    <tr><td>DJ-1005</td><td>Digital load indicator for cranes</td></tr>
+    <tr><td>E-DASH</td><td>Electronic dashboard for crane operators</td></tr>
+    <tr><td>F-Dash</td><td>Fleet dashboard for crane monitoring</td></tr>
+    <tr><td>WWSI</td><td>Wind speed indicator for crane safety</td></tr>
+    <tr><td>MRT</td><td>Moment and radius tracking system</td></tr>
+    <tr><td>TPS</td><td>Tower crane protection system</td></tr>
+  </table>
+
+  <h3>Annual target</h3>
+  <p><strong>&#8377;10.09 Crore</strong> for FY 2026-27 (April 2026 to March 2027)</p>
+
+  <h3>Sales team</h3>
+  <table>
+    <tr><th>Name</th><th>Territory</th></tr>
+    <tr><td>Raghuvir</td><td>West</td></tr>
+    <tr><td>Aniket</td><td>West</td></tr>
+    <tr><td>NJG</td><td>North / Central</td></tr>
+    <tr><td>BNG</td><td>South (Bangalore)</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Field Visit (DCR)
+     |
+     v
+[1. DCR] Log visit in PWA — check in/out, fill remarks
+     |
+     +--- lead_generated checkbox ticked?
+     |         |
+     |         v
+     |    [2. LEAD] Auto-created from DCR (or manual)
+     |         |
+     |         +--- Apollo enrichment (designation, LinkedIn, industry)
+     |         |
+     |         v
+     |    [3. OPPORTUNITY] Auto-created when opportunity_generated ticked
+     |         |
+     |         v
+     |    [4. QUOTATION] Created from Opportunity — valid 30 days
+     |         |
+     |         +--- Temperature: Hot / Warm / Cold / Lost
+     |         |
+     |         v
+     |    [5. SALES ORDER] Created from Quotation — triggers production
+     |         |
+     |         v
+     |    [6. DELIVERY NOTE] Created from Sales Order — dispatch
+     |         |
+     |         v
+     |    [7. SALES INVOICE] Created from DN or SO — billing
+     |         |
+     |         v
+     |    [8. PAYMENT ENTRY] Record payment received
+     |
+     v
+Conversion tracked: Open > Lead Created > Opportunity > Quoted > Won / Lost</div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step1">3. Step 1: Daily Call Report (DCR)</h2>
+
+  <div class="step-card">
+    <h3>Log every field visit</h3>
+    <div class="who">Who: Sales executive &nbsp;|&nbsp; When: During or immediately after every customer visit</div>
+    <ol>
+      <li>Open the PWA at <strong>dgoc.logstop.com/field</strong></li>
+      <li><strong>Check in</strong> when you arrive at the customer site (GPS-based attendance)</li>
+      <li>Fill in the DCR form:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Customer</td><td>Select or search for the customer</td><td>Reliance Industries Ltd</td></tr>
+      <tr><td>Visit purpose</td><td>Select from dropdown</td><td>Lead Follow-up</td></tr>
+      <tr><td>Discussion remarks</td><td>Summary of conversation</td><td>"Discussed ACD pricing for 3 tower cranes"</td></tr>
+      <tr><td>Next action</td><td>What needs to happen next</td><td>"Send revised quotation by Friday"</td></tr>
+      <tr><td>Next action date</td><td>Follow-up deadline</td><td>2026-04-20</td></tr>
+      <tr><td>lead_generated</td><td>Tick if a new lead came from this visit</td><td>&#9745;</td></tr>
+      <tr><td>opportunity_generated</td><td>Tick if a sales opportunity was identified</td><td>&#9745;</td></tr>
+      <tr><td>order_received</td><td>Tick if the customer placed an order</td><td>&#9744;</td></tr>
+    </table>
+
+    <ol start="4">
+      <li><strong>Check out</strong> when you leave the site</li>
+    </ol>
+  </div>
+
+  <h3>Visit purpose options</h3>
+  <table>
+    <tr><th>Purpose</th><th>When to use</th></tr>
+    <tr><td>Cold Call</td><td>First-time visit to a potential customer</td></tr>
+    <tr><td>Lead Follow-up</td><td>Following up on an existing lead</td></tr>
+    <tr><td>Opportunity Follow-up</td><td>Discussing an active opportunity</td></tr>
+    <tr><td>Quotation Follow-up</td><td>Following up on a sent quotation</td></tr>
+    <tr><td>Order Follow-up</td><td>Checking on a placed order</td></tr>
+    <tr><td>Recovery</td><td>Collecting outstanding payment</td></tr>
+    <tr><td>Relationship Building</td><td>Maintaining existing customer relationship</td></tr>
+  </table>
+
+  <h3>Conversion status tracking</h3>
+  <p>Every DCR tracks its conversion journey automatically:</p>
+  <table>
+    <tr><th>Status</th><th>Meaning</th></tr>
+    <tr><td>Open</td><td>Visit logged, no conversion yet</td></tr>
+    <tr><td>Lead Created</td><td>Lead was auto-created from this DCR</td></tr>
+    <tr><td>Opportunity</td><td>Opportunity was created from the lead</td></tr>
+    <tr><td>Quoted</td><td>Quotation was submitted for this opportunity</td></tr>
+    <tr><td>Won</td><td>Sales Order was confirmed</td></tr>
+    <tr><td>Lost</td><td>Quotation was marked as lost</td></tr>
+  </table>
+
+  <div class="tip">
+    The system auto-creates Leads and Opportunities based on the checkboxes you tick. You do not need to create them manually in the desk.
+  </div>
+
+  <div class="warning">
+    Always fill a DCR after every visit, even recovery and relationship-building visits. This data drives your pipeline analytics and target tracking.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step2">4. Step 2: Lead management</h2>
+
+  <div class="step-card">
+    <h3>Manage and enrich leads</h3>
+    <div class="who">Who: Sales executive / Sales manager &nbsp;|&nbsp; When: Ongoing</div>
+
+    <h3>How leads are created</h3>
+    <ul>
+      <li><strong>Auto from DCR:</strong> When <code>lead_generated</code> checkbox is ticked on a DCR, the system auto-creates a Lead linked back to that DCR</li>
+      <li><strong>Manual:</strong> Go to <strong>CRM &gt; Lead &gt; New</strong> in the desk</li>
+      <li><strong>Apollo import:</strong> Use the "Import from Apollo" dialog on the Lead list (search by email or name)</li>
+      <li><strong>Bulk sync:</strong> Automatic sync from Apollo "Push to CRM" list every 30 minutes</li>
+    </ul>
+
+    <h3>Lead age indicator</h3>
+    <p>The Lead form shows a color-coded age indicator:</p>
+    <table>
+      <tr><th>Color</th><th>Age</th><th>Action</th></tr>
+      <tr><td style="background:#e8f5e9;">Green</td><td>0 to 14 days</td><td>Fresh — follow up actively</td></tr>
+      <tr><td style="background:#fff3e0;">Orange</td><td>15 to 30 days</td><td>Getting stale — prioritise contact</td></tr>
+      <tr><td style="background:#ffebee;">Red</td><td>Over 30 days</td><td>At risk — immediate action needed</td></tr>
+    </table>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>Purpose</th></tr>
+      <tr><td>Zone</td><td>North / South / East / West / Central</td></tr>
+      <tr><td>Lead Source</td><td>How the lead came in (DCR, Apollo, Website, Referral, etc.)</td></tr>
+      <tr><td>Lead Owner</td><td>Sales executive responsible for this lead</td></tr>
+    </table>
+  </div>
+
+  <h3>Apollo enrichment</h3>
+  <p>Click the <strong>"Enrich from Apollo"</strong> button on any Lead form to auto-fill:</p>
+  <ul>
+    <li>Designation (job title)</li>
+    <li>Website</li>
+    <li>Industry</li>
+    <li>LinkedIn URL</li>
+    <li>Apollo ID (for tracking)</li>
+  </ul>
+
+  <h3>Convert to Customer</h3>
+  <p>When a lead is qualified and ready to buy, click the <strong>"Convert to Customer"</strong> button on the Lead form. This creates a Customer record and links the lead history.</p>
+
+  <div class="tip">
+    Bulk enrichment runs automatically every 30 minutes, processing 10 leads per batch. You don't need to enrich leads one by one.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step3">5. Step 3: Opportunity</h2>
+
+  <div class="step-card">
+    <h3>Track sales opportunities</h3>
+    <div class="who">Who: Sales executive &nbsp;|&nbsp; When: When a potential deal is identified</div>
+
+    <h3>How opportunities are created</h3>
+    <ul>
+      <li><strong>Auto from DCR:</strong> When <code>opportunity_generated</code> checkbox is ticked, the system auto-creates an Opportunity linked to the DCR and the Lead</li>
+      <li><strong>Manual:</strong> Go to <strong>CRM &gt; Opportunity &gt; New</strong> in the desk</li>
+    </ul>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Opportunity From</td><td>Lead or Customer</td><td>Lead</td></tr>
+      <tr><td>Party Name</td><td>The Lead or Customer name</td><td>Reliance Industries Ltd</td></tr>
+      <tr><td>Opportunity Amount</td><td>Estimated deal value</td><td>&#8377;15,00,000</td></tr>
+      <tr><td>Expected Closing</td><td>When you expect to close</td><td>2026-06-30</td></tr>
+      <tr><td>Items</td><td>Products the customer is interested in</td><td>ACD-100 (Qty: 3)</td></tr>
+    </table>
+  </div>
+
+  <div class="warning">
+    The Opportunity links back to the originating DCR. This backlink is used to track the full conversion funnel from visit to order.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step4">6. Step 4: Quotation</h2>
+
+  <div class="step-card">
+    <h3>Create and track quotations</h3>
+    <div class="who">Who: Sales executive / Sales manager &nbsp;|&nbsp; When: Customer requests pricing</div>
+    <ol>
+      <li>Create from Opportunity: click <strong>Make &gt; Quotation</strong> on the Opportunity form</li>
+      <li>Or create standalone: <strong>Selling &gt; Quotation &gt; New</strong></li>
+      <li>Add items with quantities and rates</li>
+      <li>The system auto-sets <strong>valid_till</strong> to 30 days from the transaction date</li>
+      <li>Submit the Quotation to send to the customer</li>
+    </ol>
+  </div>
+
+  <h3>Temperature tracking</h3>
+  <p>Set the <strong>quotation_temperature</strong> field to track deal health:</p>
+  <table>
+    <tr><th>Temperature</th><th>When to use</th></tr>
+    <tr><td style="background:#ffebee; font-weight:600;">Hot</td><td>Customer is actively discussing, likely to close within 2 weeks</td></tr>
+    <tr><td style="background:#fff3e0; font-weight:600;">Warm</td><td>Customer is interested but no urgency, may close within 1-2 months</td></tr>
+    <tr><td style="background:#e3f2fd; font-weight:600;">Cold</td><td>Low interest, long timeline, or no recent communication</td></tr>
+    <tr><td style="background:#f5f5f5; font-weight:600;">Lost</td><td>Customer has declined or chosen a competitor</td></tr>
+  </table>
+
+  <h3>Marking a quotation as lost</h3>
+  <ol>
+    <li>Click the <strong>"Mark as Lost"</strong> button on the Quotation form</li>
+    <li>Select the <strong>lost reason category</strong>:</li>
+  </ol>
+  <table>
+    <tr><th>Category</th><th>When to use</th></tr>
+    <tr><td>Price</td><td>Customer chose a cheaper alternative</td></tr>
+    <tr><td>Technical</td><td>Product did not meet technical requirements</td></tr>
+    <tr><td>Budget</td><td>Customer's budget was not approved</td></tr>
+    <tr><td>Other</td><td>Any other reason (specify in remark)</td></tr>
+  </table>
+  <ol start="3">
+    <li>Optionally name the competitor</li>
+    <li>Add a <strong>lost remark</strong> with details</li>
+  </ol>
+
+  <div class="tip">
+    The customer quotation count indicator on the form shows how many quotations have been sent to this customer historically. Use it to gauge engagement.
+  </div>
+
+  <div class="warning">
+    When a Quotation is submitted, the originating DCR's conversion_status is automatically set to "Quoted".
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step5">7. Step 5: Sales Order</h2>
+
+  <div class="step-card">
+    <h3>Confirm the order</h3>
+    <div class="who">Who: Sales manager &nbsp;|&nbsp; When: Customer confirms the order</div>
+    <ol>
+      <li>Open the submitted Quotation</li>
+      <li>Click <strong>Make &gt; Sales Order</strong></li>
+      <li>Verify items, quantities, rates, and delivery date</li>
+      <li>Submit the Sales Order</li>
+    </ol>
+  </div>
+
+  <h3>What happens on submit</h3>
+  <ul>
+    <li>The originating DCR's conversion_status is set to <strong>"Won"</strong></li>
+    <li><strong>Managers</strong> are notified via Telegram with the full financial details</li>
+    <li><strong>Production team</strong> is notified with the item list and delivery date (no prices shown)</li>
+    <li>Production team gets <strong>read-only access</strong> to the Sales Order — 54 financial fields (rate, amount, total, taxes, payment terms) are hidden from them</li>
+  </ul>
+
+  <div class="warning">
+    Production team members (Manufacturing User / Manager roles) can see items and delivery dates but cannot see any pricing, totals, or tax information. This is by design.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step6">8. Step 6: Delivery Note</h2>
+
+  <div class="step-card">
+    <h3>Dispatch the goods</h3>
+    <div class="who">Who: Dispatch / Warehouse &nbsp;|&nbsp; When: Goods are ready to ship</div>
+    <ol>
+      <li>Open the submitted Sales Order</li>
+      <li>Click <strong>Make &gt; Delivery Note</strong></li>
+      <li>Verify items and quantities being shipped</li>
+      <li>Add transporter details and tracking information</li>
+      <li>Submit the Delivery Note</li>
+    </ol>
+  </div>
+
+  <p>Managers are notified via Telegram when a Delivery Note is submitted. The dispatch tracker view in the PWA shows all dispatches and their status.</p>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step7">9. Step 7: Sales Invoice</h2>
+
+  <div class="step-card">
+    <h3>Bill the customer</h3>
+    <div class="who">Who: Accounts &nbsp;|&nbsp; When: After delivery or as per payment terms</div>
+    <ol>
+      <li>Create from Delivery Note: click <strong>Make &gt; Sales Invoice</strong> on the DN</li>
+      <li>Or create from Sales Order directly for advance billing</li>
+      <li>Verify all amounts, taxes, and due date</li>
+      <li>Submit the Sales Invoice</li>
+    </ol>
+  </div>
+
+  <p>Managers are notified via Telegram when a Sales Invoice is submitted. Outstanding amounts are tracked in the debtor dashboard.</p>
+
+  <div class="tip">
+    The system tracks outstanding receivables automatically. Use the debtor dashboard in the PWA to monitor aging invoices and overdue payments.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step8">10. Step 8: Payment Entry</h2>
+
+  <div class="step-card">
+    <h3>Record payment received</h3>
+    <div class="who">Who: Accounts &nbsp;|&nbsp; When: Payment received from customer</div>
+    <ol>
+      <li>Open the Sales Invoice</li>
+      <li>Click <strong>Make &gt; Payment Entry</strong></li>
+      <li>Select payment type: <strong>Receive</strong></li>
+      <li>Enter the amount received and payment mode (bank transfer, cheque, etc.)</li>
+      <li>Enter reference number and date</li>
+      <li>Submit the Payment Entry</li>
+    </ol>
+  </div>
+
+  <div class="warning">
+    Only "Receive" type Payment Entries trigger the Telegram notification to managers. The message format is: "Payment received: &#8377;{amount} from {customer}".
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="pwa">11. PWA field app</h2>
+
+  <div class="step-card">
+    <h3>Your mobile sales toolkit</h3>
+    <div class="who">Access at: dgoc.logstop.com/field &nbsp;|&nbsp; Works offline as a PWA (install on your phone)</div>
+
+    <p>The PWA provides 19 sales-related screens:</p>
+
+    <table>
+      <tr><th>Screen</th><th>What it does</th></tr>
+      <tr><td>Visits</td><td>View and create DCR entries with GPS check-in/check-out</td></tr>
+      <tr><td>Leads</td><td>Browse and manage leads</td></tr>
+      <tr><td>Opportunities</td><td>Track active opportunities</td></tr>
+      <tr><td>Quotations</td><td>View sent quotations and their status</td></tr>
+      <tr><td>Sales Orders</td><td>Track confirmed orders</td></tr>
+      <tr><td>Delivery Notes</td><td>Monitor dispatches</td></tr>
+      <tr><td>Invoices</td><td>View billing status</td></tr>
+      <tr><td>Payments</td><td>Track received payments</td></tr>
+      <tr><td>Pipeline</td><td>Visual pipeline from lead to order</td></tr>
+      <tr><td>Follow-ups</td><td>Quotations expiring soon, open quotes, lost quotes</td></tr>
+      <tr><td>Customer search</td><td>Find any customer instantly</td></tr>
+      <tr><td>Customer detail</td><td>Complete customer profile</td></tr>
+      <tr><td>Customer timeline</td><td>Full history of interactions per customer</td></tr>
+      <tr><td>Interactions</td><td>Log phone, email, WhatsApp follow-ups (Sales Interaction)</td></tr>
+      <tr><td>My Targets</td><td>Personal progress against annual sales target</td></tr>
+      <tr><td>Revenue</td><td>Invoiced vs collected vs outstanding</td></tr>
+      <tr><td>Debtors</td><td>Outstanding receivables and aging</td></tr>
+      <tr><td>Dispatch</td><td>Track dispatch status and delivery</td></tr>
+    </table>
+  </div>
+
+  <div class="tip">
+    Install the PWA on your phone: open dgoc.logstop.com/field in Chrome or Safari, tap "Add to Home Screen". It works offline and loads instantly.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="dashboards">12. Dashboards and views</h2>
+
+  <table>
+    <tr><th>Dashboard</th><th>What it shows</th><th>Who uses it</th></tr>
+    <tr><td>Sales Pipeline</td><td>Funnel from leads to opportunities to quotations to orders</td><td>Sales managers</td></tr>
+    <tr><td>Customer 360</td><td>Complete history per customer — quotes, orders, invoices, visits</td><td>Sales executives</td></tr>
+    <tr><td>Debtor Dashboard</td><td>Outstanding receivables, aging buckets, overdue invoices</td><td>Accounts, sales managers</td></tr>
+    <tr><td>Follow-ups</td><td>Quotations expiring soon, open quotes needing action, lost quotes</td><td>Sales executives</td></tr>
+    <tr><td>Revenue Dashboard</td><td>Invoiced amount vs collected vs outstanding — monthly and cumulative</td><td>Management</td></tr>
+    <tr><td>My Targets</td><td>Personal progress against annual &#8377;10.09 Cr target</td><td>Each sales person</td></tr>
+    <tr><td>Conversion Funnel</td><td>Visit-to-win ratio by stage — identifies where deals drop off</td><td>Sales managers</td></tr>
+  </table>
+
+  <h3>Desk workspaces</h3>
+  <p>Three pre-built workspaces are available in the ERPNext desk:</p>
+  <ul>
+    <li><strong>DSPL Sales:</strong> 7 Number Cards + Monthly Revenue chart + Quotation Pipeline donut + Lead Source pie</li>
+    <li><strong>DSPL Operations:</strong> 7 Number Cards + Monthly Orders chart + 4 shortcuts</li>
+    <li><strong>DSPL Finance:</strong> 3 Number Cards + 2 charts + 3 shortcuts</li>
+  </ul>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="apollo">13. Apollo.io integration</h2>
+
+  <div class="step-card">
+    <h3>Lead enrichment and import</h3>
+    <div class="who">Automatic + manual &nbsp;|&nbsp; Lead Source: "Apollo"</div>
+
+    <table>
+      <tr><th>Feature</th><th>How to use</th><th>Frequency</th></tr>
+      <tr><td>Enrich a lead</td><td>Click <strong>"Enrich from Apollo"</strong> button on the Lead form</td><td>Manual, per lead</td></tr>
+      <tr><td>Import a contact</td><td>Click <strong>"Import from Apollo"</strong> dialog on the Lead list — search by email or name</td><td>Manual</td></tr>
+      <tr><td>Bulk enrichment</td><td>Automatic — enriches up to 10 un-enriched leads per batch</td><td>Every 30 minutes</td></tr>
+      <tr><td>List sync</td><td>Syncs contacts from Apollo "Push to CRM" list into ERPNext as Leads</td><td>Every 30 minutes</td></tr>
+    </table>
+
+    <h3>Fields enriched from Apollo</h3>
+    <table>
+      <tr><th>ERPNext field</th><th>Apollo data</th></tr>
+      <tr><td>apollo_id</td><td>Unique Apollo contact ID</td></tr>
+      <tr><td>designation</td><td>Job title (e.g., "DGM - Projects")</td></tr>
+      <tr><td>apollo_website</td><td>Company website URL</td></tr>
+      <tr><td>apollo_industry</td><td>Industry classification</td></tr>
+      <tr><td>linkedin_url</td><td>LinkedIn profile URL</td></tr>
+      <tr><td>apollo_enriched</td><td>Checkbox — indicates this lead has been enriched</td></tr>
+    </table>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="telegram">14. Telegram notifications</h2>
+
+  <p>The system sends automatic Telegram notifications to managers at key moments in the sales cycle:</p>
+
+  <table>
+    <tr><th>Event</th><th>Who gets notified</th><th>Message format</th></tr>
+    <tr><td>Quotation expiring</td><td>Sales managers</td><td>3 days before valid_till date</td></tr>
+    <tr><td>Sales Order submitted</td><td>Managers (full details)</td><td>"{name} submitted: {customer} — &#8377;{amount}"</td></tr>
+    <tr><td>Sales Order submitted</td><td>Production team</td><td>Item list + delivery date (no prices)</td></tr>
+    <tr><td>Delivery Note submitted</td><td>Managers</td><td>Dispatch notification with items</td></tr>
+    <tr><td>Sales Invoice submitted</td><td>Managers</td><td>Invoice notification with amount</td></tr>
+    <tr><td>Payment received</td><td>Managers</td><td>"Payment received: &#8377;{amount} from {customer}"</td></tr>
+    <tr><td>Overdue invoice</td><td>Managers</td><td>7 days after due date — daily reminder</td></tr>
+    <tr><td>Lead assigned</td><td>New lead owner</td><td>Notification when a lead is assigned to them</td></tr>
+  </table>
+
+  <div class="tip">
+    Make sure your <strong>telegram_chat_id</strong> is set on your Employee record. Without it, you won't receive any Telegram notifications.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="tips">15. Tips for the sales team</h2>
+
+  <ul class="checklist">
+    <li>Fill a DCR after every visit — even recovery and relationship-building visits. Gaps in DCR data mean gaps in your pipeline analytics.</li>
+    <li>Always set <strong>next_action_date</strong> on every DCR. This powers the follow-up tracking system and ensures nothing falls through the cracks.</li>
+    <li>Update <strong>quotation temperature</strong> weekly. Hot/Warm/Cold status helps managers prioritise coaching and support.</li>
+    <li>Mark lost quotations with a reason and competitor name. This data drives competitive analysis and product decisions.</li>
+    <li>Check the <strong>pipeline view</strong> weekly for stale deals. Any opportunity with no activity for 14+ days needs attention.</li>
+    <li>Use <strong>Customer 360</strong> before every visit — know the full history before you walk in.</li>
+    <li>Log phone and WhatsApp follow-ups as <strong>Sales Interactions</strong> (not just physical visits). Every touchpoint counts.</li>
+    <li>Review your <strong>My Targets</strong> dashboard monthly — know where you stand against the &#8377;10.09 Cr annual target.</li>
+    <li>Install the PWA on your phone — you can check in, create DCRs, and view your pipeline even with spotty connectivity.</li>
+    <li>Use Apollo enrichment before calling a new lead — knowing their designation and LinkedIn helps personalise the conversation.</li>
+  </ul>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/sales-guide
+  </p>
+</div>
+{% endblock %}

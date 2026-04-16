@@ -1,0 +1,463 @@
+{% extends "templates/web.html" %}
+
+{% block title %}HR Module User Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>HR Module User Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Employee Self-Service via PWA</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#hr-hub">HR Hub navigation</a></li>
+      <li><a href="#leave">Leave management</a></li>
+      <li><a href="#expenses">Expense claims</a></li>
+      <li><a href="#advances">Employee advances</a></li>
+      <li><a href="#salary">Salary slips</a></li>
+      <li><a href="#attendance">Attendance (GPS check-in/out)</a></li>
+      <li><a href="#budget">Expense budget</a></li>
+      <li><a href="#notifications">Telegram notifications summary</a></li>
+      <li><a href="#managers">For managers</a></li>
+      <li><a href="#quick-ref">Quick reference</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL has 179 employees across Service, Sales, Production, R&D, Marketing, and Management departments.
+    The HR module provides self-service access to core HR functions directly from the PWA — no need to log into the ERPNext desk.
+  </p>
+  <ul>
+    <li><strong>Leave:</strong> Check balance, apply for leave, track approval status</li>
+    <li><strong>Expenses:</strong> File expense claims with multiple line items, track reimbursement</li>
+    <li><strong>Advances:</strong> Request salary advances, track repayment status</li>
+    <li><strong>Salary slips:</strong> View salary history with earnings and deductions breakdown</li>
+    <li><strong>Attendance:</strong> GPS-based check-in and check-out with live timer</li>
+    <li><strong>Budget tracking:</strong> Monitor personal and team expense budgets</li>
+  </ul>
+
+  <div class="tip">
+    Access the PWA at <strong>dgoc.logstop.com/field</strong> and navigate to <strong>HR Hub</strong>. All notifications are sent instantly via Telegram.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="hr-hub">2. HR Hub navigation</h2>
+
+  <div class="step-card">
+    <h3>Getting to the HR Hub</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: PWA at dgoc.logstop.com/field</div>
+    <ol>
+      <li>Open the PWA at <strong>dgoc.logstop.com/field</strong></li>
+      <li>Navigate to <strong>#/hr</strong> from the main menu</li>
+      <li>You will see 5 tiles:</li>
+    </ol>
+    <table>
+      <tr><th>Tile</th><th>Route</th><th>What it does</th></tr>
+      <tr><td>Leave</td><td>#/leave</td><td>Check balance, apply for leave, view leave history</td></tr>
+      <tr><td>Expenses</td><td>#/expenses</td><td>File expense claims, track approval and reimbursement</td></tr>
+      <tr><td>Advances</td><td>#/advances</td><td>Request advances, track status</td></tr>
+      <tr><td>Salary</td><td>#/salary</td><td>View salary slips with earnings and deductions</td></tr>
+      <tr><td>Budget</td><td>#/budget</td><td>Monitor personal/team expense budget usage</td></tr>
+    </table>
+    <p>Each tile opens to a <strong>list view</strong>. From the list, you can create new entries or tap any row to see the <strong>detail view</strong>.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="leave">3. Leave management</h2>
+
+  <div class="step-card">
+    <h3>Check your leave balance</h3>
+    <div class="who">Who: All employees</div>
+    <ol>
+      <li>Go to <strong>#/leave</strong> in the PWA</li>
+      <li>At the top, you will see <strong>balance cards</strong> for each leave type — these show your remaining days from your Leave Allocation</li>
+    </ol>
+    <table>
+      <tr><th>Leave type</th><th>Description</th></tr>
+      <tr><td>Casual Leave</td><td>Short personal leave, planned or unplanned</td></tr>
+      <tr><td>Compensatory Off</td><td>Earned by working on holidays or weekends</td></tr>
+      <tr><td>Leave Without Pay</td><td>When all paid leave is exhausted</td></tr>
+      <tr><td>Privilege Leave</td><td>Earned leave, planned in advance</td></tr>
+      <tr><td>Sick Leave</td><td>Medical leave with supporting documentation</td></tr>
+    </table>
+  </div>
+
+  <div class="step-card">
+    <h3>Apply for leave</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/leave → New</div>
+    <ol>
+      <li>Tap <strong>"New Leave"</strong> or the <strong>+</strong> button</li>
+      <li>Select the <strong>leave type</strong> from the dropdown (Casual Leave, Compensatory Off, Leave Without Pay, Privilege Leave, Sick Leave)</li>
+      <li>Set the <strong>From Date</strong> and <strong>To Date</strong></li>
+      <li>If you need only a half day, toggle <strong>Half Day</strong> on and select which date is the half day</li>
+      <li>Enter a <strong>reason</strong> for the leave</li>
+      <li>Tap <strong>Submit</strong></li>
+    </ol>
+    <p>After submission, the leave application status is set to <strong>"Open"</strong> (pending approval).</p>
+  </div>
+
+  <div class="step-card">
+    <h3>What happens after you apply</h3>
+    <ol>
+      <li>Your <strong>department leave approvers</strong> receive a Telegram notification with your name, leave type, dates, and reason</li>
+      <li>If no department approvers are configured, the notification falls back to default managers (<strong>harsh@dgoc.in</strong>, <strong>bng@dgoc.in</strong>)</li>
+      <li>When the approver <strong>approves or rejects</strong> your leave, you receive a Telegram notification with the decision</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Check leave status</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/leave</div>
+    <p>Your leave list shows status pills next to each application:</p>
+    <table>
+      <tr><th>Pill colour</th><th>Status</th><th>Meaning</th></tr>
+      <tr><td style="background: #e8f5e9; color: #2e7d32; font-weight: 600; text-align: center;">Green</td><td>Approved</td><td>Leave is approved — you are good to go</td></tr>
+      <tr><td style="background: #fee; color: #c00; font-weight: 600; text-align: center;">Red</td><td>Rejected</td><td>Leave was rejected — check with your approver</td></tr>
+      <tr><td style="background: #fff8e1; color: #f57f17; font-weight: 600; text-align: center;">Yellow</td><td>Open</td><td>Pending approval — waiting for approver action</td></tr>
+    </table>
+  </div>
+
+  <div class="warning">
+    Leave balance is checked at the time of submission. If you do not have enough balance for the selected leave type, the system will show an error. Switch to Leave Without Pay if all paid leave is exhausted.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="expenses">4. Expense claims</h2>
+
+  <div class="step-card">
+    <h3>File an expense claim</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/expenses → New Claim</div>
+    <ol>
+      <li>Go to <strong>#/expenses</strong> and tap <strong>"New Claim"</strong></li>
+      <li>Add expense lines — for each line, fill in:</li>
+    </ol>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Expense Type</td><td>Select from: Travel Fare, Food, Calls, Medical, Accommodation, Other Travel</td><td>Travel Fare</td></tr>
+      <tr><td>Date</td><td>Date the expense was incurred</td><td>2026-04-10</td></tr>
+      <tr><td>Amount</td><td>Amount in INR</td><td>1,500</td></tr>
+      <tr><td>Description</td><td>Brief description of the expense</td><td>Cab to Reliance site, Jamnagar</td></tr>
+    </table>
+    <ol start="3">
+      <li>You can add <strong>multiple expense lines</strong> — a running total is shown at the bottom</li>
+      <li>Tap <strong>Submit</strong> when all lines are entered</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>What happens after you submit</h3>
+    <ol>
+      <li>Managers receive a Telegram notification: <strong>"New expense claim from {name}: ₹{amount}"</strong></li>
+      <li>When the claim is <strong>approved or rejected</strong>, you receive a Telegram notification with the decision</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Budget cap system</h3>
+    <div class="who">Soft enforcement — claims are never blocked</div>
+    <p>Each employee has a monthly expense budget cap. The system enforces this with <strong>warnings only</strong> — it never blocks a claim submission.</p>
+    <table>
+      <tr><th>Level</th><th>Cap</th></tr>
+      <tr><td>Senior roles</td><td>₹25,000 per month</td></tr>
+      <tr><td>Other employees</td><td>₹15,000 per month</td></tr>
+      <tr><td>EPS vertical (team level)</td><td>₹2,50,000 per month</td></tr>
+    </table>
+
+    <h3>What happens at budget thresholds</h3>
+    <table>
+      <tr><th>Threshold</th><th>Action</th></tr>
+      <tr><td>At 80% usage</td><td>A warning comment is automatically added to the expense claim</td></tr>
+      <tr><td>At 100% usage</td><td>Telegram alert sent to your direct manager (reports_to) or default managers (harsh@dgoc.in, bng@dgoc.in)</td></tr>
+    </table>
+
+    <div class="warning">
+      Claims are <strong>never blocked</strong> by the budget system. The cap is advisory — the system warns but always allows submission. Managers decide whether to approve.
+    </div>
+  </div>
+
+  <div class="tip">
+    Check your budget status anytime at <strong>#/budget</strong> — it shows a progress bar of your spent amount versus your monthly cap.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="advances">5. Employee advances</h2>
+
+  <div class="step-card">
+    <h3>Request an advance</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/advances → Request Advance</div>
+    <ol>
+      <li>Go to <strong>#/advances</strong> and tap <strong>"Request Advance"</strong></li>
+      <li>Enter the <strong>purpose</strong> of the advance (e.g., "Site visit to Bangalore — travel and lodging")</li>
+      <li>Enter the <strong>amount</strong> in INR</li>
+      <li>Tap <strong>Submit</strong></li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>What happens after you submit</h3>
+    <ol>
+      <li>Managers receive a Telegram notification: <strong>"New advance request from {name}: ₹{amount}"</strong></li>
+      <li>When the advance status changes (Paid, Claimed, Cancelled), you receive a Telegram notification</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Advance status pills</h3>
+    <table>
+      <tr><th>Pill colour</th><th>Status</th><th>Meaning</th></tr>
+      <tr><td style="background: #e8f5e9; color: #2e7d32; font-weight: 600; text-align: center;">Green</td><td>Paid / Claimed / Returned</td><td>Advance disbursed, claimed against expenses, or returned</td></tr>
+      <tr><td style="background: #fff8e1; color: #f57f17; font-weight: 600; text-align: center;">Yellow</td><td>Submitted</td><td>Waiting for approval and disbursement</td></tr>
+      <tr><td style="background: #fee; color: #c00; font-weight: 600; text-align: center;">Red</td><td>Cancelled</td><td>Advance request was cancelled</td></tr>
+    </table>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="salary">6. Salary slips</h2>
+
+  <div class="step-card">
+    <h3>View your salary history</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/salary</div>
+    <ol>
+      <li>Go to <strong>#/salary</strong> in the PWA</li>
+      <li>You will see a list of your salary slips showing: <strong>month</strong>, <strong>year</strong>, and <strong>net pay</strong></li>
+      <li>Only <strong>submitted</strong> (finalised) salary slips are visible — drafts are not shown</li>
+      <li>The <strong>20 most recent</strong> salary slips are displayed</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Salary slip detail view</h3>
+    <p>Tap any salary slip to see the full breakdown:</p>
+    <table>
+      <tr><th>Section</th><th>What it shows</th></tr>
+      <tr><td>Gross Pay</td><td>Total earnings before deductions</td></tr>
+      <tr><td>Earnings</td><td>Line items for each earning component (Basic, HRA, Conveyance, etc.)</td></tr>
+      <tr><td>Deductions</td><td>Line items for each deduction (PF, ESI, Professional Tax, TDS, etc.)</td></tr>
+      <tr><td>Net Pay</td><td>Final take-home amount after all deductions</td></tr>
+    </table>
+  </div>
+
+  <div class="tip">
+    Salary slips appear here only after the accounts team has processed and submitted payroll for that month. If a month is missing, check with HR.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="attendance">7. Attendance (GPS check-in/out)</h2>
+
+  <div class="step-card">
+    <h3>Check in and check out</h3>
+    <div class="who">Who: All employees &nbsp;|&nbsp; Where: #/attendance</div>
+    <ol>
+      <li>Go to <strong>#/attendance</strong> in the PWA</li>
+      <li>The system will request your <strong>GPS location</strong> — allow the permission when prompted</li>
+      <li>Your GPS accuracy is shown as a coloured pill:
+        <ul>
+          <li><strong style="color: #2e7d32;">Green</strong> — accuracy ≤ 20 metres (good signal)</li>
+          <li><strong style="color: #e65100;">Orange</strong> — accuracy > 20 metres (weak signal, move to an open area)</li>
+        </ul>
+      </li>
+      <li>Tap the green <strong>"CHECK IN"</strong> button to start your workday</li>
+      <li>A <strong>live timer</strong> appears showing HH:MM:SS since check-in</li>
+      <li>When your workday ends, tap the blue <strong>"CHECK OUT"</strong> button</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Additional details</h3>
+    <ul>
+      <li><strong>GPS coordinates</strong> are recorded and shown on screen — you can expand them to see the exact location</li>
+      <li><strong>Duplicate prevention:</strong> The system uses idempotency keys to prevent accidental double check-ins (e.g., if you tap the button twice quickly)</li>
+      <li>Both check-in and check-out times are recorded in ERPNext as Employee Checkin records</li>
+    </ul>
+  </div>
+
+  <div class="warning">
+    Make sure your phone's GPS is enabled and you have a clear view of the sky for best accuracy. Indoor locations may show orange (low accuracy) — step outside briefly if needed.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="budget">8. Expense budget</h2>
+
+  <div class="step-card">
+    <h3>How budgets work</h3>
+    <p>Expense budgets are managed per <strong>fiscal year (April to March)</strong> at two levels:</p>
+    <table>
+      <tr><th>Level</th><th>Example</th><th>Purpose</th></tr>
+      <tr><td>Vertical-level</td><td>EPS vertical: ₹2,50,000/month</td><td>Controls total team spending</td></tr>
+      <tr><td>Per-employee</td><td>Senior: ₹25,000/month, Others: ₹15,000/month</td><td>Controls individual spending</td></tr>
+    </table>
+
+    <h3>Threshold alerts</h3>
+    <table>
+      <tr><th>Threshold</th><th>What happens</th></tr>
+      <tr><td>80% of monthly cap</td><td>Warning comment added to the expense claim</td></tr>
+      <tr><td>100% of monthly cap</td><td>Telegram alert to direct manager or default managers</td></tr>
+    </table>
+  </div>
+
+  <div class="step-card">
+    <h3>Budget dashboard views</h3>
+    <div class="who">Where: #/budget</div>
+    <table>
+      <tr><th>Role</th><th>What you see</th></tr>
+      <tr><td>Field staff</td><td>Your personal monthly progress bar — spent vs. cap</td></tr>
+      <tr><td>Manager</td><td>Team-level vertical view — all employees in your vertical</td></tr>
+      <tr><td>Admin</td><td>All verticals overview — company-wide budget status</td></tr>
+    </table>
+  </div>
+
+  <div class="step-card">
+    <h3>Budget DocType fields</h3>
+    <p>For reference, the Expense Budget record in ERPNext contains:</p>
+    <table>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Fiscal Year</td><td>The financial year (e.g., 2026-27)</td></tr>
+      <tr><td>Vertical</td><td>Business vertical (e.g., EPS)</td></tr>
+      <tr><td>Employee</td><td>Optional — if set, this is a per-employee budget</td></tr>
+      <tr><td>Monthly Cap</td><td>Maximum monthly spending limit</td></tr>
+      <tr><td>Annual Budget</td><td>Auto-calculated (monthly cap x 12)</td></tr>
+      <tr><td>Alert Threshold</td><td>Percentage at which warnings begin (default: 80%)</td></tr>
+      <tr><td>Escalate Threshold</td><td>Percentage at which manager alerts fire (default: 100%)</td></tr>
+    </table>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="notifications">9. Telegram notifications summary</h2>
+
+  <p>All HR notifications are delivered instantly via Telegram. Here is the complete list:</p>
+
+  <table>
+    <tr><th>Event</th><th>Who gets notified</th><th>Message content</th></tr>
+    <tr><td>Leave application submitted</td><td>Department leave approvers (or default managers)</td><td>"{name} has applied for {leave_type} from {from_date} to {to_date}. Reason: {reason}"</td></tr>
+    <tr><td>Leave approved</td><td>Employee</td><td>"Your {leave_type} from {from_date} to {to_date} has been approved"</td></tr>
+    <tr><td>Leave rejected</td><td>Employee</td><td>"Your {leave_type} from {from_date} to {to_date} has been rejected"</td></tr>
+    <tr><td>Expense claim submitted</td><td>Managers</td><td>"New expense claim from {name}: ₹{amount}"</td></tr>
+    <tr><td>Expense claim approved</td><td>Employee</td><td>"Your expense claim for ₹{amount} has been approved"</td></tr>
+    <tr><td>Expense claim rejected</td><td>Employee</td><td>"Your expense claim for ₹{amount} has been rejected"</td></tr>
+    <tr><td>Budget 80% warning</td><td>Employee (as comment on claim)</td><td>"Budget warning: You have used 80% of your monthly expense cap"</td></tr>
+    <tr><td>Budget 100% escalation</td><td>Direct manager (reports_to) or default managers</td><td>"{name} has exceeded their monthly expense budget of ₹{cap}"</td></tr>
+    <tr><td>Advance request submitted</td><td>Managers</td><td>"New advance request from {name}: ₹{amount}"</td></tr>
+    <tr><td>Advance status changed</td><td>Employee</td><td>"Your advance of ₹{amount} status changed to {status} (Paid/Claimed/Cancelled)"</td></tr>
+  </table>
+
+  <div class="tip">
+    To receive Telegram notifications, your Employee record must have the <strong>telegram_chat_id</strong> field set. Contact HR or IT if you are not receiving notifications.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="managers">10. For managers</h2>
+
+  <div class="step-card">
+    <h3>Leave approval</h3>
+    <div class="who">Who: Department leave approvers, HR managers</div>
+    <ol>
+      <li>Receive a Telegram notification when an employee applies for leave</li>
+      <li>Log in to <strong>Frappe desk</strong> at dgoc.logstop.com/app</li>
+      <li>Go to <strong>Leave Application</strong> list or click the link in the notification</li>
+      <li>Open the leave application</li>
+      <li>Review the details: leave type, dates, reason, employee's leave balance</li>
+      <li>Click <strong>Approve</strong> or <strong>Reject</strong></li>
+      <li>The employee is notified via Telegram automatically</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Expense claim approval</h3>
+    <div class="who">Who: Expense approvers, HR managers</div>
+    <ol>
+      <li>Receive a Telegram notification when an employee submits an expense claim</li>
+      <li>Log in to <strong>Frappe desk</strong> at dgoc.logstop.com/app</li>
+      <li>Go to <strong>Expense Claim</strong> list</li>
+      <li>Open the claim and review each expense line (type, date, amount, description)</li>
+      <li>Click <strong>Approve</strong> or <strong>Reject</strong></li>
+      <li>The employee is notified via Telegram automatically</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Budget monitoring</h3>
+    <div class="who">Who: Managers and admins</div>
+    <ul>
+      <li>Check the <strong>Budget Dashboard</strong> at <strong>#/budget</strong> in the PWA for a team-level or company-wide view</li>
+      <li>You will receive automatic <strong>Telegram alerts</strong> when any employee in your team exceeds 100% of their monthly budget cap</li>
+      <li>Review budget trends monthly and adjust caps if needed via the Expense Budget DocType in ERPNext desk</li>
+    </ul>
+  </div>
+
+  <div class="step-card">
+    <h3>Leave approver configuration</h3>
+    <p>Leave approvers are set at the <strong>department level</strong> in ERPNext:</p>
+    <ol>
+      <li>Go to <strong>HR > Department</strong> in the desk</li>
+      <li>Open the relevant department</li>
+      <li>In the <strong>Leave Approvers</strong> section, add the employees who should approve leaves for that department</li>
+      <li>If no approvers are set, leave notifications fall back to default managers</li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="quick-ref">11. Quick reference</h2>
+
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>PWA URL</td><td><strong>dgoc.logstop.com/field</strong></td></tr>
+    <tr><td>HR Hub</td><td><strong>#/hr</strong></td></tr>
+    <tr><td>Leave types</td><td>Casual Leave, Compensatory Off, Leave Without Pay, Privilege Leave, Sick Leave</td></tr>
+    <tr><td>Expense types</td><td>Travel Fare, Food, Calls, Medical, Accommodation, Other Travel</td></tr>
+    <tr><td>Budget fiscal year</td><td>April to March</td></tr>
+    <tr><td>Currency</td><td>Always ₹ (INR)</td></tr>
+    <tr><td>Leave route</td><td>#/leave</td></tr>
+    <tr><td>Expenses route</td><td>#/expenses</td></tr>
+    <tr><td>Advances route</td><td>#/advances</td></tr>
+    <tr><td>Salary route</td><td>#/salary</td></tr>
+    <tr><td>Attendance route</td><td>#/attendance</td></tr>
+    <tr><td>Budget route</td><td>#/budget</td></tr>
+    <tr><td>Desk URL</td><td>dgoc.logstop.com/app (for managers)</td></tr>
+    <tr><td>Default managers</td><td>harsh@dgoc.in, bng@dgoc.in</td></tr>
+    <tr><td>Telegram setup</td><td>Employee record must have telegram_chat_id</td></tr>
+  </table>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/hr-guide
+  </p>
+</div>
+{% endblock %}
