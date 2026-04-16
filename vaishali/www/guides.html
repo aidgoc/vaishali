@@ -1,266 +1,413 @@
 {% extends "templates/web.html" %}
 
-{% block title %}DSPL ERP Guides{% endblock %}
+{% block title %}DSPL ERP — Guides & Documentation{% endblock %}
 
 {% block page_content %}
 <style>
-  .gh { max-width: 1000px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; }
+  .gh { max-width: 960px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
   .gh h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.25rem; }
-  .gh .subtitle { color: #666; margin-bottom: 2rem; line-height: 1.5; }
+  .gh .subtitle { color: #666; margin-bottom: 2rem; }
 
-  /* Guide cards grid */
-  .gh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  /* Hero stats */
+  .gh-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+  .gh-hero-card { background: #fafafa; border-radius: 10px; padding: 1.2rem; text-align: center; }
+  .gh-hero-card .val { font-size: 1.6rem; font-weight: 700; color: #E60005; }
+  .gh-hero-card .lbl { font-size: 0.72rem; color: #888; margin-top: 0.15rem; }
 
-  .gh-card {
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  .gh-card:hover { border-color: #E60005; box-shadow: 0 2px 12px rgba(230,0,5,0.08); text-decoration: none; color: inherit; }
+  /* Section */
+  .gh-sec { margin-top: 2.5rem; }
+  .gh-sec h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; }
 
-  .gh-card-icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem;
-    flex-shrink: 0;
-  }
+  /* Module blocks */
+  .gh-mod { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 10px; margin-bottom: 1.25rem; overflow: hidden; }
+  .gh-mod-head { display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.25rem; cursor: pointer; }
+  .gh-mod-head:hover { background: #fafafa; }
+  .gh-mod-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+  .gh-mod-title { flex: 1; }
+  .gh-mod-title h3 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .gh-mod-title p { font-size: 0.78rem; color: #888; margin: 0.15rem 0 0; }
+  .gh-mod-link { font-size: 0.78rem; color: #E60005; font-weight: 500; text-decoration: none; padding: 0.3rem 0.8rem; border: 1px solid #E60005; border-radius: 6px; white-space: nowrap; }
+  .gh-mod-link:hover { background: #E60005; color: #fff; text-decoration: none; }
 
-  .gh-card h3 { font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .gh-card p { font-size: 0.85rem; color: #666; margin: 0; line-height: 1.5; }
+  .gh-mod-body { padding: 0 1.25rem 1.25rem; display: none; }
+  .gh-mod.open .gh-mod-body { display: block; }
+  .gh-mod-body table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+  .gh-mod-body th { text-align: left; padding: 0.4rem 0.5rem; background: #f8f8f8; border-bottom: 1px solid #eee; font-weight: 500; color: #666; }
+  .gh-mod-body td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
 
-  .gh-card .gh-topics { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
-  .gh-card .gh-tag {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 100px;
-    background: #f5f5f5;
-    color: #555;
-    white-space: nowrap;
-  }
+  .gh-feat { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .gh-pill { font-size: 0.7rem; padding: 0.2rem 0.55rem; border-radius: 100px; background: #f0f0f0; color: #444; }
+  .gh-pill-new { background: #e8f5e9; color: #2e7d32; }
+  .gh-pill-alert { background: #fff3e0; color: #e65100; }
 
-  /* Section headers */
-  .gh-section { margin-top: 2.5rem; margin-bottom: 1rem; }
-  .gh-section h2 {
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #999;
-    margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-  }
+  .gh-toggle { font-size: 0.75rem; color: #999; cursor: pointer; user-select: none; }
 
-  /* Quick stats bar */
-  .gh-stats {
-    display: flex; gap: 2rem; flex-wrap: wrap;
-    background: #fafafa; border-radius: 10px;
-    padding: 1rem 1.5rem; margin-bottom: 2rem;
-    font-size: 0.85rem;
-  }
-  .gh-stat { display: flex; flex-direction: column; gap: 0.15rem; }
-  .gh-stat-value { font-size: 1.3rem; font-weight: 700; color: #E60005; }
-  .gh-stat-label { color: #888; font-size: 0.75rem; }
+  /* Alerts table */
+  .gh-alerts { margin-top: 1rem; }
+  .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px; font-size: 0.68rem; font-weight: 500; }
+  .b-daily { background: #e3f2fd; color: #1565c0; }
+  .b-weekly { background: #f3e5f5; color: #7b1fa2; }
+  .b-instant { background: #e8f5e9; color: #2e7d32; }
 
-  /* Notification summary */
-  .gh-alerts {
-    background: #fff; border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px; padding: 1.5rem; margin-top: 2rem;
-  }
-  .gh-alerts h3 { font-size: 1rem; font-weight: 600; margin: 0 0 1rem; }
-  .gh-alerts table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .gh-alerts th { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; color: #888; font-weight: 500; }
-  .gh-alerts td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #f5f5f5; }
-  .gh-alerts .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px; font-size: 0.7rem; font-weight: 500; }
-  .gh-alerts .badge-daily { background: #e3f2fd; color: #1565c0; }
-  .gh-alerts .badge-weekly { background: #f3e5f5; color: #7b1fa2; }
-  .gh-alerts .badge-instant { background: #e8f5e9; color: #2e7d32; }
+  /* AI section */
+  .gh-ai { background: #1a1a1a; color: #fff; border-radius: 10px; padding: 1.5rem; margin-top: 1.5rem; }
+  .gh-ai h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+  .gh-ai p { color: #aaa; font-size: 0.85rem; margin: 0 0 1rem; }
+  .gh-ai-cmds { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; }
+  .gh-ai-cmd { background: rgba(255,255,255,0.08); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.78rem; }
+  .gh-ai-cmd code { color: #ff6b6b; font-weight: 500; }
+  .gh-ai-cmd span { color: #999; margin-left: 0.25rem; }
+
+  /* Telegram */
+  .gh-tg { background: #e3f2fd; border-radius: 10px; padding: 1.25rem; margin-top: 1.5rem; }
+  .gh-tg h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .gh-tg p { font-size: 0.85rem; color: #333; margin: 0; }
+  .gh-tg ol { margin: 0.75rem 0 0; padding-left: 1.2rem; font-size: 0.85rem; }
 
   @media (max-width: 600px) {
-    .gh-grid { grid-template-columns: 1fr; }
-    .gh-stats { gap: 1rem; }
-  }
-
-  @media print {
-    .gh-card:hover { box-shadow: none; border-color: rgba(0,0,0,0.08); }
+    .gh-hero { grid-template-columns: repeat(2, 1fr); }
+    .gh-ai-cmds { grid-template-columns: 1fr; }
+    .gh-mod-head { flex-wrap: wrap; }
   }
 </style>
 
 <div class="gh">
-  <h1>DSPL ERP Guides</h1>
-  <p class="subtitle">
-    Step-by-step operating procedures for every department.
-    Click any guide to open the full SOP with process flows, checklists, and RACI matrices.
-  </p>
+  <h1>DSPL ERP Documentation</h1>
+  <p class="subtitle">Operating procedures, notifications, dashboards, and AI tools for Dynamic Servitech Private Limited</p>
 
-  <div class="gh-stats">
-    <div class="gh-stat">
-      <span class="gh-stat-value">8</span>
-      <span class="gh-stat-label">Guides</span>
+  <!-- ── Hero stats ──────────────────────────────────── -->
+  <div class="gh-hero">
+    <div class="gh-hero-card"><div class="val">8</div><div class="lbl">Process guides</div></div>
+    <div class="gh-hero-card"><div class="val">40+</div><div class="lbl">Telegram notifications</div></div>
+    <div class="gh-hero-card"><div class="val">17</div><div class="lbl">Dashboard views</div></div>
+    <div class="gh-hero-card"><div class="val">106+</div><div class="lbl">AI agent tools</div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PROCESS GUIDES                                      -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="gh-sec"><h2>Process guides</h2></div>
+
+  <!-- Sales -->
+  <div class="gh-mod" id="mod-sales">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#e8f5e9; color:#2e7d32;">&#x1f4c8;</div>
+      <div class="gh-mod-title">
+        <h3>Sales cycle</h3>
+        <p>DCR visit to payment collection — full order-to-cash workflow</p>
+      </div>
+      <a href="/sales-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
     </div>
-    <div class="gh-stat">
-      <span class="gh-stat-value">106+</span>
-      <span class="gh-stat-label">AI agent tools</span>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill">DCR auto-linking</span>
+        <span class="gh-pill">Apollo.io enrichment</span>
+        <span class="gh-pill">Quotation temperature</span>
+        <span class="gh-pill">Mark as Lost dialog</span>
+        <span class="gh-pill">Customer 360 view</span>
+        <span class="gh-pill">19 PWA screens</span>
+        <span class="gh-pill-new gh-pill">Quotation expiry alert</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Process flow</td><td>DCR visit &rarr; Lead &rarr; Opportunity &rarr; Quotation &rarr; Sales Order &rarr; Delivery Note &rarr; Sales Invoice &rarr; Payment Entry</td></tr>
+        <tr><td>Custom fields</td><td>DCR: 14 fields (visit_purpose, lead_generated, opportunity_generated, conversion_status, next_action). Quotation: temperature, lost_reason_category, lost_remark. Lead: Zone, 6 Apollo fields</td></tr>
+        <tr><td>Notifications</td><td>SO/DN/SI/PE submit (managers), SO submit (production team, items only), quotation expiry 3 days (daily 9 AM to sales owner)</td></tr>
+        <tr><td>Dashboards</td><td>sales_pipeline, customer_360, my_targets, follow_ups, customer_visits, conversion_funnel, debtor_dashboard</td></tr>
+        <tr><td>Apollo integration</td><td>Enrich button on Lead, Import from Lead list, bulk enrichment every 30 min, list sync every 30 min</td></tr>
+      </table>
     </div>
-    <div class="gh-stat">
-      <span class="gh-stat-value">7</span>
-      <span class="gh-stat-label">Daily alerts (9 AM)</span>
+  </div>
+
+  <!-- Purchase -->
+  <div class="gh-mod" id="mod-purchase">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#fff3e0; color:#e65100;">&#x1f4e6;</div>
+      <div class="gh-mod-title">
+        <h3>Purchase cycle</h3>
+        <p>Material request to supplier payment — full procure-to-pay workflow</p>
+      </div>
+      <a href="/purchase-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
     </div>
-    <div class="gh-stat">
-      <span class="gh-stat-value">10</span>
-      <span class="gh-stat-label">Slash commands</span>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill-new gh-pill">7 notifications</span>
+        <span class="gh-pill-new gh-pill">Procurement dashboard</span>
+        <span class="gh-pill-new gh-pill">Overdue PO alert</span>
+        <span class="gh-pill-new gh-pill">Unpaid PI alert</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Process flow</td><td>Material Request &rarr; Supplier Quotation &rarr; Purchase Order &rarr; Purchase Receipt &rarr; Purchase Invoice &rarr; Payment Entry (Pay)</td></tr>
+        <tr><td>Notifications</td><td>MR/PO/PR/PI submit (managers), supplier payment (managers), overdue POs + unpaid PIs (daily 9 AM)</td></tr>
+        <tr><td>Dashboards</td><td>procurement_dashboard (pending MRs, open POs, pending receipts, supplier payables), creditor_dashboard (AP aging, overdue, upcoming, recent payments)</td></tr>
+        <tr><td>Current state</td><td>1,807 suppliers in system, 0 POs (new workflow — guide includes getting-started tips)</td></tr>
+      </table>
     </div>
   </div>
 
-  <!-- ── Sales & CRM ────────────────────────────────── -->
-  <div class="gh-section"><h2>Sales & CRM</h2></div>
-  <div class="gh-grid">
-    <a href="/sales-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#e8f5e9; color:#2e7d32;">&#x1f4c8;</div>
-      <h3>Sales cycle</h3>
-      <p>DCR visits, lead management, Apollo enrichment, quotations, sales orders, invoicing, and payment collection.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">DCR</span>
-        <span class="gh-tag">Lead</span>
-        <span class="gh-tag">Quotation</span>
-        <span class="gh-tag">Sales Order</span>
-        <span class="gh-tag">Apollo</span>
+  <!-- Manufacturing -->
+  <div class="gh-mod" id="mod-mfg">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#e3f2fd; color:#1565c0;">&#x2699;&#xFE0F;</div>
+      <div class="gh-mod-title">
+        <h3>Manufacturing</h3>
+        <p>Production planning, work orders, and BOM management for 8 product lines</p>
       </div>
-    </a>
+      <a href="/manufacturing-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill">246 active BOMs</span>
+        <span class="gh-pill">SO access control</span>
+        <span class="gh-pill-new gh-pill">WO submit/complete alert</span>
+        <span class="gh-pill-new gh-pill">Overdue WO alert</span>
+        <span class="gh-pill-new gh-pill">Improved dashboard</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Process flow</td><td>Sales Order &rarr; Production Plan &rarr; Work Order &rarr; Material Issue &rarr; Manufacture &rarr; Finished Goods &rarr; Delivery</td></tr>
+        <tr><td>Products</td><td>ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT, TPS — 246 active BOMs with BK*/BL* item codes</td></tr>
+        <tr><td>Notifications</td><td>WO submitted (production team), WO completed (managers), manufacture entry (production), production plan (production), overdue WOs (daily 9 AM)</td></tr>
+        <tr><td>Access control</td><td>Manufacturing User/Manager: read-only SO access, 54 financial fields hidden. Items + qty + delivery date visible, no prices</td></tr>
+        <tr><td>BOM rules</td><td>NEVER cancel submitted BOMs. Rate fixes: Update Cost. Structural changes: BOM Update Tool</td></tr>
+        <tr><td>Dashboards</td><td>production_dashboard (active WOs, overdue WOs, stock levels, draft BOMs), dispatch_tracker</td></tr>
+      </table>
+    </div>
   </div>
 
-  <!-- ── Operations ──────────────────────────────────── -->
-  <div class="gh-section"><h2>Operations</h2></div>
-  <div class="gh-grid">
-    <a href="/purchase-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#fff3e0; color:#e65100;">&#x1f4e6;</div>
-      <h3>Purchase cycle</h3>
-      <p>Material requests, purchase orders, goods receipt, supplier invoices, and payments. Includes getting-started tips.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Material Request</span>
-        <span class="gh-tag">PO</span>
-        <span class="gh-tag">Receipt</span>
-        <span class="gh-tag">Supplier Payment</span>
+  <!-- Inventory -->
+  <div class="gh-mod" id="mod-inv">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#f3e5f5; color:#7b1fa2;">&#x1f4cb;</div>
+      <div class="gh-mod-title">
+        <h3>Inventory</h3>
+        <p>Stock entries, warehouse management, and reconciliation across 14 warehouses</p>
       </div>
-    </a>
-
-    <a href="/manufacturing-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#e3f2fd; color:#1565c0;">&#x2699;</div>
-      <h3>Manufacturing</h3>
-      <p>Production planning, work orders, material issue, manufacture entries, and BOM management rules.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Work Order</span>
-        <span class="gh-tag">BOM</span>
-        <span class="gh-tag">Stock Entry</span>
-        <span class="gh-tag">Production Plan</span>
+      <a href="/inventory-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill">6,502 items</span>
+        <span class="gh-pill">14 warehouses</span>
+        <span class="gh-pill-new gh-pill">Stock entry notifications</span>
+        <span class="gh-pill-new gh-pill">/stock command</span>
       </div>
-    </a>
-
-    <a href="/inventory-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#f3e5f5; color:#7b1fa2;">&#x1f4cb;</div>
-      <h3>Inventory</h3>
-      <p>Stock entries (receipt, issue, transfer), reconciliation, warehouse management, and key stock reports.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Stock Entry</span>
-        <span class="gh-tag">Reconciliation</span>
-        <span class="gh-tag">Warehouses</span>
-      </div>
-    </a>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Stock Entry types</td><td>Material Receipt (in), Material Issue (out), Material Transfer, Manufacture, Repack</td></tr>
+        <tr><td>Key warehouses</td><td>Stores - DSPL (main), Finished Goods - DSPL, Work In Progress - DSPL</td></tr>
+        <tr><td>Notifications</td><td>Stock Entry submit for Receipt/Issue/Transfer (managers), Manufacture type (production team)</td></tr>
+        <tr><td>AI tools</td><td><code>/stock BKA01001</code> — check stock across all warehouses via chat</td></tr>
+      </table>
+    </div>
   </div>
 
-  <!-- ── Service & Quality ───────────────────────────── -->
-  <div class="gh-section"><h2>Service & Quality</h2></div>
-  <div class="gh-grid">
-    <a href="/complaint-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#ffebee; color:#c62828;">&#x1f6a8;</div>
-      <h3>Complaint & CAPA</h3>
-      <p>Site complaint recording, P1-P4 priority SLAs, 5-Why root cause analysis, corrective and preventive actions.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Warranty Claim</span>
-        <span class="gh-tag">CAPA</span>
-        <span class="gh-tag">RCA</span>
-        <span class="gh-tag">SLA</span>
+  <!-- Complaints & CAPA -->
+  <div class="gh-mod" id="mod-capa">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#ffebee; color:#c62828;">&#x1f6a8;</div>
+      <div class="gh-mod-title">
+        <h3>Site complaints & CAPA</h3>
+        <p>Complaint recording, priority SLAs, root cause analysis, corrective and preventive actions</p>
       </div>
-    </a>
-
-    <a href="/quality-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#e0f2f1; color:#00695c;">&#x2705;</div>
-      <h3>Quality inspection</h3>
-      <p>Incoming, in-process, and outgoing inspections. Pass/fail criteria, rejection escalation, and CAPA linking.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Incoming</span>
-        <span class="gh-tag">Outgoing</span>
-        <span class="gh-tag">In-Process</span>
-        <span class="gh-tag">CAPA link</span>
+      <a href="/complaint-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill-new gh-pill">CAPA DocType</span>
+        <span class="gh-pill-new gh-pill">13 custom fields</span>
+        <span class="gh-pill-new gh-pill">SLA auto-calculation</span>
+        <span class="gh-pill-new gh-pill">SLA breach alert</span>
+        <span class="gh-pill-new gh-pill">CAPA overdue alert</span>
       </div>
-    </a>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Process flow</td><td>Complaint received &rarr; Log Warranty Claim &rarr; Set priority (P1-P4) &rarr; Diagnose &rarr; Fix &rarr; 5-Why RCA &rarr; CAPA &rarr; Close &rarr; 30-day review</td></tr>
+        <tr><td>CAPA DocType</td><td>Naming: CAPA-.YYYY.-.#####. 5-Why fields, corrective action, preventive action, effectiveness review. Submittable. Status: Open &rarr; In Progress &rarr; Completed &rarr; Verified Effective / Reopened</td></tr>
+        <tr><td>Priority SLAs</td><td>P1 Safety: respond 24h, resolve 48h. P2 Down: 48h/5d. P3 Degraded: 5d/10d. P4 Minor: 15d/20d. Auto-calculated on save</td></tr>
+        <tr><td>Custom fields</td><td>Warranty Claim: priority, response_due_date, resolution_due_date, site_contact_name/phone, rca_category (8 options), rca_details, capa_reference, first_response_date</td></tr>
+        <tr><td>Notifications</td><td>New complaint (managers), SLA breach (daily 9 AM), CAPA overdue (daily 9 AM), CAPA reopened (managers)</td></tr>
+        <tr><td>Dashboards</td><td>breakdown_log (open claims, in-progress, resolved), service_dashboard</td></tr>
+      </table>
+    </div>
   </div>
 
-  <!-- ── Finance & HR ────────────────────────────────── -->
-  <div class="gh-section"><h2>Finance & HR</h2></div>
-  <div class="gh-grid">
-    <a href="/finance-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#fce4ec; color:#ad1457;">&#x1f4b0;</div>
-      <h3>Finance</h3>
-      <p>Invoicing, payment entries, journal entries, bank reconciliation, month-end close, and draft cleanup guide.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Sales Invoice</span>
-        <span class="gh-tag">Payment</span>
-        <span class="gh-tag">Bank Recon</span>
-        <span class="gh-tag">Period Close</span>
+  <!-- Quality -->
+  <div class="gh-mod" id="mod-qi">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#e0f2f1; color:#00695c;">&#x2705;</div>
+      <div class="gh-mod-title">
+        <h3>Quality inspection</h3>
+        <p>Incoming, in-process, and outgoing inspections with CAPA integration</p>
       </div>
-    </a>
-
-    <a href="/hr-guide" class="gh-card">
-      <div class="gh-card-icon" style="background:#e8eaf6; color:#283593;">&#x1f465;</div>
-      <h3>HR & Expenses</h3>
-      <p>Leave applications, expense claims with budget caps, salary slips, GPS attendance, and advance requests.</p>
-      <div class="gh-topics">
-        <span class="gh-tag">Leave</span>
-        <span class="gh-tag">Expenses</span>
-        <span class="gh-tag">Attendance</span>
-        <span class="gh-tag">Salary</span>
-        <span class="gh-tag">Budget</span>
+      <a href="/quality-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill-new gh-pill">QI pass/fail notification</span>
+        <span class="gh-pill-new gh-pill">Rejection escalation</span>
+        <span class="gh-pill">Linked to CAPA</span>
       </div>
-    </a>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Inspection types</td><td>Incoming (Purchase Receipt), In-Process (Stock Entry), Outgoing (Delivery Note)</td></tr>
+        <tr><td>Readings</td><td>Specification, value, status (Accepted/Rejected), min/max values for objective pass/fail</td></tr>
+        <tr><td>Notifications</td><td>QI Accepted (production team), QI Rejected (production + managers — escalation)</td></tr>
+        <tr><td>CAPA link</td><td>Rejected inspections trigger root cause investigation via CAPA workflow</td></tr>
+      </table>
+    </div>
   </div>
 
-  <!-- ── Notification summary ────────────────────────── -->
+  <!-- Finance -->
+  <div class="gh-mod" id="mod-fin">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#fce4ec; color:#ad1457;">&#x1f4b0;</div>
+      <div class="gh-mod-title">
+        <h3>Finance</h3>
+        <p>Invoicing, payments, bank reconciliation, and month-end close process</p>
+      </div>
+      <a href="/finance-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill-new gh-pill">Overdue SI alert</span>
+        <span class="gh-pill-new gh-pill">Draft cleanup reminder</span>
+        <span class="gh-pill-new gh-pill">JE notification</span>
+        <span class="gh-pill-new gh-pill">Creditor dashboard</span>
+        <span class="gh-pill-alert gh-pill">1,017 draft SIs need action</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Process flow</td><td>Sales Invoice &rarr; Payment Entry &rarr; Bank Reconciliation &rarr; Period Closing Voucher</td></tr>
+        <tr><td>Notifications</td><td>SI/PE/JE submit (managers/accounts), overdue SIs 7+ days (daily 9 AM to sales owners + accounts), draft reminder (Monday 9 AM)</td></tr>
+        <tr><td>Dashboards</td><td>revenue_dashboard (invoiced, collected, outstanding, monthly trend), debtor_dashboard (AR aging, overdue), creditor_dashboard (AP aging, overdue, upcoming)</td></tr>
+        <tr><td>Critical action</td><td>1,017 draft Sales Invoices and 267 draft Payment Entries need to be submitted or deleted — see guide for cleanup steps</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- HR -->
+  <div class="gh-mod" id="mod-hr">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#e8eaf6; color:#283593;">&#x1f465;</div>
+      <div class="gh-mod-title">
+        <h3>HR & Expenses</h3>
+        <p>Leave management, expense claims, salary slips, GPS attendance, budget tracking</p>
+      </div>
+      <a href="/hr-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill">Leave approvals</span>
+        <span class="gh-pill">Budget caps (80%/100%)</span>
+        <span class="gh-pill">GPS check-in/out</span>
+        <span class="gh-pill-new gh-pill">/leave command</span>
+        <span class="gh-pill-new gh-pill">/approvals command</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Leave</td><td>5 types (Casual, Compensatory, LWP, Privilege, Sick). Apply via PWA. Approvers notified via Telegram. Status notification on approve/reject</td></tr>
+        <tr><td>Expenses</td><td>6 types (Travel, Food, Calls, Medical, Accommodation, Other). Budget cap: Rs 25K/month senior, Rs 15K/month others. Warning at 80%, escalation at 100% (soft enforcement)</td></tr>
+        <tr><td>Attendance</td><td>GPS-based check-in/out via PWA. Accuracy indicator (green &#8804;20m). Duplicate prevention via idempotency keys</td></tr>
+        <tr><td>AI tools</td><td><code>/leave</code> — check balance. <code>/approvals</code> — approve/reject pending items via chat</td></tr>
+        <tr><td>Notifications</td><td>Leave submit (approvers), approve/reject (employee), expense submit/approve (managers/employee), advance submit (managers), budget 100% alert (direct manager)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- AUTOMATED ALERTS                                    -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="gh-sec"><h2>Automated Telegram alerts</h2></div>
+  <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">All notifications are delivered via the Vaishali Telegram bot. Link your account at <a href="/field" style="color:#E60005;">dgoc.logstop.com/field</a> &rarr; Profile &rarr; Connect Telegram.</p>
+
   <div class="gh-alerts">
-    <h3>Automated alerts</h3>
     <table>
-      <thead>
-        <tr><th>Alert</th><th>Schedule</th><th>Recipients</th></tr>
-      </thead>
+      <thead><tr><th style="width:40%">Alert</th><th style="width:25%">Schedule</th><th>Recipients</th></tr></thead>
       <tbody>
-        <tr><td>Complaint SLA breach</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
-        <tr><td>CAPA overdue</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
-        <tr><td>Quotation expiry (3 days)</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Sales owners + managers</td></tr>
-        <tr><td>Overdue Purchase Orders</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
-        <tr><td>Unpaid supplier invoices</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Accounts team</td></tr>
-        <tr><td>Overdue Work Orders</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Production managers</td></tr>
-        <tr><td>Overdue Sales Invoices</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Sales owners + accounts</td></tr>
-        <tr><td>Draft document reminder</td><td><span class="badge badge-weekly">Monday 9 AM</span></td><td>Managers</td></tr>
-        <tr><td>SO / DN / SI / PE submitted</td><td><span class="badge badge-instant">Instant</span></td><td>Managers</td></tr>
-        <tr><td>MR / PO / PR / PI submitted</td><td><span class="badge badge-instant">Instant</span></td><td>Managers / accounts</td></tr>
-        <tr><td>Work Order submit / complete</td><td><span class="badge badge-instant">Instant</span></td><td>Production team</td></tr>
-        <tr><td>Quality Inspection result</td><td><span class="badge badge-instant">Instant</span></td><td>Production + managers (on reject)</td></tr>
-        <tr><td>Leave / Expense / Advance</td><td><span class="badge badge-instant">Instant</span></td><td>Approvers + employees</td></tr>
+        <tr><td colspan="3" style="background:#f8f8f8; font-weight:600; font-size:0.78rem; color:#888; padding:0.5rem;">SCHEDULED ALERTS</td></tr>
+        <tr><td>Complaint SLA breach</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>CAPA overdue (past target date)</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>Quotation expiring within 3 days</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Sales owners + managers</td></tr>
+        <tr><td>Overdue Purchase Orders</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>Unpaid supplier invoices (past due)</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Accounts team</td></tr>
+        <tr><td>Overdue Work Orders</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Production managers</td></tr>
+        <tr><td>Overdue Sales Invoices (7+ days)</td><td><span class="badge b-daily">Daily 9 AM</span></td><td>Sales owners + accounts</td></tr>
+        <tr><td>Draft document cleanup (SIs + PEs)</td><td><span class="badge b-weekly">Monday 9 AM</span></td><td>Managers</td></tr>
+        <tr><td colspan="3" style="background:#f8f8f8; font-weight:600; font-size:0.78rem; color:#888; padding:0.5rem;">INSTANT NOTIFICATIONS (on document submit)</td></tr>
+        <tr><td>Sales Order submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers + production team (items only)</td></tr>
+        <tr><td>Delivery Note submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Sales Invoice submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Payment received (customer)</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Payment made (supplier)</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Material Request submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Purchase Order submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Purchase Receipt (goods received)</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Purchase Invoice submitted</td><td><span class="badge b-instant">Instant</span></td><td>Accounts team</td></tr>
+        <tr><td>Work Order submitted</td><td><span class="badge b-instant">Instant</span></td><td>Production team</td></tr>
+        <tr><td>Work Order completed</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Stock Entry (Manufacture)</td><td><span class="badge b-instant">Instant</span></td><td>Production team</td></tr>
+        <tr><td>Stock Entry (Receipt/Issue/Transfer)</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Production Plan submitted</td><td><span class="badge b-instant">Instant</span></td><td>Production team</td></tr>
+        <tr><td>Quality Inspection — accepted</td><td><span class="badge b-instant">Instant</span></td><td>Production team</td></tr>
+        <tr><td>Quality Inspection — rejected</td><td><span class="badge b-instant">Instant</span></td><td>Production + managers</td></tr>
+        <tr><td>New Warranty Claim</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Journal Entry submitted</td><td><span class="badge b-instant">Instant</span></td><td>Accounts team</td></tr>
+        <tr><td>Leave Application submitted</td><td><span class="badge b-instant">Instant</span></td><td>Department approvers</td></tr>
+        <tr><td>Leave approved/rejected</td><td><span class="badge b-instant">Instant</span></td><td>Employee</td></tr>
+        <tr><td>Expense Claim submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>Expense budget at 100%</td><td><span class="badge b-instant">Instant</span></td><td>Direct manager</td></tr>
+        <tr><td>Employee Advance submitted</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>CAPA reopened (recurrence)</td><td><span class="badge b-instant">Instant</span></td><td>Managers</td></tr>
       </tbody>
     </table>
   </div>
 
-  <p style="color: #999; font-size: 0.8rem; text-align: center; margin-top: 2rem;">
-    Dynamic Servitech Private Limited &mdash; April 2026<br>
-    Vaishali AI agent: ask anything via the chat at <a href="/field" style="color: #E60005;">dgoc.logstop.com/field</a>
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- AI AGENT                                            -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="gh-sec"><h2>Vaishali AI agent</h2></div>
+  <div class="gh-ai">
+    <h3>Ask anything via chat</h3>
+    <p>106+ tools across 13 categories. Access via <a href="/field" style="color:#ff6b6b;">dgoc.logstop.com/field</a> &rarr; Chat. Role-based access: users, managers, and admins see different tools.</p>
+    <div class="gh-ai-cmds">
+      <div class="gh-ai-cmd"><code>/today</code> <span>Daily action items</span></div>
+      <div class="gh-ai-cmd"><code>/pipeline</code> <span>Sales pipeline</span></div>
+      <div class="gh-ai-cmd"><code>/customer</code> <span>Customer 360</span></div>
+      <div class="gh-ai-cmd"><code>/quotation</code> <span>Find/create quotes</span></div>
+      <div class="gh-ai-cmd"><code>/follow-up</code> <span>Overdue follow-ups</span></div>
+      <div class="gh-ai-cmd"><code>/report</code> <span>Quick reports</span></div>
+      <div class="gh-ai-cmd"><code>/dcr</code> <span>DCR summary</span></div>
+      <div class="gh-ai-cmd"><code>/leave</code> <span>Leave balance</span></div>
+      <div class="gh-ai-cmd"><code>/approvals</code> <span>Pending approvals</span></div>
+      <div class="gh-ai-cmd"><code>/stock</code> <span>Stock availability</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- TELEGRAM SETUP                                      -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="gh-tg">
+    <h3>Connect your Telegram to receive ERP notifications</h3>
+    <p>All alerts above are delivered via the Vaishali Telegram bot. Link your account in 3 steps:</p>
+    <ol>
+      <li>Open <a href="/field" style="color:#1565c0; font-weight:500;">dgoc.logstop.com/field</a> and go to <strong>Profile</strong></li>
+      <li>Tap <strong>Connect Telegram</strong> — this opens the Vaishali bot in Telegram</li>
+      <li>Press <strong>Start</strong> in Telegram — done. You'll start receiving notifications immediately.</li>
+    </ol>
+  </div>
+
+  <p style="color: #bbb; font-size: 0.75rem; text-align: center; margin-top: 2.5rem;">
+    Dynamic Servitech Private Limited &mdash; Version 1.0, April 2026
   </p>
 </div>
 {% endblock %}
