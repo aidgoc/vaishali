@@ -23,13 +23,21 @@ def setup():
     cleanup_old_number_cards()
     create_number_cards()
     create_charts()
-    # Commit so link validation finds the newly created cards/charts
     frappe.db.commit()
-    update_dspl_sales_workspace()
-    create_dspl_operations_workspace()
-    create_dspl_finance_workspace()
+    # Remove old separate workspaces — replaced by unified /guides page
+    remove_old_workspaces()
     frappe.db.commit()
     print("DSPL workspace setup complete!")
+
+
+def remove_old_workspaces():
+    """Remove the 3 old separate DSPL workspaces. Guides are now at /guides."""
+    for ws_name in ["DSPL Sales", "DSPL Operations", "DSPL Finance"]:
+        if frappe.db.exists("Workspace", ws_name):
+            frappe.delete_doc("Workspace", ws_name, force=True, ignore_permissions=True)
+            print(f"  Removed workspace: {ws_name}")
+        else:
+            print(f"  Workspace already removed: {ws_name}")
 
 
 def cleanup_old_number_cards():

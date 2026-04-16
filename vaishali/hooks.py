@@ -116,10 +116,9 @@ module_config = [
         "type": "module",
         "items": [
             {
-                "label": "Workflows Guide",
-                "icon": "octicon octicon-workflow",
-                "route": "/app/dspl-workflows",
-                "roles": ["System Manager"]
+                "label": "ERP Guides",
+                "icon": "octicon octicon-book",
+                "route": "/guides",
             }
         ]
     }
