@@ -80,6 +80,9 @@ doc_events = {
     "Production Plan": {
         "on_submit": "vaishali.notifications.on_production_plan_submit",
     },
+    "Journal Entry": {
+        "on_submit": "vaishali.notifications.on_journal_entry_submit",
+    },
     "Leave Application": {
         "on_submit": "vaishali.notifications.on_leave_application_submit",
         "on_update": "vaishali.notifications.on_leave_application_update",
@@ -131,6 +134,10 @@ scheduler_events = {
             "vaishali.notifications.check_overdue_purchase_orders",
             "vaishali.notifications.check_pending_purchase_invoices",
             "vaishali.notifications.check_overdue_work_orders",
+            "vaishali.notifications.check_overdue_sales_invoices",
+        ],
+        "0 9 * * 1": [
+            "vaishali.notifications.check_draft_documents_reminder",
         ],
     },
 }

@@ -555,3 +555,109 @@ def check_overdue_work_orders():
     msg = f"Overdue Work Orders ({len(overdue)}):\n" + "\n".join(lines)
     for emp_id in production_staff:
         _notify(emp_id, msg)
+
+
+# ── Finance Notifications ───────────────────────────────────
+
+
+def on_journal_entry_submit(doc, method):
+    """Notify accounts team when a Journal Entry is submitted."""
+    accounts_staff = _get_users_with_role("Accounts Manager")
+    if not accounts_staff:
+        accounts_staff = _get_managers()
+
+    msg = (
+        f"Journal Entry {doc.name} submitted\n"
+        f"Entry type: {doc.voucher_type}\n"
+        f"Total debit: ₹{doc.total_debit:,.0f}\n"
+        f"Remark: {(doc.remark or '')[:200]}"
+    )
+    for emp_id in accounts_staff:
+        _notify(emp_id, msg)
+
+
+# ── Scheduled: Finance Alerts ───────────────────────────────
+
+
+def check_overdue_sales_invoices():
+    """Run daily at 9 AM. Alert sales owners about overdue Sales Invoices (7+ days past due)."""
+    from frappe.utils import today, date_diff, add_days
+
+    today_date = today()
+    threshold = add_days(today_date, -7)
+
+    overdue = frappe.get_all(
+        "Purchase Invoice" if False else "Sales Invoice",
+        filters={
+            "docstatus": 1,
+            "outstanding_amount": [">", 0],
+            "due_date": ["<", threshold],
+        },
+        fields=["name", "customer_name", "outstanding_amount", "due_date", "owner"],
+        order_by="due_date asc",
+        limit_page_length=50,
+    )
+
+    if not overdue:
+        return
+
+    # Notify sales owners (grouped)
+    by_owner = {}
+    for si in overdue:
+        by_owner.setdefault(si.owner, []).append(si)
+
+    for owner, invoices in by_owner.items():
+        emp_id = frappe.db.get_value("Employee", {"user_id": owner, "status": "Active"}, "name")
+        if not emp_id:
+            continue
+        lines = []
+        for si in invoices:
+            days = date_diff(today_date, si.due_date)
+            lines.append(f"  {si.name} - {si.customer_name} - ₹{si.outstanding_amount:,.0f} ({days}d overdue)")
+        msg = f"Overdue invoices ({len(invoices)}):\n" + "\n".join(lines)
+        _notify(emp_id, msg)
+
+    # Summary to accounts/managers
+    accounts_staff = _get_users_with_role("Accounts Manager", "Accounts User")
+    if not accounts_staff:
+        accounts_staff = _get_managers()
+
+    total = sum(si.outstanding_amount for si in overdue)
+    all_lines = []
+    for si in overdue[:20]:
+        days = date_diff(today_date, si.due_date)
+        all_lines.append(f"  {si.name} - {si.customer_name} - ₹{si.outstanding_amount:,.0f} ({days}d)")
+    if len(overdue) > 20:
+        all_lines.append(f"  ... and {len(overdue) - 20} more")
+
+    msg = (
+        f"Overdue Sales Invoices ({len(overdue)}) - "
+        f"Total: ₹{total:,.0f}:\n" + "\n".join(all_lines)
+    )
+    for emp_id in accounts_staff:
+        _notify(emp_id, msg)
+
+
+def check_draft_documents_reminder():
+    """Run weekly (Monday 9 AM). Remind about draft SIs and PEs that need action."""
+    draft_si = frappe.db.count("Sales Invoice", {"docstatus": 0})
+    draft_pe = frappe.db.count("Payment Entry", {"docstatus": 0})
+
+    if draft_si == 0 and draft_pe == 0:
+        return
+
+    managers = _get_managers()
+    lines = []
+    if draft_si:
+        lines.append(f"  Draft Sales Invoices: {draft_si}")
+    if draft_pe:
+        lines.append(f"  Draft Payment Entries: {draft_pe}")
+
+    msg = (
+        "Weekly finance cleanup reminder:\n" +
+        "\n".join(lines) +
+        "\n\nDraft documents don't create GL entries. "
+        "Submit or delete to keep your books accurate."
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)

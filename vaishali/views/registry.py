@@ -808,6 +808,61 @@ VIEWS = {
     },
 
     # ═══════════════════════════════════════════════════════════════
+    # CREDITOR DASHBOARD — Supplier payables and aging
+    # ═══════════════════════════════════════════════════════════════
+    "creditor_dashboard": {
+        "description": "Supplier payables — outstanding, overdue, recent payments",
+        "context_doctype": None,
+        "sections": {
+            "accounts": ["aging_report", "overdue_payables", "upcoming_payments", "recent_payments"],
+            "purchase": ["overdue_payables", "upcoming_payments"],
+            "manager": ["aging_report", "overdue_payables", "upcoming_payments", "recent_payments"],
+            "admin": ["*"],
+        },
+        "section_defs": {
+            "aging_report": {
+                "report": "Accounts Payable Summary",
+                "filters": {"company": COMPANY, "ageing_based_on": "Due Date"},
+            },
+            "overdue_payables": {
+                "doctype": "Purchase Invoice",
+                "fields": ["name", "supplier_name", "grand_total",
+                           "outstanding_amount", "due_date", "status"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["outstanding_amount", ">", 0],
+                    ["due_date", "<", "today"],
+                ],
+                "order_by": "due_date asc",
+                "limit": 50,
+            },
+            "upcoming_payments": {
+                "doctype": "Purchase Invoice",
+                "fields": ["name", "supplier_name", "grand_total",
+                           "outstanding_amount", "due_date"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["outstanding_amount", ">", 0],
+                    ["due_date", ">=", "today"],
+                ],
+                "order_by": "due_date asc",
+                "limit": 50,
+            },
+            "recent_payments": {
+                "doctype": "Payment Entry",
+                "fields": ["name", "party_name", "paid_amount",
+                           "posting_date", "mode_of_payment", "reference_no"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["payment_type", "=", "Pay"],
+                ],
+                "order_by": "posting_date desc",
+                "limit": 20,
+            },
+        },
+    },
+
+    # ═══════════════════════════════════════════════════════════════
     # CONVERSION FUNNEL — Visits to Wins
     # ═══════════════════════════════════════════════════════════════
     "conversion_funnel": {

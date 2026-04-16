@@ -1,0 +1,449 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Finance Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "&#9744; "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Finance Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Accounts Process & Cleanup Playbook</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#sales-invoice">Sales Invoice</a></li>
+      <li><a href="#pe-receive">Payment Entry (Receive)</a></li>
+      <li><a href="#pe-pay">Payment Entry (Pay)</a></li>
+      <li><a href="#journal-entry">Journal Entry</a></li>
+      <li><a href="#bank-reconciliation">Bank Reconciliation</a></li>
+      <li><a href="#period-closing">Period Closing</a></li>
+      <li><a href="#dashboards">Dashboards and reports</a></li>
+      <li><a href="#raci">Who does what (RACI)</a></li>
+      <li><a href="#notifications">Telegram notifications</a></li>
+      <li><a href="#draft-cleanup">Fixing the draft problem</a></li>
+      <li><a href="#month-end">Month-end close checklist</a></li>
+      <li><a href="#tips">Tips</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    The finance cycle in ERPNext follows four stages: <strong>Sales Invoice</strong> (bill the customer)
+    &rarr; <strong>Payment Entry</strong> (record what they paid) &rarr; <strong>Bank Reconciliation</strong>
+    (match payments to bank statements) &rarr; <strong>Period Closing Voucher</strong> (close the month).
+  </p>
+  <p>
+    Each stage depends on <strong>submitted</strong> documents. A draft document is invisible to the
+    accounting engine &mdash; it creates no General Ledger (GL) entry, does not appear in receivables
+    or payables, and is excluded from every financial report.
+  </p>
+
+  <div class="warning">
+    DSPL currently has <strong>1,017 draft Sales Invoices</strong> and <strong>267 draft Payment Entries</strong>.
+    Because these were never submitted, the system shows no GL entries for them, outstanding amounts are wrong,
+    aging reports are meaningless, and bank reconciliation cannot work. Fixing this is the single highest-impact
+    action for the finance function.
+  </div>
+
+  <h3>Key roles</h3>
+  <table>
+    <tr><th>Role</th><th>What they can do</th></tr>
+    <tr><td>Accounts User</td><td>Create, submit, and amend Sales Invoices, Payment Entries, and Journal Entries</td></tr>
+    <tr><td>Accounts Manager</td><td>Everything above + Period Closing Voucher, bank reconciliation, report access, cost center management</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Delivery Note / Sales Order
+     |
+     v
+[SALES INVOICE]  -- submit --> GL entry created (Debtors Dr, Revenue Cr)
+     |                         Customer outstanding increases
+     v
+[PAYMENT ENTRY]  -- submit --> GL entry created (Bank/Cash Dr, Debtors Cr)
+     |                         Customer outstanding decreases
+     v
+[BANK RECONCILIATION]  -----> Match PE reference_no with bank statement
+     |                         Confirms money actually arrived
+     v
+[PERIOD CLOSING VOUCHER] ---> Close the month
+                               Transfer P&L balance to Retained Earnings
+                               Prevents backdated entries</div>
+
+  <div class="tip">
+    The entire chain breaks if documents stay in draft. A draft Sales Invoice means no receivable is recorded.
+    A draft Payment Entry means the payment is invisible. Both must be submitted for accounting to work.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="sales-invoice">3. Sales Invoice</h2>
+
+  <div class="step-card">
+    <h3>Create and submit a Sales Invoice</h3>
+    <div class="who">Who: Accounts User &nbsp;|&nbsp; Where: Accounts > Sales Invoice > New</div>
+    <p>
+      A Sales Invoice should be created from a <strong>Sales Order</strong> or <strong>Delivery Note</strong>
+      (recommended for audit trail). On submit, the system creates a GL entry that records the receivable
+      and notifies managers.
+    </p>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Customer</td><td>Select from dropdown</td><td>Reliance Industries Ltd</td></tr>
+      <tr><td>Items</td><td>Product, qty, rate (auto-fills from SO/DN)</td><td>ACD-100 x 2 @ &#8377;1,50,000</td></tr>
+      <tr><td>Taxes</td><td>GST template (auto from item tax)</td><td>GST 18%</td></tr>
+      <tr><td>Due Date</td><td>When payment is expected</td><td>2026-05-15</td></tr>
+      <tr><td>Payment Terms</td><td>Net 30 / 50% Advance etc.</td><td>Net 30</td></tr>
+    </table>
+
+    <h3>What happens on submit</h3>
+    <ul>
+      <li>GL entry: <strong>Debtors (Dr)</strong> &rarr; <strong>Revenue (Cr)</strong></li>
+      <li>Customer outstanding amount increases</li>
+      <li>Managers notified via Telegram</li>
+      <li>Invoice appears in Accounts Receivable report</li>
+    </ul>
+
+    <h3>Overdue alerts</h3>
+    <p>
+      If a submitted Sales Invoice remains unpaid 7 days past its due date, the system sends a
+      <strong>daily alert</strong> to the sales owner and accounts team until it is paid or written off.
+    </p>
+  </div>
+
+  <div class="warning">
+    Draft Sales Invoices do NOT create GL entries. They do not appear as receivables. The customer's
+    outstanding balance stays at zero. This is why DSPL's current receivables data is unreliable &mdash;
+    1,017 invoices are sitting in draft.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="pe-receive">4. Payment Entry (Receive)</h2>
+
+  <div class="step-card">
+    <h3>Record a customer payment</h3>
+    <div class="who">Who: Accounts User &nbsp;|&nbsp; Where: Create from Sales Invoice ("Make Payment Entry" button)</div>
+    <p>
+      Best practice: open the submitted Sales Invoice and click <strong>Payment > Payment Entry</strong>.
+      This auto-fills the customer, amount, and links the payment to the invoice.
+    </p>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Payment Type</td><td>Receive</td><td>Receive</td></tr>
+      <tr><td>Party Type / Party</td><td>Customer / select name</td><td>Customer / Reliance Industries Ltd</td></tr>
+      <tr><td>Paid Amount</td><td>Amount received (&#8377;)</td><td>&#8377;3,54,000</td></tr>
+      <tr><td>Mode of Payment</td><td>Bank Transfer / Cash / Cheque</td><td>Bank Transfer</td></tr>
+      <tr><td>Reference No</td><td>UTR / cheque number / transaction ID</td><td>UTR123456789</td></tr>
+      <tr><td>Reference Date</td><td>Date of the bank transaction</td><td>2026-04-10</td></tr>
+    </table>
+
+    <h3>What happens on submit</h3>
+    <ul>
+      <li>GL entry: <strong>Bank/Cash (Dr)</strong> &rarr; <strong>Debtors (Cr)</strong></li>
+      <li>Customer outstanding decreases by paid amount</li>
+      <li>Managers notified via Telegram</li>
+      <li>Payment available for bank reconciliation</li>
+    </ul>
+  </div>
+
+  <div class="tip">
+    Always add the bank reference number (UTR/cheque number). Without it, bank reconciliation becomes
+    a manual guessing game.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="pe-pay">5. Payment Entry (Pay)</h2>
+
+  <div class="step-card">
+    <h3>Record a supplier payment</h3>
+    <div class="who">Who: Accounts User &nbsp;|&nbsp; Where: Create from Purchase Invoice ("Make Payment Entry" button)</div>
+    <p>
+      Best practice: open the submitted Purchase Invoice and click <strong>Payment > Payment Entry</strong>.
+      This auto-fills the supplier, amount, and links the payment to the invoice.
+    </p>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Payment Type</td><td>Pay</td><td>Pay</td></tr>
+      <tr><td>Party Type / Party</td><td>Supplier / select name</td><td>Supplier / Molex Electronics</td></tr>
+      <tr><td>Paid Amount</td><td>Amount paid (&#8377;)</td><td>&#8377;85,000</td></tr>
+      <tr><td>Mode of Payment</td><td>Bank Transfer / Cash / Cheque</td><td>Bank Transfer</td></tr>
+      <tr><td>Reference No</td><td>UTR / cheque number / transaction ID</td><td>UTR987654321</td></tr>
+    </table>
+
+    <h3>What happens on submit</h3>
+    <ul>
+      <li>GL entry: <strong>Creditors (Dr)</strong> &rarr; <strong>Bank/Cash (Cr)</strong></li>
+      <li>Supplier outstanding decreases by paid amount</li>
+      <li>Managers notified via Telegram</li>
+    </ul>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="journal-entry">6. Journal Entry</h2>
+
+  <div class="step-card">
+    <h3>Manual accounting adjustments</h3>
+    <div class="who">Who: Accounts Manager &nbsp;|&nbsp; Where: Accounts > Journal Entry > New</div>
+    <p>
+      Use Journal Entries for transactions that don't fit Sales Invoice or Payment Entry:
+      month-end accruals, write-offs, corrections, provisions, inter-company transfers.
+    </p>
+
+    <h3>Key fields</h3>
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Voucher Type</td><td>Journal Entry / Credit Note / Debit Note / Write Off</td><td>Journal Entry</td></tr>
+      <tr><td>Posting Date</td><td>Date the entry should be recorded</td><td>2026-04-30</td></tr>
+      <tr><td>Accounts table</td><td>Rows with Account, Debit, Credit amounts</td><td>Salary Expense (Dr &#8377;5,00,000) / Salary Payable (Cr &#8377;5,00,000)</td></tr>
+      <tr><td>User Remark</td><td>Description of the entry</td><td>"April salary accrual"</td></tr>
+    </table>
+
+    <h3>What happens on submit</h3>
+    <ul>
+      <li>GL entries created for each row</li>
+      <li>Accounts team notified via Telegram</li>
+      <li>Total debits must equal total credits (system enforces this)</li>
+    </ul>
+  </div>
+
+  <div class="warning">
+    Journal Entries bypass the normal document flow. Always add a clear User Remark explaining why
+    the entry was made. Auditors will ask.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="bank-reconciliation">7. Bank Reconciliation</h2>
+
+  <div class="step-card">
+    <h3>Match payments with bank statements</h3>
+    <div class="who">Who: Accounts User &nbsp;|&nbsp; Where: Accounts > Bank Reconciliation</div>
+    <ol>
+      <li>Download bank statement from your bank portal (CSV or Excel format)</li>
+      <li>Go to <strong>Accounts > Bank Reconciliation</strong></li>
+      <li>Select the <strong>Bank Account</strong> and date range</li>
+      <li>Click <strong>Get Payment Entries</strong> &mdash; shows all submitted PEs in that period</li>
+      <li>Upload the bank statement</li>
+      <li>Match each bank statement line with a Payment Entry using the <strong>Reference No</strong></li>
+      <li>For unmatched entries: investigate and create missing Payment Entries or Journal Entries</li>
+      <li>Click <strong>Reconcile</strong> to mark matched entries as cleared</li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    This is why adding Reference No (UTR/cheque number) on every Payment Entry matters &mdash;
+    the system can auto-match bank statement lines when reference numbers match.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="period-closing">8. Period Closing</h2>
+
+  <div class="step-card">
+    <h3>Close a financial period</h3>
+    <div class="who">Who: Accounts Manager &nbsp;|&nbsp; Where: Accounts > Period Closing Voucher > New</div>
+    <p>
+      A Period Closing Voucher closes a month or quarter. It transfers the net P&L balance
+      (Revenue minus Expenses) to the <strong>Retained Earnings</strong> account and prevents
+      any backdated entries into the closed period.
+    </p>
+    <ol>
+      <li>Complete all items in the <a href="#month-end">month-end close checklist</a> first</li>
+      <li>Go to <strong>Accounts > Period Closing Voucher > New</strong></li>
+      <li>Set <strong>Transaction Date</strong> (last day of the period, e.g. 2026-04-30)</li>
+      <li>Set <strong>Posting Date</strong></li>
+      <li>Select <strong>Closing Fiscal Year</strong> (e.g. 2026-27)</li>
+      <li>Select the <strong>Closing Account</strong> (Retained Earnings)</li>
+      <li>Click <strong>Save</strong>, review the P&L transfer amount, then <strong>Submit</strong></li>
+    </ol>
+  </div>
+
+  <div class="warning">
+    Do not submit a Period Closing Voucher until all Sales Invoices, Payment Entries, Purchase Invoices,
+    and Journal Entries for that period have been submitted. Once closed, you cannot post transactions
+    into that period without cancelling the closing voucher.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="dashboards">9. Dashboards and reports</h2>
+
+  <h3>PWA dashboards (field app)</h3>
+  <table>
+    <tr><th>Dashboard</th><th>What it shows</th><th>Access</th></tr>
+    <tr><td>Revenue Dashboard</td><td>Invoiced vs collected vs outstanding for the FY</td><td>dgoc.logstop.com/field#/dashboard/revenue</td></tr>
+    <tr><td>Debtor Dashboard</td><td>Aging report, overdue invoices, recent payments</td><td>dgoc.logstop.com/field#/dashboard/debtors</td></tr>
+    <tr><td>Creditor Dashboard</td><td>Supplier payables, overdue, upcoming payments</td><td>View Engine (desk)</td></tr>
+  </table>
+
+  <h3>DSPL Finance workspace (desk)</h3>
+  <table>
+    <tr><th>Component</th><th>Details</th></tr>
+    <tr><td>Number Cards (3)</td><td>Unpaid invoices count, overdue amount, payments received this month</td></tr>
+    <tr><td>Charts (2)</td><td>Monthly revenue trend (bar), monthly collections trend (line)</td></tr>
+    <tr><td>Shortcuts</td><td>Quick access to Sales Invoice, Payment Entry, Journal Entry lists</td></tr>
+  </table>
+
+  <h3>Key ERPNext reports</h3>
+  <table>
+    <tr><th>Report</th><th>Use for</th><th>Path</th></tr>
+    <tr><td>Accounts Receivable</td><td>Who owes us money, aging buckets (30/60/90 days)</td><td>Accounts > Accounts Receivable</td></tr>
+    <tr><td>Accounts Payable</td><td>What we owe suppliers</td><td>Accounts > Accounts Payable</td></tr>
+    <tr><td>General Ledger</td><td>All GL entries for any account or party</td><td>Accounts > General Ledger</td></tr>
+    <tr><td>Trial Balance</td><td>All account balances at a point in time</td><td>Accounts > Trial Balance</td></tr>
+    <tr><td>Profit and Loss Statement</td><td>Revenue minus expenses for a period</td><td>Accounts > Profit and Loss Statement</td></tr>
+    <tr><td>Balance Sheet</td><td>Assets, liabilities, equity snapshot</td><td>Accounts > Balance Sheet</td></tr>
+  </table>
+
+  <div class="warning">
+    These reports only include <strong>submitted</strong> documents. Draft invoices and draft payments
+    will not appear in any report. This is why submitting documents is non-negotiable.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="raci">10. Who does what (RACI)</h2>
+
+  <table>
+    <tr><th>Step</th><th style="color:#E60005">Responsible<br>(does it)</th><th>Accountable<br>(owns it)</th><th>Consulted</th><th>Informed</th></tr>
+    <tr><td>Sales Invoice</td><td>Accounts User</td><td>Accounts Manager</td><td>Sales</td><td>Management</td></tr>
+    <tr><td>Payment Entry</td><td>Accounts User</td><td>Accounts Manager</td><td>&mdash;</td><td>Management</td></tr>
+    <tr><td>Journal Entry</td><td>Accounts Manager</td><td>MD</td><td>Auditor</td><td>&mdash;</td></tr>
+    <tr><td>Bank Reconciliation</td><td>Accounts User</td><td>Accounts Manager</td><td>&mdash;</td><td>Management</td></tr>
+    <tr><td>Period Close</td><td>Accounts Manager</td><td>MD</td><td>Auditor</td><td>All Dept Heads</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="notifications">11. Telegram notifications</h2>
+
+  <table>
+    <tr><th>Event</th><th>Who receives</th><th>When</th></tr>
+    <tr><td>Sales Invoice submitted</td><td>Accounts Manager, Sales Owner</td><td>On submit</td></tr>
+    <tr><td>Payment Entry submitted (Receive)</td><td>Accounts Manager</td><td>On submit</td></tr>
+    <tr><td>Payment Entry submitted (Pay)</td><td>Accounts Manager</td><td>On submit</td></tr>
+    <tr><td>Journal Entry submitted</td><td>Accounts Manager</td><td>On submit</td></tr>
+    <tr><td>Overdue Sales Invoices</td><td>Sales Owner, Accounts Team</td><td>Daily (7+ days past due)</td></tr>
+    <tr><td>Draft document reminder</td><td>Accounts Manager</td><td>Weekly (Monday morning)</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="draft-cleanup">12. Fixing the draft problem</h2>
+
+  <div class="warning">
+    DSPL has <strong>1,017 draft Sales Invoices</strong> and <strong>267 draft Payment Entries</strong> that
+    have never been submitted. Until these are resolved, all financial reports, outstanding amounts, and
+    aging data are unreliable.
+  </div>
+
+  <div class="step-card">
+    <h3>Step-by-step cleanup process</h3>
+    <div class="who">Who: Accounts Manager + Accounts User &nbsp;|&nbsp; Estimated time: 2&ndash;3 weeks</div>
+    <ol>
+      <li>Go to <strong>Accounts > Sales Invoice</strong> list</li>
+      <li>Filter: <strong>Status = Draft</strong>, sort by <strong>Posting Date</strong> (oldest first)</li>
+      <li>For each draft, decide:
+        <ul>
+          <li><strong>Real invoice?</strong> &rarr; Check that all mandatory fields are filled (customer, items, taxes, due date). Fix any missing fields. Then click <strong>Submit</strong>.</li>
+          <li><strong>Test / duplicate / invalid?</strong> &rarr; Click <strong>Menu > Delete</strong>.</li>
+          <li><strong>Unsure?</strong> &rarr; Check if a submitted version already exists for the same customer + amount. If yes, delete the draft.</li>
+        </ul>
+      </li>
+      <li>Repeat for all 1,017 draft Sales Invoices</li>
+      <li>Then move to <strong>Payment Entry</strong> list, filter <strong>Status = Draft</strong></li>
+      <li>Same process: review, submit valid ones, delete invalid ones</li>
+      <li>After cleanup: run <strong>Accounts Receivable</strong> report &mdash; outstanding amounts are now accurate</li>
+      <li>Run <strong>Trial Balance</strong> &mdash; revenue and receivable balances are now correct</li>
+    </ol>
+  </div>
+
+  <div class="warning">
+    Draft Sales Invoices with missing mandatory fields (customer, items, posting date, company) will
+    throw a validation error on submit. Those fields must be filled in before the invoice can be submitted.
+  </div>
+
+  <div class="tip">
+    Work in batches of 50&ndash;100 per day. After each batch, spot-check the Accounts Receivable report
+    to confirm the submitted invoices are now showing correct outstanding amounts.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="month-end">13. Month-end close checklist</h2>
+
+  <ul class="checklist">
+    <li>All Sales Invoices for the month submitted (zero drafts for the period)</li>
+    <li>All Payment Entries for the month submitted</li>
+    <li>All Purchase Invoices for the month submitted</li>
+    <li>Journal Entries for accruals and provisions posted and submitted</li>
+    <li>Bank reconciliation completed for all bank accounts</li>
+    <li>Review Accounts Receivable report &mdash; follow up on 30+ day overdue</li>
+    <li>Review Accounts Payable report &mdash; plan supplier payments for next month</li>
+    <li>Review Trial Balance &mdash; investigate any unusual account balances</li>
+    <li>Period Closing Voucher created and submitted</li>
+  </ul>
+
+  <div class="tip">
+    DSPL's fiscal year runs April to March. Period closing should happen by the 10th of the following
+    month (e.g. April close by 10 May). This gives time to collect late invoices and receipts.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="tips">14. Tips</h2>
+
+  <div class="step-card">
+    <h3>Best practices for the accounts team</h3>
+    <ul>
+      <li><strong>Always create SI from DN/SO</strong> (not standalone) &mdash; maintains the full audit trail from order to delivery to invoice</li>
+      <li><strong>Always add bank reference number on Payment Entries</strong> &mdash; UTR, cheque number, or transaction ID. Without it, bank reconciliation is manual guesswork</li>
+      <li><strong>Submit documents on the same day they are created</strong> &mdash; never let drafts accumulate. A draft is invisible to accounting</li>
+      <li><strong>Review the debtor dashboard weekly</strong> &mdash; focus on invoices that are 60+ days overdue. Escalate to sales for follow-up</li>
+      <li><strong>Run bank reconciliation at least monthly</strong> &mdash; ideally weekly. Catching discrepancies early is much easier than at year-end</li>
+      <li><strong>Use Payment Terms templates</strong> &mdash; set up standard terms (Net 30, 50% Advance + Balance on Delivery) so due dates calculate automatically</li>
+      <li><strong>Never delete a submitted document</strong> &mdash; cancel it instead. Deleted documents leave no audit trail; cancelled ones preserve history</li>
+      <li><strong>Check outstanding before dispatching</strong> &mdash; review customer outstanding in the debtor dashboard before approving new dispatches for customers with overdue balances</li>
+    </ul>
+  </div>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 &mdash; April 2026 &mdash; Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/finance-guide
+  </p>
+</div>
+{% endblock %}
