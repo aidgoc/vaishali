@@ -1,0 +1,266 @@
+{% extends "templates/web.html" %}
+
+{% block title %}DSPL ERP Guides{% endblock %}
+
+{% block page_content %}
+<style>
+  .gh { max-width: 1000px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; }
+  .gh h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.25rem; }
+  .gh .subtitle { color: #666; margin-bottom: 2rem; line-height: 1.5; }
+
+  /* Guide cards grid */
+  .gh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+
+  .gh-card {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .gh-card:hover { border-color: #E60005; box-shadow: 0 2px 12px rgba(230,0,5,0.08); text-decoration: none; color: inherit; }
+
+  .gh-card-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .gh-card h3 { font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .gh-card p { font-size: 0.85rem; color: #666; margin: 0; line-height: 1.5; }
+
+  .gh-card .gh-topics { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
+  .gh-card .gh-tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    background: #f5f5f5;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  /* Section headers */
+  .gh-section { margin-top: 2.5rem; margin-bottom: 1rem; }
+  .gh-section h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    margin: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* Quick stats bar */
+  .gh-stats {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    background: #fafafa; border-radius: 10px;
+    padding: 1rem 1.5rem; margin-bottom: 2rem;
+    font-size: 0.85rem;
+  }
+  .gh-stat { display: flex; flex-direction: column; gap: 0.15rem; }
+  .gh-stat-value { font-size: 1.3rem; font-weight: 700; color: #E60005; }
+  .gh-stat-label { color: #888; font-size: 0.75rem; }
+
+  /* Notification summary */
+  .gh-alerts {
+    background: #fff; border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px; padding: 1.5rem; margin-top: 2rem;
+  }
+  .gh-alerts h3 { font-size: 1rem; font-weight: 600; margin: 0 0 1rem; }
+  .gh-alerts table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .gh-alerts th { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; color: #888; font-weight: 500; }
+  .gh-alerts td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #f5f5f5; }
+  .gh-alerts .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px; font-size: 0.7rem; font-weight: 500; }
+  .gh-alerts .badge-daily { background: #e3f2fd; color: #1565c0; }
+  .gh-alerts .badge-weekly { background: #f3e5f5; color: #7b1fa2; }
+  .gh-alerts .badge-instant { background: #e8f5e9; color: #2e7d32; }
+
+  @media (max-width: 600px) {
+    .gh-grid { grid-template-columns: 1fr; }
+    .gh-stats { gap: 1rem; }
+  }
+
+  @media print {
+    .gh-card:hover { box-shadow: none; border-color: rgba(0,0,0,0.08); }
+  }
+</style>
+
+<div class="gh">
+  <h1>DSPL ERP Guides</h1>
+  <p class="subtitle">
+    Step-by-step operating procedures for every department.
+    Click any guide to open the full SOP with process flows, checklists, and RACI matrices.
+  </p>
+
+  <div class="gh-stats">
+    <div class="gh-stat">
+      <span class="gh-stat-value">8</span>
+      <span class="gh-stat-label">Guides</span>
+    </div>
+    <div class="gh-stat">
+      <span class="gh-stat-value">106+</span>
+      <span class="gh-stat-label">AI agent tools</span>
+    </div>
+    <div class="gh-stat">
+      <span class="gh-stat-value">7</span>
+      <span class="gh-stat-label">Daily alerts (9 AM)</span>
+    </div>
+    <div class="gh-stat">
+      <span class="gh-stat-value">10</span>
+      <span class="gh-stat-label">Slash commands</span>
+    </div>
+  </div>
+
+  <!-- ── Sales & CRM ────────────────────────────────── -->
+  <div class="gh-section"><h2>Sales & CRM</h2></div>
+  <div class="gh-grid">
+    <a href="/sales-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#e8f5e9; color:#2e7d32;">&#x1f4c8;</div>
+      <h3>Sales cycle</h3>
+      <p>DCR visits, lead management, Apollo enrichment, quotations, sales orders, invoicing, and payment collection.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">DCR</span>
+        <span class="gh-tag">Lead</span>
+        <span class="gh-tag">Quotation</span>
+        <span class="gh-tag">Sales Order</span>
+        <span class="gh-tag">Apollo</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- ── Operations ──────────────────────────────────── -->
+  <div class="gh-section"><h2>Operations</h2></div>
+  <div class="gh-grid">
+    <a href="/purchase-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#fff3e0; color:#e65100;">&#x1f4e6;</div>
+      <h3>Purchase cycle</h3>
+      <p>Material requests, purchase orders, goods receipt, supplier invoices, and payments. Includes getting-started tips.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Material Request</span>
+        <span class="gh-tag">PO</span>
+        <span class="gh-tag">Receipt</span>
+        <span class="gh-tag">Supplier Payment</span>
+      </div>
+    </a>
+
+    <a href="/manufacturing-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#e3f2fd; color:#1565c0;">&#x2699;</div>
+      <h3>Manufacturing</h3>
+      <p>Production planning, work orders, material issue, manufacture entries, and BOM management rules.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Work Order</span>
+        <span class="gh-tag">BOM</span>
+        <span class="gh-tag">Stock Entry</span>
+        <span class="gh-tag">Production Plan</span>
+      </div>
+    </a>
+
+    <a href="/inventory-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#f3e5f5; color:#7b1fa2;">&#x1f4cb;</div>
+      <h3>Inventory</h3>
+      <p>Stock entries (receipt, issue, transfer), reconciliation, warehouse management, and key stock reports.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Stock Entry</span>
+        <span class="gh-tag">Reconciliation</span>
+        <span class="gh-tag">Warehouses</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- ── Service & Quality ───────────────────────────── -->
+  <div class="gh-section"><h2>Service & Quality</h2></div>
+  <div class="gh-grid">
+    <a href="/complaint-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#ffebee; color:#c62828;">&#x1f6a8;</div>
+      <h3>Complaint & CAPA</h3>
+      <p>Site complaint recording, P1-P4 priority SLAs, 5-Why root cause analysis, corrective and preventive actions.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Warranty Claim</span>
+        <span class="gh-tag">CAPA</span>
+        <span class="gh-tag">RCA</span>
+        <span class="gh-tag">SLA</span>
+      </div>
+    </a>
+
+    <a href="/quality-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#e0f2f1; color:#00695c;">&#x2705;</div>
+      <h3>Quality inspection</h3>
+      <p>Incoming, in-process, and outgoing inspections. Pass/fail criteria, rejection escalation, and CAPA linking.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Incoming</span>
+        <span class="gh-tag">Outgoing</span>
+        <span class="gh-tag">In-Process</span>
+        <span class="gh-tag">CAPA link</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- ── Finance & HR ────────────────────────────────── -->
+  <div class="gh-section"><h2>Finance & HR</h2></div>
+  <div class="gh-grid">
+    <a href="/finance-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#fce4ec; color:#ad1457;">&#x1f4b0;</div>
+      <h3>Finance</h3>
+      <p>Invoicing, payment entries, journal entries, bank reconciliation, month-end close, and draft cleanup guide.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Sales Invoice</span>
+        <span class="gh-tag">Payment</span>
+        <span class="gh-tag">Bank Recon</span>
+        <span class="gh-tag">Period Close</span>
+      </div>
+    </a>
+
+    <a href="/hr-guide" class="gh-card">
+      <div class="gh-card-icon" style="background:#e8eaf6; color:#283593;">&#x1f465;</div>
+      <h3>HR & Expenses</h3>
+      <p>Leave applications, expense claims with budget caps, salary slips, GPS attendance, and advance requests.</p>
+      <div class="gh-topics">
+        <span class="gh-tag">Leave</span>
+        <span class="gh-tag">Expenses</span>
+        <span class="gh-tag">Attendance</span>
+        <span class="gh-tag">Salary</span>
+        <span class="gh-tag">Budget</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- ── Notification summary ────────────────────────── -->
+  <div class="gh-alerts">
+    <h3>Automated alerts</h3>
+    <table>
+      <thead>
+        <tr><th>Alert</th><th>Schedule</th><th>Recipients</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Complaint SLA breach</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>CAPA overdue</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>Quotation expiry (3 days)</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Sales owners + managers</td></tr>
+        <tr><td>Overdue Purchase Orders</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>Unpaid supplier invoices</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Accounts team</td></tr>
+        <tr><td>Overdue Work Orders</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Production managers</td></tr>
+        <tr><td>Overdue Sales Invoices</td><td><span class="badge badge-daily">Daily 9 AM</span></td><td>Sales owners + accounts</td></tr>
+        <tr><td>Draft document reminder</td><td><span class="badge badge-weekly">Monday 9 AM</span></td><td>Managers</td></tr>
+        <tr><td>SO / DN / SI / PE submitted</td><td><span class="badge badge-instant">Instant</span></td><td>Managers</td></tr>
+        <tr><td>MR / PO / PR / PI submitted</td><td><span class="badge badge-instant">Instant</span></td><td>Managers / accounts</td></tr>
+        <tr><td>Work Order submit / complete</td><td><span class="badge badge-instant">Instant</span></td><td>Production team</td></tr>
+        <tr><td>Quality Inspection result</td><td><span class="badge badge-instant">Instant</span></td><td>Production + managers (on reject)</td></tr>
+        <tr><td>Leave / Expense / Advance</td><td><span class="badge badge-instant">Instant</span></td><td>Approvers + employees</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="color: #999; font-size: 0.8rem; text-align: center; margin-top: 2rem;">
+    Dynamic Servitech Private Limited &mdash; April 2026<br>
+    Vaishali AI agent: ask anything via the chat at <a href="/field" style="color: #E60005;">dgoc.logstop.com/field</a>
+  </p>
+</div>
+{% endblock %}
