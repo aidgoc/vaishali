@@ -604,7 +604,7 @@ def generate_telegram_token():
 
     return {
         "token": token,
-        "bot_url": f"https://t.me/DGOCerp_bot?start={token}",
+        "bot_url": f"https://t.me/HNGcode_bot?start={token}",
     }
 
 
