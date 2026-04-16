@@ -731,6 +731,67 @@ VIEWS = {
     },
 
     # ═══════════════════════════════════════════════════════════════
+    # PROCUREMENT DASHBOARD — Material Requests → POs → Receipts
+    # ═══════════════════════════════════════════════════════════════
+    "procurement_dashboard": {
+        "description": "Procurement pipeline — requests, orders, receipts, and payables",
+        "context_doctype": None,
+        "sections": {
+            "purchase": ["pending_requests", "open_orders", "pending_receipts", "supplier_payables"],
+            "accounts": ["open_orders", "supplier_payables"],
+            "manager": ["pending_requests", "open_orders", "pending_receipts", "supplier_payables"],
+            "admin": ["*"],
+        },
+        "section_defs": {
+            "pending_requests": {
+                "doctype": "Material Request",
+                "fields": ["name", "material_request_type", "transaction_date",
+                           "status", "owner", "department"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["status", "in", ["Pending", "Partially Ordered"]],
+                ],
+                "order_by": "transaction_date asc",
+                "limit": 50,
+            },
+            "open_orders": {
+                "doctype": "Purchase Order",
+                "fields": ["name", "supplier_name", "grand_total", "status",
+                           "transaction_date", "schedule_date", "per_received"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["status", "in", ["To Receive and Bill", "To Receive", "To Bill"]],
+                ],
+                "order_by": "schedule_date asc",
+                "limit": 50,
+            },
+            "pending_receipts": {
+                "doctype": "Purchase Order",
+                "fields": ["name", "supplier_name", "grand_total",
+                           "schedule_date", "per_received"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["per_received", "<", 100],
+                    ["status", "not in", ["Cancelled", "Closed"]],
+                ],
+                "order_by": "schedule_date asc",
+                "limit": 50,
+            },
+            "supplier_payables": {
+                "doctype": "Purchase Invoice",
+                "fields": ["name", "supplier_name", "grand_total",
+                           "outstanding_amount", "due_date", "status"],
+                "filters": [
+                    ["docstatus", "=", 1],
+                    ["outstanding_amount", ">", 0],
+                ],
+                "order_by": "due_date asc",
+                "limit": 50,
+            },
+        },
+    },
+
+    # ═══════════════════════════════════════════════════════════════
     # CONVERSION FUNNEL — Visits to Wins
     # ═══════════════════════════════════════════════════════════════
     "conversion_funnel": {

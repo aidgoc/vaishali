@@ -46,7 +46,10 @@ doc_events = {
         "on_submit": "vaishali.notifications.on_sales_invoice_submit",
     },
     "Payment Entry": {
-        "on_submit": "vaishali.notifications.on_payment_entry_submit",
+        "on_submit": [
+            "vaishali.notifications.on_payment_entry_submit",
+            "vaishali.notifications.on_supplier_payment_submit",
+        ],
     },
     "Customer": {
         "after_insert": "vaishali.api.linking.on_customer_created",
@@ -54,6 +57,18 @@ doc_events = {
     "Warranty Claim": {
         "validate": "vaishali.complaint.on_warranty_claim_save",
         "after_insert": "vaishali.complaint.on_warranty_claim_update",
+    },
+    "Material Request": {
+        "on_submit": "vaishali.notifications.on_material_request_submit",
+    },
+    "Purchase Order": {
+        "on_submit": "vaishali.notifications.on_purchase_order_submit",
+    },
+    "Purchase Receipt": {
+        "on_submit": "vaishali.notifications.on_purchase_receipt_submit",
+    },
+    "Purchase Invoice": {
+        "on_submit": "vaishali.notifications.on_purchase_invoice_submit",
     },
     "Leave Application": {
         "on_submit": "vaishali.notifications.on_leave_application_submit",
@@ -103,6 +118,8 @@ scheduler_events = {
             "vaishali.complaint.check_sla_breaches",
             "vaishali.complaint.check_capa_overdue",
             "vaishali.notifications.check_expiring_quotations",
+            "vaishali.notifications.check_overdue_purchase_orders",
+            "vaishali.notifications.check_pending_purchase_invoices",
         ],
     },
 }

@@ -1,0 +1,493 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Purchase Cycle Guide — DSPL{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .checklist { list-style: none; padding-left: 0; }
+  .cg .checklist li::before { content: "☐ "; font-size: 1.1em; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .print-only { display: none; }
+  @media print {
+    .cg .print-only { display: block; }
+    .cg { max-width: none; }
+    .cg .step-card { break-inside: avoid; }
+    .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Purchase Cycle Guide</h1>
+  <p class="subtitle">Dynamic Servitech Private Limited — Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#process-flow">Process flow</a></li>
+      <li><a href="#step1">Step 1: Material Request</a></li>
+      <li><a href="#step2">Step 2: Request for Quotation (optional)</a></li>
+      <li><a href="#step3">Step 3: Purchase Order</a></li>
+      <li><a href="#step4">Step 4: Purchase Receipt</a></li>
+      <li><a href="#step5">Step 5: Purchase Invoice</a></li>
+      <li><a href="#step6">Step 6: Payment Entry</a></li>
+      <li><a href="#raci">Who does what (RACI)</a></li>
+      <li><a href="#notifications">Telegram notifications</a></li>
+      <li><a href="#dashboards">Dashboards</a></li>
+      <li><a href="#getting-started">Tips for getting started</a></li>
+      <li><a href="#mistakes">Common mistakes to avoid</a></li>
+      <li><a href="#bom-costs">How purchase fixes your BOM costs</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    DSPL manufactures crane safety electronics — ACD, DRM-3400, DJ-1005, E-DASH, F-Dash, WWSI, MRT Systems, and TPS.
+    Every one of these products is built from electronic components (PCBs, sensors, capacitors, resistors, connectors, relays)
+    sourced from external suppliers. Right now, we have <strong>zero Purchase Orders</strong> in the system. This guide will help
+    you start a formal purchasing workflow that gives DSPL real benefits:
+  </p>
+  <ul>
+    <li><strong>Better pricing:</strong> PO history lets you negotiate with data — you can show a supplier exactly what you paid last time</li>
+    <li><strong>Accurate stock:</strong> Purchase Receipts update warehouse quantities automatically — no more manual stock counts</li>
+    <li><strong>Real BOM costs:</strong> Purchase prices flow into Item valuation rates, so your 246 active BOMs reflect actual costs instead of static guesses</li>
+    <li><strong>Supplier accountability:</strong> Track delivery dates, overdue orders, and rejected items per supplier</li>
+    <li><strong>Financial visibility:</strong> Know exactly what you owe suppliers and when payments are due</li>
+  </ul>
+  <p>
+    The good news: your ERPNext system already has <strong>1,807 suppliers</strong> and <strong>6,502 items</strong> loaded.
+    You are ready to start transacting today.
+  </p>
+
+  <div class="tip">
+    The full purchase cycle has 6 steps: Material Request, Supplier Quotation, Purchase Order, Purchase Receipt, Purchase Invoice,
+    and Payment Entry. Each step builds on the previous one, and ERPNext auto-fills details from the prior document so you do not
+    have to re-enter data.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="process-flow">2. Process flow</h2>
+  <div class="flow">Production / Department identifies need
+       |
+       v
+  [1. MATERIAL REQUEST] Raise a request for items needed
+       |
+       v
+  [2. RFQ] (Optional) Send to multiple suppliers, compare quotes
+       |
+       v
+  [3. PURCHASE ORDER] Approve and send order to supplier
+       |                        +--- schedule_date set
+       |                        +--- overdue alert if not received
+       v
+  [4. PURCHASE RECEIPT] Receive items into warehouse (stock increases)
+       |
+       v
+  [5. PURCHASE INVOICE] Record financial liability to supplier
+       |                        +--- overdue alert if not paid
+       v
+  [6. PAYMENT ENTRY] Pay the supplier (liability cleared)</div>
+
+  <div class="tip">
+    You do not have to follow every step every time. For urgent purchases, you can create a Purchase Order directly.
+    But the full flow gives you the best traceability and approval control.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step1">3. Step 1: Material Request</h2>
+
+  <div class="step-card">
+    <h3>Raise a request for items</h3>
+    <div class="who">Who: Production team, any department head &nbsp;|&nbsp; Where: Stock > Material Request > New</div>
+    <p>A Material Request is a formal way to say "we need these items." It does not commit you to a purchase — it starts the approval process.</p>
+    <ol>
+      <li>Go to <strong>Stock > Material Request > New</strong></li>
+      <li>Select the <strong>Purpose</strong> (type of request):</li>
+    </ol>
+
+    <table>
+      <tr><th>Purpose</th><th>When to use</th><th>Example</th></tr>
+      <tr><td><strong>Purchase</strong></td><td>You need to buy items from a supplier</td><td>Order 500 capacitors for next ACD batch</td></tr>
+      <tr><td><strong>Material Transfer</strong></td><td>Move items between warehouses</td><td>Transfer PCBs from main store to production floor</td></tr>
+      <tr><td><strong>Material Issue</strong></td><td>Consume items from stock (no purchase)</td><td>Issue components for R&D prototype</td></tr>
+      <tr><td><strong>Manufacture</strong></td><td>Produce items in-house from raw materials</td><td>Manufacture a sub-assembly using BOM</td></tr>
+    </table>
+
+    <ol start="3">
+      <li>Add items to the Items table:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Item Code</td><td>Select the item from the dropdown</td><td>BKC01001</td></tr>
+      <tr><td>Qty</td><td>How many you need</td><td>500</td></tr>
+      <tr><td>Required By</td><td>Date you need the items</td><td>2026-05-01</td></tr>
+      <tr><td>Warehouse</td><td>Where the items should go</td><td>Stores - DSPL</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Set the <strong>Department</strong> (Production, R&D, etc.)</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      On submit, managers are notified via Telegram. The procurement team can then review and create a Purchase Order from this request.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step2">4. Step 2: Request for Quotation (optional)</h2>
+
+  <div class="step-card">
+    <h3>Compare quotes from multiple suppliers</h3>
+    <div class="who">Who: Procurement &nbsp;|&nbsp; Where: Buying > Request for Quotation > New</div>
+    <p>Use this step for high-value purchases, new items, or when you want to compare pricing from multiple suppliers before committing.</p>
+    <ol>
+      <li>Go to <strong>Buying > Request for Quotation > New</strong></li>
+      <li>Add the items you need quotes for (or pull them from a Material Request using the <strong>Get Items From > Material Request</strong> button)</li>
+      <li>In the <strong>Suppliers</strong> section, add 2-3 suppliers you want to get quotes from</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+      <li>Click <strong>Send Supplier Emails</strong> to email the RFQ to all listed suppliers</li>
+      <li>When quotes come back, record them as <strong>Supplier Quotations</strong> (Buying > Supplier Quotation > New, linked to this RFQ)</li>
+      <li>Compare quotes side-by-side and select the best one</li>
+      <li>From the winning Supplier Quotation, click <strong>Make Purchase Order</strong></li>
+    </ol>
+
+    <div class="tip">
+      You can skip this step for repeat purchases where you already have a preferred supplier and an agreed price.
+      Go directly from Material Request to Purchase Order.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step3">5. Step 3: Purchase Order</h2>
+
+  <div class="step-card">
+    <h3>Place the order with a supplier</h3>
+    <div class="who">Who: Procurement &nbsp;|&nbsp; Where: Buying > Purchase Order > New</div>
+    <p>The Purchase Order is your commitment to buy. It tells the supplier what you want, how much, when, and at what price.</p>
+    <ol>
+      <li>Go to <strong>Buying > Purchase Order > New</strong></li>
+      <li>You can create a PO in three ways:
+        <ul>
+          <li><strong>From Material Request:</strong> Open the submitted MR, click <strong>Make > Purchase Order</strong> (items auto-fill)</li>
+          <li><strong>From Supplier Quotation:</strong> Open the SQ, click <strong>Make Purchase Order</strong> (items + rates auto-fill)</li>
+          <li><strong>Standalone:</strong> Create a new PO and add items manually</li>
+        </ul>
+      </li>
+      <li>Fill in the key fields:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Why it matters</th></tr>
+      <tr><td>Supplier</td><td>Select from 1,807 existing suppliers</td><td>Links to supplier address, contact, payment terms</td></tr>
+      <tr><td>Items (Item Code, Qty, Rate)</td><td>What you are ordering</td><td>Rate becomes the "Last Purchase Rate" for future reference</td></tr>
+      <tr><td>Schedule Date</td><td>Expected delivery date for each item</td><td>Enables overdue alerts if supplier misses the date</td></tr>
+      <tr><td>Payment Terms</td><td>When payment is due (e.g., Net 30)</td><td>Auto-calculates due date on the Purchase Invoice</td></tr>
+      <tr><td>Taxes and Charges</td><td>GST template (IGST 18%, CGST+SGST, etc.)</td><td>Correct tax calculation for Purchase Invoice</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+      <li>Optionally, click <strong>Print</strong> to generate a PDF and email it to the supplier</li>
+    </ol>
+
+    <div class="warning">
+      Always set the <strong>Schedule Date</strong> on every Purchase Order. Without it, the system cannot send you overdue delivery alerts.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step4">6. Step 4: Purchase Receipt</h2>
+
+  <div class="step-card">
+    <h3>Receive items into your warehouse</h3>
+    <div class="who">Who: Stores / Warehouse team &nbsp;|&nbsp; Where: Stock > Purchase Receipt > New</div>
+    <p>When items arrive from the supplier, create a Purchase Receipt. This is the moment stock increases in your warehouse.</p>
+    <ol>
+      <li>Open the submitted Purchase Order</li>
+      <li>Click <strong>Make > Purchase Receipt</strong> (all items, quantities, and rates auto-fill)</li>
+      <li>Verify the received quantities against the delivery challan:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Accepted Qty</td><td>Number of items that pass inspection</td><td>480</td></tr>
+      <tr><td>Rejected Qty</td><td>Number of items that are defective</td><td>20</td></tr>
+      <tr><td>Rejected Warehouse</td><td>Where rejected items go</td><td>Rejected - DSPL</td></tr>
+      <tr><td>Accepted Warehouse</td><td>Where good items are stored</td><td>Stores - DSPL</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Attach the supplier's delivery challan or packing slip</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      After submitting, the stock ledger updates automatically. You can check updated quantities in
+      <strong>Stock > Stock Balance</strong> or <strong>Stock > Stock Ledger</strong>.
+    </div>
+
+    <div class="warning">
+      Always create Purchase Receipts from the Purchase Order (not standalone). This maintains the link between what you
+      ordered and what you received, enabling accurate delivery tracking and supplier performance measurement.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step5">7. Step 5: Purchase Invoice</h2>
+
+  <div class="step-card">
+    <h3>Record the financial liability</h3>
+    <div class="who">Who: Accounts team &nbsp;|&nbsp; Where: Accounts > Purchase Invoice > New</div>
+    <p>The Purchase Invoice records what you owe the supplier. It is based on the supplier's bill or tax invoice.</p>
+    <ol>
+      <li>Open the submitted Purchase Receipt (or Purchase Order)</li>
+      <li>Click <strong>Make > Purchase Invoice</strong> (items, quantities, rates, and taxes auto-fill)</li>
+      <li>Verify against the supplier's invoice:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Bill No</td><td>Supplier's invoice number</td><td>INV-2026-04-0892</td></tr>
+      <tr><td>Bill Date</td><td>Date on the supplier's invoice</td><td>2026-04-20</td></tr>
+      <tr><td>Due Date</td><td>When payment is due</td><td>2026-05-20</td></tr>
+      <tr><td>Items</td><td>Verify quantities and rates match the supplier invoice</td><td>—</td></tr>
+      <tr><td>Taxes</td><td>Verify GST amounts match</td><td>IGST 18%</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Attach a scan or photo of the supplier's invoice</li>
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      On submit, the accounts team is notified via Telegram. If the invoice is not paid by the due date,
+      a daily alert fires at 9 AM to remind accounts.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="step6">8. Step 6: Payment Entry</h2>
+
+  <div class="step-card">
+    <h3>Record payment to the supplier</h3>
+    <div class="who">Who: Accounts team &nbsp;|&nbsp; Where: Accounts > Payment Entry > New</div>
+    <p>The Payment Entry records the actual payment made to the supplier. It clears the liability created by the Purchase Invoice.</p>
+    <ol>
+      <li>Open the submitted Purchase Invoice</li>
+      <li>Click <strong>Make > Payment Entry</strong> (amount, supplier, and references auto-fill)</li>
+      <li>Verify the payment details:</li>
+    </ol>
+
+    <table>
+      <tr><th>Field</th><th>What to enter</th><th>Example</th></tr>
+      <tr><td>Payment Type</td><td>Pay (auto-set when created from PI)</td><td>Pay</td></tr>
+      <tr><td>Mode of Payment</td><td>How you are paying</td><td>Bank Transfer / NEFT / Cheque</td></tr>
+      <tr><td>Paid Amount</td><td>Amount being paid (auto-filled from PI)</td><td>59,000</td></tr>
+      <tr><td>Reference No</td><td>Bank transaction reference or cheque number</td><td>UTR123456789</td></tr>
+      <tr><td>Reference Date</td><td>Date of the payment</td><td>2026-05-15</td></tr>
+    </table>
+
+    <ol start="4">
+      <li>Click <strong>Save</strong>, then <strong>Submit</strong></li>
+    </ol>
+
+    <div class="tip">
+      On submit, managers are notified via Telegram. The outstanding amount on the Purchase Invoice drops to zero (or the partial amount paid).
+      You can check all outstanding payables in <strong>Accounts > Accounts Payable</strong>.
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="raci">9. Who does what (RACI)</h2>
+
+  <table>
+    <tr><th>Step</th><th style="color:#E60005">Responsible<br>(does it)</th><th>Accountable<br>(owns it)</th><th>Consulted</th><th>Informed</th></tr>
+    <tr><td>1. Material Request</td><td>Production / Dept Head</td><td>Production Head</td><td>—</td><td>Procurement</td></tr>
+    <tr><td>2. RFQ (optional)</td><td>Procurement</td><td>Management</td><td>Production</td><td>—</td></tr>
+    <tr><td>3. Purchase Order</td><td>Procurement</td><td>Management</td><td>Production</td><td>Accounts</td></tr>
+    <tr><td>4. Purchase Receipt</td><td>Stores / Warehouse</td><td>Procurement</td><td>Quality</td><td>Production</td></tr>
+    <tr><td>5. Purchase Invoice</td><td>Accounts</td><td>Accounts Head</td><td>Procurement</td><td>Management</td></tr>
+    <tr><td>6. Payment Entry</td><td>Accounts</td><td>Management</td><td>—</td><td>Supplier</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="notifications">10. Telegram notifications</h2>
+
+  <h3>Instant notifications (on submit)</h3>
+  <table>
+    <tr><th>Event</th><th>Who gets notified</th><th>What the message includes</th></tr>
+    <tr><td>Material Request submitted</td><td>Managers, Procurement</td><td>Items requested, required-by date, department</td></tr>
+    <tr><td>Purchase Order submitted</td><td>Managers</td><td>Supplier, items, total amount, schedule date</td></tr>
+    <tr><td>Purchase Receipt submitted</td><td>Managers</td><td>Supplier, items received, accepted/rejected qty</td></tr>
+    <tr><td>Purchase Invoice submitted</td><td>Accounts team</td><td>Supplier, amount, due date</td></tr>
+    <tr><td>Payment Entry submitted</td><td>Managers</td><td>Supplier, amount paid, mode of payment</td></tr>
+  </table>
+
+  <h3>Daily alerts (9 AM)</h3>
+  <table>
+    <tr><th>Alert</th><th>Who gets it</th><th>Trigger condition</th></tr>
+    <tr><td>Overdue Purchase Order</td><td>Procurement, Managers</td><td>Schedule date has passed, no Purchase Receipt created</td></tr>
+    <tr><td>Overdue Purchase Invoice</td><td>Accounts team</td><td>Due date has passed, outstanding amount > 0</td></tr>
+    <tr><td>Pending Material Requests</td><td>Procurement</td><td>Material Request older than 3 days without a PO</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="dashboards">11. Dashboards</h2>
+
+  <div class="step-card">
+    <h3>Procurement dashboard</h3>
+    <div class="who">Where: Vaishali AI chat or Desk reports</div>
+    <p>The following views give you a real-time snapshot of your purchasing pipeline:</p>
+    <ul>
+      <li><strong>Pending Material Requests:</strong> Items requested but not yet ordered</li>
+      <li><strong>Open Purchase Orders:</strong> Orders placed but not fully received</li>
+      <li><strong>Pending Purchase Receipts:</strong> Items ordered but not yet delivered</li>
+      <li><strong>Supplier Payables:</strong> Outstanding amounts owed to each supplier</li>
+      <li><strong>Overdue Deliveries:</strong> POs past their schedule date</li>
+      <li><strong>Overdue Payments:</strong> Invoices past their due date</li>
+    </ul>
+    <p>Access these reports from the ERPNext desk:</p>
+    <ul>
+      <li><strong>Buying > Purchase Analytics</strong> — monthly purchase trends by supplier or item group</li>
+      <li><strong>Stock > Stock Balance</strong> — current warehouse quantities</li>
+      <li><strong>Accounts > Accounts Payable</strong> — outstanding supplier balances with ageing</li>
+    </ul>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="getting-started">12. Tips for getting started</h2>
+
+  <div class="step-card">
+    <h3>Your first week with formal purchasing</h3>
+    <div class="who">You are starting from zero Purchase Orders — that is perfectly fine. Here is how to begin.</div>
+    <ol>
+      <li><strong>Start with your top 10 high-value components.</strong> Pick the 10 items you buy most often or spend the most on (PCBs, load cells, display modules, relay boards). Create POs for these first.</li>
+      <li><strong>Create POs for your next production batch.</strong> When the next batch of ACD or DRM-3400 goes into production, create a Material Request for all the BOM items, then convert it to Purchase Orders.</li>
+      <li><strong>Use "Make Purchase Receipt" from PO.</strong> When items arrive, open the PO and click Make > Purchase Receipt. All items, quantities, and rates auto-fill — no re-typing needed.</li>
+      <li><strong>Use "Make Payment Entry" from PI.</strong> When you pay a supplier, open the Purchase Invoice and click Make > Payment Entry. The amount and supplier details auto-fill.</li>
+      <li><strong>Set schedule_date on every PO.</strong> This is the expected delivery date. Without it, overdue alerts will not fire and you lose visibility into late deliveries.</li>
+      <li><strong>Review the procurement dashboard weekly.</strong> Check Accounts Payable and open POs every Monday to stay on top of pending deliveries and payments.</li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    Each Purchase Order you create builds a price history for that supplier and item. After a few months, you will have
+    real data to negotiate better rates, compare suppliers, and identify price trends.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="mistakes">13. Common mistakes to avoid</h2>
+
+  <table>
+    <tr><th>Mistake</th><th>Why it is a problem</th><th>What to do instead</th></tr>
+    <tr>
+      <td>Receiving items without a PO</td>
+      <td>No record of what was ordered, no price comparison, no delivery tracking</td>
+      <td>Always create a Purchase Order first, even for small orders. Then use "Make Purchase Receipt" from the PO.</td>
+    </tr>
+    <tr>
+      <td>Not setting schedule_date on POs</td>
+      <td>Overdue delivery alerts will not fire — late shipments go unnoticed</td>
+      <td>Set the expected delivery date on every PO line item. Ask your supplier for a delivery commitment.</td>
+    </tr>
+    <tr>
+      <td>Paying a supplier without a Purchase Invoice</td>
+      <td>The financial liability is not recorded — your payables report will be wrong</td>
+      <td>Create a Purchase Invoice first (it records the liability), then create a Payment Entry from it (records the payment).</td>
+    </tr>
+    <tr>
+      <td>Creating standalone Purchase Receipts</td>
+      <td>No link to the PO — you lose traceability between what was ordered and what was received</td>
+      <td>Always create Purchase Receipts from the Purchase Order using "Make > Purchase Receipt".</td>
+    </tr>
+    <tr>
+      <td>Entering wrong rates on the PO</td>
+      <td>The "Last Purchase Rate" for the item will be wrong, affecting future BOM cost calculations</td>
+      <td>Double-check rates against the supplier quote or agreed price before submitting the PO.</td>
+    </tr>
+    <tr>
+      <td>Not recording rejected items</td>
+      <td>Rejected items still show as received stock — your inventory count will be wrong</td>
+      <td>Use the Rejected Qty field in Purchase Receipt. Rejected items go to a separate warehouse for returns.</td>
+    </tr>
+    <tr>
+      <td>Forgetting to attach supplier invoice</td>
+      <td>Hard to reconcile during audits — no proof of the original bill</td>
+      <td>Always attach a scan or photo of the supplier invoice to the Purchase Invoice in ERPNext.</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="bom-costs">14. How purchase fixes your BOM costs</h2>
+
+  <div class="step-card">
+    <h3>From static guesses to real costs</h3>
+    <div class="who">This is one of the biggest benefits of formal purchasing for DSPL.</div>
+
+    <h3>The current situation</h3>
+    <p>
+      Right now, DSPL has <strong>zero Purchase Orders</strong>. This means the Item <code>valuation_rate</code> for each of your
+      6,502 items is a manually entered static number. When a BOM calculates its cost, it uses this static rate — which may be
+      months or years out of date.
+    </p>
+
+    <h3>What changes with Purchase Orders</h3>
+    <p>
+      Every time you submit a Purchase Order, ERPNext records the <strong>Last Purchase Rate</strong> for each item.
+      Every time you submit a Purchase Receipt, ERPNext updates the item's <strong>Valuation Rate</strong> based on
+      actual purchase prices (using the weighted average method).
+    </p>
+    <p>This means your 246 active BOMs can now use real, current prices instead of guesses.</p>
+
+    <h3>How to update BOM costs</h3>
+    <ol>
+      <li>After a few Purchase Receipts, your items will have updated valuation rates</li>
+      <li>Go to <strong>Manufacturing > BOM Update Tool</strong></li>
+      <li>Select <strong>"Update latest price in all BOMs"</strong></li>
+      <li>Click <strong>Submit</strong> — all 246 BOMs recalculate their costs from real purchase prices</li>
+    </ol>
+
+    <p>You can also update a single BOM: open it and click <strong>Update Cost</strong> (works on submitted BOMs, no cancel needed).</p>
+  </div>
+
+  <div class="warning">
+    Never cancel submitted BOMs to fix rates. Instead, update the Item's valuation_rate (which happens automatically
+    via Purchase Receipts) and then use "Update Cost" on the BOM or the BOM Update Tool for bulk updates.
+  </div>
+
+  <div class="tip">
+    After 3 months of formal purchasing, you will have accurate product costs for all 8 product lines.
+    This is essential for setting competitive prices, calculating margins, and making profitable quotations.
+  </div>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 — April 2026 — Dynamic Servitech Private Limited<br>
+    Access this guide anytime at: dgoc.logstop.com/purchase-guide
+  </p>
+</div>
+{% endblock %}

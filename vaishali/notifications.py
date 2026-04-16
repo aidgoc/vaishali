@@ -276,3 +276,166 @@ def check_expiring_quotations():
     msg = f"Quotation expiry alert ({len(expiring)}):\n" + "\n".join(all_lines)
     for emp_id in managers:
         _notify(emp_id, msg)
+
+
+# ── Purchase Cycle Notifications ────────────────────────────
+
+
+def on_material_request_submit(doc, method):
+    """Notify managers when a Material Request is submitted."""
+    managers = _get_managers()
+    items_list = []
+    for item in doc.items[:10]:
+        items_list.append(f"  {item.item_name or item.item_code} x {item.qty} {item.uom}")
+    items_text = "\n".join(items_list)
+    if len(doc.items) > 10:
+        items_text += f"\n  ... and {len(doc.items) - 10} more"
+
+    msg = (
+        f"Material Request {doc.name} submitted\n"
+        f"Type: {doc.material_request_type}\n"
+        f"Requested by: {doc.owner}\n"
+        f"Items:\n{items_text}"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_purchase_order_submit(doc, method):
+    """Notify managers when a Purchase Order is submitted."""
+    managers = _get_managers()
+    msg = (
+        f"Purchase Order {doc.name} submitted\n"
+        f"Supplier: {doc.supplier_name}\n"
+        f"Amount: ₹{doc.grand_total:,.0f}\n"
+        f"Expected delivery: {doc.schedule_date or 'Not set'}"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_purchase_receipt_submit(doc, method):
+    """Notify managers when goods are received."""
+    managers = _get_managers()
+    items_list = []
+    for item in doc.items[:8]:
+        items_list.append(f"  {item.item_name or item.item_code} x {item.qty}")
+    items_text = "\n".join(items_list)
+    if len(doc.items) > 8:
+        items_text += f"\n  ... and {len(doc.items) - 8} more"
+
+    msg = (
+        f"Goods received: {doc.name}\n"
+        f"Supplier: {doc.supplier_name}\n"
+        f"Items:\n{items_text}"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def on_purchase_invoice_submit(doc, method):
+    """Notify accounts team when a Purchase Invoice is submitted."""
+    accounts_staff = _get_users_with_role("Accounts Manager", "Accounts User")
+    if not accounts_staff:
+        accounts_staff = _get_managers()
+
+    msg = (
+        f"Purchase Invoice {doc.name} submitted\n"
+        f"Supplier: {doc.supplier_name}\n"
+        f"Amount: ₹{doc.grand_total:,.0f}\n"
+        f"Due date: {doc.due_date or 'Not set'}"
+    )
+    for emp_id in accounts_staff:
+        _notify(emp_id, msg)
+
+
+def on_supplier_payment_submit(doc, method):
+    """Notify managers when a supplier payment is made."""
+    if doc.payment_type != "Pay":
+        return
+    managers = _get_managers()
+    msg = (
+        f"Supplier payment: ₹{doc.paid_amount:,.0f} to "
+        f"{doc.party_name} ({doc.name})"
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+# ── Scheduled: Purchase Alerts ──────────────────────────────
+
+
+def check_overdue_purchase_orders():
+    """Run daily at 9 AM. Alert managers about POs past expected delivery date."""
+    from frappe.utils import today, date_diff
+
+    today_date = today()
+
+    overdue = frappe.get_all(
+        "Purchase Order",
+        filters={
+            "docstatus": 1,
+            "status": ["in", ["To Receive and Bill", "To Receive"]],
+            "schedule_date": ["<", today_date],
+        },
+        fields=["name", "supplier_name", "grand_total", "schedule_date"],
+        limit_page_length=50,
+    )
+
+    if not overdue:
+        return
+
+    managers = _get_managers()
+    lines = []
+    for po in overdue:
+        days = date_diff(today_date, po.schedule_date)
+        lines.append(
+            f"  {po.name} - {po.supplier_name} - "
+            f"₹{po.grand_total:,.0f} ({days}d overdue)"
+        )
+
+    msg = f"Overdue Purchase Orders ({len(overdue)}):\n" + "\n".join(lines)
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
+def check_pending_purchase_invoices():
+    """Run daily at 9 AM. Alert accounts about unpaid Purchase Invoices past due."""
+    from frappe.utils import today, date_diff
+
+    today_date = today()
+
+    overdue = frappe.get_all(
+        "Purchase Invoice",
+        filters={
+            "docstatus": 1,
+            "outstanding_amount": [">", 0],
+            "due_date": ["<", today_date],
+        },
+        fields=["name", "supplier_name", "outstanding_amount", "due_date"],
+        limit_page_length=50,
+    )
+
+    if not overdue:
+        return
+
+    accounts_staff = _get_users_with_role("Accounts Manager", "Accounts User")
+    if not accounts_staff:
+        accounts_staff = _get_managers()
+
+    lines = []
+    total = 0
+    for pi in overdue:
+        days = date_diff(today_date, pi.due_date)
+        total += pi.outstanding_amount
+        lines.append(
+            f"  {pi.name} - {pi.supplier_name} - "
+            f"₹{pi.outstanding_amount:,.0f} ({days}d overdue)"
+        )
+
+    msg = (
+        f"Overdue Supplier Payments ({len(overdue)}) - "
+        f"Total: ₹{total:,.0f}:\n" + "\n".join(lines)
+    )
+    for emp_id in accounts_staff:
+        _notify(emp_id, msg)
