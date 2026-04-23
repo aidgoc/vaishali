@@ -189,6 +189,7 @@
     var el = UI.el;
     var emp = Auth.getEmployee() || {};
     var empDept = (emp.department || '').toLowerCase();
+    var empDesig = (emp.designation || '').toLowerCase();
 
     // GPS state
     var gps = { lat: null, lng: null, accuracy: null };
@@ -237,11 +238,18 @@
     var salesPurposes = ['Cold Call / New Enquiry', 'Lead Follow-up', 'Opportunity Follow-up', 'Quotation Follow-up', 'Order Follow-up', 'Recovery', 'Relationship Building'];
     var servicePurposes = ['Installation', 'Breakdown / Repair', 'Preventive Maintenance (AMC)', 'Commissioning', 'Training', 'Warranty Service', 'Inspection'];
 
-    var isSales = empDept.indexOf('sales') >= 0 || empDept.indexOf('marketing') >= 0;
-    var isService = empDept.indexOf('service') >= 0 || empDept.indexOf('support') >= 0;
-    var isOther = !isSales && !isService;
+    function matchAny(s, needles) {
+      for (var i = 0; i < needles.length; i++) { if (s.indexOf(needles[i]) >= 0) return true; }
+      return false;
+    }
+    var salesHints = ['sales', 'marketing'];
+    var serviceHints = ['service', 'support', 'maintenance', 'technician', 'installation', 'commissioning', 'field engineer'];
+    var isSales = matchAny(empDept, salesHints) || matchAny(empDesig, salesHints);
+    var isService = matchAny(empDept, serviceHints) || matchAny(empDesig, serviceHints);
+    // Sales wins if both somehow match (e.g. a "Sales & Service" dept)
+    if (isSales && isService) isService = false;
 
-    // Visit type — auto-detected for sales/service, choosable for others
+    // Pre-select based on detection; user can always override via the picker below
     var visitType = isSales ? 'sales' : isService ? 'service' : null;
 
     var visitPurposeField = UI.select('Visit Purpose', salesPurposes);
@@ -249,33 +257,28 @@
     var servicePurposeField = UI.select('Service Purpose', servicePurposes);
     var servicePurposeSelect = servicePurposeField.querySelector('select');
 
-    // Visit type picker (only shown if department is neither sales nor service)
-    var typePickerEl = null;
-    if (isOther) {
-      var salesBtn = UI.btn('Sales Visit', { type: 'outline', onClick: function () { setVisitType('sales'); } });
-      var serviceBtn = UI.btn('Service Visit', { type: 'outline', onClick: function () { setVisitType('service'); } });
-      typePickerEl = el('div', { style: { marginBottom: '16px' } }, [
-        el('div', { className: 'section-heading', textContent: 'Visit type' }),
-        el('div', { style: { display: 'flex', gap: '8px' } }, [salesBtn, serviceBtn])
-      ]);
-    }
+    // Visit type picker — always shown so users can override a wrong auto-detection
+    var salesBtn = UI.btn('Sales Visit', { type: 'outline', onClick: function () { setVisitType('sales'); } });
+    var serviceBtn = UI.btn('Service Visit', { type: 'outline', onClick: function () { setVisitType('service'); } });
+    var typePickerEl = el('div', { style: { marginBottom: '16px' } }, [
+      el('div', { className: 'section-heading', textContent: 'Visit type' }),
+      el('div', { style: { display: 'flex', gap: '8px' } }, [salesBtn, serviceBtn])
+    ]);
 
     function setVisitType(type) {
       visitType = type;
+      var active = type === 'sales' ? salesBtn : serviceBtn;
+      var inactive = type === 'sales' ? serviceBtn : salesBtn;
+      active.classList.add('btn-primary-styled'); active.classList.remove('btn-outline');
+      inactive.classList.add('btn-outline'); inactive.classList.remove('btn-primary-styled');
       if (type === 'sales') {
         visitPurposeField.style.display = 'block';
         servicePurposeField.style.display = 'none';
         serviceFields.style.display = 'none';
-        if (typePickerEl) {
-          typePickerEl.querySelector('.section-heading').textContent = 'Sales visit';
-        }
       } else {
         visitPurposeField.style.display = 'none';
         servicePurposeField.style.display = 'block';
         serviceFields.style.display = 'block';
-        if (typePickerEl) {
-          typePickerEl.querySelector('.section-heading').textContent = 'Service visit';
-        }
       }
     }
 
@@ -295,16 +298,10 @@
       }
     });
 
-    // Auto-hide based on detected department
-    if (isSales) {
-      servicePurposeField.style.display = 'none';
-    } else if (isService) {
-      visitPurposeField.style.display = 'none';
-    } else {
-      // Other departments — hide both until type is chosen
-      visitPurposeField.style.display = 'none';
-      servicePurposeField.style.display = 'none';
-    }
+    // Initial visibility — both hidden until a type is chosen (final selection applied
+    // after serviceFields is defined below, since setVisitType touches it)
+    visitPurposeField.style.display = 'none';
+    servicePurposeField.style.display = 'none';
 
     // Customer search
     var customerDisplay = el('div', { style: { display: 'none', marginTop: '8px' } });
@@ -490,13 +487,16 @@
     });
 
     // Service-specific fields (only visible for service visits)
-    var serviceFields = el('div', { style: { display: isService ? 'block' : 'none' } });
+    var serviceFields = el('div', { style: { display: 'none' } });
     var equipmentInput = UI.textInput('Equipment name');
     var serialInput = UI.textInput('Serial number');
     var jobCardInput = UI.textInput('Job card number');
     serviceFields.appendChild(UI.field('Equipment', equipmentInput));
     serviceFields.appendChild(UI.field('Serial No', serialInput));
     serviceFields.appendChild(UI.field('Job Card No', jobCardInput));
+
+    // Apply pre-selected visit type now that serviceFields exists
+    if (visitType) setVisitType(visitType);
 
     // Error display
     var errorBox = el('div', { style: { display: 'none' } });
@@ -534,8 +534,8 @@
       errorBox.style.display = 'none';
       var valid = true;
 
-      // For other departments, must pick visit type first
-      if (isOther && !visitType) {
+      // Must pick visit type
+      if (!visitType) {
         showError('Please select a visit type (Sales or Service).');
         return;
       }
