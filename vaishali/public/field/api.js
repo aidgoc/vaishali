@@ -440,9 +440,9 @@
 
       return fetch(path, fetchOpts).then(function (resp) {
         clearTimeout(timer);
-        // Auto-recovery: only on 401 (unauthorized = expired session). NOT 403 (forbidden = no permission)
+        // Auto-recovery on 401 (explicit unauthorized)
         if (resp.status === 401 && path.indexOf('/login') === -1) {
-          console.warn('[API] Auth failed (' + resp.status + ') — clearing session');
+          console.warn('[API] Auth failed (401) — clearing session');
           clearSession().then(function () {
             location.hash = '#/login';
             location.reload();
@@ -451,9 +451,22 @@
         }
         return resp.json().then(function (data) {
           // Normalize Frappe {message: X} → {data: X, message: X}
-          // This way res.data.data always works regardless of source
           if (data && data.message !== undefined && data.data === undefined) {
             data.data = data.message;
+          }
+          // Frappe returns 403 (not 401) when a logged-out user hits a whitelisted
+          // method ("Function X is not whitelisted" / "Login to access"). Detect that
+          // specific shape and trigger re-login; leave real 403 permission denials alone.
+          if (resp.status === 403 && path.indexOf('/login') === -1) {
+            var blob = JSON.stringify(data || {});
+            if (blob.indexOf('is not whitelisted') !== -1 || blob.indexOf('Login to access') !== -1) {
+              console.warn('[API] Session expired (403 not whitelisted) — clearing session');
+              clearSession().then(function () {
+                location.hash = '#/login';
+                location.reload();
+              });
+              return { data: null, status: resp.status, error: 'Session expired' };
+            }
           }
           return { data: data, status: resp.status };
         }).catch(function () {
