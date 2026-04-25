@@ -40,7 +40,7 @@ frappe.ui.form.on("Communication", {
         // Highlight draft status — warn prominently if no recipient
         if (!frm.doc.recipients || !frm.doc.recipients.trim()) {
             frm.set_intro(
-                "⚠️ <b>No recipient email address.</b> Add one in the Recipients field before sending.",
+                "<b>No recipient email address.</b> Add one in the Recipients field before sending.",
                 "red"
             );
         } else {

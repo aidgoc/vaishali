@@ -943,11 +943,7 @@ def on_warranty_claim_status_update(doc, method):
     if not doc.has_value_changed("status"):
         return
 
-    contact_email = (
-        frappe.db.get_value("Warranty Claim", doc.name, "contact_email")
-        or frappe.db.get_value("Customer", doc.customer, "email_id")
-        or ""
-    )
+    contact_email = _get_customer_email(doc.customer)
 
     body = f"""Dear {doc.customer_name or doc.customer},
 

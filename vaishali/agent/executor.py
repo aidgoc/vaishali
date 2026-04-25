@@ -538,12 +538,20 @@ def _execute_send_email(inp, user_role="user", employee_name="", user=None, **kw
     sender = sender_map.get(reference_doctype, "sales@dgoc.in")
 
     if user_role in ("admin", "manager"):
+        attachments = []
+        if reference_doctype and reference_name:
+            try:
+                pdf_content = frappe.get_print(reference_doctype, reference_name, as_pdf=True)
+                attachments = [{"fname": f"{reference_name}.pdf", "fcontent": pdf_content}]
+            except Exception:
+                pass
         frappe.sendmail(
             recipients=[r.strip() for r in recipients.split(",") if r.strip()],
             sender=sender,
             subject=subject,
             message=message,
             cc=[c.strip() for c in cc.split(",") if c.strip()] if cc else [],
+            attachments=attachments,
             reference_doctype=reference_doctype or None,
             reference_name=reference_name or None,
         )
