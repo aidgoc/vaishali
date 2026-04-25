@@ -29,7 +29,10 @@ doc_events = {
         "on_update": "vaishali.api.linking.on_dcr_update",
     },
     "Quotation": {
-        "on_submit": "vaishali.api.linking.link_quotation_to_dcr",
+        "on_submit": [
+            "vaishali.api.linking.link_quotation_to_dcr",
+            "vaishali.notifications.on_quotation_submit",
+        ],
         "on_update_after_submit": "vaishali.api.linking.on_quotation_status_change",
     },
     "Sales Order": {
@@ -37,13 +40,17 @@ doc_events = {
             "vaishali.api.linking.link_sales_order_to_dcr",
             "vaishali.notifications.on_sales_order_submit",
             "vaishali.notifications.on_sales_order_submit_production",
+            "vaishali.notifications.on_sales_order_email_draft",
         ],
     },
     "Delivery Note": {
         "on_submit": "vaishali.notifications.on_delivery_note_submit",
     },
     "Sales Invoice": {
-        "on_submit": "vaishali.notifications.on_sales_invoice_submit",
+        "on_submit": [
+            "vaishali.notifications.on_sales_invoice_submit",
+            "vaishali.notifications.on_sales_invoice_email_draft",
+        ],
     },
     "Payment Entry": {
         "on_submit": [
@@ -62,7 +69,10 @@ doc_events = {
         "on_submit": "vaishali.notifications.on_material_request_submit",
     },
     "Purchase Order": {
-        "on_submit": "vaishali.notifications.on_purchase_order_submit",
+        "on_submit": [
+            "vaishali.notifications.on_purchase_order_submit",
+            "vaishali.notifications.on_purchase_order_email_draft",
+        ],
     },
     "Purchase Receipt": {
         "on_submit": "vaishali.notifications.on_purchase_receipt_submit",

@@ -769,3 +769,132 @@ def check_draft_documents_reminder():
     )
     for emp_id in managers:
         _notify(emp_id, msg)
+
+
+# ── Document Email Drafts ────────────────────────────────────────
+
+def on_quotation_submit(doc, method):
+    """Create draft email to customer when Quotation is submitted."""
+    if doc.quotation_to == "Customer":
+        email = _get_customer_email(doc.party_name)
+    else:
+        email = frappe.db.get_value("Lead", doc.party_name, "email_id") or ""
+
+    body = f"""Dear {doc.contact_person or doc.party_name},
+
+Please find attached our Quotation {doc.name} dated {doc.transaction_date}.
+
+Total Amount: ₹{doc.grand_total:,.2f}
+Valid Till: {doc.valid_till or 'As discussed'}
+
+Kindly review and revert with your confirmation at your earliest convenience.
+
+Warm regards,
+Dynamic Servitech Private Limited
++91-20-XXXXXXXX | sales@dgoc.in"""
+
+    _create_email_draft(
+        reference_doctype="Quotation",
+        reference_name=doc.name,
+        recipients=email,
+        subject=f"Quotation {doc.name} — Dynamic Servitech",
+        body=body,
+        sender="sales@dgoc.in",
+    )
+
+
+def on_sales_order_email_draft(doc, method):
+    """Create draft SO confirmation email to customer."""
+    email = _get_customer_email(doc.customer)
+
+    body = f"""Dear {doc.contact_person or doc.customer_name},
+
+Thank you for your order. We are pleased to confirm Sales Order {doc.name}.
+
+Order Date: {doc.transaction_date}
+Delivery Date: {doc.delivery_date or 'To be confirmed'}
+Total Amount: ₹{doc.grand_total:,.2f}
+
+We will keep you informed about the dispatch schedule.
+
+Warm regards,
+Dynamic Servitech Private Limited"""
+
+    _create_email_draft(
+        reference_doctype="Sales Order",
+        reference_name=doc.name,
+        recipients=email,
+        subject=f"Order Confirmation — {doc.name}",
+        body=body,
+        sender="sales@dgoc.in",
+    )
+
+
+def on_sales_invoice_email_draft(doc, method):
+    """Create draft invoice email to customer."""
+    email = _get_customer_email(doc.customer)
+
+    body = f"""Dear {doc.contact_person or doc.customer_name},
+
+Please find attached Sales Invoice {doc.name} for your records.
+
+Invoice Date: {doc.posting_date}
+Due Date: {doc.due_date or 'Upon receipt'}
+Amount Due: ₹{doc.outstanding_amount:,.2f}
+
+Payment details:
+Account Name: Dynamic Servitech Private Limited
+Bank: [Your bank details here]
+
+Please feel free to contact us for any queries.
+
+Warm regards,
+Dynamic Servitech Private Limited
+accounts@dgoc.in"""
+
+    _create_email_draft(
+        reference_doctype="Sales Invoice",
+        reference_name=doc.name,
+        recipients=email,
+        subject=f"Invoice {doc.name} — Dynamic Servitech",
+        body=body,
+        sender="accounts@dgoc.in",
+    )
+
+
+def on_purchase_order_email_draft(doc, method):
+    """Create draft PO email to supplier."""
+    email = _get_supplier_email(doc.supplier)
+
+    items_lines = "\n".join(
+        f"  • {item.item_name} — Qty: {item.qty} {item.uom} @ ₹{item.rate:,.2f}"
+        for item in doc.items[:10]
+    )
+    if len(doc.items) > 10:
+        items_lines += f"\n  ... and {len(doc.items) - 10} more items"
+
+    body = f"""Dear {doc.supplier_name},
+
+Please find attached Purchase Order {doc.name}.
+
+Order Date: {doc.transaction_date}
+Expected Delivery: {doc.schedule_date or 'As discussed'}
+Total Value: ₹{doc.grand_total:,.2f}
+
+Items:
+{items_lines}
+
+Kindly acknowledge receipt and confirm delivery schedule.
+
+Warm regards,
+Dynamic Servitech Private Limited
+accounts@dgoc.in"""
+
+    _create_email_draft(
+        reference_doctype="Purchase Order",
+        reference_name=doc.name,
+        recipients=email,
+        subject=f"Purchase Order {doc.name} — Dynamic Servitech",
+        body=body,
+        sender="accounts@dgoc.in",
+    )
