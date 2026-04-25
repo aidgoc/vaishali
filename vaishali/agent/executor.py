@@ -510,6 +510,61 @@ def _check_stock(inp, **kw):
     }, default=str)
 
 
+def _execute_send_email(inp, user_role="user", employee_name="", user=None, **kw):
+    """Send an email or create a draft depending on user role."""
+    recipients = (inp.get("recipients") or "").strip()
+    subject = (inp.get("subject") or "").strip()
+    message = (inp.get("message") or "").strip()
+    cc = (inp.get("cc") or "").strip()
+    reference_doctype = inp.get("reference_doctype", "")
+    reference_name = inp.get("reference_name", "")
+
+    if not recipients or not subject or not message:
+        return json.dumps({"error": "recipients, subject, and message are all required"})
+
+    # Auto-select sender based on document type
+    sender_map = {
+        "Quotation": "sales@dgoc.in",
+        "Sales Order": "sales@dgoc.in",
+        "Lead": "sales@dgoc.in",
+        "Opportunity": "sales@dgoc.in",
+        "Sales Invoice": "accounts@dgoc.in",
+        "Purchase Order": "accounts@dgoc.in",
+        "Payment Entry": "accounts@dgoc.in",
+        "Journal Entry": "accounts@dgoc.in",
+        "Warranty Claim": "service@dgoc.in",
+        "Maintenance Visit": "service@dgoc.in",
+    }
+    sender = sender_map.get(reference_doctype, "sales@dgoc.in")
+
+    if user_role in ("admin", "manager"):
+        frappe.sendmail(
+            recipients=[r.strip() for r in recipients.split(",") if r.strip()],
+            sender=sender,
+            subject=subject,
+            message=message,
+            cc=[c.strip() for c in cc.split(",") if c.strip()] if cc else [],
+            reference_doctype=reference_doctype or None,
+            reference_name=reference_name or None,
+        )
+        return json.dumps({"success": True, "message": f"Email sent to {recipients} from {sender}"})
+
+    # User role: create a draft for manager review
+    from vaishali.notifications import _create_email_draft
+    _create_email_draft(
+        reference_doctype=reference_doctype or "Communication",
+        reference_name=reference_name or "",
+        recipients=recipients,
+        subject=subject,
+        body=message,
+        sender=sender,
+    )
+    return json.dumps({
+        "success": True,
+        "message": f"Draft email created for manager review (your role cannot send directly). Recipient: {recipients}",
+    })
+
+
 # ── Dispatch Table ────────────────────────────────────────────────
 
 TOOL_HANDLERS = {
@@ -528,6 +583,7 @@ TOOL_HANDLERS = {
     "submit_document": _submit_document,
     "cancel_document": _cancel_document,
     "delete_document": _delete_document,
+    "send_email": _execute_send_email,
     # BOM
     "amend_bom": _amend_bom,
     # View Engine
