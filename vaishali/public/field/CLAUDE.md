@@ -150,3 +150,4 @@ PWA uses clean paths like `/api/field/customers` translated to Frappe methods li
 - **Timer cleanup** — all `setInterval` must track timers and clear on `hashchange` navigation
 - **Chat layout** — overrides `#app` inline styles; must reset on navigation away
 - **Static assets** under `/assets/` cached 1 year by nginx — need `bench build --app vaishali` + restart after changes
+- **api.js path translators must be method-aware** — regex-based path rewrites (e.g. `^/api/field/dcr/[^/]+$`) match ALL methods. If client sends `PUT` but the rewrite targets a `GET`-only endpoint, Frappe ignores query params on `PUT` → `TypeError: missing required argument`. Always gate by `method` AND override `method` to match server's `@frappe.whitelist(methods=[...])` constraint.

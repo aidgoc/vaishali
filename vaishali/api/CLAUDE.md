@@ -27,6 +27,7 @@ PWA uses clean paths translated to Frappe methods in `api.js`:
 | `GET /api/field/attendance/today` | `vaishali.api.field.attendance_today` |
 | `POST /api/field/attendance` | `vaishali.api.field.create_checkin` |
 | `POST /api/field/dcr` | `vaishali.api.field.create_dcr` |
+| `PUT /api/field/dcr/{id}` | `vaishali.api.field.update_dcr` (forced to POST in api.js; partial update — `remarks` only) |
 | `POST /api/field/dcr/{id}/checkout` | `vaishali.api.field.checkout_dcr` (extracts dcr_id from path) |
 | `GET /api/field/customers` | `vaishali.api.field.get_customers` (all 1,896, no limit) |
 | `GET /api/field/view/customer_360/{id}` | View Engine (overview + addresses + contacts + transactions) |
