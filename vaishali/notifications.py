@@ -745,6 +745,44 @@ def check_overdue_sales_invoices():
     for emp_id in accounts_staff:
         _notify(emp_id, msg)
 
+    # Create email drafts for customer payment reminders (one per customer)
+    by_customer = {}
+    for si in overdue:
+        by_customer.setdefault(si.customer_name, []).append(si)
+
+    for customer_name, invoices in by_customer.items():
+        customer = frappe.db.get_value(
+            "Sales Invoice", invoices[0].name, "customer"
+        )
+        email = _get_customer_email(customer)
+        lines = "\n".join(
+            f"  • {inv.name} — ₹{inv.outstanding_amount:,.2f} (due {inv.due_date})"
+            for inv in invoices
+        )
+        total = sum(inv.outstanding_amount for inv in invoices)
+        body = f"""Dear {customer_name},
+
+This is a gentle reminder that the following invoices are outstanding:
+
+{lines}
+
+Total Outstanding: ₹{total:,.2f}
+
+Please arrange payment at your earliest convenience. If payment has already been made, kindly ignore this reminder or share the payment details with us.
+
+Warm regards,
+Dynamic Servitech Private Limited
+accounts@dgoc.in"""
+
+        _create_email_draft(
+            reference_doctype="Customer",
+            reference_name=customer,
+            recipients=email,
+            subject=f"Payment Reminder — Outstanding Invoices ({len(invoices)} invoice{'s' if len(invoices) > 1 else ''})",
+            body=body,
+            sender="accounts@dgoc.in",
+        )
+
 
 def check_draft_documents_reminder():
     """Run weekly (Monday 9 AM). Remind about draft SIs and PEs that need action."""
@@ -897,4 +935,40 @@ accounts@dgoc.in"""
         subject=f"Purchase Order {doc.name} — Dynamic Servitech",
         body=body,
         sender="accounts@dgoc.in",
+    )
+
+
+def on_warranty_claim_status_update(doc, method):
+    """Create draft email to site contact when Warranty Claim status changes."""
+    if not doc.has_value_changed("status"):
+        return
+
+    contact_email = (
+        frappe.db.get_value("Warranty Claim", doc.name, "contact_email")
+        or frappe.db.get_value("Customer", doc.customer, "email_id")
+        or ""
+    )
+
+    body = f"""Dear {doc.customer_name or doc.customer},
+
+This is an update on your service request {doc.name}.
+
+Product: {doc.item_name or doc.item_code}
+Current Status: {doc.status}
+Priority: {doc.get('priority', 'Standard')}
+
+{f'Resolution Note: {doc.resolution_details}' if doc.status == 'Resolved' else 'Our team is working on your request and will update you shortly.'}
+
+For urgent queries, please contact our service team at service@dgoc.in.
+
+Warm regards,
+Dynamic Servitech Private Limited — Service Team"""
+
+    _create_email_draft(
+        reference_doctype="Warranty Claim",
+        reference_name=doc.name,
+        recipients=contact_email,
+        subject=f"Service Request {doc.name} — Status Update: {doc.status}",
+        body=body,
+        sender="service@dgoc.in",
     )

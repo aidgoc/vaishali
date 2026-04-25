@@ -64,6 +64,7 @@ doc_events = {
     "Warranty Claim": {
         "validate": "vaishali.complaint.on_warranty_claim_save",
         "after_insert": "vaishali.complaint.on_warranty_claim_update",
+        "on_update_after_submit": "vaishali.notifications.on_warranty_claim_status_update",
     },
     "Material Request": {
         "on_submit": "vaishali.notifications.on_material_request_submit",
