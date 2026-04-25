@@ -156,6 +156,22 @@ def get_dcr(dcr_id):
 
 
 @frappe.whitelist(methods=["POST"])
+def update_dcr(dcr_id, remarks=None, **kwargs):
+    """Partial update for an ongoing DCR. Currently supports `remarks` only."""
+    emp = _get_employee()
+    doc = frappe.get_doc("Daily Call Report", dcr_id)
+    if doc.employee != emp.name:
+        frappe.throw(_("You do not have access to this visit"), frappe.PermissionError)
+    if doc.status == "Completed":
+        frappe.throw(_("Cannot update a completed visit"))
+    if remarks is not None:
+        doc.remarks = remarks
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
 def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None,
                  status="Completed", lead_generated=0, opportunity_generated=0,
                  order_received=0, discussion_remarks=None, next_action=None,

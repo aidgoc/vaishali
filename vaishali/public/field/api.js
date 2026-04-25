@@ -328,10 +328,18 @@
         body = body || {};
         body.dcr_id = decodeURIComponent(coId);
         path = '/api/method/vaishali.api.field.checkout_dcr';
+        method = 'POST'; // server endpoint is POST-only
       }
       else if (path.match(/^\/api\/field\/dcr\/[^/]+$/)) {
         var dcrId = path.replace('/api/field/dcr/', '');
-        path = '/api/method/vaishali.api.field.get_dcr?dcr_id=' + encodeURIComponent(dcrId);
+        if (method === 'PUT' || method === 'PATCH' || method === 'POST') {
+          body = body || {};
+          body.dcr_id = decodeURIComponent(dcrId);
+          path = '/api/method/vaishali.api.field.update_dcr';
+          method = 'POST';
+        } else {
+          path = '/api/method/vaishali.api.field.get_dcr?dcr_id=' + encodeURIComponent(dcrId);
+        }
       }
       else if (path === '/api/field/dcr' || path.indexOf('/api/field/dcr?') === 0) {
         if (method === 'POST') {
