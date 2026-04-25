@@ -113,6 +113,9 @@ doc_events = {
         "on_submit": "vaishali.notifications.on_employee_advance_submit",
         "on_update": "vaishali.notifications.on_employee_advance_update",
     },
+    "Communication": {
+        "after_insert": "vaishali.notifications.on_communication_receive",
+    },
 }
 
 # Fixtures

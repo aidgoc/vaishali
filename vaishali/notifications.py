@@ -972,3 +972,29 @@ Dynamic Servitech Private Limited — Service Team"""
         body=body,
         sender="service@dgoc.in",
     )
+
+
+# ── Inbound Email Notifications ──────────────────────────────────
+
+def on_communication_receive(doc, method):
+    """Notify document owner on Telegram when a customer replies by email."""
+    if doc.communication_medium != "Email" or doc.sent_or_received != "Received":
+        return
+    if not doc.reference_doctype or not doc.reference_name:
+        return
+
+    owner = frappe.db.get_value(doc.reference_doctype, doc.reference_name, "owner")
+    if not owner:
+        return
+
+    emp_id = frappe.db.get_value("Employee", {"user_id": owner, "status": "Active"}, "name")
+    if not emp_id:
+        return
+
+    sender_name = doc.sender_full_name or doc.sender or "Customer"
+    msg = (
+        f"📧 Email reply from {sender_name}\n"
+        f"Re: {doc.reference_doctype} {doc.reference_name}\n"
+        f"Subject: {doc.subject or '(no subject)'}"
+    )
+    _notify(emp_id, msg)
