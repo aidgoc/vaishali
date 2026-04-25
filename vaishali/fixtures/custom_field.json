@@ -154,5 +154,19 @@
         "insert_after": "capa_reference",
         "module": "Vaishali",
         "description": "Date service engineer was dispatched or remote diagnosis started"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Communication-vaishali_email_status",
+        "dt": "Communication",
+        "fieldname": "vaishali_email_status",
+        "fieldtype": "Select",
+        "label": "Email Status",
+        "options": "\nDraft\nSent\nDiscarded",
+        "insert_after": "email_status",
+        "in_list_view": 1,
+        "in_standard_filter": 1,
+        "search_index": 1,
+        "module": "Vaishali"
     }
 ]
