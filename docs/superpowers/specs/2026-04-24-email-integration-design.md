@@ -60,7 +60,7 @@ A filtered **Communication** list view on the ERPNext desk showing `sent_or_rece
 **Actions per row:**
 - **Send** — fires the email immediately, marks Communication as Sent
 - **Edit** — opens body for inline editing before sending
-- **Discard** — deletes the draft
+- **Discard** — marks the draft as "Discarded" (kept for audit trail; filtered out of outbox list)
 
 Reviewer is typically the Sales Manager (for sales@), Accounts Manager (for accounts@), or Service Head (for service@). No role restriction enforced in code — access is via ERPNext desk which already requires login.
 
