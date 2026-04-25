@@ -16,6 +16,7 @@ doctype_js = {
     "Quotation": "public/js/quotation.js",
     "Lead": "public/js/lead.js",
     "Customer": "public/js/customer.js",
+    "Communication": "public/js/communication.js",
 }
 
 # SPA catch-all: /field/* → www/field.py (same pattern as HRMS, CRM, Helpdesk)
