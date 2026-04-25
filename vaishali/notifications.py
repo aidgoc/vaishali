@@ -76,6 +76,60 @@ def _get_leave_approvers(employee):
     return approvers if approvers else _get_managers()
 
 
+# ── Email Draft Helpers ───────────────────────────────────────────
+
+def _get_customer_email(customer_name):
+    """Get primary email for a customer (Customer record first, then linked Contact)."""
+    email = frappe.db.get_value("Customer", customer_name, "email_id")
+    if not email:
+        contact_name = frappe.db.get_value(
+            "Dynamic Link",
+            {"link_doctype": "Customer", "link_name": customer_name, "parenttype": "Contact"},
+            "parent",
+        )
+        if contact_name:
+            email = frappe.db.get_value("Contact", contact_name, "email_id")
+    return (email or "").strip()
+
+
+def _get_supplier_email(supplier_name):
+    """Get primary email for a supplier."""
+    email = frappe.db.get_value("Supplier", supplier_name, "email_id")
+    if not email:
+        contact_name = frappe.db.get_value(
+            "Dynamic Link",
+            {"link_doctype": "Supplier", "link_name": supplier_name, "parenttype": "Contact"},
+            "parent",
+        )
+        if contact_name:
+            email = frappe.db.get_value("Contact", contact_name, "email_id")
+    return (email or "").strip()
+
+
+def _create_email_draft(reference_doctype, reference_name, recipients, subject, body, sender="sales@dgoc.in"):
+    """Create a draft Communication record in the Email Outbox.
+
+    If recipients is empty, draft is still created with a blank To field so the
+    reviewer can fill it in before sending.
+    """
+    try:
+        comm = frappe.new_doc("Communication")
+        comm.communication_type = "Communication"
+        comm.communication_medium = "Email"
+        comm.sent_or_received = "Sent"
+        comm.subject = subject
+        comm.content = body
+        comm.reference_doctype = reference_doctype
+        comm.reference_name = reference_name
+        comm.recipients = recipients
+        comm.sender = sender
+        comm.vaishali_email_status = "Draft"
+        comm.insert(ignore_permissions=True)
+        frappe.db.commit()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), f"Email draft creation failed: {reference_doctype} {reference_name}")
+
+
 # ── Leave Application ────────────────────────────────────────────
 
 def on_leave_application_submit(doc, method):
