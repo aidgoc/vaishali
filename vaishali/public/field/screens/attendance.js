@@ -51,10 +51,17 @@
     });
   }
 
+  function parseUTC(s) {
+    if (!s) return null;
+    var t = String(s).replace(' ', 'T');
+    if (!/[Z+\-]\d/.test(t)) t += 'Z';
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   function formatTime(isoString) {
-    if (!isoString) return '';
-    var d = new Date(isoString);
-    if (isNaN(d.getTime())) return '';
+    var d = parseUTC(isoString);
+    if (!d) return '';
     var h = d.getHours();
     var m = d.getMinutes();
     var ampm = h >= 12 ? 'PM' : 'AM';
@@ -63,8 +70,9 @@
   }
 
   function formatDurationLive(startISO) {
-    var start = new Date(startISO).getTime();
-    var diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
+    var d = parseUTC(startISO);
+    if (!d) return '00:00:00';
+    var diff = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
     var h = Math.floor(diff / 3600);
     var m = Math.floor((diff % 3600) / 60);
     var s = diff % 60;
@@ -72,9 +80,10 @@
   }
 
   function formatDurationHM(startISO, endISO) {
-    var start = new Date(startISO).getTime();
-    var end = new Date(endISO).getTime();
-    var diff = Math.max(0, Math.floor((end - start) / 1000));
+    var s = parseUTC(startISO);
+    var e = parseUTC(endISO);
+    if (!s || !e) return '';
+    var diff = Math.max(0, Math.floor((e.getTime() - s.getTime()) / 1000));
     var h = Math.floor(diff / 3600);
     var m = Math.floor((diff % 3600) / 60);
     return h + 'h ' + m + 'm';

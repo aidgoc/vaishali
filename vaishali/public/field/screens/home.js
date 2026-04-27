@@ -28,10 +28,17 @@
     return days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
   }
 
+  function parseUTC(s) {
+    if (!s) return null;
+    var t = String(s).replace(' ', 'T');
+    if (!/[Z+\-]\d/.test(t)) t += 'Z';
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   function formatTime(isoString) {
-    if (!isoString) return '';
-    var d = new Date(isoString);
-    if (isNaN(d.getTime())) return '';
+    var d = parseUTC(isoString);
+    if (!d) return '';
     var h = d.getHours();
     var m = d.getMinutes();
     var ampm = h >= 12 ? 'PM' : 'AM';
