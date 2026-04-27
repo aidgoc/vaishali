@@ -3111,3 +3111,88 @@ textarea {
   border-radius: 2px;
   transition: width 0.3s var(--ease-out-expo);
 }
+
+/* ── Hide Frappe desk chrome when PWA loads in browser ────── */
+body > .navbar,
+body > .page-container,
+#navbar,
+.frappe-control[data-page-container],
+header.navbar {
+  display: none !important;
+}
+
+/* ── PWA Install Banner ──────────────────────────────────────── */
+.pwa-install-banner {
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  left: 12px;
+  right: 12px;
+  background: var(--ink-primary, #1A1A1A);
+  color: #FFFFFF;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  animation: pwa-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pwa-slide-up {
+  from { transform: translateY(120%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.pwa-install-banner .pwa-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.pwa-install-banner .pwa-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-install-banner .pwa-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pwa-install-banner .pwa-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.pwa-install-banner .pwa-action {
+  background: #FFFFFF;
+  color: var(--ink-primary, #1A1A1A);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-install-banner .pwa-action:active {
+  background: #E8E8E8;
+}
+
+.pwa-install-banner .pwa-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}

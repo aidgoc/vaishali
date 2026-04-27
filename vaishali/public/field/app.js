@@ -506,6 +506,81 @@
     if (!navigator.onLine) {
       api.updateOfflineBanner(true);
     }
+
+    // Show install banner 3s after load (only if in browser, not already installed)
+    setTimeout(_showInstallBanner, 3000);
+  }
+
+  // ─── Hide Frappe desk chrome ────────────────────────────────────
+  (function killFrappeChrome() {
+    var selectors = ['header.navbar', '.navbar', '#navbar', '.page-container'];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = document.querySelector(selectors[i]);
+      if (el) el.remove();
+    }
+  })();
+
+  // ─── PWA Install Banner ────────────────────────────────────────
+  var _deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    _deferredInstallPrompt = e;
+  });
+
+  function _isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+  }
+
+  function _showInstallBanner() {
+    if (_isStandalone()) return;
+    if (localStorage.getItem('pwa-install-dismissed')) return;
+
+    var banner = el('div', { className: 'pwa-install-banner' }, [
+      el('img', { src: 'icons/icon-192.png', className: 'pwa-icon', alt: '' }),
+      el('div', { className: 'pwa-text' }, [
+        el('div', { className: 'pwa-title', textContent: 'Install DSPL Field' }),
+        el('div', { className: 'pwa-subtitle', textContent: 'Add to home screen for the full app experience' })
+      ]),
+      el('button', {
+        className: 'pwa-action',
+        textContent: 'Install',
+        onClick: function () {
+          if (_deferredInstallPrompt) {
+            _deferredInstallPrompt.prompt();
+            _deferredInstallPrompt.userChoice.then(function (choice) {
+              if (choice.outcome === 'accepted') banner.remove();
+              _deferredInstallPrompt = null;
+            });
+          } else {
+            var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            if (isIOS) {
+              var sheet = UI.bottomSheet('Install DSPL Field', el('div', {}, [
+                el('div', {
+                  textContent: 'Tap the share button in Safari, then scroll down and tap "Add to Home Screen".',
+                  style: { fontSize: '15px', lineHeight: '1.5', color: 'var(--ink-secondary)' }
+                })
+              ]));
+              document.body.appendChild(sheet);
+            }
+            banner.remove();
+            localStorage.setItem('pwa-install-dismissed', '1');
+          }
+        }
+      }),
+      el('button', {
+        className: 'pwa-dismiss',
+        textContent: '×',
+        'aria-label': 'Dismiss',
+        onClick: function () {
+          banner.remove();
+          localStorage.setItem('pwa-install-dismissed', '1');
+        }
+      })
+    ]);
+
+    document.body.appendChild(banner);
   }
 
   if (document.readyState === 'loading') {
