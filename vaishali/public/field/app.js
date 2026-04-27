@@ -307,6 +307,9 @@
       headerEl.appendChild(backBtn);
     }
     if (matched.title) {
+      if (!matched.back) {
+        headerEl.appendChild(el('img', { src: '/files/Dyamic Logo - Colour.png', className: 'header-logo', alt: 'Dynamic' }));
+      }
       headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title, role: 'heading', 'aria-level': '1' }));
     }
 

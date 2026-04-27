@@ -3113,12 +3113,18 @@ textarea {
 }
 
 /* ── Hide Frappe desk chrome when PWA loads in browser ────── */
-body > .navbar,
-body > .page-container,
-#navbar,
-.frappe-control[data-page-container],
-header.navbar {
+header.navbar,
+.navbar.navbar-expand,
+body > nav.navbar {
   display: none !important;
+}
+
+/* ── Logo in PWA header ─────────────────────────────────────── */
+.header-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* ── PWA Install Banner ──────────────────────────────────────── */
