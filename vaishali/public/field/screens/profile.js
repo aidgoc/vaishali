@@ -39,34 +39,20 @@
       var doj = profile.date_of_joining || '';
       var status = profile.status || '';
 
-      // Avatar section — centered
-      var avatarEl = UI.avatar(employeeName, 88);
-      avatarEl.classList.add('avatar-self');
-      var avatarSection = el('div', { style: { textAlign: 'center', margin: '0 auto 16px' } }, [
-        avatarEl
+      // M3 profile hero — large avatar, name, role
+      var initials = employeeName.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+      var hero = el('div', { className: 'profile-hero' }, [
+        el('div', { className: 'profile-avatar', textContent: initials }),
+        el('h2', { textContent: employeeName })
       ]);
-      appEl.appendChild(avatarSection);
-
-      // Employee name — centered
-      appEl.appendChild(el('h2', {
-        textContent: employeeName,
-        style: { textAlign: 'center', fontSize: '20px', fontWeight: '700', margin: '0 0 4px' }
-      }));
-
-      // Department + Designation subtitle — centered
       var subtitle = [department, designation].filter(Boolean).join(' \u00B7 ');
       if (subtitle) {
-        appEl.appendChild(el('div', {
-          className: 'ink-tertiary',
-          textContent: subtitle,
-          style: { textAlign: 'center', fontSize: '13px', marginBottom: '16px' }
-        }));
+        hero.appendChild(el('p', { className: 'profile-subtitle', textContent: subtitle }));
       }
-
-      appEl.appendChild(UI.divider());
+      appEl.appendChild(hero);
 
       // Work section
-      appEl.appendChild(UI.sectionHeading('Work'));
+      appEl.appendChild(UI.sectionHeader('Work', { support: 'Role and employment status' }));
       appEl.appendChild(UI.detailCard([
         { label: 'Department', value: department },
         { label: 'Designation', value: designation },
@@ -81,13 +67,18 @@
         { label: 'Date of Joining', value: doj }
       ]));
 
-      // Sign Out button with confirmation
-      var signOutBtn = UI.btn('Sign Out', {
+      // Sign Out button with M3 confirm dialog
+      var signOutBtn = UI.btn('Sign out', {
         type: 'outline-danger',
         block: true,
         icon: 'logOut',
         onClick: function () {
-          function doSignOut() {
+          UI.confirmDialog(
+            'Sign out of DSPL Field?',
+            'You will need to sign in again with your email and password to access the app.',
+            { confirmText: 'Sign out', cancelText: 'Cancel', danger: true, icon: 'logOut' }
+          ).then(function (ok) {
+            if (!ok) return;
             window.fieldAPI.apiCall('GET', '/api/method/logout').then(function () {
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -103,33 +94,7 @@
               localStorage.clear();
               Auth.clearSession();
             });
-          }
-
-          var sheetContent = el('div', {}, [
-            el('div', {
-              textContent: 'You will need to sign in again to use DSPL Field.',
-              className: 'ink-tertiary',
-              style: { fontSize: '14px', marginBottom: '20px' }
-            }),
-            UI.btn('Sign Out', {
-              type: 'danger',
-              block: true,
-              onClick: function () {
-                if (sheet._close) sheet._close();
-                doSignOut();
-              }
-            }),
-            el('div', { style: { height: '8px' } }),
-            UI.btn('Cancel', {
-              type: 'outline',
-              block: true,
-              onClick: function () {
-                if (sheet._close) sheet._close();
-              }
-            })
-          ]);
-          var sheet = UI.bottomSheet('Sign out of DSPL Field?', sheetContent);
-          document.body.appendChild(sheet);
+          });
         }
       });
       var signOutWrap = el('div', { style: { marginTop: '32px' } }, [signOutBtn]);

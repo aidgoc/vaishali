@@ -3533,6 +3533,20 @@ body {
   margin: 0;
   letter-spacing: 0.25px;
 }
+/* Slim variant — used by router auto-injection where the app bar already
+   shows the title. Only supporting text appears as a sub-header. */
+.m3-page-header.slim {
+  padding: 0 0 16px;
+}
+.m3-page-header.slim h1,
+.m3-page-header.slim .m3-page-title {
+  display: none;
+}
+.m3-page-header.slim .m3-page-support {
+  font: var(--m3-body-medium);
+  color: var(--m3-on-surface-variant);
+  margin: 0;
+}
 .m3-section-header {
   margin: 24px 0 12px;
   display: flex;
@@ -4907,6 +4921,204 @@ select.form-control {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 DIALOG (basic & full-screen)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.m3-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--m3-scrim);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: m3-scrim-in var(--m3-duration-medium2) var(--m3-easing-emphasized-decel);
+}
+@keyframes m3-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.m3-dialog-scrim.closing {
+  animation: m3-scrim-out var(--m3-duration-short3) var(--m3-easing-emphasized-accel) forwards;
+}
+@keyframes m3-scrim-out {
+  to { opacity: 0; }
+}
+
+.m3-dialog {
+  background: var(--m3-surface-container-high);
+  color: var(--m3-on-surface);
+  border-radius: var(--m3-shape-xl);
+  padding: 24px;
+  min-width: 280px;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: var(--m3-elevation-3);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: m3-dialog-in var(--m3-duration-medium2) var(--m3-easing-emphasized-decel);
+}
+@keyframes m3-dialog-in {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.m3-dialog-icon {
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  color: var(--m3-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.m3-dialog-icon svg {
+  width: 32px;
+  height: 32px;
+}
+.m3-dialog-title {
+  font: var(--m3-headline-small);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  margin: 0;
+  text-align: center;
+}
+.m3-dialog-body {
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  color: var(--m3-on-surface-variant);
+  margin: 0;
+  line-height: 1.5;
+}
+.m3-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 BANNER (offline / update / info)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.offline-banner,
+.update-banner,
+.m3-banner {
+  background: var(--m3-surface-container-low);
+  color: var(--m3-on-surface);
+  border-bottom: 1px solid var(--m3-outline-variant);
+  border-radius: 0;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  z-index: 60;
+  flex-shrink: 0;
+}
+.offline-banner {
+  background: var(--m3-warning-container);
+  color: var(--m3-on-warning-container);
+}
+.update-banner {
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+}
+.offline-banner button,
+.update-banner button,
+.m3-banner button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--m3-shape-full);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  margin-left: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.offline-banner button:hover,
+.update-banner button:hover,
+.m3-banner button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 SNACKBAR with action button
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.m3-snackbar-with-action {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.m3-snackbar-with-action .m3-snackbar-text {
+  flex: 1;
+  min-width: 0;
+}
+.m3-snackbar-with-action .m3-snackbar-action {
+  background: transparent;
+  border: none;
+  color: var(--m3-inverse-primary);
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin: -8px -12px -8px 0;
+  border-radius: var(--m3-shape-full);
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.m3-snackbar-with-action .m3-snackbar-action:hover {
+  background: rgba(255, 180, 171, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 PROFILE polish
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 32px;
+  gap: 12px;
+}
+.profile-hero .profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--m3-shape-full);
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 36px/1 var(--m3-font);
+  letter-spacing: 0;
+  box-shadow: var(--m3-elevation-1);
+}
+.profile-hero h2 {
+  font: var(--m3-headline-medium);
+  color: var(--m3-on-surface);
+  letter-spacing: 0;
+  margin: 0;
+  text-align: center;
+}
+.profile-hero .profile-subtitle {
+  font: var(--m3-body-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.25px;
+  text-align: center;
+  margin: 0;
 }
 
 /* End M3 layer */

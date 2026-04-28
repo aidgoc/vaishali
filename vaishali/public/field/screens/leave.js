@@ -353,20 +353,26 @@
           block: true,
           icon: 'x',
           onClick: function () {
-            if (!confirm('Cancel this leave application?')) return;
-            cancelBtn._setLoading(true, 'Cancelling...');
+            UI.confirmDialog(
+              'Cancel this leave application?',
+              'This will withdraw your request. You can submit a new application later if needed.',
+              { confirmText: 'Cancel application', cancelText: 'Keep it', danger: true, icon: 'x' }
+            ).then(function (ok) {
+              if (!ok) return;
+              cancelBtn._setLoading(true, 'Cancelling...');
 
-            window.fieldAPI.apiCall('DELETE', '/api/resource/Leave Application/' + encodeURIComponent(name)).then(function (delRes) {
-              if (delRes.error || (delRes.status && delRes.status >= 400)) {
-                UI.toast('Failed to cancel: ' + (delRes.error || 'Server error'), 'danger');
+              window.fieldAPI.apiCall('DELETE', '/api/resource/Leave Application/' + encodeURIComponent(name)).then(function (delRes) {
+                if (delRes.error || (delRes.status && delRes.status >= 400)) {
+                  UI.toast('Failed to cancel: ' + (delRes.error || 'Server error'), 'danger');
+                  cancelBtn._setLoading(false);
+                  return;
+                }
+                UI.toast('Leave application cancelled', 'success');
+                location.hash = '#/leave';
+              }).catch(function () {
+                UI.toast('Failed to cancel application', 'danger');
                 cancelBtn._setLoading(false);
-                return;
-              }
-              UI.toast('Leave application cancelled', 'success');
-              location.hash = '#/leave';
-            }).catch(function () {
-              UI.toast('Failed to cancel application', 'danger');
-              cancelBtn._setLoading(false);
+              });
             });
           }
         });

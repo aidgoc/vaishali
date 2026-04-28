@@ -279,7 +279,11 @@
       title: 'Clear conversation',
       textContent: 'Clear',
       onClick: function () {
-        if (confirm('Clear conversation history?')) clearHistory();
+        UI.confirmDialog(
+          'Clear conversation history?',
+          'All messages in this conversation will be permanently removed. This cannot be undone.',
+          { confirmText: 'Clear', cancelText: 'Keep history', danger: true, icon: 'trash' }
+        ).then(function (ok) { if (ok) clearHistory(); });
       },
     });
     headerActions.appendChild(clearBtn);

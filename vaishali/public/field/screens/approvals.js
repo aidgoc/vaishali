@@ -269,25 +269,36 @@
     });
 
     function doAction(action) {
-      var confirmMsg = action === 'approve'
-        ? 'Approve this ' + type + '?'
-        : 'Reject this ' + type + '?';
-      if (!confirm(confirmMsg)) return;
-
-      var actionPath = '/api/field/approvals/' + encodeURIComponent(type) + '/' + encodeURIComponent(name) + '/' + action;
-      api.apiCall('POST', actionPath).then(function (res) {
-        if (res.error || (res.status && res.status >= 400)) {
-          var errMsg = 'Action failed';
-          if (res.data && res.data.message) {
-            errMsg = res.data.message;
-          }
-          UI.toast(errMsg, 'danger');
-          return;
+      var isApprove = action === 'approve';
+      UI.confirmDialog(
+        (isApprove ? 'Approve this ' : 'Reject this ') + type + '?',
+        isApprove
+          ? 'The request will be marked as approved and the requester will be notified.'
+          : 'The request will be marked as rejected and the requester will be notified.',
+        {
+          confirmText: isApprove ? 'Approve' : 'Reject',
+          cancelText: 'Cancel',
+          danger: !isApprove,
+          icon: isApprove ? 'check' : 'x'
         }
-        UI.toast(type.charAt(0).toUpperCase() + type.slice(1) + ' ' + action + 'd', 'success');
-        location.hash = '#/approvals';
-      }).catch(function () {
-        UI.toast('Network error. Try again.', 'danger');
+      ).then(function (ok) {
+        if (!ok) return;
+
+        var actionPath = '/api/field/approvals/' + encodeURIComponent(type) + '/' + encodeURIComponent(name) + '/' + action;
+        api.apiCall('POST', actionPath).then(function (res) {
+          if (res.error || (res.status && res.status >= 400)) {
+            var errMsg = 'Action failed';
+            if (res.data && res.data.message) {
+              errMsg = res.data.message;
+            }
+            UI.toast(errMsg, 'danger');
+            return;
+          }
+          UI.toast(type.charAt(0).toUpperCase() + type.slice(1) + ' ' + action + 'd', 'success');
+          location.hash = '#/approvals';
+        }).catch(function () {
+          UI.toast('Network error. Try again.', 'danger');
+        });
       });
     }
   };

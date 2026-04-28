@@ -399,12 +399,15 @@
       updateNavActive(matched.tab);
     }
 
-    // ── 5. Auto-inject M3 page header (title + support text) ──
-    //     Screens may render their own (which appears below this) but routes
-    //     with a `support` field always get a hero header so the user knows
-    //     where they are. Skipped for chat (custom layout) and login.
+    // ── 5. Auto-inject slim M3 page header (support text only) ──
+    //     The app bar already shows the title; this slim variant adds the
+    //     supporting description so the user knows what this page is about
+    //     without duplicating the title. Heuristic 1 (visibility).
+    //     Skipped for chat (custom layout) and login.
     if (matched.support && hash !== '#/chat' && hash !== '#/login' && window.UI && window.UI.pageHeader) {
-      appEl.appendChild(window.UI.pageHeader(matched.title || '', matched.support));
+      var ph = window.UI.pageHeader(matched.title || '', matched.support);
+      ph.classList.add('slim');
+      appEl.appendChild(ph);
     }
 
     // ── 6. Call screen handler ──

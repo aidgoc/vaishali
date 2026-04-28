@@ -1105,11 +1105,137 @@
   }
 
   /* ── snackbar(text, opts) ─────────────────────────────────────
-     M3 snackbar (alias of toast for clarity). opts: { type, action }
+     M3 snackbar with optional action. opts: { type, action: { text, onClick }, duration }
      ────────────────────────────────────────────────────────────── */
   function snackbar(text, opts) {
     opts = opts || {};
-    return toast(text, opts.type || 'success');
+    var type = opts.type || '';
+    var duration = opts.duration || (opts.action ? 6000 : 3000);
+
+    if (!opts.action) {
+      // Simple snackbar — reuse legacy toast
+      return toast(text, type);
+    }
+
+    // Snackbar with action button
+    var cls = 'toast-fallback';
+    if (type) cls += ' ' + type;
+    cls += ' m3-snackbar-with-action';
+
+    var actionBtn = el('button', {
+      className: 'm3-snackbar-action',
+      textContent: opts.action.text,
+      onClick: function () {
+        if (opts.action.onClick) opts.action.onClick();
+        if (sb.parentNode) sb.parentNode.removeChild(sb);
+      }
+    });
+
+    var sb = el('div', { className: cls, role: 'alert' }, [
+      el('span', { className: 'm3-snackbar-text', textContent: text }),
+      actionBtn
+    ]);
+    document.body.appendChild(sb);
+    setTimeout(function () {
+      if (sb.parentNode) sb.parentNode.removeChild(sb);
+    }, duration);
+    return sb;
+  }
+
+  /* ── dialog(opts) ─────────────────────────────────────────────
+     M3 modal dialog — replaces native confirm()/alert().
+     opts: { title, body, icon, actions: [{ text, type, onClick }], dismissOnScrim }
+     Returns the overlay element. Caller must append to document.body.
+     Each action's onClick may return false to keep the dialog open.
+     ────────────────────────────────────────────────────────────── */
+  function dialog(opts) {
+    opts = opts || {};
+    var children = [];
+
+    if (opts.icon) {
+      var ic = el('div', { className: 'm3-dialog-icon' });
+      setIconHTML(ic, opts.icon);
+      children.push(ic);
+    }
+    if (opts.title) {
+      children.push(el('h2', { className: 'm3-dialog-title', textContent: opts.title }));
+    }
+    if (opts.body) {
+      children.push(el('p', { className: 'm3-dialog-body', textContent: opts.body }));
+    }
+
+    var actions = opts.actions || [{ text: 'OK', type: 'text' }];
+    var actionEls = [];
+    for (var i = 0; i < actions.length; i++) {
+      (function (a) {
+        var b = btn(a.text, {
+          type: a.type || 'text',
+          onClick: function () {
+            var keep = false;
+            if (a.onClick) keep = a.onClick() === false;
+            if (!keep) close();
+          }
+        });
+        actionEls.push(b);
+      })(actions[i]);
+    }
+    children.push(el('div', { className: 'm3-dialog-actions' }, actionEls));
+
+    var dialogEl = el('div', {
+      className: 'm3-dialog',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': opts.title || 'Dialog'
+    }, children);
+
+    var overlay = el('div', { className: 'm3-dialog-scrim' }, [dialogEl]);
+
+    function close() {
+      overlay.classList.add('closing');
+      setTimeout(function () {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 200);
+    }
+
+    if (opts.dismissOnScrim !== false) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) close();
+      });
+    }
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close();
+    });
+    overlay._close = close;
+
+    // Auto-focus first non-cancel action
+    setTimeout(function () {
+      if (actionEls.length > 0) {
+        actionEls[actionEls.length - 1].focus();
+      }
+    }, 100);
+
+    return overlay;
+  }
+
+  /* ── confirmDialog(title, body, opts) ─────────────────────────
+     Convenience wrapper for the most common case: confirm/cancel.
+     Returns a Promise that resolves true (confirm) or false (cancel).
+     opts: { confirmText, cancelText, danger, icon }
+     ────────────────────────────────────────────────────────────── */
+  function confirmDialog(title, body, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      var d = dialog({
+        title: title,
+        body: body,
+        icon: opts.icon,
+        actions: [
+          { text: opts.cancelText || 'Cancel', type: 'text', onClick: function () { resolve(false); } },
+          { text: opts.confirmText || 'Confirm', type: opts.danger ? 'danger' : 'primary', onClick: function () { resolve(true); } }
+        ]
+      });
+      document.body.appendChild(d);
+    });
   }
 
   /* ── m3PageWrap(content) ─────────────────────────────────────
@@ -1172,7 +1298,9 @@
     selectableList: selectableList,
     selectOrChips: selectOrChips,
     snackbar: snackbar,
-    pageWrap: pageWrap
+    pageWrap: pageWrap,
+    dialog: dialog,
+    confirmDialog: confirmDialog
   };
 
 })();
