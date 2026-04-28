@@ -4142,7 +4142,7 @@ body {
 .m3-textfield-input {
   width: 100%;
   height: 56px;
-  padding: 24px 16px 8px;
+  padding: 22px 16px 6px;
   background: var(--m3-surface-container-highest);
   border: none;
   border-bottom: 1px solid var(--m3-on-surface-variant);
@@ -4155,10 +4155,33 @@ body {
               background var(--m3-duration-short2) var(--m3-easing-standard);
   -webkit-appearance: none;
   appearance: none;
+  font-family: var(--m3-font);
+}
+textarea.m3-textfield-input {
+  height: auto;
+  min-height: 96px;
+  padding-top: 26px;
+  padding-bottom: 12px;
+  resize: vertical;
+}
+select.m3-textfield-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23534341' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 44px;
+  cursor: pointer;
+}
+.m3-textfield-input:hover {
+  background: var(--m3-surface-container-high);
 }
 .m3-textfield-input:focus {
   border-bottom: 2px solid var(--m3-primary);
-  padding-bottom: 7px;
+  padding-bottom: 5px;
+}
+textarea.m3-textfield-input:focus {
+  padding-bottom: 11px;
 }
 .m3-textfield-label {
   position: absolute;
@@ -4171,12 +4194,20 @@ body {
   transform-origin: left top;
   transition: transform var(--m3-duration-short3) var(--m3-easing-standard),
               color var(--m3-duration-short3) var(--m3-easing-standard);
+  background: transparent;
 }
-.m3-textfield-input:focus + .m3-textfield-label,
-.m3-textfield-input:not(:placeholder-shown) + .m3-textfield-label,
+.m3-textfield-input:focus ~ .m3-textfield-label,
+.m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label,
 .m3-textfield.has-value .m3-textfield-label {
   transform: translateY(-12px) scale(0.75);
   color: var(--m3-primary);
+}
+.m3-textfield-input:focus ~ .m3-textfield-label {
+  color: var(--m3-primary);
+}
+.m3-textfield .m3-textfield-input:not(:focus):not(:placeholder-shown) ~ .m3-textfield-label,
+.m3-textfield.has-value .m3-textfield-input:not(:focus) ~ .m3-textfield-label {
+  color: var(--m3-on-surface-variant);
 }
 .m3-textfield-support {
   font: var(--m3-body-small);
@@ -4189,6 +4220,10 @@ body {
 .m3-textfield-input.error,
 .m3-textfield-input.field-error {
   border-bottom-color: var(--m3-error);
+}
+/* Date inputs need extra label affordance — they always look "filled" */
+.m3-textfield input[type="date"]:not(:focus):placeholder-shown ~ .m3-textfield-label {
+  transform: translateY(-12px) scale(0.75);
 }
 
 /* Override legacy form-control to look M3 */

@@ -147,27 +147,35 @@
       'Enter amount, purpose and date. HR will review and pay out.'
     ));
 
-    var amountInput = UI.textInput('Enter amount', { type: 'number', name: 'amount' });
-    var purposeInput = UI.textarea('Purpose of advance', { name: 'purpose' });
-    var dateField = UI.dateInput('Date', todayISO());
+    var amountField = UI.m3TextField('Amount (₹)', {
+      type: 'number',
+      name: 'amount',
+      min: '0',
+      step: '1',
+      required: true,
+      support: 'Whole rupees, no decimals.'
+    });
+    var purposeField = UI.m3TextField('Purpose of advance', {
+      multiline: true,
+      rows: 3,
+      name: 'purpose',
+      required: true,
+      support: 'Briefly describe what this advance is for.'
+    });
+    var dateField = UI.m3TextField('Date', { type: 'date', value: todayISO(), required: true });
 
-    // Extract the actual input from the dateInput field-group wrapper
-    var dateInput = dateField.querySelector('input');
-
-    appEl.appendChild(UI.card([
-      UI.field('Amount (₹)', amountInput),
-      UI.field('Purpose', purposeInput),
-      dateField
-    ]));
+    appEl.appendChild(amountField);
+    appEl.appendChild(purposeField);
+    appEl.appendChild(dateField);
 
     var submitBtn = UI.btn('Submit request', {
       type: 'primary',
       block: true,
       icon: 'check',
       onClick: function () {
-        var amount = parseFloat(amountInput.value);
-        var purpose = purposeInput.value.trim();
-        var postingDate = dateInput ? dateInput.value : todayISO();
+        var amount = parseFloat(amountField._getValue());
+        var purpose = purposeField._getValue().trim();
+        var postingDate = dateField._getValue() || todayISO();
 
         if (!amount || amount <= 0) {
           UI.toast('Please enter a valid amount', 'danger');

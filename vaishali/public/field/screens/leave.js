@@ -184,23 +184,21 @@
       'Choose leave type, dates and add a reason.'
     ));
 
-    // Leave type — dropdown (5 options, fits 7-rule)
-    var leaveTypeField = UI.select('Leave type', LEAVE_TYPES);
-    var leaveTypeSelect = leaveTypeField.querySelector('select');
-
-    var fromDateField = UI.dateInput('From date', todayISO());
-    var fromInput = fromDateField.querySelector('input');
-
-    var toDateField = UI.dateInput('To date', todayISO());
-    var toInput = toDateField.querySelector('input');
+    // M3 floating-label fields
+    var leaveTypeField = UI.m3SelectField('Leave type', LEAVE_TYPES, { required: true });
+    var fromDateField = UI.m3TextField('From date', { type: 'date', value: todayISO(), required: true });
+    var toDateField = UI.m3TextField('To date', { type: 'date', value: todayISO(), required: true });
 
     var halfDay = false;
     var halfDayToggle = UI.toggle('Half day', false, function (val) {
       halfDay = val;
     });
 
-    var reasonTextarea = UI.textarea('Add details for your manager...');
-    var reasonField = UI.field('Reason', reasonTextarea);
+    var reasonField = UI.m3TextField('Reason', {
+      multiline: true,
+      rows: 3,
+      support: 'Optional — add details to help your manager decide.'
+    });
 
     var errorBox = el('div', {
       style: {
@@ -224,17 +222,13 @@
       onClick: function () { location.hash = '#/leave'; }
     });
 
-    var formCard = UI.card([
-      leaveTypeField,
-      fromDateField,
-      toDateField,
-      halfDayToggle,
-      reasonField,
-      errorBox
-    ]);
-
-    content.appendChild(formCard);
-    content.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' } }, [
+    content.appendChild(leaveTypeField);
+    content.appendChild(fromDateField);
+    content.appendChild(toDateField);
+    content.appendChild(el('div', { style: { padding: '0 4px' } }, [halfDayToggle]));
+    content.appendChild(reasonField);
+    content.appendChild(errorBox);
+    content.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' } }, [
       cancelBtn,
       submitBtn
     ]));
@@ -247,10 +241,10 @@
     function handleSubmit() {
       errorBox.style.display = 'none';
 
-      var leaveType = leaveTypeSelect.value;
-      var fromDate = fromInput.value;
-      var toDate = toInput.value;
-      var reason = reasonTextarea.value.trim();
+      var leaveType = leaveTypeField._getValue();
+      var fromDate = fromDateField._getValue();
+      var toDate = toDateField._getValue();
+      var reason = reasonField._getValue().trim();
 
       if (!leaveType) { showError('Please select a leave type.'); return; }
       if (!fromDate) { showError('Please select a from date.'); return; }

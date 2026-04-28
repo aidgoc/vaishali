@@ -1238,6 +1238,141 @@
     });
   }
 
+  /* ── m3TextField(label, opts) ────────────────────────────────
+     M3 filled text field with floating label.
+     opts: { value, type, name, required, placeholder, support, multiline, rows,
+             onChange, onInput }
+     Returns a wrapper div; access the input via wrapper.querySelector('input,textarea').
+     ────────────────────────────────────────────────────────────── */
+  var _m3FieldId = 0;
+  function m3TextField(label, opts) {
+    opts = opts || {};
+    _m3FieldId++;
+    var id = 'm3f-' + _m3FieldId;
+    var multi = !!opts.multiline;
+    var inputAttrs = {
+      id: id,
+      className: 'm3-textfield-input',
+      type: opts.type || 'text',
+      // A non-empty placeholder is required so :placeholder-shown
+      // pseudo-class flips the label correctly. We use a single space.
+      placeholder: opts.placeholder || ' ',
+      value: opts.value != null ? String(opts.value) : '',
+      name: opts.name || null,
+      required: !!opts.required,
+      readOnly: !!opts.readOnly
+    };
+    if (opts.min != null) inputAttrs.min = opts.min;
+    if (opts.max != null) inputAttrs.max = opts.max;
+    if (opts.step != null) inputAttrs.step = opts.step;
+    if (multi) inputAttrs.rows = opts.rows || 3;
+
+    var input = el(multi ? 'textarea' : 'input', inputAttrs);
+
+    if (opts.onChange) {
+      input.addEventListener('change', function () { opts.onChange(input.value, input); });
+    }
+    if (opts.onInput) {
+      input.addEventListener('input', function () { opts.onInput(input.value, input); });
+    }
+
+    var labelEl = el('label', {
+      className: 'm3-textfield-label',
+      htmlFor: id,
+      textContent: label || ''
+    });
+
+    var children = [input, labelEl];
+    if (opts.support) {
+      children.push(el('p', { className: 'm3-textfield-support', textContent: opts.support }));
+    }
+
+    var wrapper = el('div', { className: 'm3-textfield' + (multi ? ' multiline' : '') }, children);
+
+    // Helpers exposed on the wrapper
+    wrapper._getValue = function () { return input.value; };
+    wrapper._setValue = function (v) { input.value = v != null ? String(v) : ''; };
+    wrapper._getInput = function () { return input; };
+    wrapper._setError = function (msg) {
+      var supEl = wrapper.querySelector('.m3-textfield-support');
+      if (msg) {
+        input.classList.add('field-error');
+        if (!supEl) {
+          supEl = el('p', { className: 'm3-textfield-support error', textContent: msg });
+          wrapper.appendChild(supEl);
+        } else {
+          supEl.classList.add('error');
+          supEl.textContent = msg;
+        }
+      } else {
+        input.classList.remove('field-error');
+        if (supEl) supEl.classList.remove('error');
+      }
+    };
+    return wrapper;
+  }
+
+  /* ── m3SelectField(label, options, opts) ──────────────────────
+     M3 filled select with floating label. options: [{value,text}|string].
+     opts: { value, name, onChange, support }
+     ────────────────────────────────────────────────────────────── */
+  function m3SelectField(label, options, opts) {
+    opts = opts || {};
+    _m3FieldId++;
+    var id = 'm3s-' + _m3FieldId;
+
+    var optEls = [];
+    // Empty placeholder option lets the label float properly when nothing's selected
+    if (opts.value == null || opts.value === '') {
+      optEls.push(el('option', { value: '', textContent: '', selected: true, disabled: !!opts.required }));
+    }
+    for (var i = 0; i < options.length; i++) {
+      var op = options[i];
+      var v = typeof op === 'string' ? op : op.value;
+      var t = typeof op === 'string' ? op : (op.text || op.label);
+      optEls.push(el('option', {
+        value: v,
+        textContent: t,
+        selected: opts.value === v
+      }));
+    }
+
+    var sel = el('select', {
+      id: id,
+      className: 'm3-textfield-input',
+      name: opts.name || null,
+      required: !!opts.required
+    }, optEls);
+
+    if (opts.onChange) {
+      sel.addEventListener('change', function () { opts.onChange(sel.value, sel); });
+    }
+
+    var labelEl = el('label', {
+      className: 'm3-textfield-label',
+      htmlFor: id,
+      textContent: label || ''
+    });
+
+    var children = [sel, labelEl];
+    if (opts.support) {
+      children.push(el('p', { className: 'm3-textfield-support', textContent: opts.support }));
+    }
+
+    var wrapper = el('div', { className: 'm3-textfield m3-select' + (opts.value ? ' has-value' : '') }, children);
+
+    // Keep has-value class in sync so floating label works on select
+    sel.addEventListener('change', function () {
+      if (sel.value) wrapper.classList.add('has-value');
+      else wrapper.classList.remove('has-value');
+    });
+
+    wrapper._getValue = function () { return sel.value; };
+    wrapper._setValue = function (v) { sel.value = v != null ? String(v) : ''; if (sel.value) wrapper.classList.add('has-value'); };
+    wrapper._getSelect = function () { return sel; };
+    return wrapper;
+  }
+
   /* ── m3PageWrap(content) ─────────────────────────────────────
      Standard padding wrapper used by screens. Expose for consistency.
      ────────────────────────────────────────────────────────────── */
@@ -1300,7 +1435,9 @@
     snackbar: snackbar,
     pageWrap: pageWrap,
     dialog: dialog,
-    confirmDialog: confirmDialog
+    confirmDialog: confirmDialog,
+    m3TextField: m3TextField,
+    m3SelectField: m3SelectField
   };
 
 })();
