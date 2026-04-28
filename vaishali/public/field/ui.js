@@ -1253,7 +1253,6 @@
     var inputAttrs = {
       id: id,
       className: 'm3-textfield-input',
-      type: opts.type || 'text',
       // A non-empty placeholder is required so :placeholder-shown
       // pseudo-class flips the label correctly. We use a single space.
       placeholder: opts.placeholder || ' ',
@@ -1262,6 +1261,7 @@
       required: !!opts.required,
       readOnly: !!opts.readOnly
     };
+    if (!multi) inputAttrs.type = opts.type || 'text';
     if (opts.min != null) inputAttrs.min = opts.min;
     if (opts.max != null) inputAttrs.max = opts.max;
     if (opts.step != null) inputAttrs.step = opts.step;
