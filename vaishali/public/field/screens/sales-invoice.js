@@ -92,7 +92,7 @@
               sub: sub,
               right: el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, rightContent),
               onClick: function () {
-                window.open('/app/sales-invoice/' + encodeURIComponent(si.name), '_blank');
+                location.hash = '#/sales-invoice/' + encodeURIComponent(si.name);
               }
             }));
           })(items[i]);
@@ -247,6 +247,157 @@
     }).catch(function (err) {
       appEl.textContent = '';
       appEl.appendChild(UI.error('Failed to load: ' + (err.message || err)));
+    });
+  };
+
+  // ── Screen: Sales Invoice Detail ──────────────────────────────────
+  window.Screens.salesInvoiceDetail = function (appEl, params) {
+    var el = UI.el;
+    var siName = params.id || params.name;
+
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
+
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Sales Invoice&name=' + encodeURIComponent(siName)
+    ).then(function (res) {
+      skel.remove();
+
+      var si = null;
+      if (res && res.data) si = res.data.message || res.data.data || res.data;
+      if (!si) {
+        appEl.appendChild(UI.error('Could not load invoice.'));
+        return;
+      }
+
+      var customer = si.customer_name || si.customer || 'Unknown';
+      var status = statusLabel(si);
+      var grandTotal = formatCurrency(si.grand_total);
+      var outstanding = si.outstanding_amount || 0;
+      var paid = (si.grand_total || 0) - outstanding;
+
+      // Hero — show outstanding prominently if unpaid
+      var heroAmountValue = grandTotal;
+      var heroAmountLabel = 'Grand total';
+      if (outstanding > 0 && si.docstatus === 1) {
+        heroAmountValue = formatCurrency(outstanding);
+        heroAmountLabel = 'Outstanding';
+      }
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: si.name + ' · ' + formatDate(si.posting_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: heroAmountValue }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: heroAmountLabel })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
+      ]));
+
+      // Actions
+      var actionBtns = [];
+      actionBtns.push(UI.btn('PDF', {
+        type: 'tonal',
+        icon: 'file',
+        onClick: function () {
+          window.open('/api/method/frappe.utils.print_format.download_pdf?doctype=Sales Invoice&name=' + encodeURIComponent(si.name) + '&format=Standard', '_blank');
+        }
+      }));
+      if (outstanding > 0 && si.docstatus === 1) {
+        actionBtns.push(UI.btn('Record payment', {
+          type: 'primary',
+          icon: 'plus',
+          onClick: function () {
+            location.hash = '#/payments/new?invoice=' + encodeURIComponent(si.name);
+          }
+        }));
+      }
+      if (si.contact_email) {
+        actionBtns.push(UI.btn('Email', {
+          type: 'tonal',
+          icon: 'send',
+          onClick: function () {
+            location.href = 'mailto:' + si.contact_email + '?subject=Invoice%20' + encodeURIComponent(si.name);
+          }
+        }));
+      }
+      appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
+
+      // Items
+      if (si.items && si.items.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Items invoiced', { support: si.items.length + (si.items.length === 1 ? ' line' : ' lines') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < si.items.length; i++) {
+          var it = si.items[i];
+          var qty = it.qty || 0;
+          var rate = it.rate || 0;
+          var amount = it.amount != null ? it.amount : qty * rate;
+          var name = it.item_name || it.item_code || 'Item';
+          var meta = qty + (it.uom ? ' ' + it.uom : '') + ' × ' + formatCurrency(rate);
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: name }),
+              el('div', { className: 'm3-doc-item-meta', textContent: meta })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(amount) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      }
+
+      // Totals + payment status
+      appEl.appendChild(UI.sectionHeader('Totals & payment'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      var totalRows = [];
+      if (si.total != null && si.total !== si.grand_total) totalRows.push({ label: 'Subtotal', value: formatCurrency(si.total) });
+      if (si.discount_amount) totalRows.push({ label: 'Discount', value: '-' + formatCurrency(si.discount_amount) });
+      if (si.total_taxes_and_charges) totalRows.push({ label: 'Tax', value: formatCurrency(si.total_taxes_and_charges) });
+      for (var t = 0; t < totalRows.length; t++) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: totalRows[t].label }),
+          el('span', { className: 'm3-doc-totals-value', textContent: totalRows[t].value })
+        ]));
+      }
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Grand total' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: grandTotal })
+      ]));
+      if (si.docstatus === 1) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: 'Paid' }),
+          el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(paid) })
+        ]));
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', {
+            textContent: 'Outstanding',
+            style: { color: outstanding > 0 ? 'var(--m3-error)' : 'var(--m3-on-surface-variant)', fontWeight: '500' }
+          }),
+          el('span', {
+            className: 'm3-doc-totals-value',
+            textContent: formatCurrency(outstanding),
+            style: { color: outstanding > 0 ? 'var(--m3-error)' : 'var(--m3-on-surface-variant)', fontWeight: '500' }
+          })
+        ]));
+      }
+      appEl.appendChild(totalsBox);
+
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Invoice', value: si.name },
+        { label: 'Customer', value: customer },
+        { label: 'Posting date', value: formatDate(si.posting_date) },
+        { label: 'Due date', value: formatDate(si.due_date) },
+        { label: 'Status', value: status },
+        { label: 'Currency', value: si.currency || 'INR' }
+      ]));
+
+    }).catch(function (err) {
+      skel.remove();
+      appEl.appendChild(UI.error('Failed to load invoice: ' + (err.message || err)));
     });
   };
 

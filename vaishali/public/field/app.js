@@ -183,10 +183,12 @@
     // Delivery Notes
     { pattern: '#/delivery-notes/new', handler: function () { S().deliveryNoteNew(appEl); },  tab: 'home', title: 'New Delivery Note', back: '#/delivery-notes' },
     { pattern: '#/delivery-notes',     handler: function () { S().deliveryNoteList(appEl); }, tab: 'home', title: 'Delivery Notes',    back: '#/home' },
+    { pattern: '#/delivery-note/:id',  handler: function (p) { S().deliveryNoteDetail(appEl, p); }, tab: 'home', title: 'Delivery Note', back: '#/delivery-notes' },
 
     // Sales Invoices
     { pattern: '#/sales-invoices/new', handler: function () { S().salesInvoiceNew(appEl); },  tab: 'home', title: 'New Invoice', back: '#/sales-invoices' },
     { pattern: '#/sales-invoices',     handler: function () { S().salesInvoiceList(appEl); }, tab: 'home', title: 'Sales Invoices', back: '#/home' },
+    { pattern: '#/sales-invoice/:id',  handler: function (p) { S().salesInvoiceDetail(appEl, p); }, tab: 'home', title: 'Sales Invoice', back: '#/sales-invoices' },
 
     // Payments
     { pattern: '#/payments/new', handler: function () { S().paymentNew(appEl); }, tab: 'home', title: 'Record Payment', back: '#/debtors' },

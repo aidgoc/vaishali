@@ -88,7 +88,7 @@
                 UI.pill(statusLabel(dn), statusColor(statusLabel(dn)))
               ]),
               onClick: function () {
-                window.open('/app/delivery-note/' + encodeURIComponent(dn.name), '_blank');
+                location.hash = '#/delivery-note/' + encodeURIComponent(dn.name);
               }
             }));
           })(items[i]);
@@ -219,6 +219,125 @@
     }).catch(function (err) {
       appEl.textContent = '';
       appEl.appendChild(UI.error('Failed to load orders: ' + (err.message || err)));
+    });
+  };
+
+  // ── Screen: Delivery Note Detail ──────────────────────────────────
+  window.Screens.deliveryNoteDetail = function (appEl, params) {
+    var el = UI.el;
+    var dnName = params.id || params.name;
+
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
+
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Delivery Note&name=' + encodeURIComponent(dnName)
+    ).then(function (res) {
+      skel.remove();
+
+      var dn = null;
+      if (res && res.data) dn = res.data.message || res.data.data || res.data;
+      if (!dn) {
+        appEl.appendChild(UI.error('Could not load delivery note.'));
+        return;
+      }
+
+      var customer = dn.customer_name || dn.customer || 'Unknown';
+      var status = statusLabel(dn);
+      var grandTotal = formatCurrency(dn.grand_total);
+
+      // Hero
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: dn.name + ' · ' + formatDate(dn.posting_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: grandTotal }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Goods value' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
+      ]));
+
+      // Actions
+      var actionBtns = [];
+      actionBtns.push(UI.btn('PDF', {
+        type: 'tonal',
+        icon: 'file',
+        onClick: function () {
+          window.open('/api/method/frappe.utils.print_format.download_pdf?doctype=Delivery Note&name=' + encodeURIComponent(dn.name) + '&format=Standard', '_blank');
+        }
+      }));
+      if (dn.docstatus === 1 && dn.status !== 'Completed') {
+        actionBtns.push(UI.btn('Make invoice', {
+          type: 'primary',
+          icon: 'plus',
+          onClick: function () {
+            location.hash = '#/sales-invoices/new?delivery_note=' + encodeURIComponent(dn.name);
+          }
+        }));
+      }
+      appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
+
+      // Items
+      if (dn.items && dn.items.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Items shipped', { support: dn.items.length + (dn.items.length === 1 ? ' line' : ' lines') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < dn.items.length; i++) {
+          var it = dn.items[i];
+          var qty = it.qty || 0;
+          var rate = it.rate || 0;
+          var amount = it.amount != null ? it.amount : qty * rate;
+          var name = it.item_name || it.item_code || 'Item';
+          var meta = qty + (it.uom ? ' ' + it.uom : '') + ' × ' + formatCurrency(rate);
+          if (it.against_sales_order) meta += ' · SO ' + it.against_sales_order;
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: name }),
+              el('div', { className: 'm3-doc-item-meta', textContent: meta })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(amount) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      }
+
+      // Totals
+      appEl.appendChild(UI.sectionHeader('Totals'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      var totalRows = [];
+      if (dn.total != null && dn.total !== dn.grand_total) totalRows.push({ label: 'Subtotal', value: formatCurrency(dn.total) });
+      if (dn.total_taxes_and_charges) totalRows.push({ label: 'Tax', value: formatCurrency(dn.total_taxes_and_charges) });
+      for (var t = 0; t < totalRows.length; t++) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: totalRows[t].label }),
+          el('span', { className: 'm3-doc-totals-value', textContent: totalRows[t].value })
+        ]));
+      }
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Grand total' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: grandTotal })
+      ]));
+      appEl.appendChild(totalsBox);
+
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Delivery note', value: dn.name },
+        { label: 'Customer', value: customer },
+        { label: 'Posting date', value: formatDate(dn.posting_date) },
+        { label: 'LR / waybill', value: dn.lr_no || '—' },
+        { label: 'LR date', value: formatDate(dn.lr_date) },
+        { label: 'Vehicle', value: dn.vehicle_no || '—' },
+        { label: 'Transporter', value: dn.transporter_name || '—' },
+        { label: 'Status', value: status }
+      ]));
+
+    }).catch(function (err) {
+      skel.remove();
+      appEl.appendChild(UI.error('Failed to load delivery note: ' + (err.message || err)));
     });
   };
 

@@ -276,12 +276,13 @@
   window.Screens.breakdownDetail = function (appEl, params) {
     var claimId = params.id || params.name;
 
-    var content = el('div', { style: { padding: '0 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
-    content.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(3);
+    content.appendChild(skel);
 
     api.apiCall('GET', '/api/resource/Warranty Claim/' + encodeURIComponent(claimId)).then(function (res) {
-      content.textContent = '';
+      skel.remove();
 
       var claim = null;
       if (res && res.data) {
@@ -294,31 +295,95 @@
 
       var customer = claim.customer || 'Unknown';
       var status = claim.status || 'Open';
+      var priority = claim.priority || '';
 
-      // Header
-      content.appendChild(el('div', { style: { marginBottom: '12px' } }, [
-        el('h3', { textContent: customer, style: { margin: '0 0 12px 0' } }),
-        UI.pill(status, statusColor(status))
+      // M3 hero \u2014 customer + claim id + priority + status
+      var heroSubParts = [claim.name, formatDate(claim.complaint_date)].filter(Boolean);
+      content.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: heroSubParts.join(' \u00b7 ') })
+          ]),
+          priority ? el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: priority, style: { font: 'var(--m3-headline-small)' } }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Priority' })
+          ]) : null
+        ].filter(Boolean)),
+        el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
-      // Detail card
-      var details = [
-        { label: 'Customer', value: customer },
-        { label: 'Complaint Date', value: formatDate(claim.complaint_date) },
-        { label: 'Description', value: claim.complaint || '\u2014' },
-        { label: 'Serial No', value: claim.serial_no || '\u2014' },
-        { label: 'Item', value: claim.item_name || '\u2014' },
+      // Quick contact actions (if customer phone visible)
+      var contactBtns = [];
+      if (claim.contact_phone) {
+        contactBtns.push(UI.btn('Call', { type: 'tonal', icon: 'phone', onClick: function () { location.href = 'tel:' + claim.contact_phone; } }));
+      }
+      if (claim.contact_email) {
+        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () { location.href = 'mailto:' + claim.contact_email; } }));
+      }
+      if (contactBtns.length) {
+        content.appendChild(el('div', { className: 'm3-doc-actions' }, contactBtns));
+      }
+
+      // Complaint section
+      content.appendChild(UI.sectionHeader('Complaint'));
+      content.appendChild(el('div', {
+        className: 'm3-card',
+        style: {
+          background: 'var(--m3-surface-container-low)',
+          borderRadius: 'var(--m3-shape-md)',
+          padding: '16px',
+          marginBottom: '16px',
+          font: 'var(--m3-body-medium)',
+          color: 'var(--m3-on-surface)',
+          letterSpacing: '0.25px',
+          whiteSpace: 'pre-wrap'
+        },
+        textContent: claim.complaint || '\u2014'
+      }));
+
+      // Equipment
+      content.appendChild(UI.sectionHeader('Equipment'));
+      content.appendChild(UI.detailCard([
+        { label: 'Item', value: claim.item_name || claim.item_code || '\u2014' },
+        { label: 'Serial no', value: claim.serial_no || '\u2014' },
+        { label: 'Site contact', value: claim.contact_person || '\u2014' },
+        { label: 'Site phone', value: claim.contact_phone || '\u2014' }
+      ]));
+
+      // Details
+      content.appendChild(UI.sectionHeader('Tracking'));
+      var trackingRows = [
+        { label: 'Claim ID', value: claim.name },
+        { label: 'Priority', value: priority || '\u2014' },
+        { label: 'Reported on', value: formatDate(claim.complaint_date) },
+        { label: 'SLA target', value: formatDate(claim.sla_target_date) },
+        { label: 'First response', value: formatDate(claim.first_response_date) },
         { label: 'Status', value: status }
       ];
-
       if (claim.resolution_date) {
-        details.push({ label: 'Resolution Date', value: formatDate(claim.resolution_date) });
+        trackingRows.push({ label: 'Resolved on', value: formatDate(claim.resolution_date) });
       }
-      if (claim.resolution_details) {
-        details.push({ label: 'Resolution', value: claim.resolution_details });
-      }
+      content.appendChild(UI.detailCard(trackingRows));
 
-      content.appendChild(UI.detailCard(details));
+      // Resolution if exists
+      if (claim.resolution_details) {
+        content.appendChild(UI.sectionHeader('Resolution'));
+        content.appendChild(el('div', {
+          className: 'm3-card',
+          style: {
+            background: 'var(--m3-success-container)',
+            color: 'var(--m3-on-success-container)',
+            borderRadius: 'var(--m3-shape-md)',
+            padding: '16px',
+            marginBottom: '16px',
+            font: 'var(--m3-body-medium)',
+            letterSpacing: '0.25px',
+            whiteSpace: 'pre-wrap'
+          },
+          textContent: claim.resolution_details
+        }));
+      }
 
       // Action buttons based on status
       if (status === 'Open') {
