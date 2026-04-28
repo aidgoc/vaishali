@@ -259,19 +259,25 @@
 
       appEl.textContent = '';
 
-      // Header: item name + serial no + status
-      var headerCard = el('div', { className: 'card-surface', style: { padding: '16px', marginBottom: '12px' } }, [
-        el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' } }, [
-          el('div', null, [
-            el('div', { style: { fontSize: '17px', fontWeight: '600', color: 'var(--ink-primary)', letterSpacing: '-0.04em' }, textContent: eq.item_name || eq.item_code }),
-            el('div', { style: { fontSize: '13px', color: 'var(--ink-secondary, #6B6B70)', marginTop: '2px' }, textContent: eq.serial_no })
-          ]),
-          UI.pill(eq.status || 'Unknown', statusColor(eq.status))
-        ])
-      ]);
-      appEl.appendChild(headerCard);
+      // M3 hero — item + serial + status
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: eq.item_name || eq.item_code }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: 'S/N: ' + eq.serial_no + (eq.customer ? ' · ' + eq.customer : '') })
+          ])
+        ]),
+        el('div', {}, [UI.pill(eq.status || 'Unknown', statusColor(eq.status))])
+      ]));
 
-      // Detail card: core info
+      // Quick action — call site if phone
+      if (eq.customer_phone) {
+        appEl.appendChild(el('div', { className: 'm3-doc-actions' }, [
+          UI.btn('Call site', { type: 'tonal', icon: 'phone', onClick: function () { location.href = 'tel:' + eq.customer_phone; } })
+        ]));
+      }
+
+      // Details card
       var detailRows = [];
       if (eq.customer) detailRows.push({ label: 'Customer', value: eq.customer });
       if (eq.customer_site) detailRows.push({ label: 'Site', value: eq.customer_site });
@@ -280,11 +286,11 @@
       if (eq.delivery_date) detailRows.push({ label: 'Delivery date', value: formatDateShort(eq.delivery_date) });
       if (eq.item_code) detailRows.push({ label: 'Item code', value: eq.item_code });
 
-      // Asset types
       var assetTypes = [eq.asset_type_1, eq.asset_type_2, eq.asset_type_3].filter(Boolean);
       if (assetTypes.length) detailRows.push({ label: 'Asset type', value: assetTypes.join(', ') });
 
       if (detailRows.length) {
+        appEl.appendChild(UI.sectionHeader('Details'));
         appEl.appendChild(UI.detailCard(detailRows));
       }
 

@@ -342,19 +342,19 @@
   // ── Screen 3: Expense Detail ────────────────────────────────────────
 
   window.Screens.expenseDetail = function (appEl, params) {
-    appEl.appendChild(UI.pageHeader('Expense claim', params.id || ''));
-    var loadingEl = UI.skeleton(3);
-    appEl.appendChild(loadingEl);
+    var el = UI.el;
+    var skel = UI.skeleton(3);
+    appEl.appendChild(skel);
 
     var name = params && params.id ? params.id : '';
     if (!name) {
-      appEl.removeChild(loadingEl);
+      skel.remove();
       appEl.appendChild(UI.error('No expense claim ID provided.'));
       return;
     }
 
     window.fieldAPI.apiCall('GET', '/api/resource/Expense Claim/' + encodeURIComponent(name)).then(function (res) {
-      appEl.removeChild(loadingEl);
+      skel.remove();
 
       if (res.error || !res.data || !(res.data.data || res.data.message)) {
         appEl.appendChild(UI.error('Failed to load expense claim.'));
@@ -364,51 +364,70 @@
       var claim = res.data.data || res.data.message;
       var displayStatus = claim.approval_status || claim.status || 'Draft';
 
-      // Header: status pill + total amount
-      var el = UI.el;
-      appEl.appendChild(el('div', { style: { textAlign: 'center', padding: '16px 0 8px' } }, [
-        UI.pill(displayStatus, statusColor(displayStatus)),
-        el('div', {
-          className: 'amount-large',
-          textContent: formatCurrency(claim.total_claimed_amount),
-          style: { marginTop: '12px' }
-        })
+      // M3 hero — claimant + total
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: claim.employee_name || claim.employee || 'Expense claim' }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: claim.name + ' \u00B7 ' + formatDate(claim.posting_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: formatCurrency(claim.total_claimed_amount) }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Claimed' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(displayStatus, statusColor(displayStatus))])
       ]));
 
-      // Detail card
-      appEl.appendChild(UI.detailCard([
-        { label: 'Employee', value: claim.employee_name || claim.employee || '' },
-        { label: 'Posting Date', value: formatDate(claim.posting_date) },
-        { label: 'Total Claimed', value: formatCurrency(claim.total_claimed_amount) },
-        { label: 'Total Sanctioned', value: formatCurrency(claim.total_sanctioned_amount) },
-        { label: 'Status', value: claim.status || 'Draft' },
-        { label: 'Approval Status', value: claim.approval_status || 'Draft' }
-      ]));
-
-      // Expense items
+      // Items
       var expenses = claim.expenses || [];
-      appEl.appendChild(UI.sectionHeading('Items'));
-
-      if (expenses.length === 0) {
+      if (expenses.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Line items', { support: expenses.length + (expenses.length === 1 ? ' item' : ' items') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < expenses.length; i++) {
+          var exp = expenses[i];
+          var meta = [];
+          if (exp.expense_date) meta.push(formatDate(exp.expense_date));
+          if (exp.description) meta.push(exp.description);
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: exp.expense_type || 'Expense' }),
+              meta.length ? el('div', { className: 'm3-doc-item-meta', textContent: meta.join(' \u00B7 ') }) : null
+            ].filter(Boolean)),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(exp.amount) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      } else {
         appEl.appendChild(UI.empty('receipt', 'No expense items.'));
-        return;
       }
 
-      for (var i = 0; i < expenses.length; i++) {
-        (function (exp) {
-          var subParts = [];
-          if (exp.expense_date) subParts.push(formatDate(exp.expense_date));
-          if (exp.description) subParts.push(exp.description);
-
-          appEl.appendChild(UI.listCard({
-            title: exp.expense_type || 'Expense',
-            sub: subParts.join(' \u00B7 '),
-            right: UI.amount(exp.amount)
-          }));
-        })(expenses[i]);
+      // Totals
+      appEl.appendChild(UI.sectionHeader('Summary'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+        el('span', { textContent: 'Total claimed' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(claim.total_claimed_amount) })
+      ]));
+      if (claim.total_sanctioned_amount && claim.total_sanctioned_amount !== claim.total_claimed_amount) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: 'Sanctioned' }),
+          el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(claim.total_sanctioned_amount) })
+        ]));
       }
+      appEl.appendChild(totalsBox);
+
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Claim ID', value: claim.name },
+        { label: 'Employee', value: claim.employee_name || claim.employee || '' },
+        { label: 'Posting date', value: formatDate(claim.posting_date) },
+        { label: 'Status', value: claim.status || 'Draft' },
+        { label: 'Approval status', value: claim.approval_status || 'Draft' }
+      ]));
     }).catch(function () {
-      if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+      skel.remove();
       appEl.appendChild(UI.error('Could not load expense claim.'));
     });
   };

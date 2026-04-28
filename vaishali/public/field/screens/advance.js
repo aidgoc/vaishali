@@ -224,20 +224,21 @@
   // ── Screen: Advance Detail ───────────────────────────────────────────
 
   window.Screens.advanceDetail = function (appEl, params) {
-    appEl.appendChild(UI.pageHeader('Advance', params.id || ''));
-    var contentArea = UI.el('div');
-    contentArea.appendChild(UI.skeleton(2));
+    var el = UI.el;
+    var contentArea = el('div');
+    var skel = UI.skeleton(2);
+    contentArea.appendChild(skel);
     appEl.appendChild(contentArea);
 
     var name = params && params.id ? params.id : '';
     if (!name) {
-      contentArea.textContent = '';
+      skel.remove();
       contentArea.appendChild(UI.error('No advance specified'));
       return;
     }
 
     api.apiCall('GET', '/api/resource/Employee Advance/' + encodeURIComponent(name)).then(function (res) {
-      contentArea.textContent = '';
+      skel.remove();
 
       if (res.error) {
         contentArea.appendChild(UI.error('Could not load advance details'));
@@ -250,22 +251,55 @@
         return;
       }
 
-      contentArea.appendChild(UI.detailCard([
-        { label: 'Status', value: adv.status || 'Draft' },
-        { label: 'Amount', value: formatCurrency(adv.advance_amount) },
-        { label: 'Paid', value: formatCurrency(adv.paid_amount) },
-        { label: 'Claimed', value: formatCurrency(adv.claimed_amount) },
-        { label: 'Purpose', value: adv.purpose || '\u2014' },
-        { label: 'Date', value: formatDate(adv.posting_date) }
+      var status = adv.status || 'Draft';
+      var paid = adv.paid_amount || 0;
+      var claimed = adv.claimed_amount || 0;
+      var requested = adv.advance_amount || 0;
+      var outstanding = Math.max(0, paid - claimed);
+
+      // M3 hero \u2014 purpose + amount
+      contentArea.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: adv.purpose || 'Advance' }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: adv.name + ' \u00b7 ' + formatDate(adv.posting_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: formatCurrency(requested) }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Requested' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
-      // Status pill displayed prominently
-      var pillWrapper = UI.el('div', { style: { marginTop: '12px' } }, [
-        UI.pill(adv.status || 'Draft', statusColor(adv.status))
-      ]);
-      contentArea.insertBefore(pillWrapper, contentArea.firstChild);
+      // Totals \u2014 paid / claimed / outstanding
+      contentArea.appendChild(UI.sectionHeader('Status'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+        el('span', { textContent: 'Paid out' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(paid) })
+      ]));
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+        el('span', { textContent: 'Claimed against' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(claimed) })
+      ]));
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Outstanding' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(outstanding) })
+      ]));
+      contentArea.appendChild(totalsBox);
+
+      // Details
+      contentArea.appendChild(UI.sectionHeader('Details'));
+      contentArea.appendChild(UI.detailCard([
+        { label: 'Advance ID', value: adv.name },
+        { label: 'Purpose', value: adv.purpose || '\u2014' },
+        { label: 'Date', value: formatDate(adv.posting_date) },
+        { label: 'Employee', value: adv.employee_name || adv.employee || '\u2014' },
+        { label: 'Status', value: status }
+      ]));
     }).catch(function () {
-      contentArea.textContent = '';
+      skel.remove();
       contentArea.appendChild(UI.error('Could not load advance details'));
     });
   };

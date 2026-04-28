@@ -104,15 +104,15 @@
   // ═══════════════════════════════════════════════════════════════════
 
   function projectDetail(appEl, params) {
-    appEl.textContent = '';
     var projectId = params.id;
 
     var content = el('div');
-    content.appendChild(UI.skeleton(4));
+    var skel = UI.skeleton(4);
+    content.appendChild(skel);
     appEl.appendChild(content);
 
     api.apiCall('GET', '/api/field/view/project_hub/' + encodeURIComponent(projectId)).then(function (res) {
-      content.textContent = '';
+      skel.remove();
 
       if (res.error) {
         content.appendChild(UI.error('Failed to load project: ' + (res.error || 'Unknown error')));
@@ -123,20 +123,36 @@
       var allSections = data.sections || data;
       var project = allSections.overview || data.project || data;
 
-      // Update header with project name
-      var titleEl = header.querySelector('h2');
-      if (titleEl) titleEl.textContent = project.project_name || project.name || projectId;
-
-      // Project info card
       var pct = Math.round(Number(project.percent_complete) || 0);
-      var infoCard = el('div', { className: 'detail-card' }, [
-        el('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' } }, [
-          UI.pill(project.status || 'Open', statusColor(project.status)),
-          el('span', { className: 'list-sub', textContent: pct + '% complete' })
+      var projName = project.project_name || project.name || projectId;
+      var status = project.status || 'Open';
+
+      // M3 hero — project name + % complete + status
+      content.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: projName }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: project.name + (project.customer ? ' · ' + project.customer : '') })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: pct + '%' }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'complete' })
+          ])
         ]),
+        el('div', {}, [UI.pill(status, statusColor(status))]),
         buildProgressBar(pct)
-      ]);
-      content.appendChild(infoCard);
+      ]));
+
+      // Key dates / cost summary card
+      var summaryRows = [];
+      if (project.expected_start_date) summaryRows.push({ label: 'Start date', value: formatDate(project.expected_start_date) });
+      if (project.expected_end_date) summaryRows.push({ label: 'End date', value: formatDate(project.expected_end_date) });
+      if (project.estimated_costing) summaryRows.push({ label: 'Estimated cost', value: formatAmount(project.estimated_costing) });
+      if (project.total_costing_amount) summaryRows.push({ label: 'Actual cost', value: formatAmount(project.total_costing_amount) });
+      if (summaryRows.length) {
+        content.appendChild(UI.sectionHeader('Summary'));
+        content.appendChild(UI.detailCard(summaryRows));
+      }
 
       // Sections from view engine (role-dependent tabs)
       // Convert sections dict {key: records} to array [{name, label, records}]

@@ -192,6 +192,7 @@
 
     // Payments
     { pattern: '#/payments/new', handler: function () { S().paymentNew(appEl); }, tab: 'home', title: 'Record Payment', back: '#/debtors' },
+    { pattern: '#/payment/:id',  handler: function (p) { S().paymentDetail(appEl, p); }, tab: 'home', title: 'Payment', back: '#/debtors' },
 
     // Stock
     { pattern: '#/stock/update', handler: function () { S().stockUpdate(appEl); },  tab: 'home', title: 'Add Stock',    back: '#/stock' },

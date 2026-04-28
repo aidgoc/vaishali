@@ -132,12 +132,13 @@
   window.Screens.installationDetail = function (appEl, params) {
     var visitId = params.id || params.name;
 
-    var content = el('div', { style: { padding: '0 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
-    content.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(3);
+    content.appendChild(skel);
 
     api.apiCall('GET', '/api/resource/Maintenance Visit/' + encodeURIComponent(visitId)).then(function (res) {
-      content.textContent = '';
+      skel.remove();
 
       var mv = null;
       if (res && res.data) {
@@ -150,43 +151,29 @@
 
       var customer = mv.customer || 'Unknown';
       var status = mv.completion_status || 'Unknown';
+      var maintType = mv.maintenance_type || '';
 
-      // Header
-      content.appendChild(el('div', { style: { marginBottom: '12px' } }, [
-        el('h3', { textContent: customer, style: { margin: '0 0 12px 0' } }),
-        UI.pill(status, statusColor(status))
+      // M3 hero
+      content.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: visitId + ' \u00b7 ' + formatDate(mv.mntc_date) })
+          ]),
+          maintType ? el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: maintType, style: { font: 'var(--m3-title-large)', letterSpacing: '0' } }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Type' })
+          ]) : null
+        ].filter(Boolean)),
+        el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
-      // Detail card
-      var details = [
-        { label: 'Customer', value: customer },
-        { label: 'Date', value: formatDate(mv.mntc_date) },
-        { label: 'Type', value: mv.maintenance_type || '\u2014' },
-        { label: 'Status', value: status },
-        { label: 'Contact', value: mv.contact_name || '\u2014' }
-      ];
-
-      // Purposes table items
-      if (mv.purposes && mv.purposes.length > 0) {
-        for (var i = 0; i < mv.purposes.length; i++) {
-          var p = mv.purposes[i];
-          details.push({
-            label: 'Item ' + (i + 1),
-            value: (p.item_name || p.item_code || '') + (p.serial_no ? ' (S/N: ' + p.serial_no + ')' : '')
-          });
-          if (p.work_done) {
-            details.push({ label: 'Work Done', value: p.work_done });
-          }
-        }
-      }
-
-      content.appendChild(UI.detailCard(details));
-
-      // Mark Complete button (only if not already completed)
+      // Quick action \u2014 Mark complete prominent if not done
+      var actionBtns = [];
       if (status !== 'Fully Completed') {
-        var completeBtn = UI.btn('Mark Complete', {
+        var completeBtn = UI.btn('Mark complete', {
           type: 'primary',
-          block: true,
+          icon: 'check',
           onClick: function () {
             completeBtn._setLoading(true, 'Updating...');
             api.apiCall('PUT', '/api/resource/Maintenance Visit/' + encodeURIComponent(visitId), {
@@ -197,8 +184,7 @@
                 completeBtn._setLoading(false);
                 return;
               }
-              UI.toast('Marked as completed!', 'success');
-              // Reload
+              UI.toast('Marked as completed', 'success');
               var currentHash = location.hash;
               location.hash = '#/';
               setTimeout(function () { location.hash = currentHash; }, 0);
@@ -208,11 +194,49 @@
             });
           }
         });
-        content.appendChild(el('div', { style: { marginTop: '16px' } }, [completeBtn]));
+        actionBtns.push(completeBtn);
+      }
+      if (mv.contact_mobile) {
+        actionBtns.push(UI.btn('Call site', { type: 'tonal', icon: 'phone', onClick: function () { location.href = 'tel:' + mv.contact_mobile; } }));
+      }
+      if (actionBtns.length) {
+        content.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
       }
 
+      // Equipment / purposes
+      if (mv.purposes && mv.purposes.length > 0) {
+        content.appendChild(UI.sectionHeader('Equipment & work done', { support: mv.purposes.length + (mv.purposes.length === 1 ? ' item' : ' items') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < mv.purposes.length; i++) {
+          var p = mv.purposes[i];
+          var itemName = p.item_name || p.item_code || 'Item';
+          var meta = [];
+          if (p.serial_no) meta.push('S/N: ' + p.serial_no);
+          if (p.work_done) meta.push(p.work_done);
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: itemName }),
+              meta.length ? el('div', { className: 'm3-doc-item-meta', textContent: meta.join(' \u00b7 ') }) : null
+            ].filter(Boolean))
+          ]));
+        }
+        content.appendChild(itemsBox);
+      }
+
+      // Details
+      content.appendChild(UI.sectionHeader('Details'));
+      content.appendChild(UI.detailCard([
+        { label: 'Visit ID', value: mv.name },
+        { label: 'Customer', value: customer },
+        { label: 'Date', value: formatDate(mv.mntc_date) },
+        { label: 'Type', value: maintType || '\u2014' },
+        { label: 'Site contact', value: mv.contact_name || '\u2014' },
+        { label: 'Site phone', value: mv.contact_mobile || '\u2014' },
+        { label: 'Status', value: status }
+      ]));
+
     }).catch(function (err) {
-      content.textContent = '';
+      skel.remove();
       content.appendChild(UI.error('Failed to load installation: ' + (err.message || err)));
     });
   };

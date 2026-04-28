@@ -95,19 +95,21 @@
   // ── Screen: Salary Detail ────────────────────────────────────────────
 
   window.Screens.salaryDetail = function (appEl, params) {
-    var contentArea = UI.el('div');
-    contentArea.appendChild(UI.skeleton(3));
+    var el = UI.el;
+    var contentArea = el('div');
+    var skel = UI.skeleton(3);
+    contentArea.appendChild(skel);
     appEl.appendChild(contentArea);
 
     var name = params && params.id ? params.id : '';
     if (!name) {
-      contentArea.textContent = '';
+      skel.remove();
       contentArea.appendChild(UI.error('No salary slip specified'));
       return;
     }
 
     api.apiCall('GET', '/api/resource/Salary Slip/' + encodeURIComponent(name)).then(function (res) {
-      contentArea.textContent = '';
+      skel.remove();
 
       if (res.error) {
         contentArea.appendChild(UI.error('Could not load salary slip'));
@@ -120,39 +122,82 @@
         return;
       }
 
-      // Summary card
-      contentArea.appendChild(UI.detailCard([
-        { label: 'Period', value: monthYear(data.start_date) },
-        { label: 'Gross Pay', value: formatCurrency(data.gross_pay) },
-        { label: 'Total Deduction', value: formatCurrency(data.total_deduction) },
-        { label: 'Net Pay', value: formatCurrency(data.net_pay) }
+      // M3 hero — month + net pay
+      contentArea.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: monthYear(data.start_date) }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: data.name + (data.employee_name ? ' · ' + data.employee_name : '') })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: formatCurrency(data.net_pay) }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Net pay' })
+          ])
+        ])
       ]));
 
-      // Earnings
+      // PDF action
+      contentArea.appendChild(el('div', { className: 'm3-doc-actions' }, [
+        UI.btn('Download PDF', {
+          type: 'tonal',
+          icon: 'file',
+          onClick: function () {
+            window.open('/api/method/frappe.utils.print_format.download_pdf?doctype=Salary Slip&name=' + encodeURIComponent(name) + '&format=Standard', '_blank');
+          }
+        })
+      ]));
+
+      // Earnings as items table
       var earnings = data.earnings || [];
       if (earnings.length > 0) {
-        contentArea.appendChild(UI.sectionHeading('Earnings'));
+        contentArea.appendChild(UI.sectionHeader('Earnings', { support: 'Components added to gross pay' }));
+        var earnBox = el('div', { className: 'm3-doc-items' });
         for (var i = 0; i < earnings.length; i++) {
-          contentArea.appendChild(UI.detailRow(
-            earnings[i].salary_component,
-            formatCurrency(earnings[i].amount)
-          ));
+          earnBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: earnings[i].salary_component })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(earnings[i].amount) })
+          ]));
         }
+        contentArea.appendChild(earnBox);
       }
 
-      // Deductions
+      // Deductions as items table
       var deductions = data.deductions || [];
       if (deductions.length > 0) {
-        contentArea.appendChild(UI.sectionHeading('Deductions'));
+        contentArea.appendChild(UI.sectionHeader('Deductions', { support: 'Components subtracted from gross' }));
+        var dedBox = el('div', { className: 'm3-doc-items' });
         for (var j = 0; j < deductions.length; j++) {
-          contentArea.appendChild(UI.detailRow(
-            deductions[j].salary_component,
-            formatCurrency(deductions[j].amount)
-          ));
+          dedBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: deductions[j].salary_component })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: '-' + formatCurrency(deductions[j].amount) })
+          ]));
         }
+        contentArea.appendChild(dedBox);
       }
+
+      // Totals
+      contentArea.appendChild(UI.sectionHeader('Summary'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+        el('span', { textContent: 'Gross pay' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(data.gross_pay) })
+      ]));
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+        el('span', { textContent: 'Total deductions' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: '-' + formatCurrency(data.total_deduction) })
+      ]));
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Net pay' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: formatCurrency(data.net_pay) })
+      ]));
+      contentArea.appendChild(totalsBox);
+
     }).catch(function () {
-      contentArea.textContent = '';
+      skel.remove();
       contentArea.appendChild(UI.error('Could not load salary slip'));
     });
   };

@@ -207,4 +207,85 @@
     });
   };
 
+  // ── Screen: Payment Detail ──────────────────────────────────────
+  window.Screens.paymentDetail = function (appEl, params) {
+    var el = UI.el;
+    var pName = params.id || params.name;
+    var skel = UI.skeleton(3);
+    appEl.appendChild(skel);
+
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Payment Entry&name=' + encodeURIComponent(pName)
+    ).then(function (res) {
+      skel.remove();
+
+      var pay = null;
+      if (res && res.data) pay = res.data.message || res.data.data || res.data;
+      if (!pay) {
+        appEl.appendChild(UI.error('Could not load payment.'));
+        return;
+      }
+
+      var party = pay.party_name || pay.party || 'Unknown';
+      var status = pay.docstatus === 1 ? (pay.status || 'Submitted') : (pay.docstatus === 2 ? 'Cancelled' : 'Draft');
+      var statusCol = pay.docstatus === 1 ? 'green' : (pay.docstatus === 2 ? 'red' : 'orange');
+
+      // M3 hero — party + amount
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: party }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: pay.name + ' · ' + formatDate(pay.posting_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: formatCurrency(pay.paid_amount || pay.received_amount) }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: pay.payment_type === 'Receive' ? 'Received' : 'Paid' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusCol)])
+      ]));
+
+      // PDF action
+      appEl.appendChild(el('div', { className: 'm3-doc-actions' }, [
+        UI.btn('PDF', { type: 'tonal', icon: 'file', onClick: function () {
+          window.open('/api/method/frappe.utils.print_format.download_pdf?doctype=Payment Entry&name=' + encodeURIComponent(pay.name) + '&format=Standard', '_blank');
+        } })
+      ]));
+
+      // Allocations
+      var allocs = pay.references || [];
+      if (allocs.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Applied to', { support: allocs.length + (allocs.length === 1 ? ' invoice' : ' invoices') }));
+        var box = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < allocs.length; i++) {
+          var a = allocs[i];
+          box.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: a.reference_name }),
+              el('div', { className: 'm3-doc-item-meta', textContent: a.reference_doctype + (a.due_date ? ' · due ' + formatDate(a.due_date) : '') })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(a.allocated_amount) })
+          ]));
+        }
+        appEl.appendChild(box);
+      }
+
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Payment ID', value: pay.name },
+        { label: 'Payment type', value: pay.payment_type || '—' },
+        { label: 'Mode of payment', value: pay.mode_of_payment || '—' },
+        { label: 'Posting date', value: formatDate(pay.posting_date) },
+        { label: 'Reference no', value: pay.reference_no || '—' },
+        { label: 'Reference date', value: formatDate(pay.reference_date) },
+        { label: 'Party', value: party },
+        { label: 'Status', value: status }
+      ]));
+    }).catch(function (err) {
+      skel.remove();
+      appEl.appendChild(UI.error('Failed to load payment: ' + (err.message || err)));
+    });
+  };
+
 })();

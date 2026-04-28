@@ -275,10 +275,11 @@
 
   window.Screens.interactionDetail = function (appEl, params) {
     var itemId = params.id;
-    appEl.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(3);
+    appEl.appendChild(skel);
 
     api.apiCall('GET', '/api/field/interaction/' + encodeURIComponent(itemId)).then(function (res) {
-      appEl.textContent = '';
+      skel.remove();
 
       var item = null;
       if (res && res.data) {
@@ -289,61 +290,82 @@
         return;
       }
 
-      // Header
-      var headerEl = el('div', { style: { marginBottom: '16px' } }, [
-        el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } }, [
-          UI.pill(item.channel || 'Unknown', 'blue'),
-          UI.pill(item.direction || '', 'gray'),
-          item.outcome ? UI.pill(item.outcome, outcomeColor(item.outcome)) : null
-        ].filter(Boolean)),
-        el('div', { style: { fontSize: '13px', color: 'var(--ink-tertiary)' }, textContent: formatDate(item.date) + (item.duration_minutes ? ' \u00b7 ' + item.duration_minutes + ' min' : '') })
-      ]);
-      appEl.appendChild(headerEl);
+      var who = item.customer_name || item.lead_name || 'Unknown';
+      var winPct = (item.win_probability || 0) + '%';
 
-      // Customer / Lead
-      var who = item.customer_name || item.lead_name || '\u2014';
+      // M3 hero \u2014 who + win probability
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: who }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: (item.channel || 'Interaction') + ' \u00b7 ' + formatDate(item.date) + (item.duration_minutes ? ' \u00b7 ' + item.duration_minutes + ' min' : '') })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: winPct }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Win probability' })
+          ])
+        ]),
+        el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } }, [
+          UI.pill(item.channel || 'Unknown', 'blue'),
+          item.direction ? UI.pill(item.direction, 'gray') : null,
+          item.outcome ? UI.pill(item.outcome, outcomeColor(item.outcome)) : null,
+          item.conversion_stage ? UI.pill(item.conversion_stage, stageColor(item.conversion_stage)) : null
+        ].filter(Boolean))
+      ]));
+
+      // Quick contact
+      var contactBtns = [];
+      if (item.contact_phone) {
+        contactBtns.push(UI.btn('Call', { type: 'tonal', icon: 'phone', onClick: function () { location.href = 'tel:' + item.contact_phone; } }));
+      }
+      if (contactBtns.length) {
+        appEl.appendChild(el('div', { className: 'm3-doc-actions' }, contactBtns));
+      }
+
+      // Summary
+      if (item.summary) {
+        appEl.appendChild(UI.sectionHeader('Summary'));
+        appEl.appendChild(el('div', {
+          className: 'm3-card',
+          style: {
+            background: 'var(--m3-surface-container-low)',
+            borderRadius: 'var(--m3-shape-md)',
+            padding: '16px',
+            marginBottom: '16px',
+            font: 'var(--m3-body-medium)',
+            color: 'var(--m3-on-surface)',
+            letterSpacing: '0.25px',
+            whiteSpace: 'pre-wrap'
+          },
+          textContent: item.summary
+        }));
+      }
+
+      // Sales pipeline links
+      appEl.appendChild(UI.sectionHeader('Pipeline'));
       appEl.appendChild(UI.detailCard([
         { label: 'Customer / Lead', value: who },
         { label: 'Contact', value: item.contact_phone || '\u2014' },
-        { label: 'Employee', value: item.employee_name || '\u2014' }
-      ]));
-
-      // Summary
-      appEl.appendChild(el('div', { style: { margin: '16px 0' } }, [
-        UI.sectionHeading('Summary'),
-        el('p', { style: { fontSize: '15px', lineHeight: '1.5', margin: '8px 0' }, textContent: item.summary || '\u2014' })
-      ]));
-
-      // Pipeline
-      appEl.appendChild(UI.detailCard([
+        { label: 'Employee', value: item.employee_name || '\u2014' },
         { label: 'Purpose', value: item.purpose || '\u2014' },
-        { label: 'Conversion Stage', value: item.conversion_stage || '\u2014' },
-        { label: 'Win Probability', value: (item.win_probability || 0) + '%' },
+        { label: 'Conversion stage', value: item.conversion_stage || '\u2014' },
+        { label: 'Win probability', value: winPct },
         { label: 'Opportunity', value: item.opportunity || '\u2014' },
         { label: 'Quotation', value: item.quotation || '\u2014' },
-        { label: 'Sales Order', value: item.sales_order || '\u2014' }
+        { label: 'Sales order', value: item.sales_order || '\u2014' }
       ]));
 
       // Next steps
       if (item.next_action || item.next_action_date) {
-        appEl.appendChild(el('div', { style: { margin: '16px 0' } }, [
-          UI.sectionHeading('Next steps'),
-          UI.detailCard([
-            { label: 'Next Action', value: item.next_action || '\u2014' },
-            { label: 'Next Action Date', value: formatDate(item.next_action_date) || '\u2014' }
-          ])
-        ]));
-      }
-
-      // Status pill
-      if (item.conversion_stage) {
-        appEl.appendChild(el('div', { style: { textAlign: 'center', marginTop: '16px' } }, [
-          UI.pill(item.conversion_stage, stageColor(item.conversion_stage))
+        appEl.appendChild(UI.sectionHeader('Next steps'));
+        appEl.appendChild(UI.detailCard([
+          { label: 'Next action', value: item.next_action || '\u2014' },
+          { label: 'Due date', value: formatDate(item.next_action_date) || '\u2014' }
         ]));
       }
 
     }).catch(function (err) {
-      appEl.textContent = '';
+      skel.remove();
       appEl.appendChild(UI.error('Failed: ' + (err.message || err)));
     });
   };
