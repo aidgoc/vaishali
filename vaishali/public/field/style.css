@@ -3130,7 +3130,7 @@ body > nav.navbar {
 /* ── PWA Install Banner ──────────────────────────────────────── */
 .pwa-install-banner {
   position: fixed;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 12px);
   left: 12px;
   right: 12px;
   background: var(--ink-primary, #1A1A1A);
@@ -5119,6 +5119,157 @@ select.form-control {
   letter-spacing: 0.25px;
   text-align: center;
   margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 CHAT overrides — primary container for AI bubbles, surface for user
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chat-header {
+  padding: 12px 16px;
+  background: var(--m3-surface);
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.chat-header-title span:first-child {
+  font: var(--m3-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--m3-on-surface);
+}
+.chat-header-sub {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+  font-weight: 400;
+}
+.chat-clear-btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--m3-shape-full);
+  background: transparent;
+  border: 1px solid var(--m3-outline);
+  color: var(--m3-primary);
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chat-clear-btn:hover { background: rgba(179, 38, 30, 0.08); }
+.chat-clear-btn:active { background: rgba(179, 38, 30, 0.12); }
+
+.chat-messages {
+  background: var(--m3-surface);
+  padding: 16px;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  font: var(--m3-title-small);
+  letter-spacing: 0;
+  border-radius: var(--m3-shape-full);
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: var(--m3-shape-lg);
+  font: var(--m3-body-large);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+.chat-bubble-user {
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
+  border-radius: var(--m3-shape-lg) var(--m3-shape-xs) var(--m3-shape-lg) var(--m3-shape-lg);
+}
+.chat-bubble-ai {
+  background: var(--m3-surface-container-high);
+  color: var(--m3-on-surface);
+  border-radius: var(--m3-shape-xs) var(--m3-shape-lg) var(--m3-shape-lg) var(--m3-shape-lg);
+}
+
+/* Chat input area */
+.chat-input-area,
+.chat-input-wrapper {
+  padding: 12px 16px;
+  background: var(--m3-surface);
+  border-top: 1px solid var(--m3-outline-variant);
+}
+.chat-input,
+.chat-input textarea {
+  background: var(--m3-surface-container-high);
+  border: none;
+  border-radius: var(--m3-shape-xl);
+  padding: 12px 16px;
+  font: var(--m3-body-large);
+  letter-spacing: 0.5px;
+  color: var(--m3-on-surface);
+  outline: none;
+  resize: none;
+  width: 100%;
+  min-height: 44px;
+}
+.chat-input:focus,
+.chat-input textarea:focus {
+  background: var(--m3-surface-container-highest);
+}
+.chat-send-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: var(--m3-shape-full);
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chat-send-btn:disabled {
+  background: var(--m3-surface-container-high);
+  color: var(--m3-on-surface-variant);
+  cursor: not-allowed;
+}
+
+/* Suggestion chips (chat command palette) */
+.chat-suggestion,
+.chat-cmd-item {
+  background: var(--m3-surface-container);
+  color: var(--m3-on-surface);
+  border-radius: var(--m3-shape-full);
+  padding: 8px 16px;
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  border: 1px solid var(--m3-outline-variant);
+}
+.chat-suggestion:hover,
+.chat-cmd-item:hover {
+  background: var(--m3-surface-container-high);
+}
+
+/* Code blocks */
+.chat-code-block {
+  background: var(--m3-inverse-surface);
+  color: var(--m3-inverse-on-surface);
+  border-radius: var(--m3-shape-md);
+  padding: 12px;
+  margin: 8px 0;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  overflow-x: auto;
+}
+.chat-inline-code {
+  background: var(--m3-surface-container-high);
+  color: var(--m3-on-surface);
+  padding: 2px 6px;
+  border-radius: var(--m3-shape-xs);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.92em;
 }
 
 /* End M3 layer */

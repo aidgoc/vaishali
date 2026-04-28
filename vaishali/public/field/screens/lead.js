@@ -40,8 +40,8 @@
     });
     appEl.appendChild(searchBar);
 
-    appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New Lead', {
+    appEl.appendChild(el('div', { style: { padding: '8px 0 16px' } }, [
+      UI.btn('Add new lead', {
         type: 'primary',
         block: true,
         icon: 'plus',
@@ -69,10 +69,11 @@
         }
 
         if (items.length === 0) {
-          listContainer.appendChild(UI.empty('user', 'No leads found', { text: '+ New lead', onClick: function() { location.hash = '#/lead/new'; } }));
+          listContainer.appendChild(UI.empty('user', 'No leads found', { text: 'Add new lead', onClick: function() { location.hash = '#/lead/new'; } }));
           return;
         }
 
+        var listWrap = el('div', { className: 'm3-list' });
         for (var i = 0; i < items.length; i++) {
           (function (lead) {
             var name = lead.lead_name || 'Unknown';
@@ -82,7 +83,7 @@
             var status = lead.status || 'Lead';
             var sub = [company, source, date].filter(Boolean).join(' \u00b7 ');
 
-            listContainer.appendChild(UI.listCard({
+            listWrap.appendChild(UI.listCard({
               avatar: name,
               title: name,
               sub: sub,
@@ -91,6 +92,7 @@
             }));
           })(items[i]);
         }
+        listContainer.appendChild(listWrap);
       }).catch(function (err) {
         listContainer.textContent = '';
         listContainer.appendChild(UI.error('Failed to load leads: ' + (err.message || err)));
