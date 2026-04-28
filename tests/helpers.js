@@ -82,6 +82,35 @@ async function gotoRoute(page, hash, opts) {
     appEl.style.display = '';
     headerEl.style.display = '';
     navEl.style.display = '';
+
+    // Ensure bottom nav DOM exists. _startup may have skipped buildBottomNav
+    // because it ran before mockSession installed the fake Auth. Build it
+    // here using the same 4-tab structure that app.js uses.
+    if (navEl.children.length === 0) {
+      const tabs = [
+        { tab: 'home', ic: 'home', label: 'Home', hash: '#/home' },
+        { tab: 'inbox', ic: 'bell', label: 'Inbox', hash: '#/inbox' },
+        { tab: 'chat', ic: 'bot', label: 'AI', hash: '#/chat' },
+        { tab: 'profile', ic: 'user', label: 'Me', hash: '#/profile' },
+      ];
+      for (const t of tabs) {
+        const a = document.createElement('a');
+        a.className = 'nav-item';
+        a.href = t.hash;
+        a.setAttribute('data-tab', t.tab);
+        a.setAttribute('aria-label', t.label);
+        a.onclick = (e) => { e.preventDefault(); location.hash = t.hash; };
+        const ic = document.createElement('span');
+        ic.className = 'nav-icon';
+        if (window.icon) ic.appendChild(window.icon(t.ic));
+        a.appendChild(ic);
+        const label = document.createElement('span');
+        label.className = 'nav-label';
+        label.textContent = t.label;
+        a.appendChild(label);
+        navEl.appendChild(a);
+      }
+    }
     location.hash = hash;
   }, hash);
   // Allow handler + async data to settle
