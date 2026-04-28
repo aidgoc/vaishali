@@ -72,8 +72,8 @@
 
     if (!b.monthly_cap) {
       appEl.appendChild(UI.empty('receipt', 'No budget cap set for your division.'));
-      appEl.appendChild(UI.btn('+ New Expense', {
-        type: 'primary', block: true,
+      appEl.appendChild(UI.btn('New expense', {
+        type: 'primary', block: true, icon: 'plus',
         onClick: function () { location.hash = '#/expense/new'; }
       }));
       return;
@@ -127,7 +127,7 @@
 
     // New expense button
     appEl.appendChild(el('div', { style: { marginTop: '16px' } }, [
-      UI.btn('+ New Expense', {
+      UI.btn('New Expense', {
         type: 'primary', block: true,
         onClick: function () { location.hash = '#/expense/new'; }
       })

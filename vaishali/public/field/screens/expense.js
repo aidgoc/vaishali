@@ -266,7 +266,7 @@
     // Start with one line
     addLine();
 
-    var addLineBtn = UI.btn('+ Add Line', {
+    var addLineBtn = UI.btn('Add Line', {
       type: 'outline',
       block: true,
       icon: 'plus',

@@ -37,7 +37,7 @@
   window.Screens.stockList = function (appEl) {
     // Add Stock button
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ Add Stock', {
+      UI.btn('Add Stock', {
         type: 'primary',
         block: true,
         icon: 'plus',

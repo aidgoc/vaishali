@@ -66,9 +66,10 @@
     appEl.appendChild(tabBar);
 
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New from Quotation', {
+      UI.btn('New from quotation', {
         type: 'primary',
         block: true,
+        icon: 'plus',
         onClick: function () { location.hash = '#/sales-orders/new'; }
       })
     ]));

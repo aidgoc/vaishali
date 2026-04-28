@@ -51,9 +51,10 @@
     appEl.appendChild(tabBar);
 
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New Invoice', {
+      UI.btn('New invoice', {
         type: 'primary',
         block: true,
+        icon: 'plus',
         onClick: function () { location.hash = '#/sales-invoices/new'; }
       })
     ]));

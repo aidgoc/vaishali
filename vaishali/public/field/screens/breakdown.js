@@ -53,7 +53,7 @@
 
   window.Screens.breakdownList = function (appEl) {
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ Log Breakdown', {
+      UI.btn('Log Breakdown', {
         type: 'primary',
         block: true,
         icon: 'alert',

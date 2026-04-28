@@ -58,9 +58,10 @@
     appEl.appendChild(searchBar);
 
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ Log Interaction', {
+      UI.btn('Log interaction', {
         type: 'primary',
         block: true,
+        icon: 'plus',
         onClick: function () { location.hash = '#/interactions/new'; }
       })
     ]));

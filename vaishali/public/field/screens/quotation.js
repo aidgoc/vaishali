@@ -61,7 +61,7 @@
     appEl.appendChild(tabBar);
 
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New Quotation', {
+      UI.btn('New Quotation', {
         type: 'primary',
         block: true,
         icon: 'plus',

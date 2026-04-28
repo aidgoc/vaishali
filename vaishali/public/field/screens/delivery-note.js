@@ -51,9 +51,10 @@
     appEl.appendChild(tabBar);
 
     appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New from Sales Order', {
+      UI.btn('New from sales order', {
         type: 'primary',
         block: true,
+        icon: 'plus',
         onClick: function () { location.hash = '#/delivery-notes/new'; }
       })
     ]));
