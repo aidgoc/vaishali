@@ -223,6 +223,8 @@
   function apiCall(method, path, body, options) {
     options = options || {};
     var timeout = options.timeout || API_TIMEOUT;
+    var origMethod = method;
+    var origPath = path;
 
     return getSession().then(function (session) {
       var headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
@@ -456,6 +458,22 @@
             location.reload();
           });
           return { data: null, status: resp.status, error: 'Session expired' };
+        }
+        // CSRF token stale — fetch fresh token and retry once
+        if (resp.status === 417 && !options._csrfRetried) {
+          console.warn('[API] CSRF 417 — refreshing token and retrying');
+          return fetch('/api/method/frappe.auth.get_csrf_token', {
+            method: 'GET', credentials: 'same-origin'
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            var fresh = d && d.message;
+            if (fresh) {
+              if (window.frappe) window.frappe.csrf_token = fresh;
+              window.csrf_token = fresh;
+            }
+            return apiCall(origMethod, origPath, body, Object.assign({}, options, { _csrfRetried: true }));
+          }).catch(function () {
+            return { data: null, status: 417, error: 'CSRF refresh failed' };
+          });
         }
         return resp.json().then(function (data) {
           // Normalize Frappe {message: X} → {data: X, message: X}
