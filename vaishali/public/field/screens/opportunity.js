@@ -101,81 +101,132 @@
     var el = UI.el;
     var oppName = params.id || params.name;
 
-    appEl.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
 
-    window.fieldAPI.apiCall('GET', '/api/field/opportunity/' + encodeURIComponent(oppName)).then(function (res) {
-      appEl.textContent = '';
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Opportunity&name=' + encodeURIComponent(oppName)
+    ).then(function (res) {
+      skel.remove();
 
       var opp = null;
-      if (res && res.data) {
-        opp = res.data.data || res.data.message || res.data;
-      }
+      if (res && res.data) opp = res.data.message || res.data.data || res.data;
       if (!opp) {
         appEl.appendChild(UI.error('Could not load opportunity.'));
         return;
       }
 
-      var party = opp.party_name || 'Unknown';
+      var party = opp.party_name || opp.customer_name || 'Unknown';
       var status = opp.status || 'Open';
+      var amount = opp.opportunity_amount || 0;
+      var probability = opp.probability != null ? opp.probability : null;
 
-      // Header
-      appEl.appendChild(el('div', { style: { marginBottom: '12px' } }, [
-        el('h3', { textContent: party, style: { margin: '0 0 8px 0' } }),
-        UI.pill(status, statusColor(status))
-      ]));
+      // \u2500\u2500 Hero: party + ID + amount \u2500\u2500
+      var hero = el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: party }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: opp.name + (opp.opportunity_type ? ' \u00b7 ' + opp.opportunity_type : '') })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: amount ? formatCurrency(amount) : '\u2014' }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: probability != null ? probability + '% probability' : 'Estimated value' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
+      ]);
+      appEl.appendChild(hero);
 
-      // Detail card
-      var details = [
-        { label: 'Opportunity', value: opp.name },
-        { label: 'Party', value: party },
-        { label: 'Type', value: opp.opportunity_type || '\u2014' },
-        { label: 'Source', value: opp.source || '\u2014' },
-        { label: 'Amount', value: opp.opportunity_amount ? formatCurrency(opp.opportunity_amount) : '\u2014' },
-        { label: 'Status', value: status },
-        { label: 'Created', value: formatDate(opp.creation) }
-      ];
-      appEl.appendChild(UI.detailCard(details));
-
-      // Items if any
-      if (opp.items && opp.items.length > 0) {
-        appEl.appendChild(el('div', { style: { marginTop: '16px' } }));
-        appEl.appendChild(UI.sectionHeading('Items'));
-        for (var i = 0; i < opp.items.length; i++) {
-          var item = opp.items[i];
-          appEl.appendChild(UI.listCard({
-            title: item.item_name || item.item_code,
-            sub: 'Qty: ' + (item.qty || 0) + ' \u00b7 ' + formatCurrency(item.amount || 0)
-          }));
-        }
-      }
-
-      // Notes
-      if (opp.notes && opp.notes.length > 0) {
-        appEl.appendChild(el('div', { style: { marginTop: '16px' } }));
-        appEl.appendChild(UI.sectionHeading('Notes'));
-        for (var j = 0; j < opp.notes.length; j++) {
-          var note = opp.notes[j];
-          appEl.appendChild(UI.card([
-            el('div', { textContent: note.note || note, style: { fontSize: '14px' } })
-          ]));
-        }
-      }
-
-      // Action buttons
+      // \u2500\u2500 Quick action row \u2500\u2500
+      var actionBtns = [];
       if (status === 'Open' || status === 'Replied') {
-        var createQuotBtn = UI.btn('Create Quotation', {
+        actionBtns.push(UI.btn('Create quotation', {
           type: 'primary',
-          block: true,
           icon: 'plus',
           onClick: function () {
             location.hash = '#/quotations/new?opportunity=' + encodeURIComponent(opp.name) + '&customer=' + encodeURIComponent(party);
           }
-        });
-        appEl.appendChild(el('div', { style: { marginTop: '16px' } }, [createQuotBtn]));
+        }));
+      }
+      if (opp.contact_email) {
+        actionBtns.push(UI.btn('Email', {
+          type: 'tonal',
+          icon: 'send',
+          onClick: function () { location.href = 'mailto:' + opp.contact_email; }
+        }));
+      }
+      if (opp.contact_mobile || opp.contact_no) {
+        var phone = opp.contact_mobile || opp.contact_no;
+        actionBtns.push(UI.btn('Call', {
+          type: 'tonal',
+          icon: 'phone',
+          onClick: function () { location.href = 'tel:' + phone; }
+        }));
+      }
+      if (actionBtns.length) {
+        appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
+      }
+
+      // \u2500\u2500 Items \u2500\u2500
+      if (opp.items && opp.items.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Items', { support: opp.items.length + (opp.items.length === 1 ? ' line' : ' lines') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < opp.items.length; i++) {
+          var it = opp.items[i];
+          var qty = it.qty || 0;
+          var rate = it.rate || 0;
+          var lineAmt = it.amount != null ? it.amount : qty * rate;
+          var iname = it.item_name || it.item_code || 'Item';
+          var meta = qty + (it.uom ? ' ' + it.uom : '') + ' \u00d7 ' + formatCurrency(rate);
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: iname }),
+              el('div', { className: 'm3-doc-item-meta', textContent: meta })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(lineAmt) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      }
+
+      // \u2500\u2500 Details \u2500\u2500
+      appEl.appendChild(UI.sectionHeader('Details'));
+      var detailRows = [
+        { label: 'Opportunity', value: opp.name },
+        { label: 'Customer / lead', value: party },
+        { label: 'Type', value: opp.opportunity_type || '\u2014' },
+        { label: 'Source', value: opp.source || '\u2014' },
+        { label: 'Sales stage', value: opp.sales_stage || '\u2014' },
+        { label: 'Probability', value: probability != null ? probability + '%' : '\u2014' },
+        { label: 'Expected close', value: formatDate(opp.expected_closing) },
+        { label: 'Status', value: status },
+        { label: 'Created', value: formatDate(opp.creation) }
+      ];
+      if (opp.contact_no) detailRows.push({ label: 'Phone', value: opp.contact_no });
+      if (opp.contact_email) detailRows.push({ label: 'Email', value: opp.contact_email });
+      appEl.appendChild(UI.detailCard(detailRows));
+
+      // \u2500\u2500 Notes (child table) \u2500\u2500
+      if (opp.notes && opp.notes.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Notes', { support: opp.notes.length + ' entries' }));
+        var notesBox = el('div', { className: 'm3-doc-timeline' });
+        for (var j = 0; j < opp.notes.length; j++) {
+          var note = opp.notes[j];
+          var noteText = (typeof note === 'string') ? note : (note.note || '');
+          var noteDate = (typeof note === 'object') ? formatDate(note.added_on || note.creation) : '';
+          notesBox.appendChild(el('div', { className: 'm3-doc-timeline-row' }, [
+            el('div', { className: 'm3-doc-timeline-dot' }),
+            el('div', { className: 'm3-doc-timeline-content' }, [
+              el('p', { className: 'm3-doc-timeline-title', textContent: noteText }),
+              noteDate ? el('p', { className: 'm3-doc-timeline-date', textContent: noteDate }) : null
+            ].filter(Boolean))
+          ]));
+        }
+        appEl.appendChild(notesBox);
       }
 
     }).catch(function (err) {
-      appEl.textContent = '';
+      skel.remove();
       appEl.appendChild(UI.error('Failed to load opportunity: ' + (err.message || err)));
     });
   };

@@ -90,6 +90,7 @@
           return;
         }
 
+        var listWrap = el('div', { className: 'm3-list' });
         for (var i = 0; i < items.length; i++) {
           (function (q) {
             var customer = q.party_name || 'Unknown';
@@ -98,17 +99,19 @@
             var status = statusLabel(q);
             var sub = [q.name, dateStr].filter(Boolean).join(' \u00b7 ');
 
-            listContainer.appendChild(UI.listCard({
+            listWrap.appendChild(UI.listCard({
               avatar: customer,
               title: customer,
               sub: sub,
-              right: el('div', { style: { textAlign: 'right' } }, [
-                el('div', { textContent: total, style: { fontWeight: '600', fontSize: '14px', marginBottom: '4px' } }),
+              right: el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, [
+                el('div', { textContent: total, style: { font: 'var(--m3-title-small)', letterSpacing: '0.1px', fontFeatureSettings: '"tnum" 1' } }),
                 UI.pill(status, statusColor(status))
-              ])
+              ]),
+              onClick: function () { location.hash = '#/quotation/' + encodeURIComponent(q.name); }
             }));
           })(items[i]);
         }
+        listContainer.appendChild(listWrap);
       }).catch(function (err) {
         listContainer.textContent = '';
         listContainer.appendChild(UI.error('Failed to load quotations: ' + (err.message || err)));
@@ -504,6 +507,164 @@
     ];
 
     appEl.appendChild(UI.card(formChildren));
+  };
+
+  // ── Screen: Quotation Detail ────────────────────────────────────────
+  // ERP mobile pattern (Zoho/Odoo): hero with customer + amount + status,
+  // quick actions, items table, totals breakdown, terms, activity.
+
+  window.Screens.quotationDetail = function (appEl, params) {
+    var el = UI.el;
+    var quotName = params.id || params.name;
+
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
+
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Quotation&name=' + encodeURIComponent(quotName)
+    ).then(function (res) {
+      skel.remove();
+
+      var q = null;
+      if (res && res.data) q = res.data.message || res.data.data || res.data;
+      if (!q) {
+        appEl.appendChild(UI.error('Could not load quotation.'));
+        return;
+      }
+
+      var customer = q.party_name || q.customer_name || 'Unknown';
+      var status = statusLabel(q);
+      var grandTotal = formatCurrency(q.grand_total);
+
+      // ── Hero: customer + status pill + grand total ──
+      var hero = el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: q.name + ' · ' + formatDate(q.transaction_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: grandTotal }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Grand total' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
+      ]);
+      appEl.appendChild(hero);
+
+      // ── Quick action row ──
+      var actionBtns = [];
+      if (q.docstatus !== 2) {
+        actionBtns.push(UI.btn('Convert to SO', {
+          type: 'primary',
+          icon: 'plus',
+          onClick: function () {
+            location.hash = '#/sales-orders/new?quotation=' + encodeURIComponent(q.name);
+          }
+        }));
+      }
+      if (q.contact_email) {
+        actionBtns.push(UI.btn('Email', {
+          type: 'tonal',
+          icon: 'send',
+          onClick: function () { location.href = 'mailto:' + q.contact_email + '?subject=Quotation%20' + encodeURIComponent(q.name); }
+        }));
+      }
+      actionBtns.push(UI.btn('PDF', {
+        type: 'tonal',
+        icon: 'file',
+        onClick: function () {
+          var pdfUrl = '/api/method/frappe.utils.print_format.download_pdf?doctype=Quotation&name=' + encodeURIComponent(q.name) + '&format=Standard';
+          window.open(pdfUrl, '_blank');
+        }
+      }));
+      if (actionBtns.length) {
+        appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
+      }
+
+      // ── Items ──
+      if (q.items && q.items.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Items', { support: q.items.length + (q.items.length === 1 ? ' line' : ' lines') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < q.items.length; i++) {
+          var it = q.items[i];
+          var qty = it.qty || 0;
+          var rate = it.rate || 0;
+          var amount = it.amount != null ? it.amount : qty * rate;
+          var name = it.item_name || it.item_code || 'Item';
+          var meta = qty + (it.uom ? ' ' + it.uom : '') + ' × ' + formatCurrency(rate);
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: name }),
+              el('div', { className: 'm3-doc-item-meta', textContent: meta })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(amount) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      }
+
+      // ── Totals ──
+      appEl.appendChild(UI.sectionHeader('Totals'));
+      var totalRows = [];
+      if (q.total != null && q.total !== q.grand_total) {
+        totalRows.push({ label: 'Subtotal', value: formatCurrency(q.total) });
+      }
+      if (q.discount_amount) {
+        totalRows.push({ label: 'Discount', value: '-' + formatCurrency(q.discount_amount) });
+      }
+      if (q.total_taxes_and_charges) {
+        totalRows.push({ label: 'Tax', value: formatCurrency(q.total_taxes_and_charges) });
+      }
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      for (var t = 0; t < totalRows.length; t++) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: totalRows[t].label }),
+          el('span', { className: 'm3-doc-totals-value', textContent: totalRows[t].value })
+        ]));
+      }
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Grand total' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: grandTotal })
+      ]));
+      appEl.appendChild(totalsBox);
+
+      // ── Document details ──
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Quotation', value: q.name },
+        { label: 'Customer', value: customer },
+        { label: 'Date', value: formatDate(q.transaction_date) },
+        { label: 'Valid till', value: formatDate(q.valid_till) },
+        { label: 'Status', value: status },
+        { label: 'Currency', value: q.currency || 'INR' },
+        { label: 'Order type', value: q.order_type || '—' }
+      ]));
+
+      // ── Terms / remarks ──
+      if (q.terms) {
+        appEl.appendChild(UI.sectionHeader('Terms & conditions'));
+        var termsCard = el('div', {
+          className: 'm3-card',
+          style: {
+            background: 'var(--m3-surface-container-low)',
+            borderRadius: 'var(--m3-shape-md)',
+            padding: '16px',
+            font: 'var(--m3-body-medium)',
+            color: 'var(--m3-on-surface)',
+            letterSpacing: '0.25px',
+            whiteSpace: 'pre-wrap',
+            marginBottom: '16px'
+          },
+          textContent: q.terms
+        });
+        appEl.appendChild(termsCard);
+      }
+
+    }).catch(function (err) {
+      skel.remove();
+      appEl.appendChild(UI.error('Failed to load quotation: ' + (err.message || err)));
+    });
   };
 
 })();

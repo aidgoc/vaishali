@@ -173,10 +173,12 @@
     // Quotations
     { pattern: '#/quotations/new', handler: function () { S().quotationNew(appEl); },  tab: 'home', title: 'New Quotation', back: '#/quotations' },
     { pattern: '#/quotations',     handler: function () { S().quotationList(appEl); }, tab: 'home', title: 'Quotations',    back: '#/home' },
+    { pattern: '#/quotation/:id',  handler: function (p) { S().quotationDetail(appEl, p); }, tab: 'home', title: 'Quotation', back: '#/quotations' },
 
     // Sales Orders
     { pattern: '#/sales-orders/new', handler: function () { S().salesOrderNew(appEl); },  tab: 'home', title: 'New Sales Order', back: '#/sales-orders' },
     { pattern: '#/sales-orders',     handler: function () { S().salesOrderList(appEl); }, tab: 'home', title: 'Sales Orders',    back: '#/home' },
+    { pattern: '#/sales-order/:id',  handler: function (p) { S().salesOrderDetail(appEl, p); }, tab: 'home', title: 'Sales Order', back: '#/sales-orders' },
 
     // Delivery Notes
     { pattern: '#/delivery-notes/new', handler: function () { S().deliveryNoteNew(appEl); },  tab: 'home', title: 'New Delivery Note', back: '#/delivery-notes' },

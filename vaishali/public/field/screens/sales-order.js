@@ -98,10 +98,11 @@
               avatar: customer,
               title: customer,
               sub: sub,
-              right: el('div', { style: { textAlign: 'right' } }, [
-                el('div', { textContent: formatCurrency(so.grand_total), style: { fontWeight: '600', fontSize: '14px', marginBottom: '4px' } }),
+              right: el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, [
+                el('div', { textContent: formatCurrency(so.grand_total), style: { font: 'var(--m3-title-small)', letterSpacing: '0.1px', fontFeatureSettings: '"tnum" 1' } }),
                 UI.pill(statusLabel(so), statusColor(statusLabel(so)))
-              ])
+              ]),
+              onClick: function () { location.hash = '#/sales-order/' + encodeURIComponent(so.name); }
             }));
           })(items[i]);
         }
@@ -242,6 +243,127 @@
     }).catch(function (err) {
       appEl.textContent = '';
       appEl.appendChild(UI.error('Failed to load quotations: ' + (err.message || err)));
+    });
+  };
+
+  // ── Screen: Sales Order Detail ─────────────────────────────────────
+  window.Screens.salesOrderDetail = function (appEl, params) {
+    var el = UI.el;
+    var soName = params.id || params.name;
+
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
+
+    window.fieldAPI.apiCall('GET',
+      '/api/method/frappe.client.get?doctype=Sales Order&name=' + encodeURIComponent(soName)
+    ).then(function (res) {
+      skel.remove();
+
+      var so = null;
+      if (res && res.data) so = res.data.message || res.data.data || res.data;
+      if (!so) {
+        appEl.appendChild(UI.error('Could not load sales order.'));
+        return;
+      }
+
+      var customer = so.customer_name || so.customer || 'Unknown';
+      var status = statusLabel(so);
+      var grandTotal = formatCurrency(so.grand_total);
+
+      // Hero
+      appEl.appendChild(el('div', { className: 'm3-doc-hero' }, [
+        el('div', { className: 'm3-doc-hero-top' }, [
+          el('div', { className: 'm3-doc-hero-customer' }, [
+            el('div', { className: 'm3-doc-hero-customer-name', textContent: customer }),
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: so.name + ' · ' + formatDate(so.transaction_date) })
+          ]),
+          el('div', { className: 'm3-doc-hero-amount' }, [
+            el('div', { className: 'm3-doc-hero-amount-value', textContent: grandTotal }),
+            el('div', { className: 'm3-doc-hero-amount-label', textContent: 'Grand total' })
+          ])
+        ]),
+        el('div', {}, [UI.pill(status, statusColor(status))])
+      ]));
+
+      // Actions
+      var actionBtns = [];
+      actionBtns.push(UI.btn('PDF', {
+        type: 'tonal',
+        icon: 'file',
+        onClick: function () {
+          var pdfUrl = '/api/method/frappe.utils.print_format.download_pdf?doctype=Sales Order&name=' + encodeURIComponent(so.name) + '&format=Standard';
+          window.open(pdfUrl, '_blank');
+        }
+      }));
+      if (so.docstatus === 1 && so.status !== 'Closed' && so.status !== 'Completed') {
+        actionBtns.push(UI.btn('Make delivery', {
+          type: 'primary',
+          icon: 'plus',
+          onClick: function () {
+            location.hash = '#/delivery-notes/new?sales_order=' + encodeURIComponent(so.name);
+          }
+        }));
+      }
+      appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
+
+      // Items
+      if (so.items && so.items.length > 0) {
+        appEl.appendChild(UI.sectionHeader('Items', { support: so.items.length + (so.items.length === 1 ? ' line' : ' lines') }));
+        var itemsBox = el('div', { className: 'm3-doc-items' });
+        for (var i = 0; i < so.items.length; i++) {
+          var it = so.items[i];
+          var qty = it.qty || 0;
+          var rate = it.rate || 0;
+          var amount = it.amount != null ? it.amount : qty * rate;
+          var name = it.item_name || it.item_code || 'Item';
+          var meta = qty + (it.uom ? ' ' + it.uom : '') + ' × ' + formatCurrency(rate);
+          if (it.delivered_qty != null) {
+            meta += ' · ' + (it.delivered_qty || 0) + ' delivered';
+          }
+          itemsBox.appendChild(el('div', { className: 'm3-doc-item-row' }, [
+            el('div', { className: 'm3-doc-item-content' }, [
+              el('div', { className: 'm3-doc-item-name', textContent: name }),
+              el('div', { className: 'm3-doc-item-meta', textContent: meta })
+            ]),
+            el('div', { className: 'm3-doc-item-amount', textContent: formatCurrency(amount) })
+          ]));
+        }
+        appEl.appendChild(itemsBox);
+      }
+
+      // Totals
+      appEl.appendChild(UI.sectionHeader('Totals'));
+      var totalsBox = el('div', { className: 'm3-doc-totals' });
+      var totalRows = [];
+      if (so.total != null && so.total !== so.grand_total) totalRows.push({ label: 'Subtotal', value: formatCurrency(so.total) });
+      if (so.discount_amount) totalRows.push({ label: 'Discount', value: '-' + formatCurrency(so.discount_amount) });
+      if (so.total_taxes_and_charges) totalRows.push({ label: 'Tax', value: formatCurrency(so.total_taxes_and_charges) });
+      for (var t = 0; t < totalRows.length; t++) {
+        totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
+          el('span', { textContent: totalRows[t].label }),
+          el('span', { className: 'm3-doc-totals-value', textContent: totalRows[t].value })
+        ]));
+      }
+      totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row grand' }, [
+        el('span', { textContent: 'Grand total' }),
+        el('span', { className: 'm3-doc-totals-value', textContent: grandTotal })
+      ]));
+      appEl.appendChild(totalsBox);
+
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Sales order', value: so.name },
+        { label: 'Customer', value: customer },
+        { label: 'Date', value: formatDate(so.transaction_date) },
+        { label: 'Delivery date', value: formatDate(so.delivery_date) },
+        { label: 'Status', value: status },
+        { label: 'Currency', value: so.currency || 'INR' }
+      ]));
+
+    }).catch(function (err) {
+      skel.remove();
+      appEl.appendChild(UI.error('Failed to load sales order: ' + (err.message || err)));
     });
   };
 

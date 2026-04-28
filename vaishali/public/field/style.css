@@ -5308,4 +5308,183 @@ select.form-control {
   font-size: 0.92em;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 DOCUMENT-STYLE DETAIL (quotation, sales order, invoice)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hero block — customer + amount + status (like Zoho CRM mobile) */
+.m3-doc-hero {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.m3-doc-hero .m3-doc-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.m3-doc-hero .m3-doc-hero-customer {
+  flex: 1;
+  min-width: 0;
+}
+.m3-doc-hero .m3-doc-hero-customer-name {
+  font: var(--m3-headline-small);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  margin: 0 0 2px;
+  word-break: break-word;
+}
+.m3-doc-hero .m3-doc-hero-customer-sub {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  margin: 0;
+}
+.m3-doc-hero .m3-doc-hero-amount {
+  text-align: right;
+  flex-shrink: 0;
+}
+.m3-doc-hero .m3-doc-hero-amount-value {
+  font: var(--m3-headline-medium);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  font-feature-settings: 'tnum' 1;
+}
+.m3-doc-hero .m3-doc-hero-amount-label {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  margin-top: 2px;
+}
+
+/* Action row — buttons in a horizontal scrollable strip */
+.m3-doc-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.m3-doc-actions .m3-btn,
+.m3-doc-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Items table — line items in compact rows */
+.m3-doc-items {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.m3-doc-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-doc-item-row:last-child { border-bottom: none; }
+.m3-doc-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.m3-doc-item-name {
+  font: var(--m3-body-large);
+  letter-spacing: 0.5px;
+  color: var(--m3-on-surface);
+  word-break: break-word;
+}
+.m3-doc-item-meta {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  font-feature-settings: 'tnum' 1;
+}
+.m3-doc-item-amount {
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  color: var(--m3-on-surface);
+  text-align: right;
+  flex-shrink: 0;
+  min-width: 80px;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Totals block — subtotal/tax/discount/grand total */
+.m3-doc-totals {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.m3-doc-totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  color: var(--m3-on-surface-variant);
+}
+.m3-doc-totals-row.grand {
+  border-top: 1px solid var(--m3-outline-variant);
+  margin-top: 4px;
+  padding-top: 12px;
+  font: var(--m3-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--m3-on-surface);
+}
+.m3-doc-totals-row .m3-doc-totals-value {
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Activity timeline */
+.m3-doc-timeline {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 8px 16px;
+  margin-bottom: 16px;
+}
+.m3-doc-timeline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-doc-timeline-row:last-child { border-bottom: none; }
+.m3-doc-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m3-primary);
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.m3-doc-timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+.m3-doc-timeline-title {
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  color: var(--m3-on-surface);
+  margin: 0 0 2px;
+}
+.m3-doc-timeline-date {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  margin: 0;
+}
+
 /* End M3 layer */
