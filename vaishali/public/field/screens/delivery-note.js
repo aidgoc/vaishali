@@ -83,10 +83,13 @@
               avatar: customer,
               title: customer,
               sub: sub,
-              right: el('div', { style: { textAlign: 'right' } }, [
-                el('div', { textContent: formatCurrency(dn.grand_total), style: { fontWeight: '600', fontSize: '14px', marginBottom: '4px' } }),
+              right: el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, [
+                el('div', { textContent: formatCurrency(dn.grand_total), style: { font: 'var(--m3-title-small)', letterSpacing: '0.1px', fontFeatureSettings: '"tnum" 1' } }),
                 UI.pill(statusLabel(dn), statusColor(statusLabel(dn)))
-              ])
+              ]),
+              onClick: function () {
+                window.open('/app/delivery-note/' + encodeURIComponent(dn.name), '_blank');
+              }
             }));
           })(items[i]);
         }

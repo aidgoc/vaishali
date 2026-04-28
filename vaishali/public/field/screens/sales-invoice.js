@@ -90,7 +90,10 @@
               avatar: customer,
               title: customer,
               sub: sub,
-              right: el('div', { style: { textAlign: 'right' } }, rightContent)
+              right: el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, rightContent),
+              onClick: function () {
+                window.open('/app/sales-invoice/' + encodeURIComponent(si.name), '_blank');
+              }
             }));
           })(items[i]);
         }
