@@ -5487,4 +5487,558 @@ select.form-control {
   margin: 0;
 }
 
-/* End M3 layer */
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN REFINEMENT — restraint, hierarchy, breath
+   Architecture: one page surface, one container surface. Less, not more.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Reduce 6 surface tones to 2: page + container */
+  --m3-surface: #FFFCFB;
+  --m3-surface-container-lowest: #FFFCFB;
+  --m3-surface-container-low: #F6F0EE;
+  --m3-surface-container: #F6F0EE;
+  --m3-surface-container-high: #F1E9E6;
+  --m3-surface-container-highest: #F1E9E6;
+}
+
+body, #app {
+  background: var(--m3-surface);
+}
+
+/* ──── PAGE STRUCTURE ─────────────────────────────────────────────── */
+
+#app {
+  padding: 24px 20px 40px;
+}
+
+#app-header {
+  background: var(--m3-surface);
+  border-bottom: none;
+}
+#app-header.scrolled {
+  background: var(--m3-surface);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* The auto-injected slim page header duplicates the app bar's title
+   context. The app bar IS the page header. Remove the slim variant. */
+.m3-page-header.slim {
+  display: none;
+}
+
+/* Page header (used by individual screens that own their hero) */
+.m3-page-header {
+  padding: 0 0 32px;
+}
+.m3-page-header h1,
+.m3-page-header .m3-page-title {
+  font: 500 28px/34px var(--m3-font);
+  letter-spacing: -0.01em;
+}
+.m3-page-header .m3-page-support {
+  font: 400 15px/22px var(--m3-font);
+  letter-spacing: 0;
+  color: var(--m3-on-surface-variant);
+  margin-top: 4px;
+}
+
+/* ──── TYPOGRAPHY — fewer levels, tighter ─────────────────────────── */
+
+body {
+  font: 400 15px/22px var(--m3-font);
+  letter-spacing: 0;
+}
+
+/* ──── SECTION HEADERS — quieter ──────────────────────────────────── */
+
+.m3-section-header {
+  margin: 32px 0 12px;
+}
+.m3-section-header h2,
+.m3-section-header .m3-section-title {
+  font: 500 13px/18px var(--m3-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--m3-on-surface-variant);
+}
+.m3-section-header .m3-section-support {
+  display: none; /* drop ambient support text — it's filler */
+}
+.section-heading {
+  font: 500 13px/18px var(--m3-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--m3-on-surface-variant);
+  margin: 32px 0 12px;
+}
+
+/* ──── DOC HERO — drop redundant labels ───────────────────────────── */
+
+.m3-doc-hero {
+  background: transparent;
+  padding: 0 0 24px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  margin-bottom: 24px;
+  border-radius: 0;
+  gap: 16px;
+}
+.m3-doc-hero .m3-doc-hero-customer-name {
+  font: 500 28px/34px var(--m3-font);
+  letter-spacing: -0.01em;
+  color: var(--m3-on-surface);
+  margin: 0;
+}
+.m3-doc-hero .m3-doc-hero-customer-sub {
+  font: 400 14px/20px var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  margin: 2px 0 0;
+}
+.m3-doc-hero .m3-doc-hero-amount-value {
+  font: 500 28px/34px var(--m3-font);
+  letter-spacing: -0.01em;
+  color: var(--m3-on-surface);
+}
+.m3-doc-hero .m3-doc-hero-amount-label {
+  font: 400 12px/16px var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.02em;
+  margin-top: 0;
+}
+
+/* ──── STATUS PILL — recessive: dot + text, no fill ───────────────── */
+
+.indicator-pill {
+  background: transparent !important;
+  color: var(--m3-on-surface-variant) !important;
+  padding: 0;
+  height: 18px;
+  font: 500 12px/16px var(--m3-font);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 0;
+}
+.indicator-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--m3-outline);
+  flex-shrink: 0;
+}
+.indicator-pill.green::before { background: #2E7D32; }
+.indicator-pill.red::before { background: #BA1A1A; }
+.indicator-pill.yellow::before,
+.indicator-pill.orange::before { background: #B8530B; }
+.indicator-pill.blue::before { background: #1A56DB; }
+.indicator-pill.gray::before { background: var(--m3-outline); }
+
+/* ──── ACTION ROW — one primary, rest text ────────────────────────── */
+
+.m3-doc-actions {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.m3-doc-actions .btn,
+.m3-doc-actions .m3-btn {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+/* Demote tonal buttons in action rows to text style — only primary stays filled */
+.m3-doc-actions .m3-btn-tonal,
+.m3-doc-actions .btn:not(.btn-primary-styled):not(.btn-success-custom):not(.btn-danger-custom) {
+  background: transparent;
+  color: var(--m3-primary);
+  padding: 0 12px;
+}
+.m3-doc-actions .m3-btn-tonal:hover,
+.m3-doc-actions .btn:not(.btn-primary-styled):not(.btn-success-custom):not(.btn-danger-custom):hover {
+  background: rgba(179, 38, 30, 0.06);
+}
+
+/* ──── ITEMS TABLE — quieter dividers, more breath ────────────────── */
+
+.m3-doc-items {
+  background: transparent;
+  border-radius: 0;
+  margin-bottom: 32px;
+}
+.m3-doc-item-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-doc-item-row:first-child { padding-top: 4px; }
+.m3-doc-item-name {
+  font: 400 15px/22px var(--m3-font);
+  letter-spacing: 0;
+}
+.m3-doc-item-meta {
+  font: 400 13px/18px var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  margin-top: 2px;
+}
+.m3-doc-item-amount {
+  font: 500 15px/22px var(--m3-font);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ──── TOTALS — quiet, right-aligned, no card ─────────────────────── */
+
+.m3-doc-totals {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 32px;
+}
+.m3-doc-totals-row {
+  padding: 8px 0;
+  font: 400 14px/20px var(--m3-font);
+}
+.m3-doc-totals-row.grand {
+  border-top: 1px solid var(--m3-outline-variant);
+  margin-top: 8px;
+  padding-top: 16px;
+  font: 500 18px/24px var(--m3-font);
+  letter-spacing: -0.01em;
+  color: var(--m3-on-surface);
+}
+.m3-doc-totals-row .m3-doc-totals-value {
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ──── DETAIL CARD — flatter, no card background ──────────────────── */
+
+.detail-card {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  margin-bottom: 32px;
+}
+.detail-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  align-items: baseline;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label {
+  font: 400 13px/18px var(--m3-font);
+  letter-spacing: 0;
+  color: var(--m3-on-surface-variant);
+  text-transform: none;
+}
+.detail-value {
+  font: 400 15px/22px var(--m3-font);
+  color: var(--m3-on-surface);
+  letter-spacing: 0;
+  text-align: right;
+}
+
+/* ──── LIST CARDS — drop avatar background, lighter dividers ──────── */
+
+.list-card,
+.m3-list-item {
+  padding: 14px 0;
+  background: transparent;
+}
+.m3-list .list-card,
+.m3-list .m3-list-item {
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-list {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 32px;
+}
+.list-card:hover,
+.m3-list-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.list-card:active,
+.m3-list-item:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+.list-card .list-title,
+.m3-list-item .m3-list-title {
+  font: 500 15px/22px var(--m3-font);
+  letter-spacing: 0;
+}
+.list-card .list-sub,
+.m3-list-item .m3-list-support {
+  font: 400 13px/18px var(--m3-font);
+  letter-spacing: 0;
+  color: var(--m3-on-surface-variant);
+}
+
+/* Avatar — recede; just a subtle initial in muted tone */
+.list-avatar {
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  border: 1px solid var(--m3-outline-variant);
+  font: 500 13px/1 var(--m3-font);
+  width: 36px;
+  height: 36px;
+}
+
+/* ──── STATS — drop the support filler, tighter ───────────────────── */
+
+.m3-stat,
+.kpi-item,
+.stat-card {
+  background: transparent;
+  padding: 16px 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-stat .m3-stat-support,
+.kpi-item .kpi-support,
+.stat-card .stat-support {
+  display: none; /* support text on stats was filler */
+}
+.m3-stat .m3-stat-label,
+.kpi-item .kpi-label,
+.stat-card .stat-label {
+  font: 400 13px/18px var(--m3-font);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--m3-on-surface-variant);
+  order: 1;
+}
+.m3-stat .m3-stat-value,
+.kpi-item .kpi-value,
+.stat-card .stat-value {
+  font: 500 24px/30px var(--m3-font);
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+  order: 2;
+}
+.m3-stat-grid,
+.stats-row,
+.kpi-row {
+  margin-bottom: 32px;
+  gap: 0;
+  border-top: 1px solid var(--m3-outline-variant);
+}
+.m3-stat-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+.m3-stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* ──── ACTION CARDS — flatter, no fill ────────────────────────────── */
+
+.action-card {
+  background: transparent;
+  padding: 16px 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.action-card:hover { background: rgba(0, 0, 0, 0.02); }
+.action-card:active { background: rgba(0, 0, 0, 0.04); }
+.action-card .action-icon {
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+.action-card .action-icon svg { width: 22px; height: 22px; }
+.action-card .action-label {
+  font: 500 15px/22px var(--m3-font);
+  letter-spacing: 0;
+  flex: 1;
+}
+.action-card .action-value {
+  font: 500 17px/24px var(--m3-font);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.action-card .action-sub {
+  font: 400 13px/18px var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  margin: 0;
+}
+.action-grid {
+  display: block;
+  margin-bottom: 32px;
+  border-top: 1px solid var(--m3-outline-variant);
+}
+
+/* ──── HR TILES — same row treatment ──────────────────────────────── */
+.hr-grid {
+  display: block;
+  margin-bottom: 32px;
+  border-top: 1px solid var(--m3-outline-variant);
+}
+.hr-tile {
+  background: transparent;
+  padding: 16px 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  font: 500 15px/22px var(--m3-font);
+}
+.hr-tile:hover { background: rgba(0, 0, 0, 0.02); }
+.hr-tile svg { color: var(--m3-on-surface-variant); }
+
+/* ──── CARDS — used by forms, not detail screens ──────────────────── */
+
+.card-surface,
+.m3-card {
+  background: var(--m3-surface-container-low);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+/* ──── BUTTONS — softer, less rounded ─────────────────────────────── */
+
+.btn,
+.m3-btn {
+  height: 44px;
+  border-radius: 22px;
+  font: 500 14px/20px var(--m3-font);
+  letter-spacing: 0;
+  padding: 0 20px;
+}
+
+/* Outline buttons get a softer tone */
+.btn-outline,
+.m3-btn-outlined {
+  border-color: var(--m3-outline-variant);
+}
+
+/* ──── HOME GREETING — quieter ────────────────────────────────────── */
+
+.greeting-hero {
+  padding: 8px 0 24px;
+}
+.greeting-hero h2 {
+  font: 500 24px/30px var(--m3-font);
+  letter-spacing: -0.01em;
+}
+.greeting-hero .greeting-name {
+  color: var(--m3-on-surface);
+  font-weight: 500;
+}
+.greeting-hero .greeting-meta {
+  font: 400 13px/18px var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  margin-top: 6px;
+  letter-spacing: 0;
+}
+
+/* ──── HEADER (top app bar) — softer ──────────────────────────────── */
+.header-title {
+  font: 500 17px/22px var(--m3-font);
+  letter-spacing: 0;
+}
+
+/* ──── BOTTOM NAV — quieter ───────────────────────────────────────── */
+#bottom-nav,
+.bottom-nav {
+  background: var(--m3-surface);
+  border-top: 1px solid var(--m3-outline-variant);
+}
+.nav-item {
+  font: 500 11px/14px var(--m3-font);
+}
+.nav-item .nav-icon {
+  width: 56px;
+  height: 32px;
+}
+.nav-item.active .nav-icon {
+  background: rgba(179, 38, 30, 0.08);
+}
+
+/* ──── EMPTY STATE — gentler ──────────────────────────────────────── */
+
+.empty-state {
+  padding: 64px 24px;
+  gap: 12px;
+}
+.empty-icon {
+  background: transparent;
+  border: 1px solid var(--m3-outline-variant);
+  width: 48px;
+  height: 48px;
+}
+.empty-icon svg { width: 24px; height: 24px; opacity: 0.6; }
+.empty-text {
+  font: 400 14px/20px var(--m3-font);
+  letter-spacing: 0;
+}
+
+/* ──── DIVIDER — almost invisible ─────────────────────────────────── */
+.divider {
+  background: var(--m3-outline-variant);
+  margin: 24px 0;
+}
+
+/* ──── M3 TEXTFIELD — outlined, less heavy fill ───────────────────── */
+
+.m3-textfield-input {
+  background: transparent;
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: 8px;
+  padding: 16px 14px 6px;
+  font: 400 15px/22px var(--m3-font);
+  letter-spacing: 0;
+}
+.m3-textfield-input:hover {
+  background: transparent;
+  border-color: var(--m3-on-surface-variant);
+}
+.m3-textfield-input:focus {
+  border: 2px solid var(--m3-primary);
+  padding: 15px 13px 5px;
+}
+textarea.m3-textfield-input { min-height: 88px; padding-top: 20px; padding-bottom: 8px; }
+textarea.m3-textfield-input:focus { padding-bottom: 7px; padding-top: 19px; }
+.m3-textfield-label {
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--m3-surface);
+  padding: 0 4px;
+  font: 400 15px/20px var(--m3-font);
+}
+.m3-textfield-input:focus ~ .m3-textfield-label,
+.m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label,
+.m3-textfield.has-value .m3-textfield-label {
+  transform: translateY(-32px) scale(0.85);
+  font-weight: 400;
+  color: var(--m3-on-surface-variant);
+}
+.m3-textfield-input:focus ~ .m3-textfield-label {
+  color: var(--m3-primary);
+}
+textarea.m3-textfield-input ~ .m3-textfield-label {
+  top: 22px;
+  transform: translateY(0);
+}
+textarea.m3-textfield-input:focus ~ .m3-textfield-label,
+textarea.m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label {
+  transform: translateY(-22px) scale(0.85);
+}
+
+/* ──── MOTION — calmer, slower ────────────────────────────────────── */
+
+* {
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* End refinement */
