@@ -10,7 +10,7 @@
   }
 
   // ─── Conversation ID ─────────────────────────────────────────────
-  var _CONV_KEY = 'vaishali_conversation_id';
+  var _CONV_KEY = 'vaishali_session_id';
   var _conversationId = localStorage.getItem(_CONV_KEY) || '';
 
   // ─── State ──────────────────────────────────────────────────────
@@ -173,7 +173,7 @@
     _updateInputState();
 
     var body = { message: text };
-    if (_conversationId) body.conversation_id = _conversationId;
+    if (_conversationId) body.session_id = _conversationId;
 
     chatCall('POST', '/api/ai/chat', body)
       .then(function (resp) {
@@ -187,8 +187,8 @@
           _chatContainer.appendChild(messageBubble({ role: 'assistant', content: errMsg }));
         } else {
           var data = resp.data || {};
-          if (data.conversation_id) {
-            _conversationId = data.conversation_id;
+          if (data.session_id) {
+            _conversationId = data.session_id;
             localStorage.setItem(_CONV_KEY, _conversationId);
           }
           var pills = toolCallPills(data.tool_calls);
@@ -222,14 +222,17 @@
 
   // ─── Load history ──────────────────────────────────────────────
   function loadHistory() {
-    var path = '/api/ai/history';
-    if (_conversationId) path += '?conversation_id=' + encodeURIComponent(_conversationId);
+    if (!_conversationId) {
+      _messages = [];
+      return Promise.resolve();
+    }
+    var path = '/api/ai/history?session_id=' + encodeURIComponent(_conversationId);
     return chatCall('GET', path).then(function (resp) {
       if (resp.data && resp.data.history) {
         _messages = resp.data.history;
       }
-      if (resp.data && resp.data.conversation_id) {
-        _conversationId = resp.data.conversation_id;
+      if (resp.data && resp.data.session_id) {
+        _conversationId = resp.data.session_id;
         localStorage.setItem(_CONV_KEY, _conversationId);
       }
     }).catch(function () {
@@ -246,8 +249,8 @@
   }
 
   function clearHistory() {
-    var path = '/api/ai/history';
-    if (_conversationId) path += '?conversation_id=' + encodeURIComponent(_conversationId);
+    if (!_conversationId) { newConversation(); return; }
+    var path = '/api/ai/history?session_id=' + encodeURIComponent(_conversationId);
     chatCall('DELETE', path).then(function () {
       newConversation();
     });
