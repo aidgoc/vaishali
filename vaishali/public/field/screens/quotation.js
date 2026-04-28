@@ -99,7 +99,7 @@
             var status = statusLabel(q);
             var sub = [q.name, dateStr].filter(Boolean).join(' \u00b7 ');
 
-            listWrap.appendChild(UI.listCard({
+            var card = UI.listCard({
               avatar: customer,
               title: customer,
               sub: sub,
@@ -108,7 +108,17 @@
                 UI.pill(status, statusColor(status))
               ]),
               onClick: function () { location.hash = '#/quotation/' + encodeURIComponent(q.name); }
-            }));
+            });
+            // Swipe: trailing = Convert to Sales Order (when quote is open)
+            if (UI.swipeRow && status !== 'Cancelled') {
+              var trailing = [{
+                icon: 'plus', label: 'Make SO', color: 'primary',
+                onClick: function () { location.hash = '#/sales-orders/new?quotation=' + encodeURIComponent(q.name); }
+              }];
+              listWrap.appendChild(UI.swipeRow(card, { trailingActions: trailing }));
+            } else {
+              listWrap.appendChild(card);
+            }
           })(items[i]);
         }
         listContainer.appendChild(listWrap);
@@ -659,6 +669,11 @@
           textContent: q.terms
         });
         appEl.appendChild(termsCard);
+      }
+
+      // Activity timeline + comment composer
+      if (window.Activity) {
+        Activity.attach(appEl, { doctype: 'Quotation', name: q.name });
       }
 
     }).catch(function (err) {

@@ -142,7 +142,7 @@
       var listWrap = el('div', { className: 'm3-list' });
       for (var j = 0; j < filtered.length; j++) {
         (function (item) {
-          listWrap.appendChild(UI.listCard({
+          var card = UI.listCard({
             avatar: item.employee_name,
             title: item.employee_name,
             sub: buildSubText(item),
@@ -150,7 +150,36 @@
             onClick: function () {
               location.hash = '#/approvals/' + item.type.toLowerCase() + '/' + encodeURIComponent(item.name);
             }
-          }));
+          });
+          // Swipe-row: leading=Approve, trailing=Reject — direct action without
+          // navigating to detail. Hits the same endpoint the detail page uses.
+          if (UI.swipeRow) {
+            var doAction = function (action) {
+              var path = '/api/field/approvals/' + encodeURIComponent(item.type.toLowerCase()) + '/' + encodeURIComponent(item.name) + '/' + action;
+              api.apiCall('POST', path).then(function (res) {
+                if (res.error || (res.status && res.status >= 400)) {
+                  UI.toast(action.charAt(0).toUpperCase() + action.slice(1) + ' failed', 'danger');
+                  return;
+                }
+                UI.toast(item.type + ' ' + action + 'd', 'success');
+                // Reload list
+                renderList();
+              });
+            };
+            var leading = [{ icon: 'check', label: 'Approve', color: 'success', onClick: function () {
+              UI.confirmDialog('Approve this ' + item.type + '?', 'The requester will be notified.', { confirmText: 'Approve' }).then(function (ok) {
+                if (ok) doAction('approve');
+              });
+            } }];
+            var trailing = [{ icon: 'x', label: 'Reject', color: 'danger', onClick: function () {
+              UI.confirmDialog('Reject this ' + item.type + '?', 'The requester will be notified.', { confirmText: 'Reject', danger: true }).then(function (ok) {
+                if (ok) doAction('reject');
+              });
+            } }];
+            listWrap.appendChild(UI.swipeRow(card, { leadingActions: leading, trailingActions: trailing }));
+          } else {
+            listWrap.appendChild(card);
+          }
         })(filtered[j]);
       }
       listArea.appendChild(listWrap);

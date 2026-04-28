@@ -83,13 +83,25 @@
             var status = lead.status || 'Lead';
             var sub = [company, source, date].filter(Boolean).join(' \u00b7 ');
 
-            listWrap.appendChild(UI.listCard({
+            var card = UI.listCard({
               avatar: name,
               title: name,
               sub: sub,
               right: UI.pill(status, statusColor(status)),
               onClick: function () { location.hash = '#/lead/' + lead.name; }
-            }));
+            });
+            // Swipe-row: leading=Call (if mobile), trailing=Convert
+            if (UI.swipeRow) {
+              var leading = [];
+              var trailing = [];
+              if (lead.mobile_no) {
+                leading.push({ icon: 'phone', label: 'Call', color: 'success', onClick: function () { location.href = 'tel:' + lead.mobile_no; } });
+              }
+              trailing.push({ icon: 'plus', label: 'Convert', color: 'primary', onClick: function () { location.hash = '#/lead/' + lead.name; } });
+              listWrap.appendChild(UI.swipeRow(card, { leadingActions: leading, trailingActions: trailing }));
+            } else {
+              listWrap.appendChild(card);
+            }
           })(items[i]);
         }
         listContainer.appendChild(listWrap);
@@ -345,6 +357,11 @@
         appEl.appendChild(el('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' } }, [
           createOppBtn, createQuotBtn
         ]));
+      }
+
+      // Activity timeline + comment composer
+      if (window.Activity) {
+        Activity.attach(appEl, { doctype: 'Lead', name: lead.name });
       }
     }).catch(function (err) {
       skel.remove();

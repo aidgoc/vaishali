@@ -225,6 +225,11 @@
         appEl.appendChild(notesBox);
       }
 
+      // Activity timeline + comment composer
+      if (window.Activity) {
+        Activity.attach(appEl, { doctype: 'Opportunity', name: opp.name });
+      }
+
     }).catch(function (err) {
       skel.remove();
       appEl.appendChild(UI.error('Failed to load opportunity: ' + (err.message || err)));

@@ -160,6 +160,11 @@
 
       renderSection(contentArea, sections[activeTab] || [], activeTab);
 
+      // Activity timeline + comment composer
+      if (window.Activity) {
+        Activity.attach(appEl, { doctype: 'Customer', name: customerId });
+      }
+
     }).catch(function () {
       if (loader.parentNode) loader.parentNode.removeChild(loader);
       appEl.appendChild(UI.error('Failed to load customer data'));
