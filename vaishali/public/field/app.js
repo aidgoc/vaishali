@@ -14,6 +14,49 @@
 
   var _navigatingBack = false;
 
+  // ─── Navigation stack — tracks user's real journey ───────────────
+  // The back button should send the user where they came from, not to a
+  // hardcoded canonical parent. We push every forward navigation onto this
+  // stack and pop on back. Falls back to the route's `back` field only
+  // when the stack is empty (deep-link or direct entry).
+  var _navStack = [];
+  var _NAV_STACK_KEY = 'vaishali_nav_stack';
+  var _MAX_STACK = 30;
+  // Tab destinations clear the stack (they're roots in the navigation tree)
+  var _NAV_ROOTS = { '#/home': 1, '#/chat': 1, '#/profile': 1 };
+  try {
+    var saved = sessionStorage.getItem(_NAV_STACK_KEY);
+    if (saved) _navStack = JSON.parse(saved) || [];
+  } catch (e) { _navStack = []; }
+
+  function _saveNavStack() {
+    try { sessionStorage.setItem(_NAV_STACK_KEY, JSON.stringify(_navStack)); } catch (e) {}
+  }
+
+  function _pushNavStack(prevHash) {
+    if (!prevHash) return;
+    if (_NAV_ROOTS[prevHash.split('?')[0]]) {
+      // Reaching a root from elsewhere — keep the root only as the floor
+      _navStack = [prevHash];
+    } else {
+      _navStack.push(prevHash);
+      if (_navStack.length > _MAX_STACK) _navStack.shift();
+    }
+    _saveNavStack();
+  }
+
+  function _popNavStack() {
+    if (_navStack.length === 0) return null;
+    var hash = _navStack.pop();
+    _saveNavStack();
+    return hash;
+  }
+
+  function _clearNavStack() {
+    _navStack = [];
+    _saveNavStack();
+  }
+
   // ─── Helpers ────────────────────────────────────────────────────────
 
   function navigate(hash) {
@@ -324,6 +367,16 @@
 
     // Determine if we should animate (skip for initial load or same-tab root nav)
     var shouldAnimate = _lastRouteHash !== null && _lastRouteHash !== hash;
+
+    // Update nav stack — forward navigation pushes the previous hash;
+    // back navigation already popped it; reaching a tab root clears it.
+    var hashRoot = hash.split('?')[0];
+    if (_NAV_ROOTS[hashRoot]) {
+      _clearNavStack();
+    } else if (!isBack && _lastRouteHash && _lastRouteHash !== hash) {
+      _pushNavStack(_lastRouteHash);
+    }
+
     _lastRouteHash = hash;
 
     // ── 1. Snapshot old screen as ghost layer for layered transition ──
@@ -362,7 +415,20 @@
     };
 
     if (matched.back) {
-      var backBtn = el('button', { className: 'header-back', 'aria-label': 'Go back', onClick: function () { _navigatingBack = true; var dest = resolveBack(); if (dest) location.hash = dest; else history.back(); } });
+      var backBtn = el('button', {
+        className: 'header-back',
+        'aria-label': 'Go back',
+        onClick: function () {
+          _navigatingBack = true;
+          // Respect actual navigation history first — back goes to where
+          // the user came from, not just a hardcoded parent. Falls back
+          // to the canonical parent only on direct/deep-link entry.
+          var dest = _popNavStack();
+          if (!dest) dest = resolveBack();
+          if (dest) location.hash = dest;
+          else history.back();
+        }
+      });
       if (window.icon) backBtn.appendChild(window.icon('back'));
       headerEl.appendChild(backBtn);
     }

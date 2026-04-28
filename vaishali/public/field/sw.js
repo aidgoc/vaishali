@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v39';
+var CACHE_NAME = 'dspl-field-v40';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',
@@ -49,21 +49,25 @@ self.addEventListener('fetch', function(event) {
     return;  // let the browser handle it normally
   }
 
-  // Assets — stale-while-revalidate (serve from cache, update in background)
-  // ignoreSearch: true so ?v=XXX cache-busting params don't cause misses
+  // Assets — network-first (always serve fresh when online, fallback to cache).
+  // Stale-while-revalidate caused blank-page bugs after deploys: page-load
+  // pulled fresh HTML referencing new UI methods, but the SW served the
+  // stale ui.js cached from the previous deploy, so the new methods were
+  // missing at runtime. Network-first guarantees fresh code online and only
+  // falls back to cache when the network is unavailable.
   if (url.pathname.indexOf('/assets/') === 0) {
     event.respondWith(
-      caches.open(CACHE_NAME).then(function(cache) {
-        return cache.match(event.request, { ignoreSearch: true }).then(function(cached) {
-          var fetchPromise = fetch(event.request).then(function(response) {
-            if (response.ok) {
-              cache.put(event.request, response.clone());
-            }
-            return response;
-          }).catch(function() {
-            return cached;
+      fetch(event.request).then(function(response) {
+        if (response.ok) {
+          var responseClone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseClone);
           });
-          return cached || fetchPromise;
+        }
+        return response;
+      }).catch(function() {
+        return caches.open(CACHE_NAME).then(function(cache) {
+          return cache.match(event.request, { ignoreSearch: true });
         });
       })
     );
