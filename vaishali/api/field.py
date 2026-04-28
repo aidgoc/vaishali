@@ -1,10 +1,25 @@
 """Field API — @frappe.whitelist endpoints for the DSPL Field PWA."""
 import frappe
 from frappe import _
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 import calendar
 
 COMPANY = "Dynamic Servitech Private Limited"
+
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+def _to_ist(dt):
+    """Convert naive UTC datetime to ISO 8601 string with IST offset."""
+    if not dt:
+        return None
+    if isinstance(dt, str):
+        try:
+            dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return dt
+    if hasattr(dt, 'replace'):
+        return dt.replace(tzinfo=timezone.utc).astimezone(_IST).strftime("%Y-%m-%dT%H:%M:%S+05:30")
+    return str(dt)
 COMPANIES = [
     "Dynamic Servitech Private Limited",
     "Dynamic Crane Engineers Private Limited",
@@ -50,17 +65,20 @@ def attendance_today():
         fields=["name", "log_type", "time", "latitude", "longitude"],
         order_by="time asc", limit_page_length=50)
 
+    for c in checkins:
+        c.time = _to_ist(c.time)
+
     result = {"employee": emp.employee_name, "checked_in": False,
               "check_in_time": None, "check_out_time": None,
               "checkin_time": None, "checkout_time": None, "checkins": checkins}
     for c in checkins:
         if c.log_type == "IN" and not result["check_in_time"]:
             result["checked_in"] = True
-            result["check_in_time"] = str(c.time)
-            result["checkin_time"] = str(c.time)
+            result["check_in_time"] = c.time
+            result["checkin_time"] = c.time
         if c.log_type == "OUT":
-            result["check_out_time"] = str(c.time)
-            result["checkout_time"] = str(c.time)
+            result["check_out_time"] = c.time
+            result["checkout_time"] = c.time
     return result
 
 
