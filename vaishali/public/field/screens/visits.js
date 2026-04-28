@@ -682,16 +682,16 @@
   // ── Screen: Visit Detail ──────────────────────────────────────────────
 
   window.Screens.visitDetail = function (appEl, params) {
-    appEl.appendChild(UI.pageHeader('Visit', params.id || ''));
     var el = UI.el;
     var dcrName = params.id || params.name;
 
-    var content = el('div', { style: { padding: '0 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
-    content.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(3);
+    content.appendChild(skel);
 
     window.fieldAPI.apiCall('GET', '/api/field/dcr/' + encodeURIComponent(dcrName)).then(function (res) {
-      content.textContent = '';
+      skel.remove();
 
       var dcr = null;
       if (res && res.data) {
@@ -706,11 +706,16 @@
       var status = dcr.status || 'Planned';
       var isOngoing = status.toLowerCase() === 'ongoing';
 
-      // Header: customer name + status pill
-      content.appendChild(el('div', { style: { marginBottom: '12px' } }, [
-        el('h3', { textContent: customer, style: { margin: '0 0 12px 0' } }),
-        UI.pill(status, statusColor(status))
-      ]));
+      // M3 visit hero — customer name + visit purpose + status
+      var hero = el('div', { className: 'profile-hero', style: { paddingTop: '8px', paddingBottom: '16px' } });
+      hero.appendChild(UI.avatar(customer, 80));
+      hero.appendChild(el('h2', { textContent: customer }));
+      var purpose = dcr.visit_purpose || dcr.service_purpose || '';
+      if (purpose) {
+        hero.appendChild(el('p', { className: 'profile-subtitle', textContent: purpose }));
+      }
+      hero.appendChild(el('div', { style: { marginTop: '4px' } }, [UI.pill(status, statusColor(status))]));
+      content.appendChild(hero);
 
       // Live duration timer (for ongoing visits)
       if (isOngoing && dcr.check_in_time) {

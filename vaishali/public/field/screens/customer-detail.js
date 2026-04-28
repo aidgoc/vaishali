@@ -31,59 +31,46 @@
 
       appEl.textContent = '';
 
-      // ── Customer info card ───────────────────────────────────
-      var infoRows = [];
-
-      // Type & industry
-      var typeParts = [overview.customer_type, overview.industry].filter(Boolean);
-      if (typeParts.length) infoRows.push({ label: 'Type', value: typeParts.join(' \u00B7 ') });
-
-      // Territory & group
-      var geoParts = [overview.territory, overview.customer_group].filter(Boolean);
-      if (geoParts.length) infoRows.push({ label: 'Segment', value: geoParts.join(' \u00B7 ') });
-
-      // GSTIN
-      if (overview.gstin) infoRows.push({ label: 'GSTIN', value: overview.gstin });
-      else if (overview.tax_id) infoRows.push({ label: 'Tax ID', value: overview.tax_id });
-
-      // Website
-      if (overview.website) infoRows.push({ label: 'Website', value: overview.website });
-
-      if (infoRows.length) {
-        appEl.appendChild(UI.detailCard(infoRows));
+      // ── M3 customer hero ───────────────────────────────────
+      var customerName = overview.customer_name || customerId;
+      var hero = el('div', { className: 'profile-hero', style: { paddingTop: '8px', paddingBottom: '16px' } });
+      hero.appendChild(UI.avatar(customerName, 80));
+      hero.appendChild(el('h2', { textContent: customerName }));
+      var heroSubParts = [overview.customer_type, overview.industry].filter(Boolean);
+      if (heroSubParts.length) {
+        hero.appendChild(el('p', { className: 'profile-subtitle', textContent: heroSubParts.join(' \u00B7 ') }));
       }
+      appEl.appendChild(hero);
 
-      // ── Primary contact ──────────────────────────────────────
-      var contactName = overview.customer_primary_contact || '';
+      // ── Quick contact actions ──────────────────────────────
       var mobile = overview.mobile_no || '';
       var email = overview.email_id || '';
+      var contactBtns = [];
+      if (mobile) {
+        contactBtns.push(UI.btn('Call', { type: 'tonal', icon: 'phone', onClick: function () { window.open('tel:' + mobile); } }));
+      }
+      if (email) {
+        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () { window.open('mailto:' + email); } }));
+      }
+      if (contactBtns.length > 0) {
+        appEl.appendChild(el('div', {
+          style: { display: 'grid', gridTemplateColumns: 'repeat(' + contactBtns.length + ', 1fr)', gap: '8px', marginBottom: '24px' }
+        }, contactBtns));
+      }
 
-      if (contactName || mobile || email) {
-        appEl.appendChild(UI.sectionHeading('Primary contact'));
-        var contactCard = el('div', { className: 'card-surface' });
-        if (contactName) {
-          contactCard.appendChild(el('div', {
-            style: { fontSize: '15px', fontWeight: '600', color: 'var(--ink-primary)', marginBottom: '4px' },
-            textContent: contactName
-          }));
-        }
-        var contactActions = el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } });
-        if (mobile) {
-          contactActions.appendChild(UI.btn(mobile, {
-            type: 'outline',
-            icon: 'phone',
-            onClick: function () { window.open('tel:' + mobile); }
-          }));
-        }
-        if (email) {
-          contactActions.appendChild(UI.btn('Email', {
-            type: 'outline',
-            icon: 'mail',
-            onClick: function () { window.open('mailto:' + email); }
-          }));
-        }
-        contactCard.appendChild(contactActions);
-        appEl.appendChild(contactCard);
+      // ── Details ───────────────────────────────────────────
+      var infoRows = [];
+      var geoParts = [overview.territory, overview.customer_group].filter(Boolean);
+      if (geoParts.length) infoRows.push({ label: 'Segment', value: geoParts.join(' \u00B7 ') });
+      if (overview.gstin) infoRows.push({ label: 'GSTIN', value: overview.gstin });
+      else if (overview.tax_id) infoRows.push({ label: 'Tax ID', value: overview.tax_id });
+      if (overview.website) infoRows.push({ label: 'Website', value: overview.website });
+      var contactName = overview.customer_primary_contact || '';
+      if (contactName) infoRows.push({ label: 'Primary contact', value: contactName });
+
+      if (infoRows.length) {
+        appEl.appendChild(UI.sectionHeader('Details'));
+        appEl.appendChild(UI.detailCard(infoRows));
       }
 
       // ── Address ──────────────────────────────────────────────

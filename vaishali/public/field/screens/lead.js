@@ -106,29 +106,21 @@
 
   window.Screens.leadNew = function (appEl) {
     var el = UI.el;
-    // Form fields
-    var leadNameInput = UI.textInput('Lead name');
-    leadNameInput.addEventListener('blur', function () {
-      if (!leadNameInput.value.trim()) {
-        UI.fieldError(leadNameInput, 'Required');
-      } else {
-        UI.fieldError(leadNameInput, null);
-      }
-    });
-    var companyNameInput = UI.textInput('Company name');
-    companyNameInput.addEventListener('blur', function () {
-      if (!companyNameInput.value.trim()) {
-        UI.fieldError(companyNameInput, 'Required');
-      } else {
-        UI.fieldError(companyNameInput, null);
-      }
-    });
-    var mobileInput = UI.textInput('Mobile number', { type: 'tel' });
-    var emailInput = UI.textInput('Email address', { type: 'email' });
 
-    var sourceField = UI.select('Source', ['Loading...']);
-    var sourceSelect = sourceField.querySelector('select');
+    appEl.appendChild(UI.pageHeader(
+      'New lead',
+      'Capture a prospect — name, company and contact details.'
+    ));
+
+    // M3 floating-label fields
+    var leadNameField = UI.m3TextField('Lead name', { required: true });
+    var companyNameField = UI.m3TextField('Company name', { required: true });
+    var mobileField = UI.m3TextField('Mobile number', { type: 'tel' });
+    var emailField = UI.m3TextField('Email address', { type: 'email' });
+    var sourceField = UI.m3SelectField('Source', ['Loading...']);
+    var sourceSelect = sourceField._getSelect();
     sourceSelect.disabled = true;
+
     window.fieldAPI.apiCall('GET', '/api/field/lead-sources').then(function (res) {
       var sources = [];
       if (res && res.data) {
@@ -136,6 +128,10 @@
       }
       if (!sources.length) sources = ['Campaign', 'Cold Calling', 'Advertisement', 'Reference'];
       sourceSelect.textContent = '';
+      // Empty placeholder option for floating label
+      var ph = document.createElement('option');
+      ph.value = ''; ph.textContent = ''; ph.disabled = true; ph.selected = true;
+      sourceSelect.appendChild(ph);
       for (var i = 0; i < sources.length; i++) {
         var opt = document.createElement('option');
         opt.value = sources[i];
@@ -145,34 +141,39 @@
       sourceSelect.disabled = false;
     });
 
-    var territoryInput = UI.textInput('Territory');
-    var notesArea = UI.textarea('Notes', { rows: 3 });
+    var territoryField = UI.m3TextField('Territory');
+    var notesField = UI.m3TextField('Notes', {
+      multiline: true,
+      rows: 3,
+      support: 'Optional — context for whoever picks this up.'
+    });
 
-    // Error display
     var errorBox = el('div', { style: { display: 'none' } });
 
-    // Submit button
     var submitBtn = UI.btn('Create lead', {
-      type: 'success',
+      type: 'primary',
       block: true,
       icon: 'plus',
       onClick: handleSubmit
     });
+    var cancelBtn = UI.btn('Cancel', {
+      type: 'outline',
+      block: true,
+      onClick: function () { location.hash = '#/leads'; }
+    });
 
-    // Build form card
-    var formChildren = [
-      UI.field('Lead Name *', leadNameInput),
-      UI.field('Company Name', companyNameInput),
-      UI.field('Mobile No', mobileInput),
-      UI.field('Email', emailInput),
-      sourceField,
-      UI.field('Territory', territoryInput),
-      UI.field('Notes', notesArea),
-      errorBox,
-      el('div', { style: { marginTop: '12px' } }, [submitBtn])
-    ];
-
-    appEl.appendChild(UI.card(formChildren));
+    appEl.appendChild(leadNameField);
+    appEl.appendChild(companyNameField);
+    appEl.appendChild(mobileField);
+    appEl.appendChild(emailField);
+    appEl.appendChild(sourceField);
+    appEl.appendChild(territoryField);
+    appEl.appendChild(notesField);
+    appEl.appendChild(errorBox);
+    appEl.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' } }, [
+      cancelBtn,
+      submitBtn
+    ]));
 
     function showError(msg) {
       errorBox.textContent = '';
@@ -184,22 +185,22 @@
       errorBox.style.display = 'none';
       var valid = true;
 
-      if (!leadNameInput.value.trim()) {
-        UI.fieldError(leadNameInput, 'Lead name is required');
+      if (!leadNameField._getValue().trim()) {
+        leadNameField._setError('Lead name is required');
         valid = false;
       } else {
-        UI.fieldError(leadNameInput, null);
+        leadNameField._setError(null);
       }
 
-      if (!companyNameInput.value.trim()) {
-        UI.fieldError(companyNameInput, 'Company name is required');
+      if (!companyNameField._getValue().trim()) {
+        companyNameField._setError('Company name is required');
         valid = false;
       } else {
-        UI.fieldError(companyNameInput, null);
+        companyNameField._setError(null);
       }
 
       if (!valid) {
-        var firstError = appEl.querySelector('.field-error-text');
+        var firstError = appEl.querySelector('.m3-textfield-input.field-error');
         if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
@@ -207,13 +208,13 @@
       submitBtn._setLoading(true, 'Creating...');
 
       var payload = {
-        lead_name: leadNameInput.value.trim(),
-        company_name: companyNameInput.value.trim(),
-        mobile_no: mobileInput.value.trim(),
-        email_id: emailInput.value.trim(),
-        source: sourceSelect.value,
-        territory: territoryInput.value.trim(),
-        notes: notesArea.value.trim()
+        lead_name: leadNameField._getValue().trim(),
+        company_name: companyNameField._getValue().trim(),
+        mobile_no: mobileField._getValue().trim(),
+        email_id: emailField._getValue().trim(),
+        source: sourceField._getValue(),
+        territory: territoryField._getValue().trim(),
+        notes: notesField._getValue().trim()
       };
 
       window.fieldAPI.apiCall('POST', '/api/field/lead', payload).then(function (res) {
@@ -222,7 +223,7 @@
           submitBtn._setLoading(false);
           return;
         }
-        UI.toast('Lead created!', 'success');
+        UI.toast('Lead created', 'success');
         location.hash = '#/leads';
       }).catch(function (err) {
         showError('Error: ' + (err.message || err));
@@ -237,11 +238,11 @@
     var el = UI.el;
     var leadName = params.id || params.name;
 
-    appEl.appendChild(UI.skeleton(3));
+    var skel = UI.skeleton(3);
+    appEl.appendChild(skel);
 
-    // Fetch lead via Frappe API directly
     window.fieldAPI.apiCall('GET', '/api/method/frappe.client.get?doctype=Lead&name=' + encodeURIComponent(leadName)).then(function (res) {
-      appEl.textContent = '';
+      skel.remove();
 
       var lead = null;
       if (res && res.data) {
@@ -255,51 +256,56 @@
       var name = lead.lead_name || 'Unknown';
       var status = lead.status || 'Lead';
 
-      // Header
-      appEl.appendChild(el('div', { style: { marginBottom: '12px' } }, [
-        el('h3', { textContent: name, style: { margin: '0 0 8px 0' } }),
-        UI.pill(status, statusColor(status))
-      ]));
+      // M3 detail hero \u2014 avatar + name + company + status pill
+      var company = lead.company_name || '';
+      var hero = el('div', { className: 'profile-hero', style: { paddingTop: '8px', paddingBottom: '16px' } });
+      hero.appendChild(UI.avatar(name, 80));
+      hero.appendChild(el('h2', { textContent: name }));
+      if (company) {
+        hero.appendChild(el('p', { className: 'profile-subtitle', textContent: company }));
+      }
+      hero.appendChild(el('div', { style: { marginTop: '4px' } }, [UI.pill(status, statusColor(status))]));
+      appEl.appendChild(hero);
 
-      // Detail card
-      var details = [
-        { label: 'Lead', value: lead.name },
-        { label: 'Company', value: lead.company_name || '\u2014' },
-        { label: 'Source', value: lead.source || '\u2014' },
-        { label: 'Territory', value: lead.territory || '\u2014' },
-        { label: 'Status', value: status },
-        { label: 'Created', value: formatDate(lead.creation) }
-      ];
-      appEl.appendChild(UI.detailCard(details));
-
-      // Contact info with tap-to-call/email
-      var contactItems = [];
+      // Quick contact actions \u2014 call + email as outlined buttons
+      var contactBtns = [];
       if (lead.mobile_no) {
-        contactItems.push(el('a', {
-          href: 'tel:' + lead.mobile_no,
-          textContent: lead.mobile_no,
-          style: { display: 'block', color: 'var(--primary, #E60005)', fontSize: '15px', padding: '8px 0', textDecoration: 'none' }
+        contactBtns.push(UI.btn('Call', {
+          type: 'tonal',
+          icon: 'phone',
+          onClick: function () { location.href = 'tel:' + lead.mobile_no; }
         }));
       }
       if (lead.email_id) {
-        contactItems.push(el('a', {
-          href: 'mailto:' + lead.email_id,
-          textContent: lead.email_id,
-          style: { display: 'block', color: 'var(--primary, #E60005)', fontSize: '15px', padding: '8px 0', textDecoration: 'none' }
+        contactBtns.push(UI.btn('Email', {
+          type: 'tonal',
+          icon: 'send',
+          onClick: function () { location.href = 'mailto:' + lead.email_id; }
         }));
       }
-      if (contactItems.length > 0) {
-        appEl.appendChild(el('div', { style: { marginTop: '16px' } }));
-        appEl.appendChild(UI.sectionHeading('Contact'));
-        appEl.appendChild(UI.card(contactItems));
+      if (contactBtns.length > 0) {
+        appEl.appendChild(el('div', {
+          style: { display: 'grid', gridTemplateColumns: 'repeat(' + contactBtns.length + ', 1fr)', gap: '8px', marginBottom: '24px' }
+        }, contactBtns));
       }
 
-      // Action buttons (only for non-converted leads)
-      if (status !== 'Converted' && status !== 'Do Not Contact') {
-        var btnContainer = el('div', { style: { marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' } });
+      // Details
+      appEl.appendChild(UI.sectionHeader('Details'));
+      appEl.appendChild(UI.detailCard([
+        { label: 'Lead ID', value: lead.name },
+        { label: 'Company', value: lead.company_name || '\u2014' },
+        { label: 'Mobile', value: lead.mobile_no || '\u2014' },
+        { label: 'Email', value: lead.email_id || '\u2014' },
+        { label: 'Source', value: lead.source || '\u2014' },
+        { label: 'Territory', value: lead.territory || '\u2014' },
+        { label: 'Created', value: formatDate(lead.creation) }
+      ]));
 
-        // Create Opportunity
-        var createOppBtn = UI.btn('Create Opportunity', {
+      // Conversion actions \u2014 only for active leads
+      if (status !== 'Converted' && status !== 'Do Not Contact') {
+        appEl.appendChild(UI.sectionHeader('Convert', { support: 'Move this lead forward in the sales cycle' }));
+
+        var createOppBtn = UI.btn('Create opportunity', {
           type: 'primary',
           block: true,
           icon: 'plus',
@@ -316,7 +322,7 @@
                 var d = r.data.data || r.data.message || r.data;
                 oppName = d.name || '';
               }
-              UI.toast('Opportunity created!', 'success');
+              UI.toast('Opportunity created', 'success');
               if (oppName) {
                 location.hash = '#/opportunity/' + oppName;
               } else {
@@ -328,10 +334,7 @@
             });
           }
         });
-        btnContainer.appendChild(createOppBtn);
-
-        // Create Quotation directly from lead
-        var createQuotBtn = UI.btn('Create Quotation', {
+        var createQuotBtn = UI.btn('Create quotation', {
           type: 'outline',
           block: true,
           icon: 'plus',
@@ -339,13 +342,12 @@
             location.hash = '#/quotations/new?lead=' + encodeURIComponent(lead.name) + '&lead_name=' + encodeURIComponent(name);
           }
         });
-        btnContainer.appendChild(createQuotBtn);
-
-        appEl.appendChild(btnContainer);
+        appEl.appendChild(el('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' } }, [
+          createOppBtn, createQuotBtn
+        ]));
       }
-
     }).catch(function (err) {
-      appEl.textContent = '';
+      skel.remove();
       appEl.appendChild(UI.error('Failed to load lead: ' + (err.message || err)));
     });
   };
