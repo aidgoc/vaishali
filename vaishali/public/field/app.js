@@ -485,14 +485,42 @@
   function renderLogin() {
     document.getElementById('app-header').style.display = 'none';
     document.getElementById('bottom-nav').style.display = 'none';
+    // Hide install banner if it was shown before navigating to login
+    var existingBanner = document.querySelector('.pwa-install-banner');
+    if (existingBanner) existingBanner.remove();
 
     api.getSession().then(function (session) {
       if (session) { navigate('#/home'); return; }
 
-      var errorBox = el('div', { className: 'field-group', style: { color: 'var(--dspl-red)', display: 'none' } });
-      var emailInput = el('input', { type: 'email', placeholder: 'Email', 'aria-label': 'Email' });
-      var passInput = el('input', { type: 'password', placeholder: 'Password', 'aria-label': 'Password' });
-      var submitBtn = el('button', { textContent: 'Sign In', className: 'checkin-btn' });
+      var errorBox = el('div', {
+        style: {
+          color: 'var(--m3-error)',
+          font: 'var(--m3-body-small)',
+          letterSpacing: '0.4px',
+          display: 'none',
+          padding: '8px 0',
+          width: '100%',
+          textAlign: 'center'
+        }
+      });
+      var emailField, passField, emailInput, passInput;
+      if (window.UI && window.UI.m3TextField) {
+        emailField = UI.m3TextField('Email', { type: 'email', name: 'email', required: true });
+        passField = UI.m3TextField('Password', { type: 'password', name: 'password', required: true });
+        emailInput = emailField.querySelector('input');
+        passInput = passField.querySelector('input');
+      } else {
+        emailInput = el('input', { type: 'email', placeholder: 'Email', 'aria-label': 'Email' });
+        passInput = el('input', { type: 'password', placeholder: 'Password', 'aria-label': 'Password' });
+      }
+      var submitBtn = window.UI && window.UI.btn
+        ? UI.btn('Sign in', { type: 'primary', block: true, icon: 'check' })
+        : el('button', { textContent: 'Sign In', className: 'checkin-btn' });
+
+      function setLoading(loading) {
+        if (submitBtn._setLoading) submitBtn._setLoading(loading, loading ? 'Signing in...' : null);
+        else { submitBtn.disabled = loading; submitBtn.textContent = loading ? 'Signing in...' : 'Sign in'; }
+      }
 
       submitBtn.addEventListener('click', function () {
         var email = emailInput.value.trim();
@@ -502,8 +530,7 @@
           errorBox.style.display = 'block';
           return;
         }
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Signing in...';
+        setLoading(true);
         errorBox.style.display = 'none';
 
         // Try Frappe native login first, then fall back to FastAPI tunnel
@@ -549,8 +576,7 @@
             var msg = (res.data && res.data.message) || res.error || 'Login failed';
             errorBox.textContent = msg;
             errorBox.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Sign In';
+            setLoading(false);
             return;
           }
           var d = res.data;
@@ -575,14 +601,20 @@
         if (e.key === 'Enter') submitBtn.click();
       });
 
+      var fieldsWidth = { width: '100%', maxWidth: '320px' };
+      var emailWrap = emailField || el('div', { className: 'field-group', style: fieldsWidth }, [emailInput]);
+      var passWrap = passField || el('div', { className: 'field-group', style: fieldsWidth }, [passInput]);
+      if (emailField) emailWrap.style.maxWidth = '320px';
+      if (passField) passWrap.style.maxWidth = '320px';
+
       var form = el('div', { className: 'login-container' }, [
         el('img', { src: '/files/Dyamic Logo - Colour.png', className: 'login-logo', alt: 'DSPL' }),
         el('h1', { textContent: 'DSPL Field' }),
         el('p', { className: 'login-subtitle', textContent: 'Dynamic Servitech Private Limited' }),
-        el('div', { className: 'field-group', style: { width: '100%', maxWidth: '320px' } }, [emailInput]),
-        el('div', { className: 'field-group', style: { width: '100%', maxWidth: '320px' } }, [passInput]),
+        emailWrap,
+        passWrap,
         errorBox,
-        el('div', { style: { width: '100%', maxWidth: '320px' } }, [submitBtn]),
+        el('div', { style: fieldsWidth }, [submitBtn]),
         el('div', { className: 'login-footer', textContent: 'Powered by Vaishali' })
       ]);
 
@@ -679,6 +711,8 @@
 
   function _showInstallBanner() {
     if (_isStandalone()) return;
+    // Don't show on login — would overlap the Sign In button (no bottom nav)
+    if ((location.hash || '').indexOf('#/login') === 0) return;
     if (localStorage.getItem('pwa-install-dismissed')) return;
 
     var banner = el('div', { className: 'pwa-install-banner' }, [
