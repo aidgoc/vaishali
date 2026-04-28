@@ -5487,558 +5487,515 @@ select.form-control {
   margin: 0;
 }
 
+
+/* Hide auto-injected slim page header — app bar already shows title */
+.m3-page-header.slim { display: none; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   DESIGN REFINEMENT — restraint, hierarchy, breath
-   Architecture: one page surface, one container surface. Less, not more.
+   M3 APP POLISH — Zoho / Salesforce / Odoo / Keka style
+   Filled containers, colored chips, icons, visible structure
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Page background — restore original M3 surface tones */
 :root {
-  /* Reduce 6 surface tones to 2: page + container */
-  --m3-surface: #FFFCFB;
-  --m3-surface-container-lowest: #FFFCFB;
-  --m3-surface-container-low: #F6F0EE;
-  --m3-surface-container: #F6F0EE;
-  --m3-surface-container-high: #F1E9E6;
-  --m3-surface-container-highest: #F1E9E6;
+  --m3-surface-container-lowest: #FFFFFF;
+  --m3-surface-container-low: #FCEEEC;
+  --m3-surface-container: #F7E8E5;
+  --m3-surface-container-high: #F1E2DF;
+  --m3-surface-container-highest: #EBDDDA;
 }
-
-body, #app {
-  background: var(--m3-surface);
-}
-
-/* ──── PAGE STRUCTURE ─────────────────────────────────────────────── */
 
 #app {
-  padding: 24px 20px 40px;
-}
-
-#app-header {
+  padding: 16px 16px 32px;
   background: var(--m3-surface);
-  border-bottom: none;
-}
-#app-header.scrolled {
-  background: var(--m3-surface);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
-/* The auto-injected slim page header duplicates the app bar's title
-   context. The app bar IS the page header. Remove the slim variant. */
-.m3-page-header.slim {
-  display: none;
-}
-
-/* Page header (used by individual screens that own their hero) */
-.m3-page-header {
-  padding: 0 0 32px;
-}
-.m3-page-header h1,
-.m3-page-header .m3-page-title {
-  font: 500 28px/34px var(--m3-font);
-  letter-spacing: -0.01em;
-}
-.m3-page-header .m3-page-support {
-  font: 400 15px/22px var(--m3-font);
-  letter-spacing: 0;
-  color: var(--m3-on-surface-variant);
-  margin-top: 4px;
-}
-
-/* ──── TYPOGRAPHY — fewer levels, tighter ─────────────────────────── */
-
-body {
-  font: 400 15px/22px var(--m3-font);
-  letter-spacing: 0;
-}
-
-/* ──── SECTION HEADERS — quieter ──────────────────────────────────── */
-
-.m3-section-header {
-  margin: 32px 0 12px;
-}
-.m3-section-header h2,
-.m3-section-header .m3-section-title {
-  font: 500 13px/18px var(--m3-font);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--m3-on-surface-variant);
-}
-.m3-section-header .m3-section-support {
-  display: none; /* drop ambient support text — it's filler */
-}
-.section-heading {
-  font: 500 13px/18px var(--m3-font);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--m3-on-surface-variant);
-  margin: 32px 0 12px;
-}
-
-/* ──── DOC HERO — drop redundant labels ───────────────────────────── */
-
-.m3-doc-hero {
-  background: transparent;
-  padding: 0 0 24px;
-  border-bottom: 1px solid var(--m3-outline-variant);
-  margin-bottom: 24px;
-  border-radius: 0;
-  gap: 16px;
-}
-.m3-doc-hero .m3-doc-hero-customer-name {
-  font: 500 28px/34px var(--m3-font);
-  letter-spacing: -0.01em;
-  color: var(--m3-on-surface);
-  margin: 0;
-}
-.m3-doc-hero .m3-doc-hero-customer-sub {
-  font: 400 14px/20px var(--m3-font);
-  color: var(--m3-on-surface-variant);
-  margin: 2px 0 0;
-}
-.m3-doc-hero .m3-doc-hero-amount-value {
-  font: 500 28px/34px var(--m3-font);
-  letter-spacing: -0.01em;
-  color: var(--m3-on-surface);
-}
-.m3-doc-hero .m3-doc-hero-amount-label {
-  font: 400 12px/16px var(--m3-font);
-  color: var(--m3-on-surface-variant);
-  letter-spacing: 0.02em;
-  margin-top: 0;
-}
-
-/* ──── STATUS PILL — recessive: dot + text, no fill ───────────────── */
-
-.indicator-pill {
-  background: transparent !important;
-  color: var(--m3-on-surface-variant) !important;
-  padding: 0;
-  height: 18px;
-  font: 500 12px/16px var(--m3-font);
-  letter-spacing: 0.02em;
-  text-transform: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 0;
-}
-.indicator-pill::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--m3-outline);
-  flex-shrink: 0;
-}
-.indicator-pill.green::before { background: #2E7D32; }
-.indicator-pill.red::before { background: #BA1A1A; }
-.indicator-pill.yellow::before,
-.indicator-pill.orange::before { background: #B8530B; }
-.indicator-pill.blue::before { background: #1A56DB; }
-.indicator-pill.gray::before { background: var(--m3-outline); }
-
-/* ──── ACTION ROW — one primary, rest text ────────────────────────── */
-
-.m3-doc-actions {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-.m3-doc-actions .btn,
-.m3-doc-actions .m3-btn {
-  flex: 0 0 auto;
-  min-width: 0;
-}
-/* Demote tonal buttons in action rows to text style — only primary stays filled */
-.m3-doc-actions .m3-btn-tonal,
-.m3-doc-actions .btn:not(.btn-primary-styled):not(.btn-success-custom):not(.btn-danger-custom) {
-  background: transparent;
-  color: var(--m3-primary);
-  padding: 0 12px;
-}
-.m3-doc-actions .m3-btn-tonal:hover,
-.m3-doc-actions .btn:not(.btn-primary-styled):not(.btn-success-custom):not(.btn-danger-custom):hover {
-  background: rgba(179, 38, 30, 0.06);
-}
-
-/* ──── ITEMS TABLE — quieter dividers, more breath ────────────────── */
-
-.m3-doc-items {
-  background: transparent;
-  border-radius: 0;
-  margin-bottom: 32px;
-}
-.m3-doc-item-row {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-.m3-doc-item-row:first-child { padding-top: 4px; }
-.m3-doc-item-name {
-  font: 400 15px/22px var(--m3-font);
-  letter-spacing: 0;
-}
-.m3-doc-item-meta {
-  font: 400 13px/18px var(--m3-font);
-  color: var(--m3-on-surface-variant);
-  margin-top: 2px;
-}
-.m3-doc-item-amount {
-  font: 500 15px/22px var(--m3-font);
-  letter-spacing: 0;
-  color: var(--m3-on-surface);
-  font-feature-settings: 'tnum' 1;
-}
-
-/* ──── TOTALS — quiet, right-aligned, no card ─────────────────────── */
-
-.m3-doc-totals {
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
-  margin: 0 0 32px;
-}
-.m3-doc-totals-row {
-  padding: 8px 0;
-  font: 400 14px/20px var(--m3-font);
-}
-.m3-doc-totals-row.grand {
-  border-top: 1px solid var(--m3-outline-variant);
-  margin-top: 8px;
-  padding-top: 16px;
-  font: 500 18px/24px var(--m3-font);
-  letter-spacing: -0.01em;
-  color: var(--m3-on-surface);
-}
-.m3-doc-totals-row .m3-doc-totals-value {
-  font-feature-settings: 'tnum' 1;
-}
-
-/* ──── DETAIL CARD — flatter, no card background ──────────────────── */
-
-.detail-card {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  margin-bottom: 32px;
-}
-.detail-row {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--m3-outline-variant);
-  align-items: baseline;
-}
-.detail-row:last-child { border-bottom: none; }
-.detail-label {
-  font: 400 13px/18px var(--m3-font);
-  letter-spacing: 0;
-  color: var(--m3-on-surface-variant);
-  text-transform: none;
-}
-.detail-value {
-  font: 400 15px/22px var(--m3-font);
-  color: var(--m3-on-surface);
-  letter-spacing: 0;
-  text-align: right;
-}
-
-/* ──── LIST CARDS — drop avatar background, lighter dividers ──────── */
-
-.list-card,
-.m3-list-item {
-  padding: 14px 0;
-  background: transparent;
-}
-.m3-list .list-card,
-.m3-list .m3-list-item {
-  border-bottom: 1px solid var(--m3-outline-variant);
-}
-.m3-list {
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
-  margin-bottom: 32px;
-}
-.list-card:hover,
-.m3-list-item:hover {
-  background: rgba(0, 0, 0, 0.02);
-}
-.list-card:active,
-.m3-list-item:active {
-  background: rgba(0, 0, 0, 0.04);
-}
-.list-card .list-title,
-.m3-list-item .m3-list-title {
-  font: 500 15px/22px var(--m3-font);
-  letter-spacing: 0;
-}
-.list-card .list-sub,
-.m3-list-item .m3-list-support {
-  font: 400 13px/18px var(--m3-font);
-  letter-spacing: 0;
-  color: var(--m3-on-surface-variant);
-}
-
-/* Avatar — recede; just a subtle initial in muted tone */
-.list-avatar {
-  background: transparent;
-  color: var(--m3-on-surface-variant);
-  border: 1px solid var(--m3-outline-variant);
-  font: 500 13px/1 var(--m3-font);
-  width: 36px;
-  height: 36px;
-}
-
-/* ──── STATS — drop the support filler, tighter ───────────────────── */
-
+/* Stats — proper M3 cards */
+.m3-stat-grid .m3-stat,
 .m3-stat,
-.kpi-item,
-.stat-card {
-  background: transparent;
-  padding: 16px 0;
-  border-radius: 0;
-  border-bottom: 1px solid var(--m3-outline-variant);
+.kpi-row .kpi-item,
+.kpi-item {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 14px 16px;
+  border-bottom: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
+.m3-stat-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 16px;
+  border-top: none !important;
+}
+.m3-stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: transparent;
+  padding: 0;
+  margin: 4px 0 16px;
+  border-radius: 0;
+  box-shadow: none;
+  border-top: none !important;
+}
+.kpi-divider { display: none; }
 .m3-stat .m3-stat-support,
 .kpi-item .kpi-support,
 .stat-card .stat-support {
-  display: none; /* support text on stats was filler */
+  display: block;
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
 }
 .m3-stat .m3-stat-label,
 .kpi-item .kpi-label,
 .stat-card .stat-label {
-  font: 400 13px/18px var(--m3-font);
-  letter-spacing: 0;
+  font: var(--m3-label-medium);
+  letter-spacing: 0.5px;
   text-transform: none;
   color: var(--m3-on-surface-variant);
+  margin: 0;
   order: 1;
 }
 .m3-stat .m3-stat-value,
 .kpi-item .kpi-value,
 .stat-card .stat-value {
-  font: 500 24px/30px var(--m3-font);
-  letter-spacing: -0.01em;
-  margin-top: 2px;
+  font: var(--m3-headline-small);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  margin: 0;
+  font-feature-settings: 'tnum' 1;
   order: 2;
 }
-.m3-stat-grid,
-.stats-row,
-.kpi-row {
-  margin-bottom: 32px;
-  gap: 0;
-  border-top: 1px solid var(--m3-outline-variant);
-}
-.m3-stat-grid {
+
+/* Action cards — M3 cards with icon background */
+.action-grid {
+  display: grid !important;
   grid-template-columns: 1fr 1fr;
-  gap: 0 24px;
+  gap: 8px;
+  margin: 4px 0 16px;
+  border-top: none !important;
 }
-.m3-stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-
-/* ──── ACTION CARDS — flatter, no fill ────────────────────────────── */
-
 .action-card {
-  background: transparent;
-  padding: 16px 0;
-  border-radius: 0;
-  border-bottom: 1px solid var(--m3-outline-variant);
-  min-height: 0;
-  flex-direction: row;
-  align-items: center;
-  gap: 16px;
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  padding: 16px !important;
+  border-bottom: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  min-height: 96px !important;
+  gap: 4px !important;
+  cursor: pointer;
 }
-.action-card:hover { background: rgba(0, 0, 0, 0.02); }
-.action-card:active { background: rgba(0, 0, 0, 0.04); }
 .action-card .action-icon {
-  background: transparent;
-  color: var(--m3-on-surface-variant);
-  width: 28px;
-  height: 28px;
-  border-radius: 0;
-  margin: 0;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: var(--m3-secondary-container) !important;
+  color: var(--m3-on-secondary-container) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 0 4px !important;
   flex-shrink: 0;
 }
-.action-card .action-icon svg { width: 22px; height: 22px; }
+.action-card .action-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+}
 .action-card .action-label {
-  font: 500 15px/22px var(--m3-font);
-  letter-spacing: 0;
-  flex: 1;
+  font: var(--m3-title-small) !important;
+  letter-spacing: 0.1px !important;
+  color: var(--m3-on-surface) !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
 }
 .action-card .action-value {
-  font: 500 17px/24px var(--m3-font);
-  letter-spacing: -0.01em;
-  margin: 0;
+  font: var(--m3-headline-small) !important;
+  letter-spacing: 0 !important;
+  color: var(--m3-on-surface) !important;
+  margin: 0 !important;
+  line-height: 1.1 !important;
 }
 .action-card .action-sub {
-  font: 400 13px/18px var(--m3-font);
-  color: var(--m3-on-surface-variant);
-  margin: 0;
-}
-.action-grid {
-  display: block;
-  margin-bottom: 32px;
-  border-top: 1px solid var(--m3-outline-variant);
+  font: var(--m3-body-small) !important;
+  color: var(--m3-on-surface-variant) !important;
+  letter-spacing: 0.4px !important;
+  margin: 0 !important;
 }
 
-/* ──── HR TILES — same row treatment ──────────────────────────────── */
+/* HR tiles — M3 card style */
 .hr-grid {
-  display: block;
-  margin-bottom: 32px;
-  border-top: 1px solid var(--m3-outline-variant);
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  border-top: none !important;
 }
 .hr-tile {
-  background: transparent;
-  padding: 16px 0;
-  border-radius: 0;
-  border-bottom: 1px solid var(--m3-outline-variant);
-  font: 500 15px/22px var(--m3-font);
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  padding: 16px !important;
+  border-bottom: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font: var(--m3-title-small) !important;
+  letter-spacing: 0.1px !important;
+  color: var(--m3-on-surface) !important;
+  cursor: pointer;
 }
-.hr-tile:hover { background: rgba(0, 0, 0, 0.02); }
-.hr-tile svg { color: var(--m3-on-surface-variant); }
+.hr-tile svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: var(--m3-on-surface-variant) !important;
+  flex-shrink: 0;
+}
 
-/* ──── CARDS — used by forms, not detail screens ──────────────────── */
+/* Status pills — filled M3 containers */
+.indicator-pill {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px !important;
+  border-radius: var(--m3-shape-xs) !important;
+  font: var(--m3-label-small);
+  letter-spacing: 0.5px;
+  background: var(--m3-surface-container-high) !important;
+  color: var(--m3-on-surface) !important;
+  text-transform: none;
+}
+.indicator-pill::before { display: none !important; }
+.indicator-pill.green {
+  background: var(--m3-success-container) !important;
+  color: var(--m3-on-success-container) !important;
+}
+.indicator-pill.red {
+  background: var(--m3-error-container) !important;
+  color: var(--m3-on-error-container) !important;
+}
+.indicator-pill.yellow,
+.indicator-pill.orange {
+  background: var(--m3-warning-container) !important;
+  color: var(--m3-on-warning-container) !important;
+}
+.indicator-pill.blue {
+  background: #D9E2FF !important;
+  color: #001A41 !important;
+}
+.indicator-pill.gray {
+  background: var(--m3-surface-container-high) !important;
+  color: var(--m3-on-surface-variant) !important;
+}
 
-.card-surface,
-.m3-card {
-  background: var(--m3-surface-container-low);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: none;
+/* Detail card — filled */
+.detail-card {
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  padding: 8px 16px !important;
+  margin-bottom: 12px;
+}
+.detail-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 12px 0 !important;
+  border-bottom: 1px solid var(--m3-outline-variant) !important;
+}
+.detail-row:last-child { border-bottom: none !important; }
+.detail-label {
+  font: var(--m3-label-medium) !important;
+  color: var(--m3-on-surface-variant) !important;
+  letter-spacing: 0.5px !important;
+  text-transform: none !important;
+}
+.detail-value {
+  font: var(--m3-body-medium) !important;
+  color: var(--m3-on-surface) !important;
+  letter-spacing: 0.25px !important;
+  text-align: right !important;
+  word-break: break-word;
+}
+
+/* Doc hero — filled container */
+.m3-doc-hero {
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  padding: 20px 16px !important;
+  margin-bottom: 16px !important;
+  border-bottom: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+.m3-doc-hero .m3-doc-hero-customer-name {
+  font: var(--m3-headline-small) !important;
+  letter-spacing: 0 !important;
+  margin: 0 0 2px !important;
+}
+.m3-doc-hero .m3-doc-hero-customer-sub {
+  font: var(--m3-body-small) !important;
+  letter-spacing: 0.4px !important;
+  color: var(--m3-on-surface-variant) !important;
+}
+.m3-doc-hero .m3-doc-hero-amount-value {
+  font: var(--m3-headline-medium) !important;
+  letter-spacing: 0 !important;
+}
+.m3-doc-hero .m3-doc-hero-amount-label {
+  font: var(--m3-body-small) !important;
+  letter-spacing: 0.4px !important;
+  color: var(--m3-on-surface-variant) !important;
+  margin-top: 2px !important;
+}
+
+/* Items table — filled */
+.m3-doc-items {
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
   margin-bottom: 16px;
+  overflow: hidden;
+}
+.m3-doc-item-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--m3-outline-variant) !important;
+}
+.m3-doc-item-row:last-child { border-bottom: none !important; }
+.m3-doc-item-row:first-child { padding-top: 12px !important; }
+.m3-doc-item-name {
+  font: var(--m3-body-large) !important;
+  letter-spacing: 0.5px !important;
+}
+.m3-doc-item-meta {
+  font: var(--m3-body-small) !important;
+  color: var(--m3-on-surface-variant) !important;
+  letter-spacing: 0.4px !important;
+}
+.m3-doc-item-amount {
+  font: var(--m3-title-small) !important;
+  letter-spacing: 0.1px !important;
+  font-feature-settings: 'tnum' 1;
 }
 
-/* ──── BUTTONS — softer, less rounded ─────────────────────────────── */
-
-.btn,
-.m3-btn {
-  height: 44px;
-  border-radius: 22px;
-  font: 500 14px/20px var(--m3-font);
-  letter-spacing: 0;
-  padding: 0 20px;
+/* Totals — filled card */
+.m3-doc-totals {
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  padding: 12px 16px !important;
+  margin: 0 0 16px !important;
+}
+.m3-doc-totals-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: baseline !important;
+  padding: 6px 0 !important;
+  font: var(--m3-body-medium) !important;
+  letter-spacing: 0.25px !important;
+  color: var(--m3-on-surface-variant) !important;
+}
+.m3-doc-totals-row.grand {
+  border-top: 1px solid var(--m3-outline-variant) !important;
+  margin-top: 4px !important;
+  padding-top: 12px !important;
+  font: var(--m3-title-medium) !important;
+  letter-spacing: 0.15px !important;
+  color: var(--m3-on-surface) !important;
 }
 
-/* Outline buttons get a softer tone */
-.btn-outline,
-.m3-btn-outlined {
-  border-color: var(--m3-outline-variant);
+/* Action row — Zoho-style: all buttons visible */
+.m3-doc-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.m3-doc-actions .btn,
+.m3-doc-actions .m3-btn {
+  flex: 1;
+  min-width: 100px;
+}
+.m3-doc-actions .m3-btn-tonal {
+  background: var(--m3-secondary-container) !important;
+  color: var(--m3-on-secondary-container) !important;
+  padding: 0 16px !important;
 }
 
-/* ──── HOME GREETING — quieter ────────────────────────────────────── */
+/* List avatars — colored backgrounds (set by JS palette) */
+.list-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--m3-shape-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  flex-shrink: 0;
+  border: none !important;
+}
 
-.greeting-hero {
-  padding: 8px 0 24px;
+/* M3 list — filled container */
+.m3-list {
+  background: var(--m3-surface-container-low) !important;
+  border-radius: var(--m3-shape-md) !important;
+  overflow: hidden;
+  margin-bottom: 12px;
 }
-.greeting-hero h2 {
-  font: 500 24px/30px var(--m3-font);
-  letter-spacing: -0.01em;
+.m3-list .list-card,
+.m3-list .m3-list-item {
+  background: transparent !important;
+  border-bottom: 1px solid var(--m3-outline-variant) !important;
+  padding: 12px 16px !important;
 }
-.greeting-hero .greeting-name {
-  color: var(--m3-on-surface);
-  font-weight: 500;
+.m3-list .list-card:last-child,
+.m3-list .m3-list-item:last-child {
+  border-bottom: none !important;
 }
-.greeting-hero .greeting-meta {
-  font: 400 13px/18px var(--m3-font);
+.list-card,
+.m3-list-item {
+  padding: 12px 16px !important;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  cursor: pointer;
+}
+.list-card .list-title,
+.m3-list-item .m3-list-title {
+  font: var(--m3-body-large) !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 500 !important;
+}
+.list-card .list-sub,
+.m3-list-item .m3-list-support {
+  font: var(--m3-body-medium) !important;
+  color: var(--m3-on-surface-variant) !important;
+  letter-spacing: 0.25px !important;
+}
+
+/* Section headings — title medium (not uppercase eyebrow) */
+.section-heading,
+.m3-section-header h2,
+.m3-section-header .m3-section-title {
+  font: var(--m3-title-medium) !important;
+  color: var(--m3-on-surface) !important;
+  letter-spacing: 0.15px !important;
+  text-transform: none !important;
+  margin: 24px 0 12px !important;
+}
+.m3-section-header .m3-section-support {
+  display: block !important;
+  font: var(--m3-body-small);
   color: var(--m3-on-surface-variant);
-  margin-top: 6px;
+}
+.m3-section-header { margin: 24px 0 12px !important; }
+
+/* Greeting hero */
+.greeting-hero h2 {
+  font: var(--m3-headline-medium);
   letter-spacing: 0;
 }
+.greeting-hero { padding: 8px 0 16px; }
 
-/* ──── HEADER (top app bar) — softer ──────────────────────────────── */
+/* Header (top app bar) */
 .header-title {
-  font: 500 17px/22px var(--m3-font);
+  font: var(--m3-title-large);
   letter-spacing: 0;
 }
 
-/* ──── BOTTOM NAV — quieter ───────────────────────────────────────── */
-#bottom-nav,
-.bottom-nav {
-  background: var(--m3-surface);
-  border-top: 1px solid var(--m3-outline-variant);
-}
-.nav-item {
-  font: 500 11px/14px var(--m3-font);
-}
-.nav-item .nav-icon {
-  width: 56px;
-  height: 32px;
-}
-.nav-item.active .nav-icon {
-  background: rgba(179, 38, 30, 0.08);
-}
-
-/* ──── EMPTY STATE — gentler ──────────────────────────────────────── */
-
-.empty-state {
-  padding: 64px 24px;
-  gap: 12px;
-}
+/* Empty state — filled circle */
 .empty-icon {
-  background: transparent;
-  border: 1px solid var(--m3-outline-variant);
-  width: 48px;
-  height: 48px;
+  background: var(--m3-surface-container) !important;
+  color: var(--m3-on-surface-variant) !important;
+  border: none !important;
+  width: 56px !important;
+  height: 56px !important;
 }
-.empty-icon svg { width: 24px; height: 24px; opacity: 0.6; }
-.empty-text {
-  font: 400 14px/20px var(--m3-font);
-  letter-spacing: 0;
-}
+.empty-icon svg { width: 28px !important; height: 28px !important; opacity: 1 !important; }
 
-/* ──── DIVIDER — almost invisible ─────────────────────────────────── */
-.divider {
-  background: var(--m3-outline-variant);
-  margin: 24px 0;
-}
-
-/* ──── M3 TEXTFIELD — outlined, less heavy fill ───────────────────── */
-
+/* Inputs — filled M3 textfield */
 .m3-textfield-input {
-  background: transparent;
-  border: 1px solid var(--m3-outline-variant);
-  border-radius: 8px;
-  padding: 16px 14px 6px;
-  font: 400 15px/22px var(--m3-font);
-  letter-spacing: 0;
+  background: var(--m3-surface-container-highest) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--m3-on-surface-variant) !important;
+  border-radius: var(--m3-shape-xs) var(--m3-shape-xs) 0 0 !important;
+  padding: 22px 16px 6px !important;
+  font: var(--m3-body-large) !important;
+  letter-spacing: 0.5px !important;
 }
-.m3-textfield-input:hover {
-  background: transparent;
-  border-color: var(--m3-on-surface-variant);
-}
+.m3-textfield-input:hover { background: var(--m3-surface-container-high) !important; }
 .m3-textfield-input:focus {
-  border: 2px solid var(--m3-primary);
-  padding: 15px 13px 5px;
+  border: none !important;
+  border-bottom: 2px solid var(--m3-primary) !important;
+  padding: 22px 16px 5px !important;
 }
-textarea.m3-textfield-input { min-height: 88px; padding-top: 20px; padding-bottom: 8px; }
-textarea.m3-textfield-input:focus { padding-bottom: 7px; padding-top: 19px; }
+textarea.m3-textfield-input { min-height: 96px !important; padding-top: 26px !important; padding-bottom: 12px !important; }
+textarea.m3-textfield-input:focus { padding-bottom: 11px !important; padding-top: 26px !important; }
 .m3-textfield-label {
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--m3-surface);
-  padding: 0 4px;
-  font: 400 15px/20px var(--m3-font);
+  position: absolute !important;
+  top: 18px !important;
+  left: 16px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  transform: translateY(0) !important;
+  font: var(--m3-body-large) !important;
+  letter-spacing: 0.5px !important;
+  color: var(--m3-on-surface-variant) !important;
+  pointer-events: none !important;
+  transform-origin: left top !important;
 }
 .m3-textfield-input:focus ~ .m3-textfield-label,
 .m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label,
 .m3-textfield.has-value .m3-textfield-label {
-  transform: translateY(-32px) scale(0.85);
-  font-weight: 400;
-  color: var(--m3-on-surface-variant);
+  transform: translateY(-12px) scale(0.75) !important;
+  color: var(--m3-primary) !important;
 }
-.m3-textfield-input:focus ~ .m3-textfield-label {
-  color: var(--m3-primary);
+.m3-textfield .m3-textfield-input:not(:focus):not(:placeholder-shown) ~ .m3-textfield-label,
+.m3-textfield.has-value .m3-textfield-input:not(:focus) ~ .m3-textfield-label {
+  color: var(--m3-on-surface-variant) !important;
 }
-textarea.m3-textfield-input ~ .m3-textfield-label {
-  top: 22px;
-  transform: translateY(0);
-}
+textarea.m3-textfield-input ~ .m3-textfield-label { top: 18px !important; }
 textarea.m3-textfield-input:focus ~ .m3-textfield-label,
 textarea.m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label {
-  transform: translateY(-22px) scale(0.85);
+  transform: translateY(-12px) scale(0.75) !important;
 }
 
-/* ──── MOTION — calmer, slower ────────────────────────────────────── */
-
-* {
-  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+/* Buttons — M3 default 40px / pill */
+.btn,
+.m3-btn {
+  height: 40px !important;
+  border-radius: var(--m3-shape-full) !important;
+  font: var(--m3-label-large) !important;
+  letter-spacing: 0.1px !important;
+  padding: 0 24px !important;
 }
 
-/* End refinement */
+/* Bottom nav — container surface */
+#bottom-nav,
+.bottom-nav {
+  background: var(--m3-surface-container) !important;
+  border-top: none !important;
+}
+.nav-item .nav-icon {
+  width: 64px !important;
+  height: 32px !important;
+}
+.nav-item.active .nav-icon {
+  background: var(--m3-secondary-container) !important;
+  color: var(--m3-on-secondary-container) !important;
+}
+.nav-item {
+  font: var(--m3-label-medium) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* End M3 polish */
