@@ -1,4 +1,4 @@
-/* leave.js — Leave screens for DSPL Field PWA (Home, Apply, Detail) */
+/* leave.js — Leave screens for DSPL Field PWA (Home, Apply, Detail) — M3 */
 (function () {
   'use strict';
 
@@ -45,13 +45,21 @@
 
   window.Screens.leaveHome = function (appEl) {
     var el = UI.el;
-    var content = el('div', { style: { padding: '0 16px 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
-    content.appendChild(UI.skeleton(3));
+
+    // Page header — title + supporting text (Heuristic 1: visibility)
+    content.appendChild(UI.pageHeader(
+      'Leave',
+      'Track your balance and apply for time off.'
+    ));
+
+    var skel = UI.skeleton(3);
+    content.appendChild(skel);
 
     var empName = getEmployeeName();
     if (!empName) {
-      content.textContent = '';
+      skel.remove();
       content.appendChild(UI.error('Employee not linked. Please contact HR.'));
       return;
     }
@@ -77,43 +85,44 @@
       var balanceRes = results[0];
       var appRes = results[1];
 
-      content.textContent = '';
+      skel.remove();
 
-      // ── Balance cards ──
+      // ── Balance — uniform M3 stat grid ──
       var allocations = (balanceRes && balanceRes.data && (balanceRes.data.data || balanceRes.data.message)) || [];
-      // Group by leave_type, take first (latest) per type
       var byType = {};
       for (var i = 0; i < allocations.length; i++) {
         var a = allocations[i];
-        if (!byType[a.leave_type]) {
-          byType[a.leave_type] = a;
-        }
+        if (!byType[a.leave_type]) byType[a.leave_type] = a;
       }
 
-      var balanceCards = [];
+      var statItems = [];
       var types = Object.keys(byType);
       for (var j = 0; j < types.length; j++) {
         var alloc = byType[types[j]];
         var total = alloc.total_leaves_allocated || 0;
-        balanceCards.push(UI.card([
-          el('div', { className: 'amount-large', style: { fontWeight: '700' }, textContent: String(total) }),
-          el('div', { style: { fontSize: '13px', color: 'var(--text-muted, #6c757d)', marginTop: '4px' }, textContent: types[j] })
-        ]));
+        var used = alloc.total_leaves_encashed || 0;
+        var remaining = Math.max(0, total - used);
+        statItems.push({
+          value: remaining,
+          label: types[j],
+          support: 'of ' + total + ' allocated'
+        });
       }
 
-      if (balanceCards.length > 0) {
-        content.appendChild(UI.sectionHeading('Balance'));
-        content.appendChild(UI.grid(balanceCards, 2));
+      if (statItems.length > 0) {
+        content.appendChild(UI.sectionHeader('Balance', { support: 'Days remaining by type' }));
+        content.appendChild(UI.statGrid(statItems, 2));
       } else {
+        content.appendChild(UI.sectionHeader('Balance'));
         content.appendChild(el('div', {
           textContent: 'No leave allocations found.',
-          style: { color: '#888', padding: '12px 0', fontSize: '14px' }
+          style: { color: 'var(--m3-on-surface-variant)', padding: '12px 0', font: 'var(--m3-body-medium)' }
         }));
       }
 
-      // ── Apply button ──
-      content.appendChild(el('div', { style: { margin: '12px 0' } }, [
-        UI.btn('+ Apply Leave', {
+      // ── Primary action — visible filled button ──
+      content.appendChild(el('div', { style: { margin: '16px 0 8px' } }, [
+        UI.btn('Apply for leave', {
           type: 'primary',
           block: true,
           icon: 'plus',
@@ -123,18 +132,19 @@
 
       // ── Applications list ──
       var applications = (appRes && appRes.data && (appRes.data.data || appRes.data.message)) || [];
+      content.appendChild(UI.sectionHeader('Applications', { support: 'Your recent requests' }));
       if (applications.length > 0) {
-        content.appendChild(UI.sectionHeading('Applications'));
+        var listWrap = el('div', { className: 'm3-list' });
         for (var k = 0; k < applications.length; k++) {
           (function (app) {
             var dateRange = formatDate(app.from_date);
             if (app.to_date && app.to_date !== app.from_date) {
-              dateRange += ' \u2013 ' + formatDate(app.to_date);
+              dateRange += ' – ' + formatDate(app.to_date);
             }
             var days = app.total_leave_days ? (app.total_leave_days + (app.total_leave_days === 1 ? ' day' : ' days')) : '';
-            var sub = dateRange + (days ? '  \u00b7  ' + days : '');
+            var sub = dateRange + (days ? '  ·  ' + days : '');
 
-            content.appendChild(UI.listCard({
+            listWrap.appendChild(UI.listCard({
               title: app.leave_type,
               sub: sub,
               right: UI.pill(app.status, statusColor(app.status)),
@@ -142,13 +152,16 @@
             }));
           })(applications[k]);
         }
+        content.appendChild(listWrap);
       } else {
-        content.appendChild(UI.sectionHeading('Applications'));
-        content.appendChild(UI.empty('umbrella', 'No leave applications yet', { text: '+ Apply Leave', onClick: function() { location.hash = '#/leave/apply'; } }));
+        content.appendChild(UI.empty('umbrella', 'No leave applications yet', {
+          text: 'Apply for leave',
+          onClick: function () { location.hash = '#/leave/apply'; }
+        }));
       }
 
     }).catch(function (err) {
-      content.textContent = '';
+      skel.remove();
       content.appendChild(UI.error('Failed to load leave data: ' + (err.message || err)));
     });
   };
@@ -163,30 +176,52 @@
       return;
     }
 
-    // Build form elements — UI.select / UI.dateInput / UI.toggle return field-group wrappers
-    var leaveTypeField = UI.select('Leave Type', LEAVE_TYPES);
+    var content = el('div');
+    appEl.appendChild(content);
+
+    content.appendChild(UI.pageHeader(
+      'Apply for leave',
+      'Choose leave type, dates and add a reason.'
+    ));
+
+    // Leave type — dropdown (5 options, fits 7-rule)
+    var leaveTypeField = UI.select('Leave type', LEAVE_TYPES);
     var leaveTypeSelect = leaveTypeField.querySelector('select');
 
-    var fromDateField = UI.dateInput('From Date', todayISO());
+    var fromDateField = UI.dateInput('From date', todayISO());
     var fromInput = fromDateField.querySelector('input');
 
-    var toDateField = UI.dateInput('To Date', todayISO());
+    var toDateField = UI.dateInput('To date', todayISO());
     var toInput = toDateField.querySelector('input');
 
     var halfDay = false;
-    var halfDayToggle = UI.toggle('Half Day', false, function (val) {
+    var halfDayToggle = UI.toggle('Half day', false, function (val) {
       halfDay = val;
     });
 
-    var reasonTextarea = UI.textarea('Enter reason...');
+    var reasonTextarea = UI.textarea('Add details for your manager...');
     var reasonField = UI.field('Reason', reasonTextarea);
 
-    var errorBox = el('div', { style: { color: 'var(--red-500)', fontSize: '14px', display: 'none', padding: '8px 0' } });
+    var errorBox = el('div', {
+      style: {
+        color: 'var(--m3-error)',
+        font: 'var(--m3-body-small)',
+        display: 'none',
+        padding: '8px 0'
+      }
+    });
 
-    var submitBtn = UI.btn('Submit', {
+    var submitBtn = UI.btn('Submit application', {
       type: 'primary',
       block: true,
+      icon: 'check',
       onClick: handleSubmit
+    });
+
+    var cancelBtn = UI.btn('Cancel', {
+      type: 'outline',
+      block: true,
+      onClick: function () { location.hash = '#/leave'; }
     });
 
     var formCard = UI.card([
@@ -195,11 +230,14 @@
       toDateField,
       halfDayToggle,
       reasonField,
-      errorBox,
-      el('div', { style: { marginTop: '16px' } }, [submitBtn])
+      errorBox
     ]);
 
-    appEl.appendChild(el('div', { style: { padding: '0 16px' } }, [formCard]));
+    content.appendChild(formCard);
+    content.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' } }, [
+      cancelBtn,
+      submitBtn
+    ]));
 
     function showError(msg) {
       errorBox.textContent = msg;
@@ -273,13 +311,17 @@
   window.Screens.leaveDetail = function (appEl, params) {
     var el = UI.el;
     var name = params.id || params.name;
-    var content = el('div', { style: { padding: '0 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
-    content.appendChild(UI.skeleton(3));
+
+    content.appendChild(UI.pageHeader('Leave application', name));
+
+    var skel = UI.skeleton(3);
+    content.appendChild(skel);
 
     var path = '/api/resource/Leave Application/' + encodeURIComponent(name);
     window.fieldAPI.apiCall('GET', path).then(function (res) {
-      content.textContent = '';
+      skel.remove();
 
       var data = (res && res.data && (res.data.data || res.data.message)) || null;
       if (!data) {
@@ -293,27 +335,23 @@
       ]));
 
       // Detail card
-      var dateRange = formatDate(data.from_date);
-      if (data.to_date && data.to_date !== data.from_date) {
-        dateRange += ' \u2013 ' + formatDate(data.to_date);
-      }
-
       content.appendChild(UI.detailCard([
         { label: 'Status', value: data.status },
-        { label: 'Leave Type', value: data.leave_type || '' },
+        { label: 'Leave type', value: data.leave_type || '' },
         { label: 'From', value: formatDate(data.from_date) },
         { label: 'To', value: formatDate(data.to_date) },
         { label: 'Days', value: data.total_leave_days != null ? String(data.total_leave_days) : '' },
-        { label: 'Half Day', value: data.half_day ? 'Yes' : 'No' },
-        { label: 'Reason', value: data.description || '\u2014' },
-        { label: 'Posting Date', value: formatDate(data.posting_date) }
+        { label: 'Half day', value: data.half_day ? 'Yes' : 'No' },
+        { label: 'Reason', value: data.description || '—' },
+        { label: 'Posted on', value: formatDate(data.posting_date) }
       ]));
 
       // Cancel button for Open/draft applications
       if (data.status === 'Open' && data.docstatus === 0) {
-        var cancelBtn = UI.btn('Cancel', {
+        var cancelBtn = UI.btn('Cancel application', {
           type: 'outline-danger',
           block: true,
+          icon: 'x',
           onClick: function () {
             if (!confirm('Cancel this leave application?')) return;
             cancelBtn._setLoading(true, 'Cancelling...');
@@ -332,11 +370,11 @@
             });
           }
         });
-        content.appendChild(el('div', { style: { marginTop: '12px' } }, [cancelBtn]));
+        content.appendChild(el('div', { style: { marginTop: '16px' } }, [cancelBtn]));
       }
 
     }).catch(function (err) {
-      content.textContent = '';
+      skel.remove();
       content.appendChild(UI.error('Failed to load: ' + (err.message || err)));
     });
   };

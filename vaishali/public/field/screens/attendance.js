@@ -113,6 +113,11 @@
 
     var el = UI.el;
 
+    appEl.appendChild(UI.pageHeader(
+      'Attendance',
+      'Check in or out for today. Your location is captured for verification.'
+    ));
+
     // GPS display card
     var gpsBox = UI.card([
       el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [

@@ -216,7 +216,7 @@
     for (var i = 0; i < routes.length; i++) {
       var r = routes[i];
       if (r.pattern.indexOf(':') === -1) {
-        if (hashPath === r.pattern) return { handler: r.handler, params: {}, tab: r.tab, title: r.title, back: r.back };
+        if (hashPath === r.pattern) return { handler: r.handler, params: {}, tab: r.tab, title: r.title, back: r.back, support: ROUTE_SUPPORT[r.pattern] };
       } else {
         var patParts = r.pattern.split('/');
         var hashParts = hashPath.split('/');
@@ -231,11 +231,66 @@
             break;
           }
         }
-        if (match) return { handler: r.handler, params: params, tab: r.tab, title: r.title, back: r.back };
+        if (match) return { handler: r.handler, params: params, tab: r.tab, title: r.title, back: r.back, support: ROUTE_SUPPORT[r.pattern] };
       }
     }
     return null;
   }
+
+  // ─── M3 supporting text per route — Heuristic 1 (visibility) ──────
+  // Screens already injecting their own pageHeader will simply append
+  // below this hero header. Where a screen has a richer layout we leave
+  // the support entry blank.
+  var ROUTE_SUPPORT = {
+    // Sales hubs
+    '#/leads':         'All leads in the sales pipeline. Filter, search and create new.',
+    '#/lead/new':      'Capture a new prospect — name, company, contact and source.',
+    '#/opportunities': 'Active sales opportunities tied to a lead or customer.',
+    '#/quotations':    'Quotations sent to customers. Convert won quotes to sales orders.',
+    '#/quotations/new':'Build a quotation — customer, items, taxes and validity.',
+    '#/sales-orders':  'Confirmed orders awaiting delivery and invoicing.',
+    '#/sales-orders/new': 'Create a sales order from an accepted quotation or directly.',
+    '#/delivery-notes':'Goods dispatched to customers. Track shipments by date.',
+    '#/delivery-notes/new': 'Record a delivery against open sales orders.',
+    '#/sales-invoices':'Customer invoices issued. Track payment status.',
+    '#/sales-invoices/new': 'Generate a sales invoice from a delivery or sales order.',
+    '#/payments/new':  'Record a payment received against an outstanding invoice.',
+    '#/customers':     'Search the customer master and view contact details.',
+    '#/follow-ups':    'Customers and leads scheduled for a follow-up call or visit.',
+    '#/pipeline':      'Sales pipeline by stage. Drag to update or tap to drill in.',
+    '#/targets':       'Your monthly sales targets and achievement against plan.',
+    '#/sales-targets': 'Team sales targets — by department, by region, by product.',
+    '#/my-targets':    'Your personal sales targets and progress.',
+    '#/interactions':  'Phone, email and WhatsApp interactions logged with prospects.',
+    '#/interactions/new': 'Log a phone call, email or WhatsApp message with a contact.',
+
+    // Service hub
+    '#/service':       'Service operations dashboard — installations, complaints, AMC.',
+    '#/installations': 'Equipment installed at customer sites.',
+    '#/breakdowns':    'Customer-reported breakdowns awaiting service.',
+    '#/breakdown/new': 'Log a new breakdown report from a customer.',
+    '#/devices':       'Smart devices in the field — connectivity and health.',
+    '#/amc':           'Active annual maintenance contracts and renewal dates.',
+
+    // Operations
+    '#/production':    'Active work orders, manufacturing throughput and stoppages.',
+    '#/dispatch':      'Sales orders ready for dispatch and goods in transit.',
+    '#/stock':         'Stock levels by warehouse, item and reorder point.',
+    '#/stock/update':  'Add stock — receipt, transfer or adjustment entry.',
+
+    // Finance
+    '#/debtors':       'Customer receivables — invoices outstanding and ageing.',
+    '#/revenue':       'Revenue dashboard — booked, invoiced, collected.',
+    '#/budget':        'Expense budget tracker against monthly limits.',
+    '#/projects':      'Active customer projects and their status.',
+
+    // Manager
+    '#/team':          'Your team — attendance, visits and performance today.',
+    '#/monthly-report':'Monthly performance report card across departments.',
+
+    // Salary
+    '#/salary':        'Your salary slips by month. Tap to download.'
+  };
 
   // ─── Route Rendering ────────────────────────────────────────────────
 
@@ -301,8 +356,13 @@
       headerEl.classList.add('header-transition');
     }
 
+    var resolveBack = function () {
+      if (typeof matched.back === 'function') return matched.back(matched.params || {});
+      return matched.back;
+    };
+
     if (matched.back) {
-      var backBtn = el('button', { className: 'header-back', 'aria-label': 'Go back', onClick: function () { _navigatingBack = true; location.hash = matched.back; } });
+      var backBtn = el('button', { className: 'header-back', 'aria-label': 'Go back', onClick: function () { _navigatingBack = true; var dest = resolveBack(); if (dest) location.hash = dest; else history.back(); } });
       if (window.icon) backBtn.appendChild(window.icon('back'));
       headerEl.appendChild(backBtn);
     }
@@ -311,6 +371,10 @@
         headerEl.appendChild(el('img', { src: '/files/Dyamic Logo - Colour.png', className: 'header-logo', alt: 'Dynamic' }));
       }
       headerEl.appendChild(el('span', { className: 'header-title', textContent: matched.title, role: 'heading', 'aria-level': '1' }));
+
+      // Header action slot (right side) — screens can populate via window._headerAction
+      var actionSlot = el('div', { className: 'header-actions', id: 'header-actions' });
+      headerEl.appendChild(actionSlot);
     }
 
     // ── 3. Render content ──
@@ -335,7 +399,15 @@
       updateNavActive(matched.tab);
     }
 
-    // ── 5. Call screen handler ──
+    // ── 5. Auto-inject M3 page header (title + support text) ──
+    //     Screens may render their own (which appears below this) but routes
+    //     with a `support` field always get a hero header so the user knows
+    //     where they are. Skipped for chat (custom layout) and login.
+    if (matched.support && hash !== '#/chat' && hash !== '#/login' && window.UI && window.UI.pageHeader) {
+      appEl.appendChild(window.UI.pageHeader(matched.title || '', matched.support));
+    }
+
+    // ── 6. Call screen handler ──
     matched.handler(matched.params);
   }
 

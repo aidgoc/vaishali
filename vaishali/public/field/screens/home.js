@@ -417,11 +417,11 @@
       // Fall back to own visit count if team visit data unavailable
       if (teamVisitCount === 0) teamVisitCount = myVisitCount;
 
-      appEl.appendChild(UI.kpiRow([
-        { value: presentCount + '/' + totalCount, label: 'Team Present' },
-        { value: pendingCount, label: 'Approvals' },
-        { value: teamVisitCount, label: 'Visits Today' }
-      ]));
+      appEl.appendChild(UI.statGrid([
+        { value: presentCount + '/' + totalCount, label: 'Team present', support: 'today' },
+        { value: pendingCount, label: 'Approvals', support: 'pending' },
+        { value: teamVisitCount, label: 'Visits', support: 'today' }
+      ], 3));
 
       // 3. Action cards 2x2 grid
       var actionGrid = el('div', { className: 'action-grid' }, [

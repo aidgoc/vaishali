@@ -50,6 +50,11 @@
   // ── Screen 1: Expense List ──────────────────────────────────────────
 
   window.Screens.expenseList = function (appEl) {
+    var el = UI.el;
+    appEl.appendChild(UI.pageHeader(
+      'Expenses',
+      'Submit and track reimbursements for travel, food and other claims.'
+    ));
     var loadingEl = UI.skeleton(3);
     appEl.appendChild(loadingEl);
 
@@ -96,38 +101,47 @@
 
       var claims = (res.data && (res.data.data || res.data.message)) || [];
 
-      // Pending total card
-      var pendingTotal = 0;
+      // Stats — uniform M3
+      var pendingTotal = 0, approvedTotal = 0, draftCt = 0, submittedCt = 0;
       for (var p = 0; p < claims.length; p++) {
-        if (claims[p].approval_status !== 'Rejected') {
-          pendingTotal += (claims[p].total_claimed_amount || 0);
+        var c = claims[p];
+        if (c.approval_status === 'Approved') {
+          approvedTotal += (c.total_sanctioned_amount || c.total_claimed_amount || 0);
+        } else if (c.approval_status !== 'Rejected') {
+          pendingTotal += (c.total_claimed_amount || 0);
         }
+        if (!c.approval_status || c.approval_status === 'Draft' || c.status === 'Draft') draftCt++;
+        else submittedCt++;
       }
-      if (pendingTotal > 0) {
-        appEl.appendChild(UI.card([
-          UI.statCard(formatCurrency(pendingTotal), 'Pending Total')
-        ]));
-      }
+      appEl.appendChild(UI.statGrid([
+        { value: formatCurrency(pendingTotal), label: 'Pending', support: 'awaiting approval' },
+        { value: formatCurrency(approvedTotal), label: 'Approved', support: 'sanctioned this period' },
+        { value: claims.length, label: 'Total claims', support: 'in last 20 records' },
+        { value: draftCt, label: 'Drafts', support: 'not yet submitted' }
+      ], 2));
 
       // New Claim button
-      appEl.appendChild(UI.btn('+ New Claim', {
-        type: 'primary',
-        block: true,
-        icon: 'plus',
-        onClick: function () { location.hash = '#/expense/new'; }
-      }));
+      appEl.appendChild(el('div', { style: { margin: '8px 0 16px' } }, [
+        UI.btn('New expense claim', {
+          type: 'primary',
+          block: true,
+          icon: 'plus',
+          onClick: function () { location.hash = '#/expense/new'; }
+        })
+      ]));
 
-      appEl.appendChild(UI.sectionHeading('Claims'));
+      appEl.appendChild(UI.sectionHeader('Claims', { support: 'Most recent first' }));
 
       if (claims.length === 0) {
-        appEl.appendChild(UI.empty('receipt', 'No expense claims yet', { text: '+ New Expense', onClick: function() { location.hash = '#/expense/new'; } }));
+        appEl.appendChild(UI.empty('receipt', 'No expense claims yet', { text: 'New expense claim', onClick: function () { location.hash = '#/expense/new'; } }));
         return;
       }
 
+      var listWrap = el('div', { className: 'm3-list' });
       for (var i = 0; i < claims.length; i++) {
         (function (claim) {
           var displayStatus = claim.approval_status || claim.status || 'Draft';
-          appEl.appendChild(UI.listCard({
+          listWrap.appendChild(UI.listCard({
             title: formatDate(claim.posting_date),
             sub: formatCurrency(claim.total_claimed_amount),
             right: UI.pill(displayStatus, statusColor(displayStatus)),
@@ -137,6 +151,7 @@
           }));
         })(claims[i]);
       }
+      appEl.appendChild(listWrap);
     }).catch(function () {
       if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
       appEl.appendChild(UI.error('Could not load expense claims.'));
@@ -147,6 +162,10 @@
 
   window.Screens.expenseNew = function (appEl) {
     var el = UI.el;
+    appEl.appendChild(UI.pageHeader(
+      'New expense claim',
+      'Add line items, attach receipts and submit for approval.'
+    ));
     var lines = [];
     var linesContainer = el('div', { className: 'expense-lines' });
 
@@ -331,6 +350,7 @@
   // ── Screen 3: Expense Detail ────────────────────────────────────────
 
   window.Screens.expenseDetail = function (appEl, params) {
+    appEl.appendChild(UI.pageHeader('Expense claim', params.id || ''));
     var loadingEl = UI.skeleton(3);
     appEl.appendChild(loadingEl);
 

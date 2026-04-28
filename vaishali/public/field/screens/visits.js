@@ -112,21 +112,40 @@
   window.Screens.visitsList = function (appEl) {
     var el = UI.el;
 
-    var activeTab = 'today';
-    var listContainer = el('div');
+    appEl.appendChild(UI.pageHeader(
+      'Visits',
+      'Daily call reports — log each customer or prospect visit.'
+    ));
 
-    var tabBar = UI.tabs([
+    var activeTab = 'today';
+    var statsContainer = el('div');
+    appEl.appendChild(statsContainer);
+
+    var listContainer = el('div', { style: { marginTop: '12px' } });
+
+    // Filter — segmented (3 options, single-select)
+    var segLabel = el('div', {
+      textContent: 'Show',
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '8px 0 4px',
+        letterSpacing: '0.5px'
+      }
+    });
+    appEl.appendChild(segLabel);
+    var segBar = UI.segmented([
       { value: 'today', label: 'Today' },
-      { value: 'week', label: 'This Week' },
+      { value: 'week', label: 'This week' },
       { value: 'all', label: 'All' }
-    ], 'today', function (val) {
+    ], { value: 'today', onChange: function (val) {
       activeTab = val;
       loadVisits();
-    });
-    appEl.appendChild(tabBar);
+    } });
+    appEl.appendChild(segBar);
 
-    appEl.appendChild(el('div', { style: { padding: '12px 0' } }, [
-      UI.btn('+ New Visit', {
+    appEl.appendChild(el('div', { style: { padding: '16px 0 8px' } }, [
+      UI.btn('Log new visit', {
         type: 'primary',
         block: true,
         icon: 'plus',
@@ -149,17 +168,33 @@
 
       window.fieldAPI.apiCall('GET', path).then(function (res) {
         listContainer.textContent = '';
+        statsContainer.textContent = '';
 
         var items = [];
         if (res && res.data) {
           items = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
         }
 
+        // Stats
+        var ongoing = 0, completed = 0, planned = 0;
+        for (var sIdx = 0; sIdx < items.length; sIdx++) {
+          var st = items[sIdx].status || 'Planned';
+          if (st === 'Completed') completed++;
+          else if (st === 'Ongoing' || st === 'In Progress') ongoing++;
+          else planned++;
+        }
+        statsContainer.appendChild(UI.statGrid([
+          { value: items.length, label: 'Total visits', support: activeTab === 'today' ? 'today' : (activeTab === 'week' ? 'this week' : 'all-time') },
+          { value: completed, label: 'Completed', support: 'closed out' },
+          { value: ongoing, label: 'Ongoing', support: 'currently active' }
+        ], 3));
+
         if (items.length === 0) {
           listContainer.appendChild(UI.empty('clip', 'No visits yet'));
           return;
         }
 
+        var listWrap = el('div', { className: 'm3-list' });
         for (var i = 0; i < items.length; i++) {
           (function (dcr) {
             var customer = dcr.customer || dcr.prospect_name || 'Unknown';
@@ -174,7 +209,7 @@
             var status = dcr.status || 'Planned';
             var sub = [purpose, time, duration].filter(Boolean).join(' \u00b7 ');
 
-            listContainer.appendChild(UI.listCard({
+            listWrap.appendChild(UI.listCard({
               avatar: customer,
               title: customer,
               sub: sub,
@@ -183,6 +218,7 @@
             }));
           })(items[i]);
         }
+        listContainer.appendChild(listWrap);
       }).catch(function (err) {
         listContainer.textContent = '';
         listContainer.appendChild(UI.error('Failed to load visits: ' + (err.message || err)));
@@ -196,6 +232,10 @@
 
   window.Screens.visitNew = function (appEl) {
     var el = UI.el;
+    appEl.appendChild(UI.pageHeader(
+      'New visit',
+      'Capture customer or prospect, purpose and outcome.'
+    ));
     var emp = Auth.getEmployee() || {};
     var empDept = (emp.department || '').toLowerCase();
     var empDesig = (emp.designation || '').toLowerCase();
@@ -642,6 +682,7 @@
   // ── Screen: Visit Detail ──────────────────────────────────────────────
 
   window.Screens.visitDetail = function (appEl, params) {
+    appEl.appendChild(UI.pageHeader('Visit', params.id || ''));
     var el = UI.el;
     var dcrName = params.id || params.name;
 

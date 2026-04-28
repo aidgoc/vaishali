@@ -65,24 +65,60 @@
     var activeTab = 'all';
     var allItems = [];
 
-    var content = el('div', { style: { padding: '0 16px 16px' } });
+    var content = el('div');
     appEl.appendChild(content);
 
-    // Tab filter
-    var tabBar = UI.tabs([
+    // Page header — Heuristic 1 (visibility)
+    content.appendChild(UI.pageHeader(
+      'Approvals',
+      'Pending leave, expense and advance requests from your team.'
+    ));
+
+    // Stats row — uniform M3 stats
+    var statsContainer = el('div');
+    content.appendChild(statsContainer);
+
+    // Filter — segmented buttons (4 options, fits 7-rule, single-select)
+    var segLabel = el('div', {
+      textContent: 'Filter by type',
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '8px 0 4px',
+        letterSpacing: '0.5px'
+      }
+    });
+    content.appendChild(segLabel);
+    var segBar = UI.segmented([
       { value: 'all', label: 'All' },
       { value: 'leave', label: 'Leave' },
       { value: 'expense', label: 'Expense' },
       { value: 'advance', label: 'Advance' }
-    ], 'all', function (val) {
+    ], { value: 'all', onChange: function (val) {
       activeTab = val;
       renderList();
-    });
-    content.appendChild(tabBar);
+    } });
+    content.appendChild(segBar);
 
-    var listArea = el('div');
+    var listArea = el('div', { style: { marginTop: '16px' } });
     listArea.appendChild(UI.skeleton(3));
     content.appendChild(listArea);
+
+    function renderStats() {
+      statsContainer.textContent = '';
+      var leaveCt = 0, expenseCt = 0, advanceCt = 0;
+      for (var i = 0; i < allItems.length; i++) {
+        if (allItems[i].type === 'Leave') leaveCt++;
+        else if (allItems[i].type === 'Expense') expenseCt++;
+        else if (allItems[i].type === 'Advance') advanceCt++;
+      }
+      statsContainer.appendChild(UI.statGrid([
+        { value: allItems.length, label: 'Total pending', support: 'awaiting your action' },
+        { value: leaveCt, label: 'Leave', support: 'requests' },
+        { value: expenseCt, label: 'Expense', support: 'claims' },
+        { value: advanceCt, label: 'Advance', support: 'requests' }
+      ], 2));
+    }
 
     function renderList() {
       listArea.textContent = '';
@@ -99,13 +135,14 @@
       }
 
       if (filtered.length === 0) {
-        listArea.appendChild(UI.empty('check', 'All caught up! No pending approvals.'));
+        listArea.appendChild(UI.empty('check', 'All caught up — no pending approvals.'));
         return;
       }
 
+      var listWrap = el('div', { className: 'm3-list' });
       for (var j = 0; j < filtered.length; j++) {
         (function (item) {
-          listArea.appendChild(UI.listCard({
+          listWrap.appendChild(UI.listCard({
             avatar: item.employee_name,
             title: item.employee_name,
             sub: buildSubText(item),
@@ -116,6 +153,7 @@
           }));
         })(filtered[j]);
       }
+      listArea.appendChild(listWrap);
     }
 
     // Fetch pending approvals
@@ -128,6 +166,7 @@
       }
 
       allItems = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
+      renderStats();
       renderList();
     }).catch(function () {
       listArea.textContent = '';

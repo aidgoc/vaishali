@@ -39,20 +39,32 @@
 
   window.Screens = window.Screens || {};
   window.Screens.advanceList = function (appEl) {
+    var el = UI.el;
     var emp = Auth.getEmployee() || {};
     var empName = emp.name || emp.employee_id || '';
 
-    // Request Advance button
-    appEl.appendChild(UI.btn('+ Request Advance', {
-      type: 'primary',
-      block: true,
-      icon: 'plus',
-      onClick: function () { location.hash = '#/advance/new'; }
-    }));
+    appEl.appendChild(UI.pageHeader(
+      'Advances',
+      'Request a salary advance and track repayment status.'
+    ));
 
-    appEl.appendChild(UI.sectionHeading('Advances'));
+    // Stats placeholder, populated after fetch
+    var statsArea = el('div');
+    appEl.appendChild(statsArea);
 
-    var listArea = UI.el('div');
+    // Request Advance button — primary action, always visible
+    appEl.appendChild(el('div', { style: { margin: '8px 0 16px' } }, [
+      UI.btn('Request advance', {
+        type: 'primary',
+        block: true,
+        icon: 'plus',
+        onClick: function () { location.hash = '#/advance/new'; }
+      })
+    ]));
+
+    appEl.appendChild(UI.sectionHeader('Your advances', { support: 'Most recent first' }));
+
+    var listArea = el('div');
     listArea.appendChild(UI.skeleton(3));
     appEl.appendChild(listArea);
 
@@ -80,21 +92,36 @@
 
       var advances = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
 
+      // Stats — uniform M3
+      var totalRequested = 0, totalPaid = 0, totalClaimed = 0, openCt = 0;
+      for (var sIdx = 0; sIdx < advances.length; sIdx++) {
+        totalRequested += (advances[sIdx].advance_amount || 0);
+        totalPaid += (advances[sIdx].paid_amount || 0);
+        totalClaimed += (advances[sIdx].claimed_amount || 0);
+        if ((advances[sIdx].status || 'Draft') !== 'Claimed') openCt++;
+      }
+      function fmtINR(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+      statsArea.appendChild(UI.statGrid([
+        { value: fmtINR(totalRequested), label: 'Total requested', support: 'across all advances' },
+        { value: fmtINR(totalPaid - totalClaimed), label: 'Outstanding', support: 'yet to be claimed' },
+        { value: openCt, label: 'Open', support: 'in progress' },
+        { value: advances.length, label: 'Total', support: 'records' }
+      ], 2));
+
       if (advances.length === 0) {
-        listArea.appendChild(UI.empty('banknote', 'No advances yet', { text: '+ Request Advance', onClick: function() { location.hash = '#/advance/new'; } }));
+        listArea.appendChild(UI.empty('banknote', 'No advances yet', { text: 'Request advance', onClick: function() { location.hash = '#/advance/new'; } }));
         return;
       }
 
+      var listWrap = UI.el('div', { className: 'm3-list' });
       for (var i = 0; i < advances.length; i++) {
         (function (adv) {
-          var rightEl = UI.el('div', { style: { textAlign: 'right' } }, [
+          var rightEl = UI.el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, [
             UI.amount(adv.advance_amount),
-            UI.el('div', { style: { marginTop: '4px' } }, [
-              UI.pill(adv.status || 'Draft', statusColor(adv.status))
-            ])
+            UI.pill(adv.status || 'Draft', statusColor(adv.status))
           ]);
 
-          listArea.appendChild(UI.listCard({
+          listWrap.appendChild(UI.listCard({
             title: adv.purpose || 'No purpose specified',
             sub: formatDate(adv.posting_date),
             right: rightEl,
@@ -102,6 +129,7 @@
           }));
         })(advances[i]);
       }
+      listArea.appendChild(listWrap);
     }).catch(function () {
       listArea.textContent = '';
       listArea.appendChild(UI.error('Could not load advances'));
@@ -114,6 +142,11 @@
     var emp = Auth.getEmployee() || {};
     var empName = emp.name || emp.employee_id || '';
 
+    appEl.appendChild(UI.pageHeader(
+      'Request advance',
+      'Enter amount, purpose and date. HR will review and pay out.'
+    ));
+
     var amountInput = UI.textInput('Enter amount', { type: 'number', name: 'amount' });
     var purposeInput = UI.textarea('Purpose of advance', { name: 'purpose' });
     var dateField = UI.dateInput('Date', todayISO());
@@ -122,14 +155,15 @@
     var dateInput = dateField.querySelector('input');
 
     appEl.appendChild(UI.card([
-      UI.field('Amount', amountInput),
+      UI.field('Amount (₹)', amountInput),
       UI.field('Purpose', purposeInput),
       dateField
     ]));
 
-    var submitBtn = UI.btn('Submit', {
+    var submitBtn = UI.btn('Submit request', {
       type: 'primary',
       block: true,
+      icon: 'check',
       onClick: function () {
         var amount = parseFloat(amountInput.value);
         var purpose = purposeInput.value.trim();
@@ -182,6 +216,7 @@
   // ── Screen: Advance Detail ───────────────────────────────────────────
 
   window.Screens.advanceDetail = function (appEl, params) {
+    appEl.appendChild(UI.pageHeader('Advance', params.id || ''));
     var contentArea = UI.el('div');
     contentArea.appendChild(UI.skeleton(2));
     appEl.appendChild(contentArea);

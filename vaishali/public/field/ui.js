@@ -698,6 +698,428 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     MATERIAL 3 COMPONENTS
+     ══════════════════════════════════════════════════════════════ */
+
+  /* ── pageHeader(title, support, opts) ─────────────────────────
+     Heuristic 1 (visibility of system status): every screen begins with
+     a clear title and supporting text so the user always knows where
+     they are and what this page does.
+     ────────────────────────────────────────────────────────────── */
+  function pageHeader(title, support, opts) {
+    opts = opts || {};
+    var children = [];
+    children.push(el('h1', {
+      className: 'm3-page-title',
+      textContent: title || '',
+      role: 'heading',
+      'aria-level': '1'
+    }));
+    if (support) {
+      children.push(el('p', { className: 'm3-page-support', textContent: support }));
+    }
+    if (opts.action) {
+      var actBtn = btn(opts.action.text, {
+        type: opts.action.type || 'tonal',
+        icon: opts.action.icon,
+        onClick: opts.action.onClick
+      });
+      children.push(el('div', { style: { marginTop: '12px' } }, [actBtn]));
+    }
+    return el('section', { className: 'm3-page-header' }, children);
+  }
+
+  /* ── sectionHeader(title, opts) ───────────────────────────────
+     M3 section header — title + optional supporting text + optional action.
+     Replaces the older sectionHeading for grouped content.
+     ────────────────────────────────────────────────────────────── */
+  function sectionHeader(title, opts) {
+    opts = opts || {};
+    var titleBlock = [el('h2', { className: 'm3-section-title', textContent: title })];
+    if (opts.support) {
+      titleBlock.push(el('p', { className: 'm3-section-support', textContent: opts.support }));
+    }
+    var children = [el('div', { className: 'm3-section-titles' }, titleBlock)];
+    if (opts.action) {
+      children.push(el('button', {
+        className: 'm3-section-action',
+        textContent: opts.action.text,
+        onClick: opts.action.onClick
+      }));
+    }
+    return el('header', { className: 'm3-section-header' }, children);
+  }
+
+  /* ── stat(value, label, opts) ─────────────────────────────────
+     Single source of truth for stats across the app. Same shape for
+     leave balance, casual leaves, team present, approvals, etc.
+     opts: { support, trend: { dir: 'up'|'down', text }, onClick }
+     ────────────────────────────────────────────────────────────── */
+  function stat(value, label, opts) {
+    opts = opts || {};
+    var children = [
+      el('div', { className: 'm3-stat-label', textContent: label || '' }),
+      el('div', { className: 'm3-stat-value', textContent: String(value) })
+    ];
+    if (opts.support) {
+      children.push(el('div', { className: 'm3-stat-support', textContent: opts.support }));
+    }
+    if (opts.trend) {
+      var dir = opts.trend.dir === 'down' ? 'down' : 'up';
+      children.push(el('div', { className: 'm3-stat-trend ' + dir, textContent: opts.trend.text }));
+    }
+    var attrs = {
+      className: 'm3-stat',
+      'aria-label': label + ': ' + value
+    };
+    if (opts.onClick) {
+      attrs.onClick = opts.onClick;
+      attrs.role = 'button';
+      attrs.tabIndex = '0';
+    }
+    return el('div', attrs, children);
+  }
+
+  /* ── statGrid(items, cols) ────────────────────────────────────
+     Uniform grid of stats. Each item: { value, label, support?, trend? }
+     ────────────────────────────────────────────────────────────── */
+  function statGrid(items, cols) {
+    cols = cols || 2;
+    var children = [];
+    for (var i = 0; i < items.length; i++) {
+      children.push(stat(items[i].value, items[i].label, {
+        support: items[i].support,
+        trend: items[i].trend,
+        onClick: items[i].onClick
+      }));
+    }
+    var cls = 'm3-stat-grid';
+    if (cols === 3) cls += ' cols-3';
+    if (cols === 4) cls += ' cols-4';
+    return el('div', { className: cls }, children);
+  }
+
+  /* ── chip(text, opts) ─────────────────────────────────────────
+     M3 filter / suggestion chip. opts: { selected, onClick, icon, leading }
+     ────────────────────────────────────────────────────────────── */
+  function chip(text, opts) {
+    opts = opts || {};
+    var cls = 'm3-chip';
+    if (opts.selected) cls += ' selected';
+    var children = [];
+    if (opts.selected) {
+      var checkLeading = el('span', { className: 'm3-chip-leading' });
+      setIconHTML(checkLeading, 'check');
+      children.push(checkLeading);
+    } else if (opts.icon) {
+      var leading = el('span', { className: 'm3-chip-leading' });
+      setIconHTML(leading, opts.icon);
+      children.push(leading);
+    }
+    children.push(el('span', { className: 'm3-chip-text', textContent: text }));
+    var attrs = {
+      className: cls,
+      onClick: opts.onClick || null,
+      role: 'button',
+      tabIndex: '0',
+      'aria-pressed': opts.selected ? 'true' : 'false'
+    };
+    return el('button', attrs, children);
+  }
+
+  /* ── chipSet(options, opts) ───────────────────────────────────
+     Selector pills. options: [{value, label, icon?}, ...]
+     opts: { value, onChange, multi }
+     If options.length > 7, this is the recommended replacement for
+     a dropdown. For 1-7 single-select, a dropdown is still fine.
+     ────────────────────────────────────────────────────────────── */
+  function chipSet(options, opts) {
+    opts = opts || {};
+    var multi = !!opts.multi;
+    var current = multi ? (opts.value || []).slice() : (opts.value || null);
+    var wrapper = el('div', { className: 'm3-chip-set', role: 'group' });
+
+    function isSelected(v) {
+      if (multi) {
+        for (var i = 0; i < current.length; i++) {
+          if (current[i] === v) return true;
+        }
+        return false;
+      }
+      return current === v;
+    }
+
+    function render() {
+      while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+      for (var i = 0; i < options.length; i++) {
+        (function (op) {
+          var c = chip(op.label, {
+            selected: isSelected(op.value),
+            icon: op.icon,
+            onClick: function () {
+              if (multi) {
+                var idx = current.indexOf(op.value);
+                if (idx >= 0) current.splice(idx, 1);
+                else current.push(op.value);
+              } else {
+                current = op.value;
+              }
+              render();
+              if (opts.onChange) opts.onChange(current);
+            }
+          });
+          wrapper.appendChild(c);
+        })(options[i]);
+      }
+    }
+    render();
+    wrapper._getValue = function () { return current; };
+    return wrapper;
+  }
+
+  /* ── segmented(options, opts) ─────────────────────────────────
+     M3 segmented button. options: [{value, label, icon?}, ...]
+     opts: { value, onChange, multi }
+     Best for 2-5 mutually-exclusive related options.
+     ────────────────────────────────────────────────────────────── */
+  function segmented(options, opts) {
+    opts = opts || {};
+    var multi = !!opts.multi;
+    var current = multi ? (opts.value || []).slice() : (opts.value || (options[0] && options[0].value));
+    var wrapper = el('div', { className: 'm3-segmented', role: multi ? 'group' : 'radiogroup' });
+
+    function isSelected(v) {
+      if (multi) return current.indexOf(v) >= 0;
+      return current === v;
+    }
+
+    function render() {
+      while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+      for (var i = 0; i < options.length; i++) {
+        (function (op) {
+          var cls = 'm3-segment';
+          if (isSelected(op.value)) cls += ' selected';
+          var children = [];
+          if (isSelected(op.value)) {
+            var ic = el('span', {});
+            setIconHTML(ic, 'check');
+            children.push(ic);
+          } else if (op.icon) {
+            var ic2 = el('span', {});
+            setIconHTML(ic2, op.icon);
+            children.push(ic2);
+          }
+          children.push(el('span', { textContent: op.label }));
+          var seg = el('button', {
+            className: cls,
+            role: multi ? 'button' : 'radio',
+            'aria-pressed': isSelected(op.value) ? 'true' : 'false',
+            'aria-checked': isSelected(op.value) ? 'true' : 'false',
+            onClick: function () {
+              if (multi) {
+                var idx = current.indexOf(op.value);
+                if (idx >= 0) current.splice(idx, 1);
+                else current.push(op.value);
+              } else {
+                current = op.value;
+              }
+              render();
+              if (opts.onChange) opts.onChange(current);
+            }
+          }, children);
+          wrapper.appendChild(seg);
+        })(options[i]);
+      }
+    }
+    render();
+    wrapper._getValue = function () { return current; };
+    return wrapper;
+  }
+
+  /* ── checkbox(label, opts) ────────────────────────────────────
+     M3 checkbox. opts: { checked, onChange, name, value }
+     ────────────────────────────────────────────────────────────── */
+  function checkbox(label, opts) {
+    opts = opts || {};
+    var input = el('input', {
+      type: 'checkbox',
+      checked: !!opts.checked,
+      name: opts.name || null,
+      value: opts.value != null ? opts.value : ''
+    });
+    if (opts.onChange) {
+      input.addEventListener('change', function () { opts.onChange(input.checked, input); });
+    }
+    var box = el('span', { className: 'm3-checkbox-box', 'aria-hidden': 'true' });
+    var labelEl = el('span', { className: 'm3-checkbox-label', textContent: label });
+    return el('label', { className: 'm3-checkbox' }, [input, box, labelEl]);
+  }
+
+  /* ── radio(label, opts) ───────────────────────────────────────
+     M3 radio. opts: { checked, onChange, name, value }
+     Use radioGroup for a grouped set.
+     ────────────────────────────────────────────────────────────── */
+  function radio(label, opts) {
+    opts = opts || {};
+    var input = el('input', {
+      type: 'radio',
+      checked: !!opts.checked,
+      name: opts.name || null,
+      value: opts.value != null ? opts.value : ''
+    });
+    if (opts.onChange) {
+      input.addEventListener('change', function () { if (input.checked) opts.onChange(input.value, input); });
+    }
+    var circle = el('span', { className: 'm3-radio-circle', 'aria-hidden': 'true' });
+    var labelEl = el('span', { className: 'm3-radio-label', textContent: label });
+    return el('label', { className: 'm3-radio' }, [input, circle, labelEl]);
+  }
+
+  /* ── radioGroup(name, options, opts) ──────────────────────────
+     options: [{value, label, support?}, ...]
+     opts: { value, onChange }
+     ────────────────────────────────────────────────────────────── */
+  function radioGroup(name, options, opts) {
+    opts = opts || {};
+    var current = opts.value;
+    var wrapper = el('div', { role: 'radiogroup', className: 'm3-radio-group' });
+    for (var i = 0; i < options.length; i++) {
+      (function (op) {
+        var r = radio(op.label, {
+          name: name,
+          value: op.value,
+          checked: current === op.value,
+          onChange: function (v) {
+            current = v;
+            if (opts.onChange) opts.onChange(v);
+          }
+        });
+        wrapper.appendChild(r);
+      })(options[i]);
+    }
+    wrapper._getValue = function () { return current; };
+    return wrapper;
+  }
+
+  /* ── selectableList(options, opts) ────────────────────────────
+     A list where each row is selectable via a checkbox (multi) or
+     radio (single). Best for in-list selection (vs. dropdown).
+     opts: { value, multi, onChange }
+     options: [{value, title, support?}, ...]
+     ────────────────────────────────────────────────────────────── */
+  function selectableList(options, opts) {
+    opts = opts || {};
+    var multi = !!opts.multi;
+    var current = multi ? (opts.value || []).slice() : (opts.value || null);
+    var wrapper = el('div', { className: 'm3-selectable-list', role: multi ? 'group' : 'radiogroup' });
+
+    function isSelected(v) {
+      if (multi) return current.indexOf(v) >= 0;
+      return current === v;
+    }
+
+    function render() {
+      while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+      for (var i = 0; i < options.length; i++) {
+        (function (op) {
+          var contentChildren = [
+            el('div', { className: 'm3-selectable-title', textContent: op.title })
+          ];
+          if (op.support) {
+            contentChildren.push(el('div', { className: 'm3-selectable-support', textContent: op.support }));
+          }
+          var leading;
+          if (multi) {
+            leading = el('input', { type: 'checkbox', checked: isSelected(op.value), 'aria-hidden': 'true', tabIndex: '-1' });
+            var cbBox = el('span', { className: 'm3-checkbox-box' });
+            leading = el('span', { className: 'm3-checkbox', style: { padding: '0' } }, [leading, cbBox]);
+          } else {
+            leading = el('input', { type: 'radio', checked: isSelected(op.value), name: opts.name || 'sel', 'aria-hidden': 'true', tabIndex: '-1' });
+            var rcCircle = el('span', { className: 'm3-radio-circle' });
+            leading = el('span', { className: 'm3-radio', style: { padding: '0' } }, [leading, rcCircle]);
+          }
+          var row = el('button', {
+            className: 'm3-selectable-row' + (isSelected(op.value) ? ' selected' : ''),
+            role: multi ? 'checkbox' : 'radio',
+            'aria-checked': isSelected(op.value) ? 'true' : 'false',
+            onClick: function () {
+              if (multi) {
+                var idx = current.indexOf(op.value);
+                if (idx >= 0) current.splice(idx, 1);
+                else current.push(op.value);
+              } else {
+                current = op.value;
+              }
+              render();
+              if (opts.onChange) opts.onChange(current);
+            }
+          }, [leading, el('div', { className: 'm3-selectable-content' }, contentChildren)]);
+          wrapper.appendChild(row);
+        })(options[i]);
+      }
+    }
+    render();
+    wrapper._getValue = function () { return current; };
+    return wrapper;
+  }
+
+  /* ── selectOrChips(label, options, opts) ──────────────────────
+     Smart wrapper: picks the right pattern based on count.
+     - <= 7 options → dropdown (UI.select)
+     - > 7 options  → chip set (single-select)
+     opts: { value, onChange, multi }
+     If multi:true, always returns selectableList regardless of count.
+     ────────────────────────────────────────────────────────────── */
+  function selectOrChips(label, options, opts) {
+    opts = opts || {};
+    var labelEl = el('label', {
+      textContent: label,
+      style: {
+        display: 'block',
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        marginBottom: '8px',
+        letterSpacing: '0.5px'
+      }
+    });
+    var control;
+    if (opts.multi) {
+      control = selectableList(options.map(function (o) {
+        return typeof o === 'string' ? { value: o, title: o } : { value: o.value, title: o.label || o.text, support: o.support };
+      }), { value: opts.value, multi: true, onChange: opts.onChange });
+    } else if (options.length > 7) {
+      control = chipSet(options.map(function (o) {
+        return typeof o === 'string' ? { value: o, label: o } : { value: o.value, label: o.label || o.text };
+      }), { value: opts.value, onChange: opts.onChange });
+    } else {
+      var sel = select(label, options, opts.value);
+      // Re-wire onChange
+      var selectEl = sel.querySelector('select');
+      if (selectEl && opts.onChange) {
+        selectEl.addEventListener('change', function () { opts.onChange(selectEl.value); });
+      }
+      return sel; // already includes label
+    }
+    return el('div', { className: 'field-group' }, [labelEl, control]);
+  }
+
+  /* ── snackbar(text, opts) ─────────────────────────────────────
+     M3 snackbar (alias of toast for clarity). opts: { type, action }
+     ────────────────────────────────────────────────────────────── */
+  function snackbar(text, opts) {
+    opts = opts || {};
+    return toast(text, opts.type || 'success');
+  }
+
+  /* ── m3PageWrap(content) ─────────────────────────────────────
+     Standard padding wrapper used by screens. Expose for consistency.
+     ────────────────────────────────────────────────────────────── */
+  function pageWrap(children) {
+    if (!Array.isArray(children)) children = [children];
+    return el('div', { className: 'm3-page-wrap' }, children);
+  }
+
   /* ──────────────────────────────────────────────────────────────
      Export
      ────────────────────────────────────────────────────────────── */
@@ -734,7 +1156,23 @@
     bottomSheet: bottomSheet,
     actionCard: actionCard,
     kpiRow: kpiRow,
-    fieldError: fieldError
+    fieldError: fieldError,
+
+    // M3 components
+    pageHeader: pageHeader,
+    sectionHeader: sectionHeader,
+    stat: stat,
+    statGrid: statGrid,
+    chip: chip,
+    chipSet: chipSet,
+    segmented: segmented,
+    checkbox: checkbox,
+    radio: radio,
+    radioGroup: radioGroup,
+    selectableList: selectableList,
+    selectOrChips: selectOrChips,
+    snackbar: snackbar,
+    pageWrap: pageWrap
   };
 
 })();
