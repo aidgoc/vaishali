@@ -16,7 +16,7 @@ const LEAD_FIXTURE = {
 };
 
 const COMMENTS_FIXTURE = {
-  match: 'doctype=Comment',
+  match: '/api/resource/Comment',
   data: { data: [
     { name: 'C1', content: '<p>Spoke to procurement</p>', comment_email: 'harsh@dgoc.in', comment_by: 'Harsh', comment_type: 'Comment', creation: '2026-04-26 14:00:00' },
     { name: 'C2', content: '<p>Sent specs by email</p>', comment_email: 'harsh@dgoc.in', comment_by: 'Harsh', comment_type: 'Comment', creation: '2026-04-25 11:30:00' }
@@ -24,7 +24,7 @@ const COMMENTS_FIXTURE = {
 };
 
 const VERSIONS_FIXTURE = {
-  match: 'doctype=Version',
+  match: '/api/resource/Version',
   data: { data: [
     { name: 'V1', data: '{"changed":[["status","Open","Open"]]}', owner: 'harsh@dgoc.in', creation: '2026-04-25 10:30:00' }
   ] }
