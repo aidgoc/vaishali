@@ -301,25 +301,26 @@
     // Pre-select based on detection; user can always override via the picker below
     var visitType = isSales ? 'sales' : isService ? 'service' : null;
 
-    var visitPurposeField = UI.select('Visit Purpose', salesPurposes);
-    var visitPurposeSelect = visitPurposeField.querySelector('select');
-    var servicePurposeField = UI.select('Service Purpose', servicePurposes);
-    var servicePurposeSelect = servicePurposeField.querySelector('select');
+    var visitPurposeField = UI.m3SelectField('Visit purpose', salesPurposes, { required: true });
+    var visitPurposeSelect = visitPurposeField._getSelect();
+    var servicePurposeField = UI.m3SelectField('Service purpose', servicePurposes, { required: true });
+    var servicePurposeSelect = servicePurposeField._getSelect();
 
-    // Visit type picker — always shown so users can override a wrong auto-detection
-    var salesBtn = UI.btn('Sales Visit', { type: 'outline', onClick: function () { setVisitType('sales'); } });
-    var serviceBtn = UI.btn('Service Visit', { type: 'outline', onClick: function () { setVisitType('service'); } });
+    // Visit type picker — M3 segmented button (2 options, single-select)
+    var typeSegBar = UI.segmented([
+      { value: 'sales', label: 'Sales' },
+      { value: 'service', label: 'Service' }
+    ], { value: visitType || 'sales', onChange: function (v) { setVisitType(v); } });
     var typePickerEl = el('div', { style: { marginBottom: '16px' } }, [
-      el('div', { className: 'section-heading', textContent: 'Visit type' }),
-      el('div', { style: { display: 'flex', gap: '8px' } }, [salesBtn, serviceBtn])
+      el('div', {
+        textContent: 'Visit type',
+        style: { font: 'var(--m3-label-medium)', color: 'var(--m3-on-surface-variant)', marginBottom: '8px', letterSpacing: '0.5px' }
+      }),
+      typeSegBar
     ]);
 
     function setVisitType(type) {
       visitType = type;
-      var active = type === 'sales' ? salesBtn : serviceBtn;
-      var inactive = type === 'sales' ? serviceBtn : salesBtn;
-      active.classList.add('btn-primary-styled'); active.classList.remove('btn-outline');
-      inactive.classList.add('btn-outline'); inactive.classList.remove('btn-primary-styled');
       if (type === 'sales') {
         visitPurposeField.style.display = 'block';
         servicePurposeField.style.display = 'none';
@@ -512,37 +513,37 @@
     // Trigger follow-up check when purpose or customer changes
     visitPurposeSelect.addEventListener('change', checkFollowUp);
 
-    // Prospect toggle + fields
+    // Prospect toggle + fields — M3 floating-label
     var prospectFields = el('div', { style: { display: 'none' } });
-    var prospectNameInput = UI.textInput('Prospect name');
-    prospectNameInput.addEventListener('blur', function () {
-      if (isProspect && !prospectNameInput.value.trim()) {
-        UI.fieldError(prospectNameInput, 'Required');
-      } else {
-        UI.fieldError(prospectNameInput, null);
-      }
-    });
-    var prospectCompanyInput = UI.textInput('Company');
-    var prospectPhoneInput = UI.textInput('Phone', { type: 'tel' });
-    var prospectAddressInput = UI.textarea('Address', { rows: 2 });
-    prospectFields.appendChild(UI.field('Prospect Name', prospectNameInput));
-    prospectFields.appendChild(UI.field('Company', prospectCompanyInput));
-    prospectFields.appendChild(UI.field('Phone', prospectPhoneInput));
-    prospectFields.appendChild(UI.field('Address', prospectAddressInput));
+    var prospectNameField = UI.m3TextField('Prospect name', { required: true });
+    var prospectNameInput = prospectNameField._getInput();
+    var prospectCompanyField = UI.m3TextField('Company');
+    var prospectCompanyInput = prospectCompanyField._getInput();
+    var prospectPhoneField = UI.m3TextField('Phone', { type: 'tel' });
+    var prospectPhoneInput = prospectPhoneField._getInput();
+    var prospectAddressField = UI.m3TextField('Address', { multiline: true, rows: 2 });
+    var prospectAddressInput = prospectAddressField._getInput();
+    prospectFields.appendChild(prospectNameField);
+    prospectFields.appendChild(prospectCompanyField);
+    prospectFields.appendChild(prospectPhoneField);
+    prospectFields.appendChild(prospectAddressField);
 
     var prospectToggle = UI.toggle('New prospect?', false, function (val) {
       isProspect = val;
       prospectFields.style.display = val ? 'block' : 'none';
     });
 
-    // Service-specific fields (only visible for service visits)
+    // Service-specific fields (only visible for service visits) — M3
     var serviceFields = el('div', { style: { display: 'none' } });
-    var equipmentInput = UI.textInput('Equipment name');
-    var serialInput = UI.textInput('Serial number');
-    var jobCardInput = UI.textInput('Job card number');
-    serviceFields.appendChild(UI.field('Equipment', equipmentInput));
-    serviceFields.appendChild(UI.field('Serial No', serialInput));
-    serviceFields.appendChild(UI.field('Job Card No', jobCardInput));
+    var equipmentField = UI.m3TextField('Equipment name');
+    var equipmentInput = equipmentField._getInput();
+    var serialField = UI.m3TextField('Serial number');
+    var serialInput = serialField._getInput();
+    var jobCardField = UI.m3TextField('Job card number');
+    var jobCardInput = jobCardField._getInput();
+    serviceFields.appendChild(equipmentField);
+    serviceFields.appendChild(serialField);
+    serviceFields.appendChild(jobCardField);
 
     // Apply pre-selected visit type now that serviceFields exists
     if (visitType) setVisitType(visitType);

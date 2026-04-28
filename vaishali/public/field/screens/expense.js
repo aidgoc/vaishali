@@ -198,55 +198,47 @@
     }
 
     function addLine() {
-      // Type select
-      var typeOpts = [];
+      // M3 fields per line
+      var typeOptions = [];
       for (var t = 0; t < EXPENSE_TYPES.length; t++) {
-        typeOpts.push(el('option', {
-          value: EXPENSE_TYPES[t].value,
-          textContent: EXPENSE_TYPES[t].text
-        }));
+        if (EXPENSE_TYPES[t].value) {
+          typeOptions.push({ value: EXPENSE_TYPES[t].value, text: EXPENSE_TYPES[t].text });
+        }
       }
-      var typeSelect = el('select', { className: 'form-control' }, typeOpts);
+      var typeField = UI.m3SelectField('Type', typeOptions, { required: true });
+      var typeSelect = typeField._getSelect();
 
-      // Date input
-      var dateInput = el('input', {
-        className: 'form-control',
-        type: 'date',
-        value: todayISO()
-      });
+      var dateField = UI.m3TextField('Date', { type: 'date', value: todayISO(), required: true });
+      var dateInput = dateField._getInput();
 
-      // Amount input
-      var amountInput = el('input', {
-        className: 'form-control',
+      var amountField = UI.m3TextField('Amount (\u20B9)', {
         type: 'number',
-        placeholder: 'Amount',
         min: '0',
         step: '0.01',
+        required: true,
         onInput: recalcTotal
       });
+      var amountInput = amountField._getInput();
 
-      // Description input
-      var descInput = el('input', {
-        className: 'form-control',
-        type: 'text',
-        placeholder: 'Description (optional)'
-      });
+      var descField = UI.m3TextField('Description', { support: 'Optional' });
+      var descInput = descField._getInput();
 
-      // Remove button
       var lineObj;
-      var removeBtn = el('button', {
-        className: 'btn btn-outline-danger',
-        style: { marginTop: '8px', fontSize: '13px', padding: '4px 12px' },
+      var removeBtn = UI.btn('Remove line', {
+        type: 'outline-danger',
+        icon: 'x',
         onClick: function () { removeLine(lineObj); }
       });
-      removeBtn.appendChild(icon('x', 14));
 
-      var rowEl = UI.card([
-        UI.field('Type', typeSelect),
-        UI.field('Date', dateInput),
-        UI.field('Amount (\u20B9)', amountInput),
-        UI.field('Description', descInput),
-        removeBtn
+      var rowEl = el('div', {
+        className: 'm3-card',
+        style: { background: 'var(--m3-surface-container-low)', borderRadius: 'var(--m3-shape-md)', padding: '16px', marginBottom: '12px' }
+      }, [
+        typeField,
+        dateField,
+        amountField,
+        descField,
+        el('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '4px' } }, [removeBtn])
       ]);
 
       lineObj = {
