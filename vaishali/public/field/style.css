@@ -5999,3 +5999,535 @@ textarea.m3-textfield-input:not(:placeholder-shown) ~ .m3-textfield-label {
 }
 
 /* End M3 polish */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL SEARCH (#/search)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.global-search {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.global-search .search-input-wrapper {
+  margin-bottom: 0;
+}
+
+.gs-status {
+  font: var(--m3-label-medium);
+  color: var(--m3-on-surface-variant);
+  padding: 0 4px;
+  min-height: 16px;
+}
+
+.gs-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gs-slot:empty {
+  display: none;
+}
+
+.gs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gs-section-heading {
+  font: var(--m3-label-medium);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--m3-on-surface-variant);
+  padding: 0 4px;
+}
+
+.gs-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.gs-list .list-card {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.gs-list .list-card:last-child {
+  border-bottom: none;
+}
+/* End global search */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M3 Activity Timeline + Inline Comment Composer
+   Used by UI.activityTimeline() and UI.commentBox().
+   Independent of the older .m3-doc-timeline (kept for opportunity notes).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.m3-timeline {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 8px 16px 16px;
+  margin-bottom: 16px;
+}
+
+.m3-timeline-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.m3-timeline-row {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  position: relative;
+}
+.m3-timeline-row:last-child { border-bottom: none; }
+
+/* Vertical rail line connecting the icon circles */
+.m3-timeline-rail-col {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  display: flex;
+  justify-content: center;
+}
+.m3-timeline-row:not(:last-child) .m3-timeline-rail-col::after {
+  content: '';
+  position: absolute;
+  top: 36px;
+  bottom: -16px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--m3-outline-variant);
+  border-radius: 1px;
+}
+
+.m3-timeline-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--m3-shape-full, 9999px);
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.m3-timeline-icon svg { width: 18px; height: 18px; }
+
+/* Type-specific icon backgrounds */
+.m3-timeline-icon-status {
+  background: var(--m3-secondary-container);
+  color: var(--m3-on-secondary-container);
+}
+.m3-timeline-icon-comment {
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+}
+.m3-timeline-icon-doc {
+  background: var(--m3-tertiary-container, var(--m3-secondary-container));
+  color: var(--m3-on-tertiary-container, var(--m3-on-secondary-container));
+}
+
+.m3-timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.m3-timeline-title {
+  font: var(--m3-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--m3-on-surface);
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.m3-timeline-body {
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  color: var(--m3-on-surface);
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.m3-timeline-meta {
+  font: var(--m3-label-small);
+  letter-spacing: 0.5px;
+  color: var(--m3-on-surface-variant);
+  margin: 6px 0 0;
+}
+
+.m3-timeline-empty {
+  font: var(--m3-body-medium);
+  letter-spacing: 0.25px;
+  color: var(--m3-on-surface-variant);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Inline comment composer */
+.m3-comment-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.m3-comment-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  border-radius: 22px;
+  padding: 12px 16px;
+  background: var(--m3-surface-container-high);
+  border: none;
+  font: var(--m3-body-large);
+  letter-spacing: 0.5px;
+  color: var(--m3-on-surface);
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: background var(--m3-duration-short3, 150ms) var(--m3-easing-emphasized, ease);
+}
+.m3-comment-input::placeholder { color: var(--m3-on-surface-variant); }
+.m3-comment-input:focus { background: var(--m3-surface-container-highest); }
+
+.m3-comment-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--m3-duration-short3, 150ms) var(--m3-easing-emphasized, ease),
+              opacity var(--m3-duration-short3, 150ms) var(--m3-easing-emphasized, ease);
+}
+.m3-comment-send svg { width: 20px; height: 20px; }
+.m3-comment-send:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.m3-comment-send:not(:disabled):hover { filter: brightness(0.95); }
+.m3-comment-send:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-comment-input,
+  .m3-comment-send { transition: none; }
+}
+/* End M3 timeline + comment box */
+
+/* ──────────────────────────────────────────────────────────────
+   Swipe Row — UI.swipeRow(content, { leadingActions, trailingActions })
+   M3 swipe-to-reveal pattern (Salesforce / Gmail / iOS Mail).
+   Content layer translates over absolute action layers.
+   ────────────────────────────────────────────────────────────── */
+.m3-swipe-row {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  background: var(--m3-surface-container-low);
+}
+
+.m3-swipe-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  z-index: 0;
+}
+.m3-swipe-actions.leading { left: 0; }
+.m3-swipe-actions.trailing { right: 0; }
+
+.m3-swipe-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 80px;
+  border: none;
+  margin: 0;
+  padding: 0;
+  font: var(--m3-label-small);
+  letter-spacing: 0.5px;
+  color: var(--m3-on-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter var(--m3-duration-short3) var(--m3-easing-emphasized);
+}
+.m3-swipe-action:active { filter: brightness(0.92); }
+.m3-swipe-action:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: -3px;
+}
+
+.m3-swipe-action.color-primary { background: var(--m3-primary); color: var(--m3-on-primary); }
+.m3-swipe-action.color-success { background: var(--m3-success); color: var(--m3-on-primary); }
+.m3-swipe-action.color-danger  { background: var(--m3-error);   color: var(--m3-on-primary); }
+.m3-swipe-action.color-tonal {
+  background: var(--m3-secondary-container);
+  color: var(--m3-on-secondary-container);
+}
+
+.m3-swipe-action svg { width: 20px; height: 20px; }
+.m3-swipe-action-label { font-size: 11px; line-height: 1; }
+
+.m3-swipe-content {
+  position: relative;
+  z-index: 1;
+  background: var(--m3-surface-container-low);
+  transition: transform var(--m3-duration-short3) var(--m3-easing-emphasized);
+  will-change: transform;
+}
+.m3-swipe-row.is-dragging .m3-swipe-content {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-swipe-content,
+  .m3-swipe-action {
+    transition: none !important;
+  }
+}
+/* End swipeRow */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Inbox screen + bottom-nav unread badge
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.inbox-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.inbox-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.inbox-list .list-card {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.inbox-list .list-card:last-child {
+  border-bottom: none;
+}
+
+/* Unread dot on the bell tab */
+.nav-item[data-tab="inbox"] .nav-icon {
+  position: relative;
+}
+
+.nav-item[data-tab="inbox"].has-badge .nav-icon::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m3-error);
+}
+/* End inbox */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEUTRAL PALETTE — red, white, light grey, black. No more pink surfaces.
+   Brand red stays on primary buttons, active states, errors. Surfaces neutral.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Page + container surfaces — neutral whites & greys */
+  --m3-surface: #FFFFFF;
+  --m3-surface-container-lowest: #FFFFFF;
+  --m3-surface-container-low: #F8F8F9;
+  --m3-surface-container: #F1F1F3;
+  --m3-surface-container-high: #E9E9EC;
+  --m3-surface-container-highest: #E0E0E4;
+
+  /* Ink — true blacks/greys, not red-tinted */
+  --m3-on-surface: #1A1A1C;
+  --m3-on-surface-variant: #5A5A5F;
+  --m3-outline: #8A8A8F;
+  --m3-outline-variant: #DCDCE0;
+  --m3-surface-variant: #EFEFF1;
+
+  /* Tab/action pills — neutral grey instead of brand-tinted */
+  --m3-secondary-container: #EAEAED;
+  --m3-on-secondary-container: #1A1A1C;
+  --m3-secondary: #5A5A5F;
+  --m3-on-secondary: #FFFFFF;
+
+  /* Tertiary kept neutral too */
+  --m3-tertiary-container: #EAEAED;
+  --m3-on-tertiary-container: #1A1A1C;
+
+  /* Primary — DSPL red, untouched. Used on filled CTAs and active accents. */
+  --m3-primary: #B3261E;
+  --m3-on-primary: #FFFFFF;
+  --m3-primary-container: #FFDAD6;
+  --m3-on-primary-container: #410002;
+
+  /* Status containers — kept colored for recognisability but cleaner */
+  --m3-error: #BA1A1A;
+  --m3-error-container: #FDE7E7;
+  --m3-on-error-container: #410002;
+  --m3-success: #2E7D32;
+  --m3-success-container: #DBEEDD;
+  --m3-on-success-container: #00210A;
+  --m3-warning: #B8530B;
+  --m3-warning-container: #FCE4D2;
+  --m3-on-warning-container: #2E1500;
+}
+
+/* App background and scroll surface — true white */
+body, #app, #app-header, #bottom-nav, .bottom-nav {
+  background: #FFFFFF;
+}
+
+/* Bottom nav sits on a faint grey to define the boundary, not pink */
+#bottom-nav, .bottom-nav {
+  background: var(--m3-surface-container-low) !important;
+  border-top: 1px solid var(--m3-outline-variant) !important;
+}
+
+/* Active nav pill — neutral grey (not brand-tinted) */
+.nav-item.active .nav-icon {
+  background: var(--m3-secondary-container) !important;
+  color: var(--m3-primary) !important;  /* icon stays red for the active accent */
+}
+.nav-item.active {
+  color: var(--m3-on-surface) !important;
+}
+
+/* Action card icon circle — light grey background, red icon */
+.action-card .action-icon {
+  background: var(--m3-surface-container) !important;
+  color: var(--m3-primary) !important;
+}
+
+/* HR tile icons — same */
+.hr-tile svg { color: var(--m3-on-surface-variant) !important; }
+
+/* Filled cards (stat, action, hero, items, totals, detail, list) sit on F8F8F9 grey */
+.m3-doc-hero,
+.m3-doc-items,
+.m3-doc-totals,
+.detail-card,
+.m3-list,
+.m3-stat,
+.kpi-item,
+.action-card,
+.hr-tile,
+.card-surface,
+.m3-card,
+.m3-stat-grid .m3-stat,
+.kpi-row .kpi-item {
+  background: var(--m3-surface-container-low) !important;
+}
+
+/* Status pills — keep colored containers for recognisability */
+.indicator-pill.green {
+  background: var(--m3-success-container) !important;
+  color: var(--m3-on-success-container) !important;
+}
+.indicator-pill.red {
+  background: var(--m3-error-container) !important;
+  color: var(--m3-on-error-container) !important;
+}
+.indicator-pill.yellow,
+.indicator-pill.orange {
+  background: var(--m3-warning-container) !important;
+  color: var(--m3-on-warning-container) !important;
+}
+.indicator-pill.blue {
+  background: #E3EAFD !important;
+  color: #001A41 !important;
+}
+.indicator-pill.gray,
+.indicator-pill {
+  background: var(--m3-surface-container) !important;
+  color: var(--m3-on-surface-variant) !important;
+}
+
+/* Avatar palette — desaturate to neutral greys with a hint of the brand for the most-recent */
+.list-avatar {
+  background: var(--m3-surface-container) !important;
+  color: var(--m3-on-surface) !important;
+}
+
+/* Filled text-field surface stays a light grey */
+.m3-textfield-input {
+  background: var(--m3-surface-container) !important;
+}
+.m3-textfield-input:hover {
+  background: var(--m3-surface-container-high) !important;
+}
+
+/* Tonal buttons — neutral grey not pink */
+.m3-btn-tonal,
+.m3-doc-actions .m3-btn-tonal {
+  background: var(--m3-secondary-container) !important;
+  color: var(--m3-on-secondary-container) !important;
+}
+
+/* Search bar background */
+.search-input-wrapper {
+  background: var(--m3-surface-container) !important;
+}
+.search-input-wrapper:focus-within {
+  background: var(--m3-surface-container-high) !important;
+}
+
+/* Chat message bubbles */
+.chat-bubble-ai {
+  background: var(--m3-surface-container) !important;
+}
+.chat-input,
+.chat-input textarea {
+  background: var(--m3-surface-container) !important;
+}
+
+/* Bottom sheet, dialogs */
+.bottom-sheet,
+.m3-dialog {
+  background: var(--m3-surface-container-low) !important;
+}
+
+/* Greeting name accent — keep the brand red so the name pops */
+.greeting-hero .greeting-name {
+  color: var(--m3-primary) !important;
+}
+
+/* Splash + login surface */
+#splash, .login-container {
+  background: #FFFFFF !important;
+}
+
+/* End neutral palette */

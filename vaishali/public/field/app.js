@@ -23,7 +23,7 @@
   var _NAV_STACK_KEY = 'vaishali_nav_stack';
   var _MAX_STACK = 30;
   // Tab destinations clear the stack (they're roots in the navigation tree)
-  var _NAV_ROOTS = { '#/home': 1, '#/chat': 1, '#/profile': 1 };
+  var _NAV_ROOTS = { '#/home': 1, '#/inbox': 1, '#/chat': 1, '#/profile': 1 };
   try {
     var saved = sessionStorage.getItem(_NAV_STACK_KEY);
     if (saved) _navStack = JSON.parse(saved) || [];
@@ -80,12 +80,13 @@
     }
   }
 
-  // ─── Bottom Nav — 3 tabs ──────────────────────────────────────────
+  // ─── Bottom Nav — 4 tabs ──────────────────────────────────────────
 
   function buildBottomNav() {
     navEl.textContent = '';
     var tabs = [
       { tab: 'home',    ic: 'home', label: 'Home',    hash: '#/home' },
+      { tab: 'inbox',   ic: 'bell', label: 'Inbox',   hash: '#/inbox' },
       { tab: 'chat',    ic: 'bot',  label: 'AI',      hash: '#/chat' },
       { tab: 'profile', ic: 'user', label: 'Me',      hash: '#/profile' }
     ];
@@ -105,6 +106,10 @@
         ]);
         navEl.appendChild(a);
       })(tabs[i]);
+    }
+    // Apply unread badge dot for the inbox tab from cached count.
+    if (window.Screens && typeof window.Screens._refreshInboxBadge === 'function') {
+      window.Screens._refreshInboxBadge();
     }
   }
 
@@ -248,8 +253,14 @@
     { pattern: '#/monthly-report', handler: function () { S().monthlyReport(appEl); }, tab: 'home', title: 'Monthly Report', back: '#/home' },
     { pattern: '#/budget', handler: function () { S().budgetDashboard(appEl); }, tab: 'home', title: 'Budget', back: '#/home' },
 
+    // Inbox (notifications hub — tab destination)
+    { pattern: '#/inbox', handler: function () { S().inbox(appEl); }, tab: 'inbox', title: 'Inbox', back: null },
+
     // AI Chat
     { pattern: '#/chat', handler: function () { S().chat(appEl); }, tab: 'chat', title: 'AI Chat', back: null },
+
+    // Global Search
+    { pattern: '#/search', handler: function () { S().search(appEl); }, tab: null, title: 'Search', back: '#/home' },
 
     // Profile
     { pattern: '#/profile', handler: function () { S().profile(appEl); }, tab: 'profile', title: 'Profile', back: null }
@@ -337,7 +348,10 @@
     '#/monthly-report':'Monthly performance report card across departments.',
 
     // Salary
-    '#/salary':        'Your salary slips by month. Tap to download.'
+    '#/salary':        'Your salary slips by month. Tap to download.',
+
+    // Inbox
+    '#/inbox':         'Pending approvals, assigned tasks and recent activity'
   };
 
   // ─── Route Rendering ────────────────────────────────────────────────
@@ -446,6 +460,18 @@
       // Header action slot (right side) — screens can populate via window._headerAction
       var actionSlot = el('div', { className: 'header-actions', id: 'header-actions' });
       headerEl.appendChild(actionSlot);
+
+      // Global search trigger — visible everywhere except login, search, chat
+      var hashPath = (hash || '').split('?')[0];
+      if (hashPath !== '#/login' && hashPath !== '#/search' && hashPath !== '#/chat') {
+        var searchBtn = el('button', {
+          className: 'm3-icon-button',
+          'aria-label': 'Search',
+          onClick: function () { location.hash = '#/search'; }
+        });
+        if (window.icon) searchBtn.appendChild(window.icon('search'));
+        actionSlot.appendChild(searchBtn);
+      }
     }
 
     // ── 3. Render content ──

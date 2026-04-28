@@ -1,0 +1,17 @@
+{
+  "name": "vaishali-pwa-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end test suite for the DSPL Field PWA",
+  "scripts": {
+    "test": "node runner.js",
+    "smoke": "node runner.js smoke",
+    "navigation": "node runner.js navigation",
+    "forms": "node runner.js forms",
+    "details": "node runner.js details",
+    "install-browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.45.0"
+  }
+}

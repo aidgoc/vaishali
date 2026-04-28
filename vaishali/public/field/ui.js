@@ -1381,6 +1381,404 @@
     return el('div', { className: 'm3-page-wrap' }, children);
   }
 
+  /* ── _formatTimelineDate(date) ─────────────────────────────────
+     Accepts: Date | ISO string | "YYYY-MM-DD HH:MM:SS" (server UTC).
+     Server is UTC, so naïve datetimes get a 'Z' suffix so the
+     browser converts to user's local TZ (IST in our case).
+     Returns "27 Apr 2026, 09:15" or "" if unparseable.
+     ────────────────────────────────────────────────────────────── */
+  function _formatTimelineDate(d) {
+    if (!d) return '';
+    var dt;
+    if (d instanceof Date) {
+      dt = d;
+    } else if (typeof d === 'string') {
+      var s = d;
+      // "YYYY-MM-DD HH:MM:SS" — treat as UTC (server is UTC, site is IST)
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+        s = s.replace(' ', 'T') + 'Z';
+      } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s) && s.indexOf('Z') < 0 && s.indexOf('+') < 0) {
+        s = s + 'Z';
+      }
+      dt = new Date(s);
+    } else {
+      return '';
+    }
+    if (isNaN(dt.getTime())) return '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var hh = dt.getHours();
+    var mm = dt.getMinutes();
+    var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear() +
+           ', ' + pad(hh) + ':' + pad(mm);
+  }
+
+  /* ── commentBox(opts) ─────────────────────────────────────────
+     M3 inline comment composer: textarea + circular send button.
+     opts: {
+       placeholder: string ('Add a comment…'),
+       onSubmit: function(text) — called on Send click or Cmd/Ctrl+Enter,
+       initialValue: string,
+       sendLabel: string (a11y label for send button)
+     }
+     Returns div. Cleared after onSubmit unless onSubmit returns false.
+     ────────────────────────────────────────────────────────────── */
+  function commentBox(opts) {
+    opts = opts || {};
+    var ta = el('textarea', {
+      className: 'm3-comment-input',
+      placeholder: opts.placeholder || 'Add a comment…',
+      rows: 1,
+      value: opts.initialValue || '',
+      'aria-label': opts.placeholder || 'Add a comment'
+    });
+
+    var sendBtn = el('button', {
+      type: 'button',
+      className: 'm3-comment-send',
+      disabled: !(opts.initialValue && opts.initialValue.trim()),
+      'aria-label': opts.sendLabel || 'Send'
+    });
+    setIconHTML(sendBtn, 'send');
+
+    function refreshDisabled() {
+      sendBtn.disabled = !ta.value.trim();
+    }
+
+    function submit() {
+      var text = ta.value.trim();
+      if (!text) return;
+      var result = opts.onSubmit ? opts.onSubmit(text) : undefined;
+      // If handler explicitly returns false, keep the value (caller will clear).
+      if (result !== false) {
+        ta.value = '';
+        refreshDisabled();
+        // Reset auto-grow height
+        ta.style.height = '';
+      }
+    }
+
+    ta.addEventListener('input', function () {
+      refreshDisabled();
+      // Auto-grow textarea up to ~120px
+      ta.style.height = 'auto';
+      var newH = Math.min(ta.scrollHeight, 120);
+      ta.style.height = newH + 'px';
+    });
+
+    ta.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        submit();
+      }
+    });
+
+    sendBtn.addEventListener('click', submit);
+
+    var wrapper = el('div', { className: 'm3-comment-box' }, [ta, sendBtn]);
+    wrapper._getValue = function () { return ta.value; };
+    wrapper._clear = function () { ta.value = ''; refreshDisabled(); ta.style.height = ''; };
+    wrapper._focus = function () { ta.focus(); };
+    return wrapper;
+  }
+
+  /* ── activityTimeline(items, opts) ────────────────────────────
+     M3 activity timeline. items: array of {
+       type: 'status' | 'comment' | 'doc' (default 'status'),
+       title: string,
+       body: string (optional, mainly for comments),
+       user: string (optional),
+       date: Date | string,
+       icon: string (optional — defaults from type)
+     }
+     opts: {
+       onAddComment: function(text) — when set, renders inline composer below,
+       emptyText: string ('No activity yet'),
+       commentPlaceholder: string
+     }
+     Returns div.m3-timeline.
+     ────────────────────────────────────────────────────────────── */
+  function activityTimeline(items, opts) {
+    opts = opts || {};
+    items = items || [];
+
+    var typeIconDefault = { status: 'check', comment: 'edit', doc: 'file' };
+    var children = [];
+
+    if (!items.length) {
+      children.push(el('div', {
+        className: 'm3-timeline-empty',
+        textContent: opts.emptyText || 'No activity yet'
+      }));
+    } else {
+      var rail = el('ol', { className: 'm3-timeline-rail', role: 'list' });
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        var type = it.type || 'status';
+        var iconName = it.icon || typeIconDefault[type] || 'check';
+
+        var iconCircle = el('div', {
+          className: 'm3-timeline-icon m3-timeline-icon-' + type,
+          'aria-hidden': 'true'
+        });
+        setIconHTML(iconCircle, iconName);
+
+        var contentChildren = [];
+        if (it.title) {
+          contentChildren.push(el('p', {
+            className: 'm3-timeline-title',
+            textContent: it.title
+          }));
+        }
+        if (it.body) {
+          contentChildren.push(el('p', {
+            className: 'm3-timeline-body',
+            textContent: it.body
+          }));
+        }
+
+        var metaParts = [];
+        if (it.user) metaParts.push(it.user);
+        var dateStr = _formatTimelineDate(it.date);
+        if (dateStr) metaParts.push(dateStr);
+        if (metaParts.length) {
+          contentChildren.push(el('p', {
+            className: 'm3-timeline-meta',
+            textContent: metaParts.join(' · ')
+          }));
+        }
+
+        var content = el('div', { className: 'm3-timeline-content' }, contentChildren);
+        var row = el('li', { className: 'm3-timeline-row m3-timeline-row-' + type }, [
+          el('div', { className: 'm3-timeline-rail-col' }, [iconCircle]),
+          content
+        ]);
+        rail.appendChild(row);
+      }
+      children.push(rail);
+    }
+
+    if (typeof opts.onAddComment === 'function') {
+      children.push(commentBox({
+        placeholder: opts.commentPlaceholder || 'Add a comment…',
+        onSubmit: opts.onAddComment
+      }));
+    }
+
+    return el('div', { className: 'm3-timeline' }, children);
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     swipeRow(content, { leadingActions, trailingActions })
+     Mobile swipe-to-reveal-actions row (Salesforce/Gmail/iOS pattern).
+     - swipe LEFT  → exposes trailing actions (right side)
+     - swipe RIGHT → exposes leading actions (left side)
+     - threshold 80px to commit; snaps open to expose actions fully
+     - tap action → run onClick + collapse
+     - vertical scroll detection: if drag is >15deg vertical, abort
+     - tap outside / scroll page → snap back
+     Each action: { icon, label, color, onClick }
+       color ∈ 'primary' | 'success' | 'danger' | 'tonal'
+     `content` is a DOM element (typically UI.listCard output).
+     Returns the wrapper element.
+     ────────────────────────────────────────────────────────────── */
+  function swipeRow(content, actions) {
+    actions = actions || {};
+    var leading = Array.isArray(actions.leadingActions) ? actions.leadingActions : [];
+    var trailing = Array.isArray(actions.trailingActions) ? actions.trailingActions : [];
+
+    var ACTION_WIDTH = 80;          // px, matches CSS .m3-swipe-action width
+    var THRESHOLD = 80;             // px to commit a swipe
+    var VERTICAL_CANCEL_TAN = 0.27; // tan(15deg) ≈ 0.27 — beyond this it's a vertical scroll
+    var leadingMax = leading.length * ACTION_WIDTH;
+    var trailingMax = trailing.length * ACTION_WIDTH;
+
+    var row = el('div', { className: 'm3-swipe-row' });
+
+    function buildAction(action) {
+      var btnEl = el('button', {
+        type: 'button',
+        className: 'm3-swipe-action color-' + (action.color || 'primary'),
+        'aria-label': action.label || ''
+      });
+      if (action.icon) setIconHTML(btnEl, action.icon);
+      if (action.label) {
+        btnEl.appendChild(el('span', { className: 'm3-swipe-action-label', textContent: action.label }));
+      }
+      btnEl.addEventListener('click', function (e) {
+        e.stopPropagation();
+        collapse();
+        if (typeof action.onClick === 'function') {
+          /* defer slightly so snap-back animation begins before screen swap */
+          setTimeout(function () { action.onClick(e); }, 0);
+        }
+      });
+      return btnEl;
+    }
+
+    var leadingEl = null;
+    if (leading.length) {
+      var leadingChildren = [];
+      for (var i = 0; i < leading.length; i++) leadingChildren.push(buildAction(leading[i]));
+      leadingEl = el('div', { className: 'm3-swipe-actions leading', 'aria-hidden': 'true' }, leadingChildren);
+      row.appendChild(leadingEl);
+    }
+    var trailingEl = null;
+    if (trailing.length) {
+      var trailingChildren = [];
+      for (var t = 0; t < trailing.length; t++) trailingChildren.push(buildAction(trailing[t]));
+      trailingEl = el('div', { className: 'm3-swipe-actions trailing', 'aria-hidden': 'true' }, trailingChildren);
+      row.appendChild(trailingEl);
+    }
+
+    var contentWrap = el('div', { className: 'm3-swipe-content' });
+    contentWrap.appendChild(content);
+    row.appendChild(contentWrap);
+
+    /* gesture state */
+    var startX = 0;
+    var startY = 0;
+    var currentX = 0;          /* committed offset (e.g. -150 when trailing exposed) */
+    var dragX = 0;             /* live offset during drag */
+    var locked = null;         /* 'h' | 'v' | null — gesture axis decision */
+    var pointerActive = false;
+
+    function setTransform(px) {
+      contentWrap.style.transform = 'translate3d(' + px + 'px, 0, 0)';
+    }
+
+    function open(side) {
+      if (side === 'leading' && leadingMax) currentX = leadingMax;
+      else if (side === 'trailing' && trailingMax) currentX = -trailingMax;
+      else currentX = 0;
+      row.classList.remove('is-dragging');
+      row.classList.toggle('is-open', currentX !== 0);
+      setTransform(currentX);
+    }
+
+    function collapse() {
+      currentX = 0;
+      row.classList.remove('is-dragging');
+      row.classList.remove('is-open');
+      setTransform(0);
+    }
+
+    function onTouchStart(e) {
+      if (e.touches.length !== 1) return;
+      var touch = e.touches[0];
+      startX = touch.pageX;
+      startY = touch.pageY;
+      dragX = currentX;
+      locked = null;
+      pointerActive = true;
+    }
+
+    function onTouchMove(e) {
+      if (!pointerActive) return;
+      var touch = e.touches[0];
+      var dx = touch.pageX - startX;
+      var dy = touch.pageY - startY;
+      var adx = Math.abs(dx);
+      var ady = Math.abs(dy);
+
+      if (locked == null) {
+        /* need a small movement before deciding axis */
+        if (adx < 6 && ady < 6) return;
+        /* if drag is more than ~15deg from horizontal, treat as vertical scroll */
+        if (ady > adx || (adx > 0 && ady / adx > VERTICAL_CANCEL_TAN)) {
+          locked = 'v';
+          pointerActive = false;
+          return;
+        }
+        locked = 'h';
+        row.classList.add('is-dragging');
+      }
+
+      if (locked !== 'h') return;
+
+      /* block vertical scroll once we own the horizontal gesture */
+      if (e.cancelable) e.preventDefault();
+
+      var next = currentX + dx;
+      var minX = -trailingMax;
+      var maxX = leadingMax;
+      var RUBBER = 24;
+      if (next > maxX) next = maxX + Math.min(next - maxX, RUBBER) * 0.4;
+      if (next < minX) next = minX + Math.max(next - minX, -RUBBER) * 0.4;
+      /* if a side has no actions, prevent swiping that direction at all */
+      if (!leadingMax && next > 0) next = 0;
+      if (!trailingMax && next < 0) next = 0;
+
+      dragX = next;
+      setTransform(next);
+    }
+
+    function onTouchEnd() {
+      if (!pointerActive && locked !== 'h') {
+        if (locked === 'v') locked = null;
+        return;
+      }
+      pointerActive = false;
+      if (locked !== 'h') { locked = null; return; }
+      locked = null;
+      row.classList.remove('is-dragging');
+
+      var delta = dragX - currentX;
+      if (currentX === 0) {
+        if (delta <= -THRESHOLD && trailingMax) open('trailing');
+        else if (delta >= THRESHOLD && leadingMax) open('leading');
+        else collapse();
+      } else if (currentX < 0) {
+        /* trailing exposed — close if user dragged right past threshold */
+        if (delta >= THRESHOLD) collapse();
+        else open('trailing');
+      } else {
+        /* leading exposed — close if user dragged left past threshold */
+        if (delta <= -THRESHOLD) collapse();
+        else open('leading');
+      }
+    }
+
+    function onTouchCancel() {
+      pointerActive = false;
+      locked = null;
+      row.classList.remove('is-dragging');
+      setTransform(currentX);
+    }
+
+    contentWrap.addEventListener('touchstart', onTouchStart, { passive: true });
+    /* touchmove must be non-passive so we can preventDefault on horizontal drag */
+    contentWrap.addEventListener('touchmove', onTouchMove, { passive: false });
+    contentWrap.addEventListener('touchend', onTouchEnd, { passive: true });
+    contentWrap.addEventListener('touchcancel', onTouchCancel, { passive: true });
+
+    /* tap-outside / scroll-away → snap back. Capture phase so we still
+       see it when other handlers stopPropagation. */
+    function onDocPointerDown(e) {
+      if (currentX === 0) return;
+      if (row.contains(e.target)) return;
+      collapse();
+    }
+    function onDocScroll() {
+      if (currentX === 0) return;
+      collapse();
+    }
+    document.addEventListener('touchstart', onDocPointerDown, true);
+    document.addEventListener('mousedown', onDocPointerDown, true);
+    window.addEventListener('scroll', onDocScroll, true);
+
+    row._collapse = collapse;
+    row._openLeading = function () { open('leading'); };
+    row._openTrailing = function () { open('trailing'); };
+    row._destroySwipe = function () {
+      document.removeEventListener('touchstart', onDocPointerDown, true);
+      document.removeEventListener('mousedown', onDocPointerDown, true);
+      window.removeEventListener('scroll', onDocScroll, true);
+    };
+
+    return row;
+  }
+
   /* ──────────────────────────────────────────────────────────────
      Export
      ────────────────────────────────────────────────────────────── */
@@ -1437,7 +1835,10 @@
     dialog: dialog,
     confirmDialog: confirmDialog,
     m3TextField: m3TextField,
-    m3SelectField: m3SelectField
+    m3SelectField: m3SelectField,
+    activityTimeline: activityTimeline,
+    commentBox: commentBox,
+    swipeRow: swipeRow
   };
 
 })();
