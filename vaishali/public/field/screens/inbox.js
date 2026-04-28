@@ -23,18 +23,26 @@
     return null;
   }
 
+  // Server datetimes are UTC; append 'Z' so JS treats the naive ISO string
+  // as UTC and getHours() converts to the user's local timezone (IST).
+  function parseUTC(iso) {
+    if (!iso) return null;
+    var t = String(iso).replace(' ', 'T');
+    if (!/[Z+\-]\d/.test(t)) t += 'Z';
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   function formatDate(iso) {
-    if (!iso) return '';
-    var d = new Date(String(iso).replace(' ', 'T'));
-    if (isNaN(d.getTime())) return '';
+    var d = parseUTC(iso);
+    if (!d) return '';
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return d.getDate() + ' ' + months[d.getMonth()];
   }
 
   function formatRelative(iso) {
-    if (!iso) return '';
-    var d = new Date(String(iso).replace(' ', 'T'));
-    if (isNaN(d.getTime())) return '';
+    var d = parseUTC(iso);
+    if (!d) return '';
     var diff = Date.now() - d.getTime();
     var mins = Math.round(diff / 60000);
     if (mins < 1) return 'just now';

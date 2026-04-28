@@ -11,6 +11,24 @@
 
   var api = window.fieldAPI;
 
+  // Pull the logged-in user's email from the Frappe session cookie.
+  function currentUserEmail() {
+    var m = document.cookie.match(/user_id=([^;]+)/);
+    if (m) {
+      try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+    }
+    return null;
+  }
+
+  // Parse Frappe-format datetimes (UTC, no Z) into local Date.
+  function parseUTC(iso) {
+    if (!iso) return null;
+    var t = String(iso).replace(' ', 'T');
+    if (!/[Z+\-]\d/.test(t)) t += 'Z';
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   function fetchComments(doctype, name) {
     var filters = JSON.stringify([
       ['reference_doctype', '=', doctype],
@@ -89,11 +107,16 @@
   }
 
   function postComment(doctype, name, content) {
+    var email = currentUserEmail();
+    if (!email) {
+      return Promise.reject(new Error('Not signed in'));
+    }
     return api.apiCall('POST', '/api/method/frappe.desk.form.utils.add_comment', {
       reference_doctype: doctype,
       reference_name: name,
       content: content,
-      comment_email: (window.dspl_boot && window.dspl_boot.user) || ''
+      comment_email: email,
+      comment_by: email
     }).then(function (res) {
       if (res && (res.error || (res.status && res.status >= 400))) {
         throw new Error(res.error || 'Server error');
@@ -127,21 +150,23 @@
 
     function render(items) {
       while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
-      var tl = UI.activityTimeline(items, {
-        emptyText: 'No activity yet — be the first to comment.',
-        commentPlaceholder: 'Add a comment…',
-        onAddComment: function (text) {
+      var canComment = !!currentUserEmail();
+      var tlOpts = {
+        emptyText: 'No activity yet' + (canComment ? ' — be the first to comment.' : '.'),
+        commentPlaceholder: 'Add a comment…'
+      };
+      if (canComment) {
+        tlOpts.onAddComment = function (text) {
           if (!text) return;
           postComment(doctype, name, text).then(function () {
-            // Reload to pick up the new comment
-            load();
+            load(); // reload to pick up the new comment
             if (UI.toast) UI.toast('Comment posted', 'success');
           }).catch(function (err) {
             if (UI.toast) UI.toast('Failed: ' + (err.message || err), 'danger');
           });
-        }
-      });
-      wrap.appendChild(tl);
+        };
+      }
+      wrap.appendChild(UI.activityTimeline(items, tlOpts));
     }
 
     function load() {
@@ -153,9 +178,11 @@
         var comments = out[0].map(commentToTimelineItem);
         var versions = out[1].map(versionToTimelineItem).filter(Boolean);
         var all = comments.concat(versions);
-        // Sort by date descending
+        // Sort by date descending — parseUTC handles the missing-Z bug.
         all.sort(function (a, b) {
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          var da = parseUTC(a.date);
+          var db = parseUTC(b.date);
+          return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
         });
         render(all);
       });

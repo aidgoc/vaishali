@@ -158,10 +158,12 @@
               var path = '/api/field/approvals/' + encodeURIComponent(item.type.toLowerCase()) + '/' + encodeURIComponent(item.name) + '/' + action;
               api.apiCall('POST', path).then(function (res) {
                 if (res.error || (res.status && res.status >= 400)) {
-                  UI.toast(action.charAt(0).toUpperCase() + action.slice(1) + ' failed', 'danger');
+                  var verb = action === 'approve' ? 'Approve' : 'Reject';
+                  UI.toast(verb + ' failed', 'danger');
                   return;
                 }
-                UI.toast(item.type + ' ' + action + 'd', 'success');
+                var pastTense = action === 'approve' ? 'approved' : 'rejected';
+                UI.toast(item.type + ' ' + pastTense, 'success');
                 // Reload list
                 renderList();
               });
