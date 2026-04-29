@@ -34,6 +34,9 @@ doc_events = {
         "before_save": "vaishali.visit_guard.enforce",
         "on_update": "vaishali.api.linking.on_dcr_update",
     },
+    "Service Call": {
+        "before_save": "vaishali.service_call_guard.enforce",
+    },
     "Quotation": {
         "on_submit": [
             "vaishali.api.linking.link_quotation_to_dcr",
