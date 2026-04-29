@@ -18,6 +18,14 @@ All endpoints in `field.py` enforce:
 - **Nav tiers:** `field` (basic staff), `manager` (HR/Sales/Stock managers), `admin` (System Manager)
 - **View Engine:** Role-based section filtering (sales/field/accounts/service/manager/admin)
 
+### Session Expiry Guard (`auth_guard.py`)
+
+Registered as `before_request` in `hooks.py`. Intercepts every request where `frappe.session.user == "Guest"` AND path starts with `/api/method/vaishali.` and raises `frappe.SessionExpired` (HTTP 401). The `vaishali.www.*` prefix is allowlisted for the dev bootstrap endpoint.
+
+**Why:** Frappe's default for an unauthenticated hit on a whitelisted endpoint is HTTP 403 with an HTML body of `<details>You are not permitted... Login to access</details> Function X is not whitelisted.`. PWA installs cached on devices before commit `eae0bfd` only auto-recover on 401 — they show the raw HTML in a toast (Akshay/Amzad incident, 2026-04-29) instead of redirecting to login. Returning 401 makes the universal 401 handler in even very old `api.js` builds (commit `fec7d48` and earlier) fire the redirect.
+
+**Adding a new `allow_guest=True` vaishali endpoint:** prefix-allowlist it in `_GUEST_ALLOWED_PREFIXES` in `auth_guard.py`, otherwise the hook will block it.
+
 ## API Path Translation
 
 PWA uses clean paths translated to Frappe methods in `api.js`:
