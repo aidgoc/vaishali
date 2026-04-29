@@ -293,7 +293,7 @@
       if (UI.recents && UI.recentsStrip) {
         var items = UI.recents.list();
         if (items.length > 0) {
-          recentsHost.appendChild(UI.sectionHeading('Recently viewed'));
+          // recentsStrip renders its own "Recently viewed" heading
           recentsHost.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
         }
       }

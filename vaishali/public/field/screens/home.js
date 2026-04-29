@@ -301,7 +301,6 @@
       if (UI.recents && UI.recentsStrip) {
         var recentItems = UI.recents.list();
         if (recentItems.length > 0) {
-          appEl.appendChild(UI.sectionHeading('Recently viewed'));
           appEl.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
         }
       }
@@ -472,7 +471,6 @@
       if (UI.recents && UI.recentsStrip) {
         var recentItemsM = UI.recents.list();
         if (recentItemsM.length > 0) {
-          appEl.appendChild(UI.sectionHeading('Recently viewed'));
           appEl.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
         }
       }
