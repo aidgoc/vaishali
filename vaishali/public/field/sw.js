@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v64';
+var CACHE_NAME = 'dspl-field-v65';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',
@@ -12,7 +12,8 @@ var PRECACHE_URLS = [
   '/assets/vaishali/field/screens/attendance.js',
   '/assets/vaishali/field/screens/chat.js',
   '/assets/vaishali/field/screens/profile.js',
-  '/assets/vaishali/field/screens/visits.js'
+  '/assets/vaishali/field/screens/visits.js',
+  '/assets/vaishali/field/screens/service-call.js'
 ];
 
 // Install — precache shell assets
