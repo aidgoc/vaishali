@@ -309,6 +309,21 @@
 
   // ─── API Client ────────────────────────────────────────────────────
 
+  // Concurrent 401/403 guard: chat fires loadHistory() + loadCommands() in
+  // parallel on screen render; both could hit 401 and stack up two clearSession
+  // + reload pairs, killing in-flight requests and looking like the chat hung.
+  // First-to-fire wins; the rest just return a Session-expired result.
+  var _redirectingToLogin = false;
+  function redirectToLogin() {
+    if (_redirectingToLogin) return;
+    _redirectingToLogin = true;
+    clearSession().then(function () {
+      // location.replace avoids stacking a /login entry on top of #/chat in
+      // history (back-button would otherwise drop the user onto a stale chat).
+      location.replace('/field#/login');
+    });
+  }
+
   function apiCall(method, path, body, options) {
     options = options || {};
     var timeout = options.timeout || API_TIMEOUT;
@@ -541,11 +556,8 @@
         clearTimeout(timer);
         // Auto-recovery on 401 (explicit unauthorized)
         if (resp.status === 401 && path.indexOf('/login') === -1) {
-          console.warn('[API] Auth failed (401) — clearing session');
-          clearSession().then(function () {
-            location.hash = '#/login';
-            location.reload();
-          });
+          console.warn('[API] Auth failed (401) — redirecting to login');
+          redirectToLogin();
           return { data: null, status: resp.status, error: 'Session expired' };
         }
         // CSRF token stale — fetch fresh token and retry once
@@ -575,11 +587,8 @@
           if (resp.status === 403 && path.indexOf('/login') === -1) {
             var blob = JSON.stringify(data || {});
             if (blob.indexOf('is not whitelisted') !== -1 || blob.indexOf('Login to access') !== -1) {
-              console.warn('[API] Session expired (403 not whitelisted) — clearing session');
-              clearSession().then(function () {
-                location.hash = '#/login';
-                location.reload();
-              });
+              console.warn('[API] Session expired (403 not whitelisted) — redirecting to login');
+              redirectToLogin();
               return { data: null, status: resp.status, error: 'Session expired' };
             }
           }
