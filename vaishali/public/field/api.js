@@ -218,6 +218,95 @@
     });
   }
 
+  // ─── Error reporter ────────────────────────────────────────────────
+
+  var _reportingError = false;
+
+  function reportError(payload) {
+    if (_reportingError) return;  // avoid recursive loops if reporter itself fails
+    _reportingError = true;
+    try {
+      var p = payload || {};
+      var body = JSON.stringify({
+        message: String(p.message || '').slice(0, 1000),
+        source: String(p.source || '').slice(0, 200),
+        screen: String(p.screen || (location.hash || '').slice(0, 200)),
+        route: String(p.route || (location.hash || '').slice(0, 200)),
+        stack: String(p.stack || '').slice(0, 4000),
+        user_agent: String(navigator.userAgent || '').slice(0, 200)
+      });
+      var csrf = (typeof frappe !== 'undefined' && frappe.csrf_token) || null;
+      if (!csrf) {
+        var match = document.cookie.match(/csrf_token=([^;]+)/);
+        if (match) csrf = decodeURIComponent(match[1]);
+      }
+      var headers = { 'Content-Type': 'application/json' };
+      if (csrf) headers['X-Frappe-CSRF-Token'] = csrf;
+      fetch('/api/method/vaishali.api.client_log.log_client_error', {
+        method: 'POST', credentials: 'same-origin', headers: headers, body: body, keepalive: true
+      }).catch(function () { /* swallow */ });
+    } catch (_) { /* swallow */ }
+    finally { setTimeout(function () { _reportingError = false; }, 1000); }
+  }
+
+  // Universal "this response means session expired" detector.
+  // Catches both the JSON shape Frappe returns on 403 (HTML "is not whitelisted"
+  // body) and the new 401 we raise from auth_guard.
+  function isSessionExpiredResponse(res) {
+    if (!res) return false;
+    if (res.status === 401) return true;
+    if (res.status !== 403) return false;
+    try {
+      var blob = JSON.stringify(res.data || {});
+      return blob.indexOf('is not whitelisted') !== -1 || blob.indexOf('Login to access') !== -1;
+    } catch (_) { return false; }
+  }
+
+  // Pulls a human-readable message out of an apiCall result. Replaces the
+  // copy-pasted helper that lived in attendance.js / others.
+  function extractError(res) {
+    if (!res) return 'Server error';
+    if (isSessionExpiredResponse(res)) return 'Session expired';
+    if (res.error) return res.error;
+    var d = res.data;
+    if (!d) return 'Server error';
+    if (d._server_messages) {
+      try {
+        var msgs = JSON.parse(d._server_messages);
+        var first = JSON.parse(msgs[0]);
+        var msg = first.message || first;
+        if (typeof msg === 'string') {
+          if (msg.indexOf('is not whitelisted') !== -1 || msg.indexOf('Login to access') !== -1) {
+            return 'Session expired';
+          }
+          // strip <details>/<summary>/<strong> tags so the toast reads cleanly even on legacy bodies
+          return msg.replace(/<\/?(?:details|summary|strong|p|br)[^>]*>/gi, ' ').replace(/\s+/g, ' ').trim();
+        }
+        return String(msg);
+      } catch (_) { /* fall through */ }
+    }
+    if (d.exc_type) return d.exc_type.replace(/Error$/, '') + ' error';
+    if (d.exception) return 'Server error';
+    return 'Server error';
+  }
+
+  window.addEventListener('error', function (e) {
+    reportError({
+      message: (e && e.message) || 'window.error',
+      source: 'window.onerror',
+      stack: e && e.error && e.error.stack
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function (e) {
+    var reason = e && e.reason;
+    reportError({
+      message: (reason && reason.message) || String(reason || 'unhandledrejection'),
+      source: 'unhandledrejection',
+      stack: reason && reason.stack
+    });
+  });
+
   // ─── API Client ────────────────────────────────────────────────────
 
   function apiCall(method, path, body, options) {
@@ -800,7 +889,11 @@
     updateOfflineBanner: updateOfflineBanner,
     updatePendingBadge: updatePendingBadge,
     // Util
-    generateId: generateId
+    generateId: generateId,
+    // Error helpers (centralized — screens should use these)
+    extractError: extractError,
+    isSessionExpiredResponse: isSessionExpiredResponse,
+    reportError: reportError
   };
 
 })();

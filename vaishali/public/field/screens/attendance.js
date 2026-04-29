@@ -12,11 +12,13 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
+  // Use centralized extractError from api.js (strips HTML tags, detects
+  // session-expiry shape). Local fallback only if api.js is somehow stale.
   function extractError(res) {
+    if (window.fieldAPI && window.fieldAPI.extractError) return window.fieldAPI.extractError(res);
     if (res.error) return res.error;
     var d = res.data;
     if (!d) return 'Server error';
-    // Frappe sends _server_messages as JSON-encoded array of JSON strings
     if (d._server_messages) {
       try {
         var msgs = JSON.parse(d._server_messages);

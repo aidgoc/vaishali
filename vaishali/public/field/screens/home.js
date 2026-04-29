@@ -52,6 +52,103 @@
     return emp.employee_name.split(' ')[0];
   }
 
+  // ─── Setup nudges (onboarding) ────────────────────────────────────
+
+  function nudgeDismissedKey(kind, ymd) {
+    return 'nudge_dismissed:' + kind + ':' + ymd;
+  }
+
+  function isNudgeDismissed(kind) {
+    return api.idbGet('cache', nudgeDismissedKey(kind, todayISO())).then(function (e) {
+      return !!(e && e.data === true);
+    });
+  }
+
+  function dismissNudge(kind) {
+    return api.cacheSet(nudgeDismissedKey(kind, todayISO()), true, 24 * 60 * 60 * 1000);
+  }
+
+  function nudgeCard(opts) {
+    var card = el('div', { className: 'nudge-card' }, [
+      el('div', { className: 'nudge-icon' }, [icon(opts.icon || 'bell')]),
+      el('div', { className: 'nudge-body' }, [
+        el('div', { className: 'nudge-title', textContent: opts.title }),
+        opts.sub ? el('div', { className: 'nudge-sub', textContent: opts.sub }) : null
+      ].filter(Boolean)),
+      el('button', {
+        className: 'nudge-cta',
+        textContent: opts.cta,
+        onClick: function () { if (opts.onClick) opts.onClick(); }
+      }),
+      el('button', {
+        className: 'nudge-dismiss',
+        'aria-label': 'Dismiss',
+        textContent: '×',
+        onClick: function () {
+          dismissNudge(opts.kind).then(function () {
+            if (card.parentNode) card.parentNode.removeChild(card);
+          });
+        }
+      })
+    ]);
+    return card;
+  }
+
+  // Render a stack of pending setup nudges. Each item has its own dismiss
+  // state, scoped to the current day so the nudge re-appears tomorrow if
+  // still applicable.
+  function renderSetupNudges(container, ctx) {
+    var checks = [];
+
+    // Telegram not connected — only nudge if profile data is loaded
+    if (ctx.telegramConnected === false) {
+      checks.push({
+        kind: 'telegram',
+        check: function () { return Promise.resolve(true); },
+        build: function () {
+          return nudgeCard({
+            kind: 'telegram',
+            icon: 'bell',
+            title: 'Connect Telegram for alerts',
+            sub: 'Get notified about approvals, leads, and SLAs',
+            cta: 'Connect',
+            onClick: function () { location.hash = '#/profile'; }
+          });
+        }
+      });
+    }
+
+    // Not checked in today
+    if (ctx.checkedInToday === false) {
+      checks.push({
+        kind: 'checkin',
+        check: function () { return Promise.resolve(true); },
+        build: function () {
+          return nudgeCard({
+            kind: 'checkin',
+            icon: 'mapPin',
+            title: 'Check in for today',
+            sub: 'Mark attendance with one tap',
+            cta: 'Check in',
+            onClick: function () { location.hash = '#/attendance'; }
+          });
+        }
+      });
+    }
+
+    if (checks.length === 0) return;
+
+    var stack = el('div', { className: 'nudge-stack' });
+    container.appendChild(stack);
+
+    checks.forEach(function (c) {
+      isNudgeDismissed(c.kind).then(function (dismissed) {
+        if (dismissed) return;
+        stack.appendChild(c.build());
+      });
+    });
+  }
+
   // ─── Greeting hero ────────────────────────────────────────────────
 
   function formatCurrentTime() {
@@ -227,7 +324,8 @@
       api.apiCall('GET', '/api/field/attendance/today'),
       api.apiCall('GET', '/api/field/dcr?date=' + today),
       api.apiCall('GET', '/api/field/leave-balance'),
-      api.apiCall('GET', '/api/field/pending-expenses')
+      api.apiCall('GET', '/api/field/pending-expenses'),
+      api.apiCall('GET', '/api/field/me')
     ]).then(function (results) {
       appEl.textContent = '';
 
@@ -235,6 +333,7 @@
       var dcrResult = results[1];
       var leaveResult = results[2];
       var expenseResult = results[3];
+      var meResult = results[4];
 
       var attRaw = attResult.data || {};
       var att = attRaw.message || attRaw.data || attRaw;
@@ -267,6 +366,14 @@
 
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
+
+      // 1b. Setup nudges (onboarding prompts — dismissible per day)
+      var meRaw = meResult.data || {};
+      var meData = meRaw.message || meRaw.data || meRaw || {};
+      renderSetupNudges(appEl, {
+        telegramConnected: !!meData.telegram_chat_id,
+        checkedInToday: !!checkedIn
+      });
 
       // 2. Action cards 2x2 grid
       var actionGrid = el('div', { className: 'action-grid' }, [
@@ -358,7 +465,8 @@
       api.apiCall('GET', '/api/field/attendance/today'),
       api.apiCall('GET', '/api/field/dcr?date=' + today),
       api.apiCall('GET', '/api/field/leave-balance'),
-      api.apiCall('GET', '/api/field/pending-expenses')
+      api.apiCall('GET', '/api/field/pending-expenses'),
+      api.apiCall('GET', '/api/field/me')
     ]).then(function (results) {
       appEl.textContent = '';
 
@@ -368,6 +476,7 @@
       var dcrResult = results[3];
       var leaveResult = results[4];
       var expenseResult = results[5];
+      var meResultM = results[6];
 
       var teamRaw = teamResult.data || {};
       var teamData = teamRaw.message || teamRaw.data || teamRaw;
@@ -415,6 +524,14 @@
 
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
+
+      // 1b. Setup nudges
+      var meRawM = meResultM.data || {};
+      var meDataM = meRawM.message || meRawM.data || meRawM || {};
+      renderSetupNudges(appEl, {
+        telegramConnected: !!meDataM.telegram_chat_id,
+        checkedInToday: !!checkedIn
+      });
 
       // 2. KPI chips row
       // Count total team visits from DCR data (team members in field)
