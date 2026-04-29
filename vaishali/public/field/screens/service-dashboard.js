@@ -38,8 +38,22 @@
   window.Screens.serviceDashboard = function (appEl) {
     appEl.appendChild(UI.skeleton(3));
 
-    api.apiCall('GET', '/api/field/view/service_dashboard').then(function (res) {
+    var today = new Date().toISOString().slice(0, 10);
+
+    Promise.all([
+      api.apiCall('GET', '/api/field/view/service_dashboard'),
+      api.apiCall('GET', '/api/field/service-calls?date_from=' + encodeURIComponent(today))
+    ]).then(function (results) {
       removeSkeleton(appEl);
+
+      var res = results[0];
+      var callsRes = results[results.length - 1];
+      var callsRaw = (callsRes && callsRes.data) || {};
+      var calls = callsRaw.data || callsRaw.message || [];
+      if (!Array.isArray(calls)) calls = [];
+      var todayCalls = calls.filter(function (c) {
+        return (c.call_datetime || '').indexOf(today) === 0;
+      });
 
       if (res.error || !res.data) {
         appEl.appendChild(UI.error('Could not load service dashboard'));
@@ -58,13 +72,19 @@
         UI.statCard(openBreakdowns.length, 'Open Breakdowns'),
         UI.statCard(pendingInstalls.length, 'Pending Installs'),
         UI.statCard(todaysVisits.length, 'Visits Today'),
-        UI.statCard(recentCompleted.length, 'Completed This Month')
+        UI.statCard(recentCompleted.length, 'Completed This Month'),
+        UI.statCard(todayCalls.length, 'Calls today')
       ], 2));
 
       // ── Quick Actions ──
       var actions = el('div', { className: 'service-actions' }, [
-        UI.btn('Log Breakdown', {
+        UI.btn('Log call', {
           type: 'primary',
+          icon: 'phone',
+          onClick: function () { location.hash = '#/service-call/new'; }
+        }),
+        UI.btn('Log Breakdown', {
+          type: 'outline',
           icon: 'alert',
           onClick: function () { location.hash = '#/breakdown/new'; }
         }),
@@ -84,7 +104,7 @@
             var customer = v.customer || 'Unknown';
             var type = v.maintenance_type || '';
             var status = v.completion_status || '';
-            var sub = [type, formatDate(v.mntc_date)].filter(Boolean).join(' \u00b7 ');
+            var sub = [type, formatDate(v.mntc_date)].filter(Boolean).join(' · ');
 
             appEl.appendChild(UI.listCard({
               avatar: customer,
@@ -105,7 +125,7 @@
           (function (b) {
             var customer = b.customer || 'Unknown';
             var complaint = b.complaint || '';
-            var sub = [complaint.substring(0, 60), formatDate(b.complaint_date)].filter(Boolean).join(' \u00b7 ');
+            var sub = [complaint.substring(0, 60), formatDate(b.complaint_date)].filter(Boolean).join(' · ');
 
             appEl.appendChild(UI.listCard({
               avatar: customer,
@@ -123,6 +143,30 @@
               onClick: function () { location.hash = '#/breakdowns'; }
             })
           ]));
+        }
+      }
+
+      // ── Recent Calls ──
+      if (todayCalls.length > 0) {
+        appEl.appendChild(UI.sectionHeading('Recent calls'));
+        var visibleCalls = todayCalls.slice(0, 5);
+        for (var ci = 0; ci < visibleCalls.length; ci++) {
+          (function (c) {
+            var visitNeeded = c.outcome === 'Visit needed' && !c.follow_up_dcr;
+            appEl.appendChild(UI.listCard({
+              title: c.customer_name || c.customer || 'Unknown',
+              sub: c.summary || '',
+              right: UI.pill(c.outcome || '', visitNeeded ? 'red' : 'green'),
+              onClick: function () { location.hash = '#/service-call/' + encodeURIComponent(c.name); }
+            }));
+          })(visibleCalls[ci]);
+        }
+        if (todayCalls.length > 5) {
+          appEl.appendChild(UI.btn('View all (' + todayCalls.length + ')', {
+            type: 'outline',
+            block: true,
+            onClick: function () { location.hash = '#/service-calls'; }
+          }));
         }
       }
 

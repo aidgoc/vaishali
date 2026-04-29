@@ -34,6 +34,9 @@ doc_events = {
         "before_save": "vaishali.visit_guard.enforce",
         "on_update": "vaishali.api.linking.on_dcr_update",
     },
+    "Service Call": {
+        "before_save": "vaishali.service_call_guard.enforce",
+    },
     "Quotation": {
         "on_submit": [
             "vaishali.api.linking.link_quotation_to_dcr",
@@ -160,6 +163,7 @@ scheduler_events = {
             "vaishali.notifications.check_pending_purchase_invoices",
             "vaishali.notifications.check_overdue_work_orders",
             "vaishali.notifications.check_overdue_sales_invoices",
+            "vaishali.notifications.remind_pending_visit_needed_calls",
         ],
         "0 9 * * 1": [
             "vaishali.notifications.check_draft_documents_reminder",

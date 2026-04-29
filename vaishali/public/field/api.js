@@ -539,6 +539,31 @@
         path = '/api/method/vaishali.api.field.get_interaction?interaction_id=' + encodeURIComponent(intId);
       }
 
+      // Service Calls
+      else if (path === '/api/field/service-calls' || path.indexOf('/api/field/service-calls?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.create_service_call';
+        } else {
+          var svcQS = ''; var svcQI = path.indexOf('?'); if (svcQI !== -1) svcQS = path.substring(svcQI);
+          path = '/api/method/vaishali.api.field.get_service_calls' + svcQS;
+        }
+      }
+      else if (path.match(/^\/api\/field\/service-call\/[^/]+$/)) {
+        var svcId = path.replace('/api/field/service-call/', '');
+        if (method === 'PUT' || method === 'PATCH' || method === 'POST') {
+          body = body || {};
+          body.svc_id = decodeURIComponent(svcId);
+          path = '/api/method/vaishali.api.field.update_service_call';
+          method = 'POST';
+        } else {
+          path = '/api/method/vaishali.api.field.get_service_call?svc_id=' + encodeURIComponent(svcId);
+        }
+      }
+      else if (path.match(/^\/api\/field\/customer\/[^/]+\/recent-context$/)) {
+        var ccId = path.replace('/api/field/customer/', '').replace('/recent-context', '');
+        path = '/api/method/vaishali.api.field.get_customer_context?customer_id=' + encodeURIComponent(ccId);
+      }
+
       var controller = new AbortController();
       var timer = setTimeout(function () { controller.abort(); }, timeout);
 

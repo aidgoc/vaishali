@@ -232,6 +232,11 @@
     { pattern: '#/interactions',     handler: function () { S().interactionList(appEl); },          tab: 'home', title: 'Interactions',    back: '#/home' },
     { pattern: '#/interaction/:id',  handler: function (p) { S().interactionDetail(appEl, p); },    tab: 'home', title: 'Interaction',     back: '#/interactions' },
 
+    // Service Calls
+    { pattern: '#/service-call/new', handler: function () { S().serviceCallNew(appEl); },           tab: 'home', title: 'Log call',        back: '#/service-calls' },
+    { pattern: '#/service-calls',    handler: function () { S().serviceCallList(appEl); },          tab: 'home', title: 'Service calls',   back: '#/home' },
+    { pattern: '#/service-call/:id', handler: function (p) { S().serviceCallDetail(appEl, p); },    tab: 'home', title: 'Service call',    back: '#/service-calls' },
+
     // Sales
     { pattern: '#/pipeline',   handler: function () { S().pipeline(appEl); },       tab: 'home', title: 'Pipeline',   back: '#/home' },
     { pattern: '#/targets',    handler: function () { S().myTargets(appEl); },      tab: 'home', title: 'My Targets', back: '#/home' },

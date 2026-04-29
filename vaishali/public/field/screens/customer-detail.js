@@ -64,6 +64,13 @@
           }
         } }));
       }
+      contactBtns.push(UI.btn('Log call', {
+        type: 'tonal',
+        icon: 'phone',
+        onClick: function () {
+          location.hash = '#/service-call/new?customer=' + encodeURIComponent(customerId);
+        }
+      }));
       if (contactBtns.length > 0) {
         appEl.appendChild(el('div', {
           style: { display: 'grid', gridTemplateColumns: 'repeat(' + contactBtns.length + ', 1fr)', gap: '8px', marginBottom: '24px' }

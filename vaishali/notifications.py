@@ -994,3 +994,47 @@ def on_communication_receive(doc, method):
         f"Subject: {doc.subject or '(no subject)'}"
     )
     _notify(emp_id, msg)
+
+
+def remind_pending_visit_needed_calls():
+	"""Daily 9 AM: nudge engineers about Service Calls with 'Visit needed' outcome
+	that have no follow-up DCR after 24h. Single Telegram DM per engineer.
+	"""
+	from frappe.utils import add_days, now_datetime
+
+	cutoff = add_days(now_datetime(), -1)
+	pending = frappe.get_all("Service Call",
+		filters={
+			"outcome": "Visit needed",
+			"follow_up_dcr": ["in", ["", None]],
+			"creation": ["<=", cutoff],
+		},
+		fields=["name", "customer", "customer_name", "summary", "employee"],
+		limit_page_length=200,
+	)
+
+	if not pending:
+		return
+
+	by_emp = {}
+	for c in pending:
+		by_emp.setdefault(c.employee, []).append(c)
+
+	for emp_name, calls in by_emp.items():
+		if not emp_name:
+			continue
+		lines = [
+			f"🔔 *{len(calls)} pending follow-up{'s' if len(calls) > 1 else ''}*",
+			"",
+			"You logged these calls as 'Visit needed' but haven't filed a follow-up visit yet:",
+			"",
+		]
+		for c in calls[:10]:
+			lines.append(f"• {c.customer_name or c.customer} — {(c.summary or '')[:60]}")
+		try:
+			_notify(emp_name, "\n".join(lines))
+		except Exception as exc:
+			frappe.log_error(
+				title="remind_pending_visit_needed_calls send failed",
+				message=f"emp={emp_name} error={exc}",
+			)
