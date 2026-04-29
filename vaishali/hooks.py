@@ -163,6 +163,7 @@ scheduler_events = {
             "vaishali.notifications.check_pending_purchase_invoices",
             "vaishali.notifications.check_overdue_work_orders",
             "vaishali.notifications.check_overdue_sales_invoices",
+            "vaishali.notifications.remind_pending_visit_needed_calls",
         ],
         "0 9 * * 1": [
             "vaishali.notifications.check_draft_documents_reminder",
