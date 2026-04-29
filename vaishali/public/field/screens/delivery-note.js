@@ -261,6 +261,29 @@
         el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
+      // Stage path — visual progression
+      var dnStages = [
+        { value: 'Draft', label: 'Draft' },
+        { value: 'To Bill', label: 'To bill' },
+        { value: 'Completed', label: 'Completed' }
+      ];
+      var dnCurrent;
+      if (dn.docstatus === 0) dnCurrent = 'Draft';
+      else if (dn.docstatus === 2) dnCurrent = 'Cancelled';
+      else dnCurrent = dn.status || 'To Bill';
+      if (UI.stagePath) {
+        appEl.appendChild(UI.stagePath(dnStages, dnCurrent, { compact: false }));
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Delivery Note', name: dn.name, title: customer,
+          subtitle: grandTotal,
+          hash: '#/delivery-note/' + dn.name
+        });
+      }
+
       // Actions
       var actionBtns = [];
       actionBtns.push(UI.btn('PDF', {

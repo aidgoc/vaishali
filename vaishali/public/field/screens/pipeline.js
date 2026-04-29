@@ -1,228 +1,298 @@
-/* pipeline.js — Sales Pipeline screen for DSPL Field App */
+/* pipeline.js — Sales Pipeline KANBAN screen for DSPL Field App
+ *
+ * Mobile-first horizontal kanban: each stage is a full-width column.
+ * Tabs strip at top scrolls active column into view (and follows manual swipes
+ * via IntersectionObserver). Sticky column headers show count + total value.
+ */
 (function () {
   'use strict';
 
   var api = window.fieldAPI;
   var el = UI.el;
 
-  // ─── Helpers ──────────────────────────────────────────────────────
+  // ─── Currency formatting ──────────────────────────────────────────
 
-  function formatAmount(value) {
-    var num = Number(value) || 0;
-    if (num >= 100000) {
-      return '\u20B9' + (num / 100000).toFixed(1) + 'L';
-    }
-    if (num >= 1000) {
-      return '\u20B9' + (num / 1000).toFixed(1) + 'K';
-    }
-    return '\u20B9' + num.toLocaleString('en-IN');
+  function formatINR(val) {
+    var n = Number(val) || 0;
+    return '₹' + Math.round(n).toLocaleString('en-IN');
   }
 
-  function formatDate(isoString) {
-    if (!isoString) return '';
-    var d = new Date(isoString);
-    if (isNaN(d.getTime())) return '';
-    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return d.getDate() + ' ' + months[d.getMonth()];
+  function formatShortINR(n) {
+    n = Number(n) || 0;
+    if (n >= 1e7) return '₹' + (n / 1e7).toFixed(2) + ' Cr';
+    if (n >= 1e5) return '₹' + (n / 1e5).toFixed(1) + ' L';
+    return '₹' + Math.round(n).toLocaleString('en-IN');
   }
 
-  function statusColor(status) {
+  // ─── Stage configuration ──────────────────────────────────────────
+  // Maps section keys returned by the sales_pipeline view → display label
+  // and which doc field carries the monetary value.
+
+  var STAGES = [
+    { key: 'leads',         label: 'Leads',         doctype: 'Lead',         amountField: null,                  status: 'Open' },
+    { key: 'opportunities', label: 'Opportunities', doctype: 'Opportunity',  amountField: 'opportunity_amount',  status: 'Open' },
+    { key: 'quotations',    label: 'Quotations',    doctype: 'Quotation',    amountField: 'grand_total',         status: 'Quoted' },
+    { key: 'orders',        label: 'Orders',        doctype: 'Sales Order',  amountField: 'grand_total',         status: 'Won' }
+  ];
+
+  function stageColor(status) {
     if (!status) return 'gray';
-    var s = status.toLowerCase();
+    var s = String(status).toLowerCase();
     if (s === 'open' || s === 'lead' || s === 'draft') return 'blue';
-    if (s === 'converted' || s === 'won' || s === 'submitted' || s === 'completed' || s === 'ordered') return 'green';
+    if (s === 'won' || s === 'submitted' || s === 'completed' || s === 'ordered' || s === 'converted') return 'green';
     if (s === 'lost' || s === 'cancelled' || s === 'closed') return 'red';
-    if (s === 'replied' || s === 'quotation' || s === 'opportunity' || s === 'interested') return 'orange';
+    if (s === 'replied' || s === 'quotation' || s === 'quoted' || s === 'opportunity' || s === 'interested') return 'orange';
     return 'gray';
   }
 
-  // ─── Build a single pipeline card ─────────────────────────────────
+  function itemTitle(item) {
+    return item.customer_name
+        || item.party_name
+        || item.lead_name
+        || item.company_name
+        || item.customer
+        || item.name
+        || 'Untitled';
+  }
 
-  function pipelineCard(item) {
+  function itemAmount(item, amountField) {
+    if (amountField && item[amountField] != null) return Number(item[amountField]) || 0;
+    if (item.opportunity_amount != null) return Number(item.opportunity_amount) || 0;
+    if (item.grand_total != null) return Number(item.grand_total) || 0;
+    return 0;
+  }
+
+  // ─── Card ─────────────────────────────────────────────────────────
+
+  function buildCard(item, stage) {
     var children = [];
 
-    // Title line: name or company
-    var title = item.customer_name || item.company_name || item.lead_name || item.party_name || item.name || 'Untitled';
-    children.push(el('div', { className: 'pipeline-card-title', textContent: title }));
+    children.push(el('div', { className: 'm3-kanban-card-name', textContent: itemTitle(item) }));
 
-    // Subtitle: document name or source
-    var sub = item.name || '';
-    if (sub) {
-      children.push(el('div', { className: 'pipeline-card-sub', textContent: sub }));
+    var amt = itemAmount(item, stage.amountField);
+    if (amt > 0) {
+      children.push(el('div', { className: 'm3-kanban-card-amount', textContent: formatINR(amt) }));
     }
 
-    // Amount + date row
-    var metaParts = [];
-    if (item.grand_total || item.opportunity_amount) {
-      metaParts.push(el('span', { className: 'pipeline-card-amount', textContent: formatAmount(item.grand_total || item.opportunity_amount) }));
+    var metaBits = [];
+    if (item.probability != null && item.probability !== '') {
+      metaBits.push(el('span', { textContent: item.probability + '% probability' }));
     }
-    if (item.transaction_date || item.creation) {
-      metaParts.push(el('span', { className: 'pipeline-card-date', textContent: formatDate(item.transaction_date || item.creation) }));
-    }
-    if (metaParts.length > 0) {
-      children.push(el('div', { className: 'pipeline-card-meta' }, metaParts));
-    }
-
-    // Status pill
-    var st = item.status || '';
-    if (st) {
-      children.push(el('div', { className: 'pipeline-card-status' }, [UI.pill(st, statusColor(st))]));
-    }
-
-    var cardEl = el('div', { className: 'pipeline-card', onClick: function () {
-      // Navigate to ERPNext detail
-      var doctype = item._doctype || '';
-      var name = item.name || '';
-      if (doctype && name) {
-        var slug = doctype.toLowerCase().replace(/ /g, '-');
-        window.open('/app/' + slug + '/' + encodeURIComponent(name), '_blank');
-      }
-    } }, children);
-
-    return cardEl;
-  }
-
-  // ─── Build a kanban column ────────────────────────────────────────
-
-  function pipelineColumn(title, items, doctype) {
-    var count = items ? items.length : 0;
-
-    var headerChildren = [
-      el('span', { className: 'pipeline-col-title', textContent: title }),
-      el('span', { className: 'pipeline-col-count', textContent: String(count) })
-    ];
-    var header = el('div', { className: 'pipeline-col-header' }, headerChildren);
-
-    var cardList = el('div', { className: 'pipeline-col-cards' });
-
-    if (!items || items.length === 0) {
-      cardList.appendChild(el('div', { className: 'pipeline-col-empty', textContent: 'No ' + title.toLowerCase() }));
+    if (item.status) {
+      metaBits.push(UI.pill(item.status, stageColor(item.status)));
     } else {
-      for (var i = 0; i < items.length; i++) {
-        items[i]._doctype = doctype;
-        cardList.appendChild(pipelineCard(items[i]));
-      }
+      metaBits.push(UI.pill(stage.label, stageColor(stage.status || stage.label)));
+    }
+    children.push(el('div', { className: 'm3-kanban-card-meta' }, metaBits));
+
+    var subBits = [];
+    if (item.name) subBits.push(item.name);
+    if (item.expected_closing) subBits.push('Closing ' + item.expected_closing);
+    else if (item.valid_till) subBits.push('Valid till ' + item.valid_till);
+    else if (item.delivery_date) subBits.push('Delivery ' + item.delivery_date);
+    else if (item.transaction_date) subBits.push(item.transaction_date);
+    if (subBits.length) {
+      children.push(el('div', { className: 'm3-kanban-card-meta', textContent: subBits.join(' · ') }));
     }
 
-    return el('div', { className: 'pipeline-col' }, [header, cardList]);
+    var card = el('div', {
+      className: 'm3-kanban-card',
+      role: 'button',
+      tabIndex: '0',
+      onClick: function () {
+        // Opportunity has a native PWA detail screen
+        if (stage.doctype === 'Opportunity' && item.name) {
+          window.location.hash = '#/opportunity/' + encodeURIComponent(item.name);
+          return;
+        }
+        // Others fall back to ERPNext desk
+        if (item.name) {
+          var slug = stage.doctype.toLowerCase().replace(/ /g, '-');
+          window.open('/app/' + slug + '/' + encodeURIComponent(item.name), '_blank');
+        }
+      }
+    }, children);
+
+    card.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
+    });
+
+    return card;
   }
 
-  // ─── Funnel bar ───────────────────────────────────────────────────
+  // ─── Column ───────────────────────────────────────────────────────
 
-  function funnelBar(data) {
-    var fy = data.fy || {};
-    var ratios = data.ratios || {};
+  function buildColumn(stage, items) {
+    items = items || [];
+    var total = 0;
+    for (var i = 0; i < items.length; i++) total += itemAmount(items[i], stage.amountField);
 
-    var stages = [
-      { label: 'Visits', count: fy.visits || 0 },
-      { label: 'Leads',  count: fy.leads || 0 },
-      { label: 'Quotes', count: fy.quotations || 0 },
-      { label: 'Orders', count: fy.orders || 0 }
-    ];
+    var headerMeta = items.length + (items.length === 1 ? ' item' : ' items');
+    if (total > 0) headerMeta += ' · ' + formatShortINR(total);
 
-    var convs = [
-      { pct: ratios.visit_to_lead || 0, tgt: ratios.target_vi || 50 },
-      { pct: ratios.lead_to_quote  || 0, tgt: ratios.target_iq || 50 },
-      { pct: ratios.quote_to_order || 0, tgt: ratios.target_qo || 75 }
-    ];
-
-    // Stage cards
-    var stageEls = [];
-    for (var i = 0; i < stages.length; i++) {
-      stageEls.push(el('div', { className: 'funnel-stage' }, [
-        el('div', { className: 'funnel-stage-count', textContent: String(stages[i].count) }),
-        el('div', { className: 'funnel-stage-label', textContent: stages[i].label })
-      ]));
-
-      if (i < convs.length) {
-        var conv = convs[i];
-        var onTarget = conv.pct >= conv.tgt;
-        stageEls.push(el('div', { className: 'funnel-arrow' }, [
-          el('div', { className: 'funnel-arrow-icon', textContent: '\u2192' }),
-          el('div', {
-            className: 'funnel-conv-pct' + (onTarget ? ' on-target' : ' below-target'),
-            textContent: conv.pct + '%'
-          }),
-          el('div', { className: 'funnel-conv-tgt', textContent: 'tgt ' + conv.tgt + '%' })
-        ]));
-      }
-    }
-
-    var heading = el('div', { className: 'funnel-heading', textContent: 'Sales funnel \u2014 This FY' });
-    var row = el('div', { className: 'funnel-row' }, stageEls);
-
-    // Revenue sub-line
-    var orderVal = fy.order_value || 0;
-    var quoteVal = fy.quote_value || 0;
-    var revenueEl = el('div', { className: 'funnel-revenue' }, [
-      el('span', { textContent: 'Pipeline: ' + formatAmount(quoteVal) }),
-      el('span', { className: 'funnel-revenue-sep', textContent: '\u00A0\u00A0|\u00A0\u00A0' }),
-      el('span', { textContent: 'Booked: ' + formatAmount(orderVal) })
+    var header = el('div', { className: 'm3-kanban-col-header' }, [
+      el('span', { className: 'm3-kanban-col-title', textContent: stage.label }),
+      el('span', { className: 'm3-kanban-col-meta', textContent: headerMeta })
     ]);
 
-    return el('div', { className: 'funnel-section' }, [heading, row, revenueEl]);
+    var body = el('div', { className: 'm3-kanban-col-body' });
+    if (items.length === 0) {
+      body.appendChild(el('div', { className: 'm3-kanban-empty', textContent: 'No opportunities in this stage' }));
+    } else {
+      for (var k = 0; k < items.length; k++) {
+        body.appendChild(buildCard(items[k], stage));
+      }
+    }
+
+    var col = el('div', {
+      className: 'm3-kanban-column',
+      'data-stage': stage.key,
+      role: 'region',
+      'aria-label': stage.label
+    }, [header, body]);
+
+    return { el: col, total: total, count: items.length };
+  }
+
+  // ─── Tab strip ────────────────────────────────────────────────────
+
+  function buildTab(stage, count, total, onTap) {
+    var label = stage.label + ' · ' + count;
+    if (total > 0) label += ' · ' + formatShortINR(total);
+    var tab = el('button', {
+      type: 'button',
+      className: 'm3-kanban-tab',
+      'data-stage': stage.key,
+      onClick: function () { onTap(stage.key); }
+    }, [document.createTextNode(label)]);
+    return tab;
   }
 
   // ─── Main render ──────────────────────────────────────────────────
 
   function renderPipeline(appEl) {
-    appEl.appendChild(UI.skeleton(3));
-
-    // Load funnel data in parallel with pipeline board
-    var funnelPromise = api.apiCall('GET', '/api/field/sales-funnel');
+    var skel = UI.skeleton(4);
+    appEl.appendChild(skel);
 
     api.apiCall('GET', '/api/field/view/sales_pipeline').then(function (res) {
-      // Remove skeleton
+      // Clear skeletons
       var skeletons = appEl.querySelectorAll('.skeleton');
       for (var i = 0; i < skeletons.length; i++) {
         if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
       }
 
-      if (res.error || !res.data) {
+      if (!res || res.error || !res.data) {
         appEl.appendChild(UI.error('Could not load pipeline data'));
         return;
       }
 
       var data = res.data;
-      var sections = data.sections || data;
-      var leads = sections.leads || [];
-      var opportunities = sections.opportunities || [];
-      var quotations = sections.quotations || [];
-      var orders = sections.orders || sections.sales_orders || [];
+      var sections = data.sections || data.message || data || {};
+      // Some view envelopes nest under .data
+      if (sections.sections) sections = sections.sections;
 
-      // Summary stats
-      var totalValue = 0;
-      for (var q = 0; q < quotations.length; q++) {
-        totalValue += Number(quotations[q].grand_total || 0);
+      // Container — bleeds past page padding for full-width columns
+      var kanban = el('div', { className: 'm3-kanban' });
+
+      // Header (total + label)
+      var grandTotal = 0;
+      var stageData = [];
+      for (var s = 0; s < STAGES.length; s++) {
+        var stg = STAGES[s];
+        var items = Array.isArray(sections[stg.key]) ? sections[stg.key] : [];
+        var t = 0;
+        for (var ii = 0; ii < items.length; ii++) t += itemAmount(items[ii], stg.amountField);
+        stageData.push({ stage: stg, items: items, total: t });
+        grandTotal += t;
       }
-      for (var o = 0; o < orders.length; o++) {
-        totalValue += Number(orders[o].grand_total || 0);
-      }
 
-      // Insert funnel bar (resolves independently — graceful if it fails)
-      funnelPromise.then(function (fr) {
-        if (fr && fr.data && fr.data.data) {
-          var funnelEl = funnelBar(fr.data.data);
-          // Insert before the pipeline board (which hasn't been appended yet at this point)
-          appEl.appendChild(funnelEl);
-        }
-      }).catch(function () { /* funnel is best-effort */ });
-
-      var totalItems = leads.length + opportunities.length + quotations.length + orders.length;
-      appEl.appendChild(UI.grid([
-        UI.statCard(totalItems, 'Total Items'),
-        UI.statCard(formatAmount(totalValue), 'Pipeline Value')
-      ], 2));
-
-      // Kanban board
-      var board = el('div', { className: 'pipeline-board' }, [
-        pipelineColumn('Leads', leads, 'Lead'),
-        pipelineColumn('Opportunities', opportunities, 'Opportunity'),
-        pipelineColumn('Quotations', quotations, 'Quotation'),
-        pipelineColumn('Orders', orders, 'Sales Order')
+      var header = el('div', { className: 'm3-kanban-header' }, [
+        el('div', { className: 'm3-kanban-total-label', textContent: 'Total pipeline value' }),
+        el('div', { className: 'm3-kanban-total', textContent: formatShortINR(grandTotal) })
       ]);
+      kanban.appendChild(header);
 
-      appEl.appendChild(board);
+      // Columns area (built first so we can pass references to tabs)
+      var columnsWrap = el('div', { className: 'm3-kanban-columns', role: 'tabpanel' });
+      var columnEls = {};
+
+      // Tabs strip (built second; needs scroll handler that targets columnsWrap)
+      var tabsWrap = el('div', { className: 'm3-kanban-tabs', role: 'tablist' });
+      var tabEls = {};
+
+      function setActiveTab(key) {
+        for (var k in tabEls) {
+          if (tabEls.hasOwnProperty(k)) {
+            if (k === key) tabEls[k].classList.add('active');
+            else tabEls[k].classList.remove('active');
+          }
+        }
+        // Keep active tab visible in the strip
+        var activeTab = tabEls[key];
+        if (activeTab && activeTab.scrollIntoView) {
+          try { activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch (_) {}
+        }
+      }
+
+      function scrollToColumn(key) {
+        var col = columnEls[key];
+        if (!col) return;
+        // Use scrollLeft on the columns wrapper directly (more reliable on mobile than scrollIntoView)
+        var idx = STAGES.findIndex(function (s) { return s.key === key; });
+        if (idx < 0) return;
+        var width = columnsWrap.clientWidth;
+        try {
+          columnsWrap.scrollTo({ left: idx * width, behavior: 'smooth' });
+        } catch (_) {
+          columnsWrap.scrollLeft = idx * width;
+        }
+        setActiveTab(key);
+      }
+
+      for (var t = 0; t < stageData.length; t++) {
+        var sd = stageData[t];
+        var col = buildColumn(sd.stage, sd.items);
+        columnEls[sd.stage.key] = col.el;
+        columnsWrap.appendChild(col.el);
+
+        var tab = buildTab(sd.stage, sd.items.length, sd.total, scrollToColumn);
+        tabEls[sd.stage.key] = tab;
+        tabsWrap.appendChild(tab);
+      }
+
+      kanban.appendChild(tabsWrap);
+      kanban.appendChild(columnsWrap);
+      appEl.appendChild(kanban);
+
+      // Initial active tab — first stage
+      setActiveTab(STAGES[0].key);
+
+      // Sync tabs with manual swipes via IntersectionObserver
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          // Pick the entry with the largest intersection ratio
+          var best = null;
+          for (var e = 0; e < entries.length; e++) {
+            if (!entries[e].isIntersecting) continue;
+            if (!best || entries[e].intersectionRatio > best.intersectionRatio) {
+              best = entries[e];
+            }
+          }
+          if (best) {
+            var key = best.target.getAttribute('data-stage');
+            if (key) setActiveTab(key);
+          }
+        }, {
+          root: columnsWrap,
+          threshold: [0.5, 0.75]
+        });
+        for (var ck in columnEls) {
+          if (columnEls.hasOwnProperty(ck)) io.observe(columnEls[ck]);
+        }
+      }
     }).catch(function () {
       var skeletons = appEl.querySelectorAll('.skeleton');
       for (var i = 0; i < skeletons.length; i++) {

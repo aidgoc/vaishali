@@ -2271,6 +2271,322 @@
   }
 
   /* ──────────────────────────────────────────────────────────────
+     emailComposer(opts) — M3 in-app email composer
+     ──────────────────────────────────────────────────────────────
+     opts:
+       to       string | string[]   recipient(s) — comma-separated allowed
+       cc       string | string[]   optional CC list
+       subject  string              initial subject
+       body     string              initial plain-text body
+       doctype  string              optional — attaches Communication to record
+       name     string              optional — record name (Lead/Customer/etc.)
+       onSent   function(res)       callback after successful send
+
+     Returns an overlay element. Caller MUST appendChild to body
+     (same convention as bottomSheet / statusPicker).
+     ────────────────────────────────────────────────────────────── */
+  function emailComposer(opts) {
+    opts = opts || {};
+
+    function _normalizeAddrs(v) {
+      if (v == null) return '';
+      if (Array.isArray(v)) return v.filter(Boolean).join(', ');
+      return String(v);
+    }
+
+    function _splitAddrs(s) {
+      if (!s) return [];
+      var parts = String(s).split(/[,;]+/);
+      var out = [];
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i].trim();
+        if (p) out.push(p);
+      }
+      return out;
+    }
+
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function _validateAddrs(s) {
+      var list = _splitAddrs(s);
+      if (!list.length) return { ok: false, reason: 'empty' };
+      for (var i = 0; i < list.length; i++) {
+        if (!EMAIL_RE.test(list[i])) return { ok: false, reason: 'invalid', bad: list[i] };
+      }
+      return { ok: true, list: list };
+    }
+
+    function _plainToHtml(plain) {
+      if (!plain) return '';
+      var escaped = String(plain)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return escaped.split(/\n{2,}/).map(function (para) {
+        return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
+      }).join('');
+    }
+
+    /* Header */
+    var closeBtn = el('button', { className: 'bottom-sheet-close', 'aria-label': 'Close' });
+    setIconHTML(closeBtn, 'x');
+    var header = el('div', { className: 'bottom-sheet-header' }, [
+      el('div', { className: 'bottom-sheet-title', textContent: 'New email' }),
+      closeBtn
+    ]);
+
+    /* Fields */
+    var toField = m3TextField('To', {
+      type: 'email',
+      value: _normalizeAddrs(opts.to),
+      required: true,
+      name: 'to'
+    });
+
+    var ccField = m3TextField('Cc', {
+      type: 'email',
+      value: _normalizeAddrs(opts.cc),
+      name: 'cc'
+    });
+    var ccWrap = el('div', { className: 'm3-email-composer-cc-wrap' }, [ccField]);
+    var ccInitial = !!_normalizeAddrs(opts.cc);
+    if (!ccInitial) ccWrap.style.display = 'none';
+
+    var ccToggle = el('button', {
+      type: 'button',
+      className: 'm3-email-composer-cc-toggle',
+      textContent: ccInitial ? 'Hide Cc' : 'Add Cc',
+      'aria-expanded': ccInitial ? 'true' : 'false'
+    });
+    ccToggle.addEventListener('click', function () {
+      var isHidden = ccWrap.style.display === 'none';
+      if (isHidden) {
+        ccWrap.style.display = '';
+        ccToggle.textContent = 'Hide Cc';
+        ccToggle.setAttribute('aria-expanded', 'true');
+        var ccInput = ccField._getInput();
+        if (ccInput) ccInput.focus();
+      } else {
+        ccWrap.style.display = 'none';
+        ccField._setValue('');
+        ccField._setError(null);
+        ccToggle.textContent = 'Add Cc';
+        ccToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    var subjectField = m3TextField('Subject', {
+      value: opts.subject || '',
+      required: true,
+      name: 'subject'
+    });
+
+    var bodyField = m3TextField('Message', {
+      value: opts.body || '',
+      multiline: true,
+      rows: 8,
+      name: 'body'
+    });
+
+    var fieldsWrap = el('div', { className: 'm3-email-composer-fields' }, [
+      toField,
+      ccToggle,
+      ccWrap,
+      subjectField,
+      bodyField
+    ]);
+
+    /* Send bar (sticky at bottom of scroll content) */
+    var sendBtn = btn('Send', {
+      icon: 'send',
+      variant: 'primary',
+      block: true,
+      onClick: function () { _send(); }
+    });
+    var sendBar = el('div', { className: 'm3-email-composer-send-bar' }, [sendBtn]);
+
+    var sheetContent = el('div', { className: 'bottom-sheet-content' }, [
+      fieldsWrap,
+      sendBar
+    ]);
+
+    var sheet = el('div', {
+      className: 'bottom-sheet m3-email-composer',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': 'New email'
+    }, [header, sheetContent]);
+
+    var overlay = el('div', { className: 'bottom-sheet-overlay' }, [sheet]);
+
+    function close() {
+      overlay.classList.add('closing');
+      setTimeout(function () {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 250);
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close();
+    });
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close();
+    });
+    closeBtn.addEventListener('click', close);
+    overlay._close = close;
+
+    function _setSending(isSending) {
+      var input = sendBtn;
+      if (isSending) {
+        input.setAttribute('disabled', 'disabled');
+        input.classList.add('is-loading');
+        var textEl = input.querySelector('.btn-text');
+        if (textEl) {
+          if (!input._origText) input._origText = textEl.textContent;
+          textEl.textContent = 'Sending…';
+        }
+      } else {
+        input.removeAttribute('disabled');
+        input.classList.remove('is-loading');
+        var textEl2 = input.querySelector('.btn-text');
+        if (textEl2 && input._origText) {
+          textEl2.textContent = input._origText;
+        }
+      }
+    }
+
+    function _send() {
+      /* Reset prior errors */
+      toField._setError(null);
+      subjectField._setError(null);
+      ccField._setError(null);
+
+      var toVal = toField._getValue().trim();
+      var toCheck = _validateAddrs(toVal);
+      if (!toCheck.ok) {
+        toField._setError(toCheck.reason === 'empty'
+          ? 'Recipient is required'
+          : ('Invalid email: ' + (toCheck.bad || '')));
+        var toInp = toField._getInput();
+        if (toInp) toInp.focus();
+        return;
+      }
+
+      var ccVal = '';
+      if (ccWrap.style.display !== 'none') {
+        ccVal = ccField._getValue().trim();
+        if (ccVal) {
+          var ccCheck = _validateAddrs(ccVal);
+          if (!ccCheck.ok) {
+            ccField._setError('Invalid email: ' + (ccCheck.bad || ''));
+            var ccInp = ccField._getInput();
+            if (ccInp) ccInp.focus();
+            return;
+          }
+        }
+      }
+
+      var subjectVal = subjectField._getValue().trim();
+      if (!subjectVal) {
+        subjectField._setError('Subject is required');
+        var sInp = subjectField._getInput();
+        if (sInp) sInp.focus();
+        return;
+      }
+
+      var bodyVal = bodyField._getValue();
+      var contentHtml = _plainToHtml(bodyVal);
+
+      var payload = {
+        recipients: toCheck.list.join(', '),
+        subject: subjectVal,
+        content: contentHtml,
+        send_email: 1,
+        print_html: '',
+        send_me_a_copy: 0
+      };
+      if (ccVal) payload.cc = _splitAddrs(ccVal).join(', ');
+      if (opts.doctype) payload.doctype = opts.doctype;
+      if (opts.name) payload.name = opts.name;
+
+      _setSending(true);
+
+      var api = (window.fieldAPI && typeof window.fieldAPI.apiCall === 'function')
+        ? window.fieldAPI : null;
+      var endpoint = '/api/method/frappe.core.doctype.communication.email.make';
+
+      var sendPromise;
+      if (api) {
+        sendPromise = api.apiCall('POST', endpoint, payload);
+      } else {
+        /* Fallback: direct fetch with CSRF token */
+        var headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        var csrf = (typeof frappe !== 'undefined' && frappe.csrf_token) ? frappe.csrf_token : null;
+        if (!csrf) {
+          var match = document.cookie.match(/csrf_token=([^;]+)/);
+          if (match) csrf = decodeURIComponent(match[1]);
+        }
+        if (csrf) headers['X-Frappe-CSRF-Token'] = csrf;
+        sendPromise = fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers: headers,
+          body: JSON.stringify(payload)
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.text().then(function (t) {
+              var msg = 'Send failed (' + r.status + ')';
+              try {
+                var j = JSON.parse(t);
+                if (j && j._server_messages) {
+                  var arr = JSON.parse(j._server_messages);
+                  if (arr && arr.length) {
+                    var first = JSON.parse(arr[0]);
+                    if (first && first.message) msg = first.message;
+                  }
+                } else if (j && j.exception) {
+                  msg = j.exception;
+                }
+              } catch (e) { /* ignore parse failure */ }
+              throw new Error(msg);
+            });
+          }
+          return r.json();
+        });
+      }
+
+      sendPromise.then(function (res) {
+        _setSending(false);
+        toast('Email sent', 'success');
+        close();
+        if (typeof opts.onSent === 'function') {
+          try { opts.onSent(res); } catch (e) { /* swallow */ }
+        }
+      }, function (err) {
+        _setSending(false);
+        var msg = (err && err.message) ? err.message : 'Could not send email';
+        toast(msg, 'error');
+      });
+    }
+
+    /* Auto-focus: body if not pre-filled, else To if empty, else body */
+    setTimeout(function () {
+      var toInp = toField._getInput();
+      var bodyInp = bodyField._getInput();
+      if (!opts.body && !toInp.value) {
+        toInp.focus();
+      } else if (!opts.body) {
+        bodyInp.focus();
+      } else if (!toInp.value) {
+        toInp.focus();
+      } else {
+        bodyInp.focus();
+      }
+    }, 100);
+
+    return overlay;
+  }
+
+  /* ──────────────────────────────────────────────────────────────
      Export
      ────────────────────────────────────────────────────────────── */
   window.UI = {
@@ -2332,6 +2648,7 @@
     swipeRow: swipeRow,
     stagePath: stagePath,
     statusPicker: statusPicker,
+    emailComposer: emailComposer,
 
     // Recently viewed
     recents: recents,

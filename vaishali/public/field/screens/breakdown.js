@@ -319,7 +319,19 @@
         contactBtns.push(UI.btn('Call', { type: 'tonal', icon: 'phone', onClick: function () { location.href = 'tel:' + claim.contact_phone; } }));
       }
       if (claim.contact_email) {
-        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () { location.href = 'mailto:' + claim.contact_email; } }));
+        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () {
+          if (UI.emailComposer) {
+            var sheet = UI.emailComposer({
+              to: claim.contact_email,
+              subject: 'Re: Service request ' + claim.name,
+              doctype: 'Warranty Claim',
+              name: claim.name
+            });
+            document.body.appendChild(sheet);
+          } else {
+            location.href = 'mailto:' + claim.contact_email;
+          }
+        } }));
       }
       if (contactBtns.length) {
         content.appendChild(el('div', { className: 'm3-doc-actions' }, contactBtns));

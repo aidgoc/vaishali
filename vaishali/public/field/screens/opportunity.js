@@ -211,7 +211,19 @@
         actionBtns.push(UI.btn('Email', {
           type: 'tonal',
           icon: 'send',
-          onClick: function () { location.href = 'mailto:' + opp.contact_email; }
+          onClick: function () {
+            if (UI.emailComposer) {
+              var sheet = UI.emailComposer({
+                to: opp.contact_email,
+                subject: 'Re: ' + (opp.party_name || opp.name),
+                doctype: 'Opportunity',
+                name: opp.name
+              });
+              document.body.appendChild(sheet);
+            } else {
+              location.href = 'mailto:' + opp.contact_email;
+            }
+          }
         }));
       }
       if (opp.contact_mobile || opp.contact_no) {

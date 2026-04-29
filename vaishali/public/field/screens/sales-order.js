@@ -285,6 +285,32 @@
         el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
+      // Stage path — visual progression
+      var soStages = [
+        { value: 'Draft', label: 'Draft' },
+        { value: 'To Deliver and Bill', label: 'To deliver' },
+        { value: 'To Bill', label: 'To bill' },
+        { value: 'Completed', label: 'Completed' }
+      ];
+      var soCurrent;
+      if (so.docstatus === 0) soCurrent = 'Draft';
+      else if (so.docstatus === 2) soCurrent = 'Cancelled';
+      else soCurrent = so.status || 'To Deliver and Bill';
+      // Normalize "To Deliver" alias to "To Deliver and Bill" for stage matching
+      if (soCurrent === 'To Deliver') soCurrent = 'To Deliver and Bill';
+      if (UI.stagePath) {
+        appEl.appendChild(UI.stagePath(soStages, soCurrent, { compact: false }));
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Sales Order', name: so.name, title: customer,
+          subtitle: grandTotal,
+          hash: '#/sales-order/' + so.name
+        });
+      }
+
       // Actions
       var actionBtns = [];
       actionBtns.push(UI.btn('PDF', {

@@ -113,6 +113,30 @@
     }
   }
 
+  // ─── Notification bell badge — reads inbox_unread_count from localStorage
+  // (inbox.js writes this on every load). Polls every 60s as a safety net
+  // in case the count was updated in another tab. ───────────────────
+  var _bellBadgeInterval = null;
+  function _refreshBellBadge() {
+    var count;
+    try {
+      count = parseInt(localStorage.getItem('inbox_unread_count') || '0', 10) || 0;
+    } catch (e) { count = 0; }
+    var badges = document.querySelectorAll('.bell-badge');
+    for (var i = 0; i < badges.length; i++) {
+      badges[i].hidden = count <= 0;
+      if (count > 0) badges[i].textContent = count > 99 ? '99+' : String(count);
+      else badges[i].textContent = '';
+    }
+  }
+
+  function _setupBellBadgePolling() {
+    _refreshBellBadge();
+    if (!_bellBadgeInterval) {
+      _bellBadgeInterval = setInterval(_refreshBellBadge, 60000);
+    }
+  }
+
   function updateNavActive(tabName) {
     var links = navEl.querySelectorAll('.nav-item');
     for (var i = 0; i < links.length; i++) {
@@ -464,6 +488,19 @@
       // Global search trigger — visible everywhere except login, search, chat
       var hashPath = (hash || '').split('?')[0];
       if (hashPath !== '#/login' && hashPath !== '#/search' && hashPath !== '#/chat') {
+        // Notification bell — also hidden on inbox itself (where you're already there)
+        if (hashPath !== '#/inbox') {
+          var bellBtn = el('button', {
+            className: 'm3-icon-button bell-btn',
+            'aria-label': 'Notifications',
+            onClick: function () { location.hash = '#/inbox'; }
+          });
+          if (window.icon) bellBtn.appendChild(window.icon('bell'));
+          // Badge dot — populated by _refreshBellBadge based on unread count
+          bellBtn.appendChild(el('span', { className: 'bell-badge', hidden: true }));
+          actionSlot.appendChild(bellBtn);
+        }
+
         var searchBtn = el('button', {
           className: 'm3-icon-button',
           'aria-label': 'Search',
@@ -509,6 +546,9 @@
 
     // ── 6. Call screen handler ──
     matched.handler(matched.params);
+
+    // ── 7. Refresh notification bell badge ──
+    _refreshBellBadge();
   }
 
   // ─── Login Screen (kept here — only screen not in screens/) ────────
@@ -670,6 +710,7 @@
             if (info.employee) {
               return Auth.saveSession(info.employee, info.nav_tier || 'field', []).then(function () {
                 buildBottomNav();
+                _setupBellBadgePolling();
                 dismissSplash();
                 navigate('#/home');
               });
@@ -685,6 +726,7 @@
 
       // Session exists — build nav and route
       buildBottomNav();
+      _setupBellBadgePolling();
       dismissSplash();
 
       if (typeof api.ensureApiKeys === 'function') {

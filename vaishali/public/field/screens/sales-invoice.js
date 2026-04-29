@@ -297,6 +297,29 @@
         el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
+      // Stage path — visual progression
+      var siStages = [
+        { value: 'Draft', label: 'Draft' },
+        { value: 'Unpaid', label: 'Unpaid' },
+        { value: 'Partly Paid', label: 'Partly paid' },
+        { value: 'Paid', label: 'Paid' }
+      ];
+      var siCurrent = status;
+      // Overdue is just unpaid past due date — collapse for stage matching
+      if (siCurrent === 'Overdue') siCurrent = 'Unpaid';
+      if (UI.stagePath) {
+        appEl.appendChild(UI.stagePath(siStages, siCurrent, { compact: false }));
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Sales Invoice', name: si.name, title: customer,
+          subtitle: grandTotal,
+          hash: '#/sales-invoice/' + si.name
+        });
+      }
+
       // Actions
       var actionBtns = [];
       actionBtns.push(UI.btn('PDF', {
@@ -320,7 +343,17 @@
           type: 'tonal',
           icon: 'send',
           onClick: function () {
-            location.href = 'mailto:' + si.contact_email + '?subject=Invoice%20' + encodeURIComponent(si.name);
+            if (UI.emailComposer) {
+              var sheet = UI.emailComposer({
+                to: si.contact_email,
+                subject: 'Invoice ' + si.name + (si.outstanding_amount > 0 ? ' — payment reminder' : ''),
+                doctype: 'Sales Invoice',
+                name: si.name
+              });
+              document.body.appendChild(sheet);
+            } else {
+              location.href = 'mailto:' + si.contact_email + '?subject=Invoice%20' + encodeURIComponent(si.name);
+            }
           }
         }));
       }

@@ -50,7 +50,19 @@
         contactBtns.push(UI.btn('Call', { type: 'tonal', icon: 'phone', onClick: function () { window.open('tel:' + mobile); } }));
       }
       if (email) {
-        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () { window.open('mailto:' + email); } }));
+        contactBtns.push(UI.btn('Email', { type: 'tonal', icon: 'send', onClick: function () {
+          if (UI.emailComposer) {
+            var sheet = UI.emailComposer({
+              to: email,
+              subject: 'Hello from Dynamic Servitech',
+              doctype: 'Customer',
+              name: customerId
+            });
+            document.body.appendChild(sheet);
+          } else {
+            window.open('mailto:' + email);
+          }
+        } }));
       }
       if (contactBtns.length > 0) {
         appEl.appendChild(el('div', {

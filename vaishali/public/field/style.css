@@ -6835,3 +6835,249 @@ body, #app, #app-header, #bottom-nav, .bottom-nav {
   padding: 12px 0;
 }
 /* End recently viewed strip */
+
+/* ─── Notification bell badge ─────────────────────────────────────── */
+.bell-btn { position: relative; }
+.bell-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: var(--m3-error);
+  color: var(--m3-on-error);
+  font: 600 10px/16px var(--m3-font);
+  text-align: center;
+  pointer-events: none;
+  border: 2px solid var(--m3-surface);
+  box-sizing: content-box;
+}
+/* End notification bell badge */
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pipeline Kanban — mobile-first horizontal swipe between stages
+   ═══════════════════════════════════════════════════════════════════ */
+
+.m3-kanban {
+  /* Bleed past page padding so columns can be full viewport width */
+  margin: 0 -16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.m3-kanban-header {
+  padding: 0 16px 8px;
+}
+
+.m3-kanban-total {
+  font: var(--m3-headline-small);
+  color: var(--m3-on-surface);
+  letter-spacing: 0;
+  margin-bottom: 0;
+  font-feature-settings: 'tnum' 1;
+}
+
+.m3-kanban-total-label {
+  font: var(--m3-label-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.5px;
+  text-transform: none;
+  margin-bottom: 4px;
+}
+
+.m3-kanban-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px 16px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.m3-kanban-tabs::-webkit-scrollbar { display: none; }
+
+.m3-kanban-tab {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  border: 1px solid var(--m3-outline-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--m3-duration-short2) var(--m3-easing-standard),
+              color var(--m3-duration-short2) var(--m3-easing-standard);
+}
+.m3-kanban-tab:hover {
+  background: var(--m3-surface-container);
+}
+.m3-kanban-tab.active {
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  border-color: transparent;
+}
+
+.m3-kanban-columns {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.m3-kanban-columns::-webkit-scrollbar { display: none; }
+
+.m3-kanban-column {
+  flex-shrink: 0;
+  min-width: 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.m3-kanban-col-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  position: sticky;
+  top: 0;
+  background: var(--m3-surface);
+  z-index: 1;
+  gap: 12px;
+}
+
+.m3-kanban-col-title {
+  font: var(--m3-title-large);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+}
+
+.m3-kanban-col-meta {
+  font: var(--m3-body-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.25px;
+  font-feature-settings: 'tnum' 1;
+  text-align: right;
+}
+
+.m3-kanban-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.m3-kanban-card {
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md);
+  padding: 14px 16px;
+  cursor: pointer;
+  border: 1px solid var(--m3-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background var(--m3-duration-short2) var(--m3-easing-standard);
+}
+.m3-kanban-card:hover { background: var(--m3-surface-container); }
+.m3-kanban-card:active { background: var(--m3-surface-container-high, var(--m3-surface-container)); }
+
+.m3-kanban-card-name {
+  font: var(--m3-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--m3-on-surface);
+  word-break: break-word;
+}
+
+.m3-kanban-card-amount {
+  font: var(--m3-headline-small);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  font-feature-settings: 'tnum' 1;
+  margin-top: 4px;
+}
+
+.m3-kanban-card-meta {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.m3-kanban-empty {
+  padding: 48px 16px;
+  text-align: center;
+  font: var(--m3-body-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.25px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-kanban-columns { scroll-snap-type: none; }
+  .m3-kanban-tab { transition: none; }
+  .m3-kanban-card { transition: none; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   M3 Email Composer (UI.emailComposer)
+   Reuses .bottom-sheet shell; only composer-specific tweaks below.
+   ────────────────────────────────────────────────────────────── */
+.m3-email-composer {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.m3-email-composer .bottom-sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 0; /* sticky send-bar provides bottom spacing */
+}
+.m3-email-composer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* m3-textfield already has its own bottom margin */
+}
+.m3-email-composer-cc-wrap {
+  display: block;
+}
+.m3-email-composer-cc-toggle {
+  background: transparent;
+  border: none;
+  color: var(--m3-primary);
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  padding: 4px 0;
+  margin: -4px 0 8px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.m3-email-composer-cc-toggle:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.m3-email-composer-send-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--m3-surface-container-low);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  margin: 12px -16px 0; /* span the sheet content padding */
+  border-top: 1px solid var(--m3-outline-variant);
+  z-index: 1;
+}
+/* Give the body textarea more breathing room */
+.m3-email-composer .m3-textfield.multiline textarea {
+  min-height: 160px;
+  resize: vertical;
+}

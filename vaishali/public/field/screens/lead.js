@@ -363,7 +363,19 @@
         contactBtns.push(UI.btn('Email', {
           type: 'tonal',
           icon: 'send',
-          onClick: function () { location.href = 'mailto:' + lead.email_id; }
+          onClick: function () {
+            if (UI.emailComposer) {
+              var sheet = UI.emailComposer({
+                to: lead.email_id,
+                subject: 'Following up — ' + (lead.lead_name || lead.name),
+                doctype: 'Lead',
+                name: lead.name
+              });
+              document.body.appendChild(sheet);
+            } else {
+              location.href = 'mailto:' + lead.email_id;
+            }
+          }
         }));
       }
       if (contactBtns.length > 0) {

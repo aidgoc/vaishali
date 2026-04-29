@@ -591,7 +591,19 @@
         actionBtns.push(UI.btn('Email', {
           type: 'tonal',
           icon: 'send',
-          onClick: function () { location.href = 'mailto:' + q.contact_email + '?subject=Quotation%20' + encodeURIComponent(q.name); }
+          onClick: function () {
+            if (UI.emailComposer) {
+              var sheet = UI.emailComposer({
+                to: q.contact_email,
+                subject: 'Quotation ' + q.name + ' — ' + (q.party_name || ''),
+                doctype: 'Quotation',
+                name: q.name
+              });
+              document.body.appendChild(sheet);
+            } else {
+              location.href = 'mailto:' + q.contact_email + '?subject=Quotation%20' + encodeURIComponent(q.name);
+            }
+          }
         }));
       }
       actionBtns.push(UI.btn('PDF', {
