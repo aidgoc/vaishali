@@ -333,6 +333,16 @@
           }
         } }));
       }
+      contactBtns.push(UI.btn('Log call', {
+        type: 'tonal',
+        icon: 'phone',
+        onClick: function () {
+          var qs = ['customer=' + encodeURIComponent(claim.customer || '')];
+          if (claim.name) qs.push('warranty_claim=' + encodeURIComponent(claim.name));
+          if (claim.serial_no) qs.push('device=' + encodeURIComponent(claim.serial_no));
+          location.hash = '#/service-call/new?' + qs.join('&');
+        }
+      }));
       if (contactBtns.length) {
         content.appendChild(el('div', { className: 'm3-doc-actions' }, contactBtns));
       }
