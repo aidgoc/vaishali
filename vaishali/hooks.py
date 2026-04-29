@@ -137,7 +137,7 @@ fixtures = [
     "Property Setter",       # 282 in prod
     "Custom DocPerm",        # 472 in prod — role tweaks across stock + custom DocTypes
     "Client Script",         # 1 today; future-proofed
-    {"dt": "Print Format", "filters": [["custom", "=", 1]]},
+    {"dt": "Print Format", "filters": [["module", "=", "Vaishali"]]},
     {"dt": "Notification", "filters": [["module", "=", "Vaishali"]]},
     {"dt": "Number Card", "filters": [["module", "=", "Vaishali"]]},
     {"dt": "Dashboard", "filters": [["module", "=", "Vaishali"]]},
