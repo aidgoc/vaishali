@@ -24,6 +24,10 @@ website_route_rules = [
     {"from_route": "/field/<path:app_path>", "to_route": "field"},
 ]
 
+# Convert Guest → /api/method/vaishali.* hits into 401 SessionExpired so even
+# stale PWA clients (without the 403 "not whitelisted" handler) auto-recover.
+before_request = ["vaishali.auth_guard.auth_guard"]
+
 # Doc Events
 doc_events = {
     "Daily Call Report": {
