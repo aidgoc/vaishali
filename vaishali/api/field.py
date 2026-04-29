@@ -162,6 +162,16 @@ def create_dcr(**kwargs):
         if link_field:
             doc.set(link_field, fu_name)
     doc.insert(ignore_permissions=True)
+    # Service Call → DCR backlink (when DCR was created from a "Visit needed" call)
+    from_svc = kwargs.get("from_service_call")
+    if from_svc:
+        try:
+            frappe.db.set_value("Service Call", from_svc, "follow_up_dcr", doc.name)
+        except Exception:
+            frappe.log_error(
+                title="Service Call backlink failed",
+                message=f"DCR {doc.name} could not link back to Service Call {from_svc}",
+            )
     frappe.db.commit()
     return doc.as_dict()
 
