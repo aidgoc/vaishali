@@ -50,7 +50,7 @@
     {"fieldname": "direction", "fieldtype": "Select", "label": "Direction", "options": "Inbound\nOutbound", "default": "Inbound"},
     {"fieldname": "duration_minutes", "fieldtype": "Int", "label": "Duration (min)"},
     {"fieldname": "column_break_optional", "fieldtype": "Column Break"},
-    {"fieldname": "device", "fieldtype": "Link", "label": "Device", "options": "Device"},
+    {"fieldname": "device", "fieldtype": "Link", "label": "Device / Serial", "options": "Serial No"},
     {"fieldname": "warranty_claim", "fieldtype": "Link", "label": "Warranty Claim", "options": "Warranty Claim"},
     {"fieldname": "section_break_contact", "fieldtype": "Section Break", "label": "Contact", "collapsible": 1},
     {"fieldname": "contact", "fieldtype": "Link", "label": "Contact", "options": "Contact"},

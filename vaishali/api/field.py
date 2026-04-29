@@ -49,7 +49,7 @@ def _get_nav_tier(user=None):
     if roles & {"System Manager", "Administrator"}:
         return "admin"
     if roles & {"HR Manager", "Sales Manager", "Expense Approver", "Leave Approver",
-                "Purchase Manager", "Stock Manager"}:
+                "Purchase Manager", "Stock Manager", "Service Manager"}:
         return "manager"
     return "field"
 
@@ -2066,9 +2066,12 @@ def get_customer_context(customer_id):
 	if not customer_id:
 		frappe.throw(_("customer_id required"))
 
-	devices = frappe.get_all("Device",
+	# DocType is "Serial No" on this site (used as the equipment register;
+	# get_devices() above queries the same table).
+	devices = frappe.get_all("Serial No",
 		filters={"customer": customer_id},
-		fields=["name", "device_name", "serial_no", "warranty_expiry_date"],
+		fields=["name as serial_no", "item_code", "item_name",
+		        "warranty_expiry_date as warranty_expiry"],
 		order_by="modified desc",
 		limit_page_length=20) or []
 
