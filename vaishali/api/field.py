@@ -1949,3 +1949,143 @@ def create_interaction(**kwargs):
     doc.submit()
     frappe.db.commit()
     return doc.as_dict()
+
+
+# ── Service Calls ────────────────────────────────────────────────
+
+
+@frappe.whitelist()
+def get_service_calls(date_from=None, date_to=None, outcome=None, channel=None,
+                     scope="my", limit=50):
+	"""List service calls. scope = my | team | all (manager+ only for team/all)."""
+	emp = _get_employee()
+	filters = []
+	if scope == "my":
+		filters.append(["employee", "=", emp.name])
+	elif scope == "team":
+		nav_tier = _get_nav_tier(frappe.session.user)
+		if nav_tier not in ("manager", "admin"):
+			filters.append(["employee", "=", emp.name])
+		else:
+			reports = frappe.get_all("Employee", filters={"reports_to": emp.name},
+				pluck="name") or []
+			reports.append(emp.name)
+			filters.append(["employee", "in", reports])
+	elif scope == "all":
+		nav_tier = _get_nav_tier(frappe.session.user)
+		if nav_tier != "admin":
+			frappe.throw(_("Not allowed"), frappe.PermissionError)
+	if date_from:
+		filters.append(["call_datetime", ">=", date_from])
+	if date_to:
+		filters.append(["call_datetime", "<=", date_to])
+	if outcome:
+		filters.append(["outcome", "=", outcome])
+	if channel:
+		filters.append(["channel", "=", channel])
+
+	return frappe.get_all("Service Call",
+		filters=filters,
+		fields=["name", "call_datetime", "employee", "employee_name",
+		        "customer", "customer_name", "channel", "outcome",
+		        "summary", "direction", "duration_minutes",
+		        "device", "warranty_claim", "follow_up_dcr"],
+		order_by="call_datetime desc",
+		limit_page_length=int(limit) if limit else 50)
+
+
+@frappe.whitelist(methods=["POST"])
+def create_service_call(**kwargs):
+	"""Create a Service Call from the PWA."""
+	frappe.local.flags["from_pwa"] = True
+	emp = _get_employee()
+	doc = frappe.new_doc("Service Call")
+	doc.employee = emp.name
+	for field in ["call_datetime", "customer", "channel", "outcome", "summary",
+	              "direction", "duration_minutes", "device", "warranty_claim",
+	              "contact", "form_opened_at", "form_saved_at"]:
+		if field in kwargs and kwargs[field] not in (None, ""):
+			doc.set(field, kwargs[field])
+	# Convert ISO datetimes (YYYY-MM-DDTHH:MM:SS.sssZ) → MySQL format
+	for dt_field in ("call_datetime", "form_opened_at", "form_saved_at"):
+		val = doc.get(dt_field)
+		if val and isinstance(val, str) and "T" in val:
+			doc.set(dt_field, val.replace("T", " ").replace("Z", "").split(".")[0])
+	if not doc.call_datetime:
+		doc.call_datetime = frappe.utils.now()
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+def get_service_call(svc_id):
+	"""Read a single Service Call. Owner must match unless manager+."""
+	emp = _get_employee()
+	doc = frappe.get_doc("Service Call", svc_id)
+	if doc.employee != emp.name:
+		nav_tier = _get_nav_tier(frappe.session.user)
+		if nav_tier not in ("manager", "admin"):
+			frappe.throw(_("You do not have access to this call"), frappe.PermissionError)
+	return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def update_service_call(svc_id, remarks=None, **kwargs):
+	"""Partial update. Truth-fields are guarded by service_call_guard."""
+	frappe.local.flags["from_pwa"] = True
+	emp = _get_employee()
+	doc = frappe.get_doc("Service Call", svc_id)
+	if doc.employee != emp.name:
+		nav_tier = _get_nav_tier(frappe.session.user)
+		if nav_tier not in ("manager", "admin"):
+			frappe.throw(_("You do not have access to this call"), frappe.PermissionError)
+	if remarks is not None:
+		doc.remarks = remarks
+	for field in ("direction", "duration_minutes", "device", "warranty_claim", "contact"):
+		if field in kwargs and kwargs[field] not in (None, ""):
+			doc.set(field, kwargs[field])
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+def get_customer_context(customer_id):
+	"""Form auto-suggests: recent devices, open warranty claims, recent calls, contacts."""
+	if not customer_id:
+		frappe.throw(_("customer_id required"))
+
+	devices = frappe.get_all("Device",
+		filters={"customer": customer_id},
+		fields=["name", "device_name", "serial_no", "warranty_expiry_date"],
+		order_by="modified desc",
+		limit_page_length=20) or []
+
+	open_claims = frappe.get_all("Warranty Claim",
+		filters={"customer": customer_id, "status": ["in", ["Open", "Work In Progress"]]},
+		fields=["name", "complaint", "status", "complaint_date"],
+		order_by="complaint_date desc",
+		limit_page_length=20) or []
+
+	recent_calls = frappe.get_all("Service Call",
+		filters={"customer": customer_id},
+		fields=["name", "call_datetime", "employee_name", "channel", "outcome", "summary"],
+		order_by="call_datetime desc",
+		limit_page_length=10) or []
+
+	contacts = frappe.db.sql("""
+		SELECT c.name, c.first_name, c.last_name, c.mobile_no
+		FROM `tabContact` c
+		INNER JOIN `tabDynamic Link` dl ON dl.parent = c.name
+		WHERE dl.link_doctype = 'Customer' AND dl.link_name = %s
+		ORDER BY c.is_primary_contact DESC, c.modified DESC
+		LIMIT 5
+	""", (customer_id,), as_dict=True) or []
+
+	return {
+		"devices": devices,
+		"open_warranty_claims": open_claims,
+		"recent_calls": recent_calls,
+		"contacts": contacts,
+	}
