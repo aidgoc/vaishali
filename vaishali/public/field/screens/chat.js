@@ -299,11 +299,19 @@
     if (_messages.length === 0) {
       var welcomeIcon = el('div', { className: 'chat-welcome-icon' });
       welcomeIcon.textContent = 'V';
-      var welcome = el('div', { className: 'chat-welcome' }, [
-        welcomeIcon,
-        el('div', { className: 'chat-welcome-title', textContent: 'Hi! I\'m Vaishali' }),
-        el('div', { className: 'chat-welcome-sub', textContent: 'Your DSPL ERP assistant. Type / for commands.' }),
-      ]);
+      // Returning user: localStorage has a session_id but the FastAPI's
+      // in-memory history is empty (typical after a sidecar restart). The
+      // Frappe-native agent still has full context — reassure the user.
+      var hasReturning = !!_conversationId;
+      var welcomeChildren = [welcomeIcon];
+      if (hasReturning) {
+        welcomeChildren.push(el('div', { className: 'chat-welcome-title', textContent: 'Welcome back' }));
+        welcomeChildren.push(el('div', { className: 'chat-welcome-sub', textContent: 'Vaishali still remembers your previous conversation — just continue. Tap New for a fresh chat.' }));
+      } else {
+        welcomeChildren.push(el('div', { className: 'chat-welcome-title', textContent: 'Hi! I\'m Vaishali' }));
+        welcomeChildren.push(el('div', { className: 'chat-welcome-sub', textContent: 'Your DSPL ERP assistant. Type / for commands.' }));
+      }
+      var welcome = el('div', { className: 'chat-welcome' }, welcomeChildren);
       _chatContainer.appendChild(welcome);
 
       var suggestions = [
