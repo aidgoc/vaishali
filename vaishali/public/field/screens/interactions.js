@@ -51,9 +51,14 @@
     var listContainer = el('div');
     var searchQuery = '';
 
+    // UI.searchInput is now pass-through; debounce here.
+    var _intSearchTimer = null;
     var searchBar = UI.searchInput('Search interactions...', function (query) {
-      searchQuery = query;
-      loadList();
+      if (_intSearchTimer) clearTimeout(_intSearchTimer);
+      _intSearchTimer = setTimeout(function () {
+        searchQuery = query;
+        loadList();
+      }, 250);
     });
     appEl.appendChild(searchBar);
 

@@ -390,7 +390,7 @@
       el('div', { style: { marginTop: '12px' } }, [saveBtn])
     ]);
 
-    UI.bottomSheet('Set Budget', content);
+    document.body.appendChild(UI.bottomSheet('Set Budget', content));
   }
 
 })();

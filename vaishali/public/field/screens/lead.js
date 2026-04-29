@@ -33,10 +33,14 @@
     var listContainer = el('div');
     var searchQuery = '';
 
-    // Search bar
+    // Search bar — UI.searchInput is now pass-through; debounce here.
+    var _leadSearchTimer = null;
     var searchBar = UI.searchInput('Search leads...', function (query) {
-      searchQuery = query;
-      loadLeads();
+      if (_leadSearchTimer) clearTimeout(_leadSearchTimer);
+      _leadSearchTimer = setTimeout(function () {
+        searchQuery = query;
+        loadLeads();
+      }, 250);
     });
     appEl.appendChild(searchBar);
 

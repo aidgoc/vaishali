@@ -218,10 +218,14 @@
       success: 'btn-success-custom',
       danger: 'btn-danger-custom',
       outline: 'btn-outline',
-      'outline-danger': 'btn-outline-danger'
+      'outline-danger': 'btn-outline-danger',
+      tonal: 'm3-btn-tonal',
+      text: 'm3-btn-text'
     };
+    // Backward-compat: emailComposer used opts.variant; treat as alias for opts.type.
+    var typeKey = opts.type || opts.variant;
     var cls = 'btn';
-    if (opts.type && typeMap[opts.type]) cls += ' ' + typeMap[opts.type];
+    if (typeKey && typeMap[typeKey]) cls += ' ' + typeMap[typeKey];
     if (opts.block) cls += ' btn-block';
     if (opts.className) cls += ' ' + opts.className;
 
@@ -362,7 +366,9 @@
      18. searchInput(placeholder, onInput)
      ────────────────────────────────────────────────────────────── */
   function searchInput(placeholder, onInput) {
-    var timer = null;
+    // Pass-through; callers debounce with their own UI.debounce / utils.debounce
+    // wrapper. Internal debouncing here used to compound with caller debounces
+    // and added 300-600 ms of perceived latency.
     var ic = el('span', { className: 'search-icon' });
     setIconHTML(ic, 'search');
     var inp = el('input', {
@@ -370,11 +376,7 @@
       type: 'text',
       placeholder: placeholder || 'Search\u2026',
       onInput: function (e) {
-        var val = e.target.value;
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(function () {
-          if (onInput) onInput(val);
-        }, 300);
+        if (onInput) onInput(e.target.value);
       }
     });
     return el('div', { className: 'search-input-wrapper' }, [ic, inp]);
@@ -1769,32 +1771,37 @@
     contentWrap.addEventListener('touchend', onTouchEnd, { passive: true });
     contentWrap.addEventListener('touchcancel', onTouchCancel, { passive: true });
 
-    /* tap-outside / scroll-away → snap back. Capture phase so we still
-       see it when other handlers stopPropagation. */
-    function onDocPointerDown(e) {
-      if (currentX === 0) return;
-      if (row.contains(e.target)) return;
-      collapse();
-    }
-    function onDocScroll() {
-      if (currentX === 0) return;
-      collapse();
-    }
-    document.addEventListener('touchstart', onDocPointerDown, true);
-    document.addEventListener('mousedown', onDocPointerDown, true);
-    window.addEventListener('scroll', onDocScroll, true);
-
+    /* tap-outside / scroll-away handled by a single delegated listener
+       installed at module init (see _swipeRowDelegated below). Per-row
+       listeners used to leak — every swipeRow added 3 document listeners
+       that were never removed when the row was unmounted, so navigating
+       lists slowly degraded responsiveness. */
     row._collapse = collapse;
     row._openLeading = function () { open('leading'); };
     row._openTrailing = function () { open('trailing'); };
-    row._destroySwipe = function () {
-      document.removeEventListener('touchstart', onDocPointerDown, true);
-      document.removeEventListener('mousedown', onDocPointerDown, true);
-      window.removeEventListener('scroll', onDocScroll, true);
-    };
 
     return row;
   }
+
+  /* Single delegated listener — collapses any open swipeRow when the user
+     taps elsewhere or scrolls. Installs once on module init. */
+  (function _swipeRowDelegated() {
+    function collapseOpenExcept(target) {
+      var open = document.querySelector('.m3-swipe-row.is-open');
+      if (!open) return;
+      if (target && open.contains(target)) return;
+      if (typeof open._collapse === 'function') open._collapse();
+    }
+    document.addEventListener('touchstart', function (e) {
+      collapseOpenExcept(e.target);
+    }, true);
+    document.addEventListener('mousedown', function (e) {
+      collapseOpenExcept(e.target);
+    }, true);
+    window.addEventListener('scroll', function () {
+      collapseOpenExcept(null);
+    }, true);
+  })();
 
   /* ──────────────────────────────────────────────────────────────
      stagePath(stages, current, opts)
@@ -2398,7 +2405,7 @@
     /* Send bar (sticky at bottom of scroll content) */
     var sendBtn = btn('Send', {
       icon: 'send',
-      variant: 'primary',
+      type: 'primary',
       block: true,
       onClick: function () { _send(); }
     });
