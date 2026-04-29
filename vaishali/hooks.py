@@ -127,8 +127,23 @@ doc_events = {
     },
 }
 
-# Fixtures
-fixtures = ["custom_field"]
+# Fixtures — everything not version-controlled in the DB that we
+# need to survive `bench update` and a fresh-bench reinstall.
+# Run `bench --site <site> export-fixtures --app vaishali` after
+# adding/changing any of these on a live site, then commit the
+# resulting JSON files under vaishali/fixtures/.
+fixtures = [
+    "Custom Field",          # 697 in prod (2026-04-30 audit)
+    "Property Setter",       # 282 in prod
+    "Custom DocPerm",        # 472 in prod — role tweaks across stock + custom DocTypes
+    "Client Script",         # 1 today; future-proofed
+    {"dt": "Print Format", "filters": [["custom", "=", 1]]},
+    {"dt": "Notification", "filters": [["module", "=", "Vaishali"]]},
+    {"dt": "Number Card", "filters": [["module", "=", "Vaishali"]]},
+    {"dt": "Dashboard", "filters": [["module", "=", "Vaishali"]]},
+    {"dt": "Dashboard Chart", "filters": [["module", "=", "Vaishali"]]},
+    {"dt": "Workspace", "filters": [["module", "=", "Vaishali"]]},
+]
 
 # Custom pages and modules
 module_config = [
