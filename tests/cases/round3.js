@@ -3,7 +3,8 @@
 
 const PIPELINE_FIXTURE = {
   match: '/api/field/view/sales_pipeline',
-  data: { data: { sections: {
+  // Frappe-style envelope: res.data = { message: { sections: {...} } }
+  data: { message: { sections: {
     leads: [
       { name: 'CRM-LEAD-1', lead_name: 'Anil Kumar', company_name: 'Tata' },
       { name: 'CRM-LEAD-2', lead_name: 'Bharti Ent', company_name: 'BAL' }
