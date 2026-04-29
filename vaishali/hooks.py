@@ -31,6 +31,7 @@ before_request = ["vaishali.auth_guard.auth_guard"]
 # Doc Events
 doc_events = {
     "Daily Call Report": {
+        "before_save": "vaishali.visit_guard.enforce",
         "on_update": "vaishali.api.linking.on_dcr_update",
     },
     "Quotation": {

@@ -127,6 +127,8 @@ def get_dcrs(date_filter=None, start_date=None, end_date=None, department=None):
 
 @frappe.whitelist(methods=["POST"])
 def create_dcr(**kwargs):
+    # Marker for visit_guard.enforce — PWA-originated, GPS legitimate.
+    frappe.local.flags["from_pwa"] = True
     emp = _get_employee()
     doc = frappe.new_doc("Daily Call Report")
     doc.employee = emp.name
@@ -176,6 +178,7 @@ def get_dcr(dcr_id):
 @frappe.whitelist(methods=["POST"])
 def update_dcr(dcr_id, remarks=None, **kwargs):
     """Partial update for an ongoing DCR. Currently supports `remarks` only."""
+    frappe.local.flags["from_pwa"] = True
     emp = _get_employee()
     doc = frappe.get_doc("Daily Call Report", dcr_id)
     if doc.employee != emp.name:
@@ -194,6 +197,7 @@ def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None,
                  status="Completed", lead_generated=0, opportunity_generated=0,
                  order_received=0, discussion_remarks=None, next_action=None,
                  next_action_date=None):
+    frappe.local.flags["from_pwa"] = True
     emp = _get_employee()
     doc = frappe.get_doc("Daily Call Report", dcr_id)
     if doc.employee != emp.name:
