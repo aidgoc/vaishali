@@ -226,6 +226,20 @@
     }
 
     loadVisits();
+
+    // Quick-add FAB
+    if (UI.fab) {
+      var fab = UI.fab({
+        icon: 'plus', ariaLabel: 'Log visit',
+        onClick: function () { location.hash = '#/dcr/new'; }
+      });
+      document.body.appendChild(fab);
+      var removeFab = function () {
+        if (fab.parentNode) fab.parentNode.removeChild(fab);
+        window.removeEventListener('hashchange', removeFab);
+      };
+      window.addEventListener('hashchange', removeFab);
+    }
   };
 
   // ── Screen: New Visit ─────────────────────────────────────────────────

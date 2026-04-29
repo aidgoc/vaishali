@@ -297,6 +297,15 @@
       ]);
       appEl.appendChild(actionGrid);
 
+      // Recently viewed strip — only when there's something to show
+      if (UI.recents && UI.recentsStrip) {
+        var recentItems = UI.recents.list();
+        if (recentItems.length > 0) {
+          appEl.appendChild(UI.sectionHeading('Recently viewed'));
+          appEl.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
+        }
+      }
+
       // 3. Today's visits
       appEl.appendChild(UI.sectionHeading("Today's visits"));
       if (dcrs.length === 0) {
@@ -458,6 +467,15 @@
         })
       ]);
       appEl.appendChild(actionGrid);
+
+      // Recently viewed strip — only when there's something to show
+      if (UI.recents && UI.recentsStrip) {
+        var recentItemsM = UI.recents.list();
+        if (recentItemsM.length > 0) {
+          appEl.appendChild(UI.sectionHeading('Recently viewed'));
+          appEl.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
+        }
+      }
 
       // 3b. HR Services row
       appEl.appendChild(UI.sectionHeading('HR services'));

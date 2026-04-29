@@ -112,6 +112,22 @@
     }
 
     loadLeads();
+
+    // Quick-add FAB
+    if (UI.fab) {
+      var fab = UI.fab({
+        icon: 'plus',
+        ariaLabel: 'New lead',
+        onClick: function () { location.hash = '#/lead/new'; }
+      });
+      // Track to remove on hashchange (FAB is fixed-positioned outside #app)
+      document.body.appendChild(fab);
+      var removeFab = function () {
+        if (fab.parentNode) fab.parentNode.removeChild(fab);
+        window.removeEventListener('hashchange', removeFab);
+      };
+      window.addEventListener('hashchange', removeFab);
+    }
   };
 
   // ── Screen: New Lead ────────────────────────────────────────────────
@@ -276,8 +292,63 @@
       if (company) {
         hero.appendChild(el('p', { className: 'profile-subtitle', textContent: company }));
       }
-      hero.appendChild(el('div', { style: { marginTop: '4px' } }, [UI.pill(status, statusColor(status))]));
+      // Tappable status pill — opens status picker
+      var pill = UI.pill(status, statusColor(status));
+      pill.style.cursor = 'pointer';
+      pill.addEventListener('click', function () {
+        var picker = UI.statusPicker({
+          title: 'Change lead status',
+          current: status,
+          options: [
+            { value: 'Lead', label: 'Lead', color: 'blue', icon: 'clock', description: 'Just received' },
+            { value: 'Open', label: 'Open', color: 'blue', icon: 'clock', description: 'Active prospect' },
+            { value: 'Replied', label: 'Replied', color: 'orange', icon: 'send', description: 'Customer responded' },
+            { value: 'Opportunity', label: 'Opportunity', color: 'green', icon: 'plus', description: 'Promoted to pipeline' },
+            { value: 'Quotation', label: 'Quoted', color: 'green', icon: 'file', description: 'Quote sent' },
+            { value: 'Converted', label: 'Converted', color: 'green', icon: 'check', description: 'Won — sale closed' },
+            { value: 'Do Not Contact', label: 'Do Not Contact', color: 'red', icon: 'x', description: 'No further outreach' }
+          ],
+          onSelect: function (value) {
+            return window.fieldAPI.apiCall('PUT',
+              '/api/resource/Lead/' + encodeURIComponent(lead.name),
+              { status: value }
+            ).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                throw new Error(res.error || 'Server error');
+              }
+              UI.toast('Status updated to ' + value, 'success');
+              setTimeout(function () { window.Screens.leadDetail(appEl, params); }, 100);
+            });
+          }
+        });
+        document.body.appendChild(picker);
+      });
+      hero.appendChild(el('div', { style: { marginTop: '4px' } }, [pill]));
       appEl.appendChild(hero);
+
+      // Stage path — lead progression
+      if (UI.stagePath) {
+        var leadStages = [
+          { value: 'Lead', label: 'Lead' },
+          { value: 'Open', label: 'Open' },
+          { value: 'Replied', label: 'Replied' },
+          { value: 'Opportunity', label: 'Opportunity' },
+          { value: 'Converted', label: 'Won' }
+        ];
+        if (status === 'Do Not Contact') {
+          leadStages[4] = { value: 'Do Not Contact', label: 'Lost' };
+        }
+        appEl.appendChild(UI.stagePath(leadStages, status, { compact: false }));
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Lead', name: lead.name, title: name,
+          subtitle: company || lead.mobile_no || '',
+          hash: '#/lead/' + lead.name
+        });
+      }
 
       // Quick contact actions \u2014 call + email as outlined buttons
       var contactBtns = [];

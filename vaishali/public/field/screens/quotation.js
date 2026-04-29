@@ -129,6 +129,20 @@
     }
 
     loadQuotations();
+
+    // Quick-add FAB
+    if (UI.fab) {
+      var fab = UI.fab({
+        icon: 'plus', ariaLabel: 'New quotation',
+        onClick: function () { location.hash = '#/quotations/new'; }
+      });
+      document.body.appendChild(fab);
+      var removeFab = function () {
+        if (fab.parentNode) fab.parentNode.removeChild(fab);
+        window.removeEventListener('hashchange', removeFab);
+      };
+      window.addEventListener('hashchange', removeFab);
+    }
   };
 
   // ── Screen: New Quotation ─────────────────────────────────────────
@@ -669,6 +683,15 @@
           textContent: q.terms
         });
         appEl.appendChild(termsCard);
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Quotation', name: q.name, title: customer,
+          subtitle: grandTotal,
+          hash: '#/quotation/' + q.name
+        });
       }
 
       // Activity timeline + comment composer

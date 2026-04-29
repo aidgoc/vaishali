@@ -6531,3 +6531,307 @@ body, #app, #app-header, #bottom-nav, .bottom-nav {
 }
 
 /* End neutral palette */
+
+/* ──────────────────────────────────────────────────────────────
+   M3 Stage Path — visual progression strip (Salesforce-style)
+   See UI.stagePath(stages, current, opts) in ui.js
+   ────────────────────────────────────────────────────────────── */
+.m3-stage-path {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 8px 0 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.m3-stage-path::-webkit-scrollbar { display: none; }
+
+.m3-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: default;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+}
+
+.m3-stage.todo {
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  border-color: var(--m3-outline-variant);
+}
+
+.m3-stage.current {
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  font-weight: 500;
+}
+
+.m3-stage.completed {
+  background: var(--m3-success-container);
+  color: var(--m3-on-success-container);
+}
+
+.m3-stage.terminal-won {
+  background: var(--m3-success-container);
+  color: var(--m3-on-success-container);
+}
+
+.m3-stage.terminal-lost {
+  background: var(--m3-error-container);
+  color: var(--m3-on-error-container);
+}
+
+.m3-stage.terminal-cancelled {
+  background: var(--m3-surface-container);
+  color: var(--m3-on-surface-variant);
+}
+
+/* Icon slot — completed/terminal stages display a check (success colored) */
+.m3-stage-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--m3-success);
+}
+.m3-stage-icon svg { width: 14px; height: 14px; }
+
+.m3-stage.terminal-lost .m3-stage-icon { color: var(--m3-error, #BA1A1A); }
+.m3-stage.terminal-cancelled .m3-stage-icon { color: var(--m3-on-surface-variant); }
+
+/* Bullet for the active stage (non-terminal) */
+.m3-stage-current-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m3-primary);
+  flex-shrink: 0;
+}
+
+.m3-stage-label { display: inline-block; }
+
+/* Connectors between stages */
+.m3-stage-connector {
+  flex-shrink: 0;
+  width: 16px;
+  height: 1px;
+  background: var(--m3-outline-variant);
+  margin: 0 -1px;
+}
+.m3-stage-connector.completed {
+  background: var(--m3-success);
+}
+
+/* Compact variant (for list rows) */
+.m3-stage-path.compact { padding: 4px 0 8px; margin-bottom: 8px; }
+.m3-stage-path.compact .m3-stage {
+  padding: 4px 10px;
+  font: var(--m3-label-medium);
+  letter-spacing: 0.5px;
+}
+.m3-stage-path.compact .m3-stage-connector { width: 8px; }
+.m3-stage-path.compact .m3-stage-icon { width: 14px; height: 14px; }
+.m3-stage-path.compact .m3-stage-icon svg { width: 12px; height: 12px; }
+.m3-stage-path.compact .m3-stage-current-dot { width: 6px; height: 6px; }
+
+/* Tappable variant — when onClick is provided, stages render as <button> */
+.m3-stage[role="button"] {
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+.m3-stage[role="button"]:hover {
+  filter: brightness(0.97);
+}
+.m3-stage[role="button"]:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion: drop hover transitions */
+@media (prefers-reduced-motion: reduce) {
+  .m3-stage[role="button"] { transition: none; }
+}
+/* End M3 Stage Path */
+
+/* ──────────────────────────────────────────────────────────────
+   M3 Status Picker — option rows for UI.statusPicker()
+   Reuses .bottom-sheet-* shell. Only option-row styles below.
+   ────────────────────────────────────────────────────────────── */
+.m3-status-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0 8px;
+}
+.m3-status-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 4px;
+  background: transparent;
+  transition: background var(--m3-duration-short2) var(--m3-easing-standard);
+}
+.m3-status-option:hover { background: var(--m3-surface-container); }
+.m3-status-option:active { background: var(--m3-surface-container-high); }
+.m3-status-option:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: 2px;
+}
+.m3-status-option.is-current {
+  background: var(--m3-surface-container-low);
+  border-color: var(--m3-primary);
+}
+.m3-status-option-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.m3-status-option-icon.color-green { background: var(--m3-success-container); color: var(--m3-success); }
+.m3-status-option-icon.color-blue { background: #D9E2FF; color: #1A56DB; }
+.m3-status-option-icon.color-orange,
+.m3-status-option-icon.color-yellow { background: var(--m3-warning-container); color: var(--m3-warning); }
+.m3-status-option-icon.color-red { background: var(--m3-error-container); color: var(--m3-error); }
+.m3-status-option-icon.color-gray { background: var(--m3-surface-container); color: var(--m3-on-surface-variant); }
+.m3-status-option-icon svg { width: 20px; height: 20px; }
+.m3-status-option-content { flex: 1; min-width: 0; }
+.m3-status-option-label {
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  color: var(--m3-on-surface);
+}
+.m3-status-option-desc {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  margin-top: 2px;
+}
+.m3-status-option-check {
+  width: 22px;
+  height: 22px;
+  color: var(--m3-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.m3-status-option-check svg { width: 22px; height: 22px; }
+.m3-status-option.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.m3-status-option.is-loading::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--m3-on-surface-variant);
+  border-top-color: var(--m3-primary);
+  border-radius: 50%;
+  animation: m3-spin 0.7s linear infinite;
+  margin-left: auto;
+}
+@keyframes m3-spin {
+  to { transform: rotate(360deg); }
+}
+/* End M3 Status Picker */
+
+/* ──────────────────────────────────────────────────────────────
+   Recently viewed strip — horizontal scrollable chips
+   Used by UI.recentsStrip() in ui.js
+   ────────────────────────────────────────────────────────────── */
+.m3-recents-wrap {
+  margin-bottom: 8px;
+}
+.m3-recents {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -16px 16px;
+  padding: 4px 16px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.m3-recents::-webkit-scrollbar { display: none; }
+
+.m3-recents-chip {
+  flex-shrink: 0;
+  width: 144px;
+  background: var(--m3-surface-container-low);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--m3-outline-variant);
+  transition: background var(--m3-duration-short2) var(--m3-easing-standard);
+}
+.m3-recents-chip:hover { background: var(--m3-surface-container); }
+.m3-recents-chip:active { background: var(--m3-surface-container-high); }
+.m3-recents-chip:focus-visible {
+  outline: 2px solid var(--m3-primary);
+  outline-offset: 2px;
+}
+
+.m3-recents-chip-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 12px/1 var(--m3-font);
+  color: var(--m3-on-surface-variant);
+  background: var(--m3-surface-container);
+  flex-shrink: 0;
+}
+.m3-recents-chip-title {
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  color: var(--m3-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3-recents-chip-sub {
+  font: var(--m3-body-small);
+  letter-spacing: 0.4px;
+  color: var(--m3-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3-recents-chip-meta {
+  font: 500 10px/14px var(--m3-font);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--m3-primary);
+}
+.m3-recents-empty {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+  padding: 12px 0;
+}
+/* End recently viewed strip */

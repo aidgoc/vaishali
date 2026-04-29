@@ -133,9 +133,68 @@
             el('div', { className: 'm3-doc-hero-amount-label', textContent: probability != null ? probability + '% probability' : 'Estimated value' })
           ])
         ]),
-        el('div', {}, [UI.pill(status, statusColor(status))])
+        el('div', {}, [(function () {
+          // Tappable status pill — opens status picker
+          var pill = UI.pill(status, statusColor(status));
+          pill.style.cursor = 'pointer';
+          pill.addEventListener('click', function () {
+            var picker = UI.statusPicker({
+              title: 'Change status',
+              current: status,
+              options: [
+                { value: 'Open', label: 'Open', color: 'blue', icon: 'clock', description: 'Just received' },
+                { value: 'Replied', label: 'Replied', color: 'orange', icon: 'send', description: 'Conversation started' },
+                { value: 'Quotation', label: 'Quoted', color: 'green', icon: 'file', description: 'Quotation sent' },
+                { value: 'Converted', label: 'Converted', color: 'green', icon: 'check', description: 'Won — sales order placed' },
+                { value: 'Lost', label: 'Lost', color: 'red', icon: 'x', description: 'Customer chose elsewhere' },
+                { value: 'Closed', label: 'Closed', color: 'gray', icon: 'check', description: 'No longer active' }
+              ],
+              onSelect: function (value) {
+                return window.fieldAPI.apiCall('PUT',
+                  '/api/resource/Opportunity/' + encodeURIComponent(opp.name),
+                  { status: value }
+                ).then(function (res) {
+                  if (res.error || (res.status && res.status >= 400)) {
+                    throw new Error(res.error || 'Server error');
+                  }
+                  UI.toast('Status updated to ' + value, 'success');
+                  // Re-render the screen to reflect change
+                  setTimeout(function () { window.Screens.opportunityDetail(appEl, params); }, 100);
+                });
+              }
+            });
+            document.body.appendChild(picker);
+          });
+          return pill;
+        })()])
       ]);
       appEl.appendChild(hero);
+
+      // Stage path — visual progression
+      var pipelineStages = [
+        { value: 'Open', label: 'Open' },
+        { value: 'Replied', label: 'Replied' },
+        { value: 'Quotation', label: 'Quoted' },
+        { value: 'Converted', label: 'Won' }
+      ];
+      // If status is Lost or Closed, show alternative final stage
+      if (status === 'Lost') {
+        pipelineStages[3] = { value: 'Lost', label: 'Lost' };
+      } else if (status === 'Closed') {
+        pipelineStages[3] = { value: 'Closed', label: 'Closed' };
+      }
+      if (UI.stagePath) {
+        appEl.appendChild(UI.stagePath(pipelineStages, status, { compact: false }));
+      }
+
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Opportunity', name: opp.name, title: party,
+          subtitle: amount ? formatCurrency(amount) : opp.opportunity_type || '',
+          hash: '#/opportunity/' + opp.name
+        });
+      }
 
       // \u2500\u2500 Quick action row \u2500\u2500
       var actionBtns = [];

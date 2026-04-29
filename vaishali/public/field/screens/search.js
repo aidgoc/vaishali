@@ -285,8 +285,29 @@
 
     appEl.appendChild(wrap);
 
+    // Recently viewed strip — only when input is empty
+    var recentsHost = el('div', { className: 'gs-recents-host' });
+    wrap.insertBefore(recentsHost, statusEl);
+    function renderRecents() {
+      while (recentsHost.firstChild) recentsHost.removeChild(recentsHost.firstChild);
+      if (UI.recents && UI.recentsStrip) {
+        var items = UI.recents.list();
+        if (items.length > 0) {
+          recentsHost.appendChild(UI.sectionHeading('Recently viewed'));
+          recentsHost.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
+        }
+      }
+    }
+    renderRecents();
+
     // Initial empty state — prompt the user
     resultsEl.appendChild(UI.empty('search', 'Type to search across the org'));
+
+    // Hide recents once user starts typing, restore on clear
+    inputEl.addEventListener('input', function (e) {
+      var val = (e.target.value || '').trim();
+      recentsHost.style.display = val.length === 0 ? '' : 'none';
+    });
 
     // Auto-focus shortly after mount (after route transition settles)
     setTimeout(function () {

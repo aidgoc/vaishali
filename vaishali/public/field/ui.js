@@ -572,9 +572,26 @@
   /* ──────────────────────────────────────────────────────────────
      30. fab(onClick)
      ────────────────────────────────────────────────────────────── */
-  function fab(onClick) {
-    var button = el('button', { className: 'fab', onClick: onClick, 'aria-label': 'Open AI chat' });
-    setIconHTML(button, 'bot');
+  function fab(onClickOrOpts) {
+    // Back-compat: passing a function falls back to AI-chat default.
+    var opts;
+    if (typeof onClickOrOpts === 'function') {
+      opts = { onClick: onClickOrOpts, icon: 'bot', ariaLabel: 'Open AI chat' };
+    } else {
+      opts = onClickOrOpts || {};
+    }
+    var cls = 'fab';
+    if (opts.label) cls += ' m3-fab-extended';
+    if (opts.className) cls += ' ' + opts.className;
+    var button = el('button', {
+      className: cls,
+      onClick: opts.onClick || null,
+      'aria-label': opts.ariaLabel || opts.label || 'Action'
+    });
+    setIconHTML(button, opts.icon || 'plus');
+    if (opts.label) {
+      button.appendChild(el('span', { textContent: opts.label }));
+    }
     return button;
   }
 
@@ -1780,6 +1797,480 @@
   }
 
   /* ──────────────────────────────────────────────────────────────
+     stagePath(stages, current, opts)
+     M3 visual progression strip (Salesforce / Pipedrive style).
+       stages: array of { value, label } OR array of strings
+       current: stage value of the active stage; null/undefined => all todo
+       opts: {
+         onClick: function(stageValue, idx),  // when set, stages tappable
+         compact: boolean,                    // smaller variant
+         completedIcon: 'check' | 'checkSm'   // default 'check'
+       }
+     Terminal stages (value matches /won|lost|cancel/i) at the last
+     position render with success/error/neutral color when current.
+     Returns: HTMLElement (div.m3-stage-path)
+     ────────────────────────────────────────────────────────────── */
+  function stagePath(stages, current, opts) {
+    opts = opts || {};
+    var completedIcon = opts.completedIcon || 'check';
+
+    /* normalize stages to [{value,label}] */
+    var norm = [];
+    if (Array.isArray(stages)) {
+      for (var n = 0; n < stages.length; n++) {
+        var s = stages[n];
+        if (s == null) continue;
+        if (typeof s === 'string') {
+          norm.push({ value: s, label: s });
+        } else {
+          norm.push({ value: s.value, label: s.label != null ? s.label : String(s.value) });
+        }
+      }
+    }
+
+    /* find current index by value */
+    var currentIdx = -1;
+    if (current != null) {
+      for (var k = 0; k < norm.length; k++) {
+        if (norm[k].value === current) { currentIdx = k; break; }
+      }
+    }
+
+    /* terminal-state detection — only meaningful on the last stage */
+    function terminalKind(value) {
+      if (value == null) return null;
+      var v = String(value).toLowerCase();
+      if (v.indexOf('won') >= 0) return 'won';
+      if (v.indexOf('lost') >= 0) return 'lost';
+      if (v.indexOf('cancel') >= 0) return 'cancelled';
+      return null;
+    }
+
+    var pathCls = 'm3-stage-path';
+    if (opts.compact) pathCls += ' compact';
+    var path = el('div', {
+      className: pathCls,
+      role: 'list',
+      'aria-label': 'Stage progression'
+    });
+
+    for (var i = 0; i < norm.length; i++) {
+      (function (op, idx) {
+        var state;        // 'completed' | 'current' | 'todo'
+        var terminal = null;
+        if (currentIdx < 0) {
+          state = 'todo';
+        } else if (idx < currentIdx) {
+          state = 'completed';
+        } else if (idx === currentIdx) {
+          state = 'current';
+          if (idx === norm.length - 1) terminal = terminalKind(op.value);
+        } else {
+          state = 'todo';
+        }
+
+        var stageCls = 'm3-stage ' + state;
+        if (terminal) stageCls += ' terminal-' + terminal;
+
+        var children = [];
+
+        /* leading marker: check icon (completed/terminal) or bullet (current non-terminal) */
+        if (state === 'completed' || terminal) {
+          var ic = el('span', { className: 'm3-stage-icon', 'aria-hidden': 'true' });
+          setIconHTML(ic, completedIcon);
+          children.push(ic);
+        } else if (state === 'current') {
+          children.push(el('span', { className: 'm3-stage-current-dot', 'aria-hidden': 'true' }));
+        }
+
+        children.push(el('span', { className: 'm3-stage-label', textContent: op.label }));
+
+        var ariaCurrent = state === 'current' ? 'step' : null;
+        var attrs = {
+          className: stageCls,
+          role: opts.onClick ? 'button' : 'listitem',
+          'aria-label': op.label + ', ' + state,
+          'aria-current': ariaCurrent
+        };
+        if (opts.onClick) {
+          attrs.tabIndex = '0';
+          attrs.onClick = function () { opts.onClick(op.value, idx); };
+          attrs.onKeyDown = function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              opts.onClick(op.value, idx);
+            }
+          };
+        }
+        var stageEl = el(opts.onClick ? 'button' : 'div', attrs, children);
+        path.appendChild(stageEl);
+
+        /* connector after every stage except the last */
+        if (idx < norm.length - 1) {
+          var connCls = 'm3-stage-connector';
+          /* connector takes "completed" color when the LEFT stage is completed */
+          if (state === 'completed') connCls += ' completed';
+          path.appendChild(el('span', { className: connCls, 'aria-hidden': 'true' }));
+        }
+      })(norm[i], i);
+    }
+
+    return path;
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     statusPicker(opts) — M3 inline status picker bottom sheet
+     opts: {
+       title: string,
+       current: string (value of currently-selected option),
+       options: [{ value, label, color, icon, description }],
+       onSelect: function(value) -> Promise|undefined
+     }
+     Returns an overlay element. Caller MUST appendChild to body.
+     ────────────────────────────────────────────────────────────── */
+  function statusPicker(opts) {
+    opts = opts || {};
+    var title = opts.title || 'Change status';
+    var current = opts.current;
+    var options = opts.options || [];
+    var onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
+
+    /* Drag handle (M3 spec) */
+    var dragHandle = el('div', { className: 'bottom-sheet-handle', 'aria-hidden': 'true' });
+
+    /* Header — reuses existing bottom-sheet-* classes */
+    var closeBtn = el('button', { className: 'bottom-sheet-close', 'aria-label': 'Close' });
+    setIconHTML(closeBtn, 'x');
+    var header = el('div', { className: 'bottom-sheet-header' }, [
+      el('div', { className: 'bottom-sheet-title', textContent: title }),
+      closeBtn
+    ]);
+
+    /* Options list */
+    var listEl = el('div', { className: 'm3-status-option-list', role: 'listbox', 'aria-label': title });
+
+    var rows = [];
+    for (var i = 0; i < options.length; i++) {
+      (function (opt) {
+        var isCurrent = opt.value === current;
+
+        var iconWrap = el('div', {
+          className: 'm3-status-option-icon color-' + (opt.color || 'gray')
+        });
+        if (opt.icon) setIconHTML(iconWrap, opt.icon);
+
+        var labelEl = el('div', { className: 'm3-status-option-label', textContent: opt.label || opt.value });
+        var contentChildren = [labelEl];
+        if (opt.description) {
+          contentChildren.push(el('div', { className: 'm3-status-option-desc', textContent: opt.description }));
+        }
+        var contentEl = el('div', { className: 'm3-status-option-content' }, contentChildren);
+
+        var rowChildren = [iconWrap, contentEl];
+        if (isCurrent) {
+          var checkEl = el('span', { className: 'm3-status-option-check', 'aria-hidden': 'true' });
+          setIconHTML(checkEl, 'check');
+          rowChildren.push(checkEl);
+        }
+
+        var rowCls = 'm3-status-option' + (isCurrent ? ' is-current' : '');
+        var row = el('div', {
+          className: rowCls,
+          role: 'option',
+          tabIndex: '0',
+          'aria-selected': isCurrent ? 'true' : 'false',
+          'data-value': opt.value
+        }, rowChildren);
+
+        function pick() {
+          if (row.classList.contains('is-loading')) return;
+          /* Lock all rows while saving */
+          for (var j = 0; j < rows.length; j++) {
+            rows[j].setAttribute('aria-disabled', 'true');
+          }
+          row.classList.add('is-loading');
+
+          var result;
+          try {
+            result = onSelect ? onSelect(opt.value) : undefined;
+          } catch (err) {
+            row.classList.remove('is-loading');
+            for (var k = 0; k < rows.length; k++) rows[k].removeAttribute('aria-disabled');
+            toast((err && err.message) || 'Could not update status', 'error');
+            return;
+          }
+
+          /* If onSelect returned a thenable, wait; otherwise auto-dismiss now */
+          if (result && typeof result.then === 'function') {
+            result.then(function () {
+              close();
+            }, function (err) {
+              row.classList.remove('is-loading');
+              for (var k = 0; k < rows.length; k++) rows[k].removeAttribute('aria-disabled');
+              toast((err && err.message) || 'Could not update status', 'error');
+            });
+          } else {
+            close();
+          }
+        }
+
+        row.addEventListener('click', pick);
+        row.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            pick();
+          }
+        });
+
+        rows.push(row);
+        listEl.appendChild(row);
+      })(options[i]);
+    }
+
+    var sheet = el('div', {
+      className: 'bottom-sheet',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title
+    }, [
+      dragHandle,
+      header,
+      el('div', { className: 'bottom-sheet-content' }, [listEl])
+    ]);
+
+    var overlay = el('div', { className: 'bottom-sheet-overlay' }, [sheet]);
+
+    function close() {
+      overlay.classList.add('closing');
+      setTimeout(function () {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 250);
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close();
+    });
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close();
+    });
+    closeBtn.addEventListener('click', close);
+
+    overlay._close = close;
+
+    /* Auto-focus the current option (or first) after caller appends */
+    setTimeout(function () {
+      var focusTarget = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].classList.contains('is-current')) { focusTarget = rows[i]; break; }
+      }
+      if (!focusTarget && rows.length) focusTarget = rows[0];
+      if (focusTarget) focusTarget.focus();
+    }, 100);
+
+    return overlay;
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     recents — recently viewed records (localStorage-backed)
+     ──────────────────────────────────────────────────────────────
+     Tracks the last 20 entities the user opened across the app.
+     Storage:
+       key   = 'vaishali_recents_v1'
+       value = JSON array of { doctype, name, title, subtitle, hash, viewedAt }
+     All localStorage access is wrapped in try/catch so Safari private mode
+     and other restricted contexts degrade gracefully (track is a no-op,
+     list returns []).
+     ────────────────────────────────────────────────────────────── */
+  var RECENTS_KEY = 'vaishali_recents_v1';
+  var RECENTS_MAX = 20;
+
+  function _recentsRead() {
+    try {
+      var raw = window.localStorage.getItem(RECENTS_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function _recentsWrite(items) {
+    try {
+      window.localStorage.setItem(RECENTS_KEY, JSON.stringify(items));
+    } catch (e) {
+      /* storage full / disabled — silently ignore */
+    }
+  }
+
+  function _recentsTrack(entry) {
+    if (!entry || !entry.doctype || !entry.name) return;
+    var items = _recentsRead();
+    var filtered = [];
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (!it || it.doctype !== entry.doctype || it.name !== entry.name) {
+        filtered.push(it);
+      }
+    }
+    filtered.unshift({
+      doctype: entry.doctype,
+      name: entry.name,
+      title: entry.title || entry.name,
+      subtitle: entry.subtitle || '',
+      hash: entry.hash || '',
+      viewedAt: Date.now()
+    });
+    if (filtered.length > RECENTS_MAX) filtered.length = RECENTS_MAX;
+    _recentsWrite(filtered);
+  }
+
+  function _recentsList() {
+    var items = _recentsRead();
+    /* sort defensively — stored already ordered, but tolerate corruption */
+    items.sort(function (a, b) {
+      return (b && b.viewedAt || 0) - (a && a.viewedAt || 0);
+    });
+    return items;
+  }
+
+  function _recentsClear() {
+    try {
+      window.localStorage.removeItem(RECENTS_KEY);
+    } catch (e) { /* ignore */ }
+  }
+
+  var recents = {
+    track: _recentsTrack,
+    list: _recentsList,
+    clear: _recentsClear
+  };
+
+  /* short-form doctype label for the meta line on each chip */
+  var _DOCTYPE_LABEL = {
+    'Lead': 'Lead',
+    'Customer': 'Cust',
+    'Opportunity': 'Opp',
+    'Quotation': 'Quote',
+    'Sales Order': 'SO',
+    'Sales Invoice': 'SI',
+    'Sales Interaction': 'Interact',
+    'Item': 'Item',
+    'Employee': 'Employee',
+    'DCR': 'DCR',
+    'Warranty Claim': 'Warranty',
+    'CAPA': 'CAPA',
+    'Purchase Order': 'PO',
+    'Purchase Invoice': 'PI',
+    'BOM': 'BOM',
+    'Work Order': 'WO',
+    'Issue': 'Issue'
+  };
+
+  function _doctypeLabel(dt) {
+    if (_DOCTYPE_LABEL[dt]) return _DOCTYPE_LABEL[dt];
+    return (dt || '').toString();
+  }
+
+  function _recentsInitials(text) {
+    var words = (text || '').trim().split(/\s+/);
+    var out = '';
+    for (var i = 0; i < Math.min(words.length, 2); i++) {
+      if (words[i]) out += words[i][0].toUpperCase();
+    }
+    return out || '·';
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     recentsStrip(opts) — horizontal strip of recently viewed chips
+     ──────────────────────────────────────────────────────────────
+     opts:
+       filter    — optional fn(item) → boolean
+       emptyText — string shown when list is empty; pass null to suppress
+                   (returns null in that case)
+       limit     — max chips rendered (default 8)
+
+     Returns: HTMLElement, or null if no items and emptyText === null.
+     ────────────────────────────────────────────────────────────── */
+  function recentsStrip(opts) {
+    opts = opts || {};
+    var limit = typeof opts.limit === 'number' ? opts.limit : 8;
+    var emptyText = opts.emptyText === undefined
+      ? 'No recently viewed records yet.'
+      : opts.emptyText;
+
+    var items = recents.list();
+    if (typeof opts.filter === 'function') {
+      items = items.filter(opts.filter);
+    }
+    if (items.length > limit) items = items.slice(0, limit);
+
+    if (items.length === 0 && emptyText === null) return null;
+
+    var wrap = el('div', { className: 'm3-recents-wrap' }, [
+      sectionHeading('Recently viewed')
+    ]);
+
+    if (items.length === 0) {
+      wrap.appendChild(el('div', {
+        className: 'm3-recents-empty',
+        textContent: emptyText
+      }));
+      return wrap;
+    }
+
+    var strip = el('div', {
+      className: 'm3-recents',
+      role: 'list',
+      'aria-label': 'Recently viewed records'
+    });
+
+    for (var i = 0; i < items.length; i++) {
+      (function (item) {
+        var avatarEl = el('div', {
+          className: 'm3-recents-chip-avatar',
+          textContent: _recentsInitials(item.title),
+          'aria-hidden': 'true'
+        });
+        var titleEl = el('div', {
+          className: 'm3-recents-chip-title',
+          textContent: item.title || item.name
+        });
+        var subText = item.subtitle || _doctypeLabel(item.doctype);
+        var subEl = el('div', {
+          className: 'm3-recents-chip-sub',
+          textContent: subText
+        });
+        var metaEl = el('div', {
+          className: 'm3-recents-chip-meta',
+          textContent: _doctypeLabel(item.doctype)
+        });
+
+        var chipEl = el('div', {
+          className: 'm3-recents-chip',
+          role: 'listitem',
+          tabindex: '0',
+          'aria-label': (item.title || item.name) + ' — ' + _doctypeLabel(item.doctype),
+          onClick: function () {
+            if (item.hash) window.location.hash = item.hash;
+          },
+          onKeydown: function (ev) {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              if (item.hash) window.location.hash = item.hash;
+            }
+          }
+        }, [avatarEl, titleEl, subEl, metaEl]);
+
+        strip.appendChild(chipEl);
+      })(items[i]);
+    }
+
+    wrap.appendChild(strip);
+    return wrap;
+  }
+
+  /* ──────────────────────────────────────────────────────────────
      Export
      ────────────────────────────────────────────────────────────── */
   window.UI = {
@@ -1838,7 +2329,13 @@
     m3SelectField: m3SelectField,
     activityTimeline: activityTimeline,
     commentBox: commentBox,
-    swipeRow: swipeRow
+    swipeRow: swipeRow,
+    stagePath: stagePath,
+    statusPicker: statusPicker,
+
+    // Recently viewed
+    recents: recents,
+    recentsStrip: recentsStrip
   };
 
 })();

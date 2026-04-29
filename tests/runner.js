@@ -22,7 +22,7 @@ const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const ARG = (process.argv[2] || '').trim();
-const SUITES = ['smoke', 'navigation', 'forms', 'details', 'integrations'];
+const SUITES = ['smoke', 'navigation', 'forms', 'details', 'integrations', 'round2'];
 
 function shouldRun(suite, name) {
   if (!ARG) return true;

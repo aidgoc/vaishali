@@ -160,6 +160,15 @@
 
       renderSection(contentArea, sections[activeTab] || [], activeTab);
 
+      // Track in recently viewed
+      if (UI.recents) {
+        UI.recents.track({
+          doctype: 'Customer', name: customerId, title: customerName,
+          subtitle: heroSubParts.join(' · ') || (overview.territory || ''),
+          hash: '#/customer/' + customerId
+        });
+      }
+
       // Activity timeline + comment composer
       if (window.Activity) {
         Activity.attach(appEl, { doctype: 'Customer', name: customerId });
