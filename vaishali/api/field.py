@@ -88,15 +88,127 @@ def create_checkin(log_type, latitude=None, longitude=None, time=None):
     if log_type == "Checkin": log_type = "IN"
     if log_type == "Checkout": log_type = "OUT"
 
+    lat = float(latitude) if latitude else None
+    lon = float(longitude) if longitude else None
+    _enforce_geofence(emp, lat, lon)
+
     doc = frappe.new_doc("Employee Checkin")
     doc.employee = emp.name
     doc.log_type = log_type
     doc.time = time or datetime.now()
-    if latitude: doc.latitude = float(latitude)
-    if longitude: doc.longitude = float(longitude)
+    if lat is not None: doc.latitude = lat
+    if lon is not None: doc.longitude = lon
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return {"success": True, "name": doc.name}
+
+
+# ── Geofence ──────────────────────────────────────────────────────
+
+def _enforce_geofence(emp, lat, lon):
+    """Office-mode employees must check in within radius of office centre.
+
+    Config in site_config.json:
+        office_geofence: { "lat": 18.4773, "lon": 73.7958, "radius_m": 200 }
+
+    Field-mode employees (Sales/Service field staff) bypass this check.
+    Missing config → no enforcement (backwards compatible).
+    """
+    mode = emp.get("attendance_mode") or "Office"
+    if mode == "Field":
+        return
+    cfg = frappe.conf.get("office_geofence")
+    if not cfg or not cfg.get("lat") or not cfg.get("lon"):
+        return  # Geofence not configured — allow
+    if lat is None or lon is None:
+        frappe.throw(_("Location is required for office check-in. Please enable GPS and try again."))
+    distance_m = _haversine_m(lat, lon, cfg["lat"], cfg["lon"])
+    radius = cfg.get("radius_m", 200)
+    if distance_m > radius:
+        frappe.throw(_(
+            "You appear to be {0} m from the office. "
+            "Office check-ins must be within {1} m. "
+            "If you're on field work, ask HR to switch your Attendance Mode to Field."
+        ).format(int(distance_m), int(radius)))
+
+
+def _haversine_m(lat1, lon1, lat2, lon2):
+    """Great-circle distance in metres between two GPS points."""
+    from math import radians, sin, cos, asin, sqrt
+    R = 6371000
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return 2 * R * asin(sqrt(a))
+
+
+# ── Cancel approved leave (with thread-reply email) ───────────────
+
+@frappe.whitelist(methods=["POST"])
+def cancel_approved_leave(leave_name, reason):
+    """Cancel a Leave Application that's already been approved (docstatus=1).
+
+    Sends an email reply on the original approval thread to manager + HR.
+    """
+    emp = _get_employee()
+    doc = frappe.get_doc("Leave Application", leave_name)
+    if doc.employee != emp.name:
+        frappe.throw(_("You can only cancel your own leave applications."))
+    if doc.status != "Approved":
+        frappe.throw(_("Only approved leaves can be cancelled here. Open drafts can be deleted directly."))
+    if not reason or len(reason.strip()) < 10:
+        frappe.throw(_("Please provide a cancellation reason (at least 10 characters)."))
+
+    doc.cancellation_reason = reason.strip()
+    doc.status = "Cancelled"
+    doc.save(ignore_permissions=True)
+    doc.cancel()
+
+    _send_cancellation_email(doc)
+    frappe.db.commit()
+    return {"success": True, "name": doc.name}
+
+
+def _send_cancellation_email(doc):
+    """Reply on the existing leave-application email thread to manager + HR."""
+    HR_EMAIL = "info@dgoc.in"
+    recipients = []
+    if doc.leave_approver:
+        recipients.append(doc.leave_approver)
+    cc = [HR_EMAIL]
+
+    last_comm = frappe.get_all(
+        "Communication",
+        filters={"reference_doctype": "Leave Application", "reference_name": doc.name},
+        fields=["name", "subject"],
+        order_by="creation desc",
+        limit=1,
+    )
+    in_reply_to = last_comm[0]["name"] if last_comm else None
+    base_subject = (last_comm[0]["subject"] if last_comm else f"Leave Application {doc.name}")
+    subject = base_subject if base_subject.lower().startswith("re:") else f"Re: {base_subject}"
+
+    body = f"""<p>Hi,</p>
+<p>I am cancelling my approved leave application <b>{doc.name}</b>.</p>
+<ul>
+  <li><b>Type:</b> {doc.leave_type}</li>
+  <li><b>From:</b> {doc.from_date}</li>
+  <li><b>To:</b> {doc.to_date}</li>
+  <li><b>Days:</b> {doc.total_leave_days}</li>
+  <li><b>Reason for cancellation:</b> {doc.cancellation_reason}</li>
+</ul>
+<p>Thanks,<br>{doc.employee_name}</p>"""
+
+    frappe.sendmail(
+        recipients=recipients,
+        cc=cc,
+        subject=subject,
+        message=body,
+        reference_doctype="Leave Application",
+        reference_name=doc.name,
+        in_reply_to=in_reply_to,
+        now=False,
+    )
 
 
 # ── DCR (Visits) ─────────────────────────────────────────────────

@@ -110,8 +110,12 @@ doc_events = {
         "on_submit": "vaishali.notifications.on_journal_entry_submit",
     },
     "Leave Application": {
+        "validate": "vaishali.leave_guard.validate",
         "on_submit": "vaishali.notifications.on_leave_application_submit",
-        "on_update": "vaishali.notifications.on_leave_application_update",
+        "on_update": [
+            "vaishali.notifications.on_leave_application_update",
+            "vaishali.leave_guard.cc_hr_on_notification",
+        ],
     },
     "Expense Claim": {
         "before_submit": "vaishali.budget.check_budget_cap",
@@ -182,6 +186,15 @@ scheduler_events = {
         ],
         "0 9 * * 1": [
             "vaishali.notifications.check_draft_documents_reminder",
+        ],
+        "30 23 * * *": [
+            "vaishali.api.attendance.process_late_marks",
+        ],
+        "0 23 * * *": [
+            "vaishali.api.attendance.mark_lwp_for_unapproved_absence",
+        ],
+        "0 1 1 * *": [
+            "vaishali.api.attendance.roll_late_marks_to_half_day",
         ],
     },
 }

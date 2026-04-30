@@ -340,7 +340,7 @@
         { label: 'Posted on', value: formatDate(data.posting_date) }
       ]));
 
-      // Cancel button for Open/draft applications
+      // Cancel button — Open drafts (delete) or Approved (cancel with reason)
       if (data.status === 'Open' && data.docstatus === 0) {
         var cancelBtn = UI.btn('Cancel application', {
           type: 'outline-danger',
@@ -371,6 +371,60 @@
           }
         });
         content.appendChild(el('div', { style: { marginTop: '16px' } }, [cancelBtn]));
+      } else if (data.status === 'Approved' && data.docstatus === 1) {
+        var cancelApprovedBtn = UI.btn('Cancel approved leave', {
+          type: 'outline-danger',
+          block: true,
+          icon: 'x',
+          onClick: function () {
+            var reasonField = UI.m3TextField('Cancellation reason', {
+              multiline: true,
+              rows: 3,
+              required: true,
+              support: 'Required — sent on the same email thread to your manager and HR.'
+            });
+            var sheet = UI.bottomSheet('Cancel approved leave', el('div', {}, [
+              el('div', {
+                style: { font: 'var(--m3-body-medium)', color: 'var(--m3-on-surface-variant)', marginBottom: '12px' },
+                textContent: 'Your manager and HR will be notified by email on the original approval thread.'
+              }),
+              reasonField,
+              UI.btn('Confirm cancellation', {
+                type: 'danger',
+                block: true,
+                icon: 'check',
+                onClick: function () {
+                  var reason = reasonField._getValue().trim();
+                  if (reason.length < 10) {
+                    UI.toast('Please provide a reason of at least 10 characters', 'danger');
+                    return;
+                  }
+                  window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.cancel_approved_leave', {
+                    leave_name: name,
+                    reason: reason
+                  }).then(function (res) {
+                    if (res.error || (res.status && res.status >= 400)) {
+                      var msg = (res.data && res.data._server_messages) ? 'Failed' : (res.error || 'Server error');
+                      try {
+                        var msgs = JSON.parse(res.data._server_messages);
+                        msg = JSON.parse(msgs[0]).message;
+                      } catch (e) {}
+                      UI.toast('Failed: ' + msg, 'danger');
+                      return;
+                    }
+                    UI.toast('Approved leave cancelled — manager and HR notified', 'success');
+                    sheet.close();
+                    location.hash = '#/leave';
+                  }).catch(function () {
+                    UI.toast('Failed to cancel — try again', 'danger');
+                  });
+                }
+              })
+            ]));
+            document.body.appendChild(sheet);
+          }
+        });
+        content.appendChild(el('div', { style: { marginTop: '16px' } }, [cancelApprovedBtn]));
       }
 
     }).catch(function (err) {
