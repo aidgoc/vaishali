@@ -13,7 +13,9 @@ import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 SHIFT_NAME = "Office Hours"
-FIELD_DEPTS = {"Sales", "Service"}
+# Department prefixes that work in the field — case-insensitive, ignore "- COMPANY" suffix.
+# Operations - DCEPL = labour at customer sites; SERVICE / Sales - DSPL = field staff.
+FIELD_PREFIXES = {"sales", "service", "operations"}
 
 
 def run():
@@ -104,6 +106,14 @@ def _ensure_late_mark_doctype():
 
 # ── Classify employees ────────────────────────────────────────────
 
+def _is_field_dept(dept):
+    """True if dept name's prefix (before ' - ') matches a field-team prefix."""
+    if not dept:
+        return False
+    prefix = dept.split(" - ")[0].strip().lower()
+    return prefix in FIELD_PREFIXES
+
+
 def _classify_employees():
     employees = frappe.get_all(
         "Employee",
@@ -112,7 +122,7 @@ def _classify_employees():
     )
     counts = {"field": 0, "office": 0}
     for emp in employees:
-        mode = "Field" if emp.department in FIELD_DEPTS else "Office"
+        mode = "Field" if _is_field_dept(emp.department) else "Office"
         if emp.attendance_mode != mode:
             frappe.db.set_value("Employee", emp.name, "attendance_mode", mode)
         if mode == "Office" and not emp.default_shift:
