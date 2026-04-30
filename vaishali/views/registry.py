@@ -615,8 +615,10 @@ VIEWS = {
             },
             "open_breakdowns": {
                 "doctype": "Warranty Claim",
+                # `territory` removed — not a stock field on Warranty Claim.
+                # Use customer's territory at render-time if needed.
                 "fields": ["name", "customer", "complaint_date", "complaint",
-                           "status", "serial_no", "item_name", "territory"],
+                           "status", "serial_no", "item_name"],
                 "filters": [
                     ["status", "not in", ["Closed", "Cancelled"]],
                 ],

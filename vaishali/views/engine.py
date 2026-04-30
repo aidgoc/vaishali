@@ -172,7 +172,13 @@ def fetch_view(view_name, context_id=None, role=None):
                 filters = _apply_macros(filters)
                 filters = _apply_context(filters, context_id)
                 if not sdef.get("skip_company_filter"):
-                    if not any(f[0] == "company" for f in filters):
+                    # Only inject the company filter when the target DocType
+                    # actually has a `company` column. Otherwise Frappe raises
+                    # OperationalError (1054, "Unknown column 'company'") and
+                    # the entire section blanks out — exactly what was happening
+                    # to Maintenance Visit / Late Mark / similar core DocTypes.
+                    has_company = frappe.get_meta(sdef["doctype"]).has_field("company")
+                    if has_company and not any(f[0] == "company" for f in filters):
                         filters.append(["company", "=", COMPANY])
 
                 sections[section_name] = frappe.get_list(
