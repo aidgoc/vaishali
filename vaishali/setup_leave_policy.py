@@ -37,14 +37,15 @@ def run():
     print(f"\n=== DSPL Leave Policy Setup — {LEAVE_PERIOD} ===\n")
     holiday_list = _resolve_holiday_list()
     _ensure_leave_types()
-    _ensure_leave_period()
-    _ensure_leave_policy()
+    period_name = _ensure_leave_period()
+    policy_name = _ensure_leave_policy()
     _ensure_cancellation_reason_field()
-    assigned, allocated = _bulk_assign_employees(holiday_list)
+    frappe.db.commit()  # Commit policy + period before bulk loop so per-employee rollbacks don't wipe them
+    assigned, allocated = _bulk_assign_employees(holiday_list, policy_name, period_name)
     _ensure_hr_cc_on_notifications()
     frappe.db.commit()
-    print(f"\n✓ Done. Policy assigned to {assigned} employees, "
-          f"{allocated} new leave allocations created.\n")
+    print(f"\n✓ Done. Policy {policy_name} / Period {period_name} → "
+          f"{assigned} assignments, {allocated} new allocations.\n")
 
 
 # ── Holiday List ──────────────────────────────────────────────────
@@ -127,41 +128,47 @@ def _upsert_leave_type(name, **fields):
 # ── Leave Period ──────────────────────────────────────────────────
 
 def _ensure_leave_period():
-    if frappe.db.exists("Leave Period", LEAVE_PERIOD):
-        print(f"  Leave Period: {LEAVE_PERIOD} exists")
-        return
+    """Resolve or create the FY 2026-27 Leave Period; return its actual name."""
+    existing = frappe.db.get_value("Leave Period", {
+        "from_date": LEAVE_PERIOD_FROM,
+        "to_date": LEAVE_PERIOD_TO,
+        "company": COMPANY,
+    }, "name")
+    if existing:
+        print(f"  Leave Period: reusing {existing} ({LEAVE_PERIOD_FROM} → {LEAVE_PERIOD_TO})")
+        return existing
     doc = frappe.new_doc("Leave Period")
-    doc.name = LEAVE_PERIOD
     doc.from_date = LEAVE_PERIOD_FROM
     doc.to_date = LEAVE_PERIOD_TO
     doc.company = COMPANY
     doc.is_active = 1
     doc.insert(ignore_permissions=True)
-    print(f"  Leave Period: created {LEAVE_PERIOD} ({LEAVE_PERIOD_FROM} → {LEAVE_PERIOD_TO})")
+    print(f"  Leave Period: created {doc.name} ({LEAVE_PERIOD_FROM} → {LEAVE_PERIOD_TO})")
+    return doc.name
 
 
 # ── Leave Policy ──────────────────────────────────────────────────
 
 def _ensure_leave_policy():
-    if frappe.db.exists("Leave Policy", LEAVE_POLICY):
-        doc = frappe.get_doc("Leave Policy", LEAVE_POLICY)
-        doc.leave_policy_details = []
-        action = "updated"
-    else:
-        doc = frappe.new_doc("Leave Policy")
-        doc.title = LEAVE_POLICY
-        action = "created"
+    """Resolve or create the DSPL Standard Leave Policy (submitted); return its actual name."""
+    submitted = frappe.db.get_value("Leave Policy",
+        {"title": LEAVE_POLICY, "docstatus": 1}, "name")
+    if submitted:
+        print(f"  Leave Policy: reusing submitted {submitted} (title={LEAVE_POLICY})")
+        return submitted
+    doc = frappe.new_doc("Leave Policy")
+    doc.title = LEAVE_POLICY
     doc.append("leave_policy_details", {"leave_type": PAID_LEAVE, "annual_allocation": 12})
     doc.append("leave_policy_details", {"leave_type": SICK_LEAVE, "annual_allocation": 6})
-    doc.save(ignore_permissions=True)
-    if not doc.docstatus:
-        doc.submit()
-    print(f"  Leave Policy: {action} {LEAVE_POLICY} (Paid 12 + Sick 6)")
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    print(f"  Leave Policy: created {doc.name} (title={LEAVE_POLICY}, Paid 12 + Sick 6)")
+    return doc.name
 
 
 # ── Bulk Assignment ───────────────────────────────────────────────
 
-def _bulk_assign_employees(holiday_list):
+def _bulk_assign_employees(holiday_list, policy_name, period_name):
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active"},
@@ -169,6 +176,7 @@ def _bulk_assign_employees(holiday_list):
     )
     assigned = 0
     allocated = 0
+    errors = []
     for emp in employees:
         # Holiday list — set if blank
         if not emp.holiday_list:
@@ -179,7 +187,7 @@ def _bulk_assign_employees(holiday_list):
         # Skip if already assigned for this period
         already = frappe.db.exists(
             "Leave Policy Assignment",
-            {"employee": emp.name, "leave_period": LEAVE_PERIOD, "docstatus": 1},
+            {"employee": emp.name, "leave_period": period_name, "docstatus": 1},
         )
         if already:
             continue
@@ -187,23 +195,28 @@ def _bulk_assign_employees(holiday_list):
             assignment = frappe.new_doc("Leave Policy Assignment")
             assignment.employee = emp.name
             assignment.assignment_based_on = "Leave Period"
-            assignment.leave_policy = LEAVE_POLICY
-            assignment.leave_period = LEAVE_PERIOD
+            assignment.leave_policy = policy_name
+            assignment.leave_period = period_name
             assignment.effective_from = LEAVE_PERIOD_FROM
             assignment.effective_to = LEAVE_PERIOD_TO
             assignment.insert(ignore_permissions=True)
             assignment.submit()
             assigned += 1
-            # Submit triggers Leave Allocation creation; count what landed
             allocs = frappe.get_all(
                 "Leave Allocation",
-                filters={"employee": emp.name, "leave_period": LEAVE_PERIOD, "docstatus": 1},
+                filters={"employee": emp.name, "leave_period": period_name, "docstatus": 1},
             )
             allocated += len(allocs)
+            if assigned % 25 == 0:
+                frappe.db.commit()
+                print(f"  … {assigned} assignments committed")
         except Exception as e:
-            print(f"  ! {emp.name} ({emp.employee_name}): {e}")
-            frappe.db.rollback()
+            errors.append((emp.name, emp.employee_name, str(e).split('\n')[0][:140]))
             continue
+    if errors:
+        print(f"\n  {len(errors)} assignments failed (sample):")
+        for n, en, msg in errors[:5]:
+            print(f"    ! {en} ({n}): {msg}")
     return assigned, allocated
 
 
