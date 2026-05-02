@@ -1,28 +1,28 @@
-"""One-time setup: DSPL Leave Policy + Period + Types + bulk Assignment.
+"""Per-company Leave Policy + Period + Types + bulk Assignment.
 
 Idempotent. Run via:
     bench --site dgoc.logstop.com execute vaishali.setup_leave_policy.run
+    bench --site dgoc.logstop.com execute vaishali.setup_leave_policy.run --kwargs "{'company': 'Dynamic Crane Engineers Private Limited'}"
 
-Builds the FY 2026-27 leave plumbing:
-- Leave Types: Paid Leave (12/yr earned monthly), Sick Leave (6/yr earned monthly),
-  Leave Without Pay (verifies existing).
-- Leave Period: FY 2026-27 (1 Apr 2026 – 31 Mar 2027).
-- Leave Policy: DSPL Standard (Paid 12 + Sick 6).
-- Leave Policy Assignment: bulk-assigned to every active Employee.
-- Holiday List: reuses existing list assigned to DSPL company; assigns it to every
-  Employee that doesn't already have one.
-- Default Leave Approver: ai.dgoc@gmail.com (System Manager) — set per-Employee
-  only when blank, never overwrites a human-set approver.
+With no `company` kwarg, runs for every company in COMPANIES.
+
+Builds the FY 2026-27 leave plumbing per company:
+- Leave Types (global): Paid Leave (12/yr earned monthly), Sick Leave (6/yr earned
+  monthly), Leave Without Pay.
+- Leave Period: FY 2026-27 (1 Apr 2026 – 31 Mar 2027), per company.
+- Leave Policy: "<COMPANY_ABBR> Standard" (Paid 12 + Sick 6).
+- Leave Policy Assignment: bulk-assigned to every active Employee in the company.
+- Holiday List: uses the company's default; assigns it to every Employee that
+  doesn't have one.
+- Default Leave Approver + Expense Approver: ai.dgoc@gmail.com (System Manager)
+  — set per-Employee only when blank, never overwrites a human-set approver.
 """
 import frappe
-from frappe.utils import getdate
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
-COMPANY = "Dynamic Servitech Private Limited"
 LEAVE_PERIOD = "FY 2026-27"
 LEAVE_PERIOD_FROM = "2026-04-01"
 LEAVE_PERIOD_TO = "2027-03-31"
-LEAVE_POLICY = "DSPL Standard"
 
 PAID_LEAVE = "Paid Leave"
 SICK_LEAVE = "Sick Leave"
@@ -31,30 +31,49 @@ LWP = "Leave Without Pay"
 DEFAULT_APPROVER = "ai.dgoc@gmail.com"
 HR_EMAIL = "info@dgoc.in"
 
+COMPANIES = {
+    "Dynamic Servitech Private Limited": "DSPL Standard",
+    "Dynamic Crane Engineers Private Limited": "DCEPL Standard",
+}
 
-def run():
-    """Entry point — runs every step in order, prints a summary."""
-    print(f"\n=== DSPL Leave Policy Setup — {LEAVE_PERIOD} ===\n")
-    holiday_list = _resolve_holiday_list()
+
+def run(company=None):
+    """Entry point — runs setup for one company, or all companies if None."""
+    # Globals are idempotent; call once
     _ensure_leave_types()
-    period_name = _ensure_leave_period()
-    policy_name = _ensure_leave_policy()
     _ensure_cancellation_reason_field()
-    frappe.db.commit()  # Commit policy + period before bulk loop so per-employee rollbacks don't wipe them
-    assigned, allocated = _bulk_assign_employees(holiday_list, policy_name, period_name)
     _ensure_hr_cc_on_notifications()
     frappe.db.commit()
-    print(f"\n✓ Done. Policy {policy_name} / Period {period_name} → "
-          f"{assigned} assignments, {allocated} new allocations.\n")
+
+    if company is None:
+        for c in COMPANIES:
+            _run_for(c)
+        return
+    if company not in COMPANIES:
+        frappe.throw(f"Unknown company: {company}. Add it to COMPANIES first.")
+    _run_for(company)
+
+
+def _run_for(company):
+    policy_title = COMPANIES[company]
+    print(f"\n=== Leave Policy Setup — {company} / {LEAVE_PERIOD} ===\n")
+    holiday_list = _resolve_holiday_list(company)
+    period_name = _ensure_leave_period(company)
+    policy_name = _ensure_leave_policy(policy_title)
+    frappe.db.commit()
+    assigned, allocated = _bulk_assign_employees(company, holiday_list, policy_name, period_name)
+    frappe.db.commit()
+    print(f"\n✓ {company}: Policy {policy_name} / Period {period_name} → "
+          f"{assigned} new assignments, {allocated} new allocations.\n")
 
 
 # ── Holiday List ──────────────────────────────────────────────────
 
-def _resolve_holiday_list():
-    """Find the Holiday List already linked to DSPL or its default."""
-    company_default = frappe.db.get_value("Company", COMPANY, "default_holiday_list")
+def _resolve_holiday_list(company):
+    """Find the Holiday List linked to the company or covering the period."""
+    company_default = frappe.db.get_value("Company", company, "default_holiday_list")
     if company_default and frappe.db.exists("Holiday List", company_default):
-        print(f"  Holiday List: using company default → {company_default}")
+        print(f"  Holiday List: company default → {company_default}")
         return company_default
     candidates = frappe.get_all(
         "Holiday List",
@@ -65,11 +84,11 @@ def _resolve_holiday_list():
         pluck="name",
     )
     if candidates:
-        print(f"  Holiday List: using period-overlapping → {candidates[0]}")
+        print(f"  Holiday List: period-overlapping → {candidates[0]}")
         return candidates[0]
     raise frappe.ValidationError(
-        "No Holiday List found that covers FY 2026-27. "
-        "Create one in ERPNext > HR > Holiday List, then re-run."
+        f"No Holiday List found that covers {LEAVE_PERIOD} for {company}. "
+        "Create one in HR > Holiday List, then re-run."
     )
 
 
@@ -127,12 +146,12 @@ def _upsert_leave_type(name, **fields):
 
 # ── Leave Period ──────────────────────────────────────────────────
 
-def _ensure_leave_period():
-    """Resolve or create the FY 2026-27 Leave Period; return its actual name."""
+def _ensure_leave_period(company):
+    """Resolve or create the FY 2026-27 Leave Period for the company."""
     existing = frappe.db.get_value("Leave Period", {
         "from_date": LEAVE_PERIOD_FROM,
         "to_date": LEAVE_PERIOD_TO,
-        "company": COMPANY,
+        "company": company,
     }, "name")
     if existing:
         print(f"  Leave Period: reusing {existing} ({LEAVE_PERIOD_FROM} → {LEAVE_PERIOD_TO})")
@@ -140,7 +159,7 @@ def _ensure_leave_period():
     doc = frappe.new_doc("Leave Period")
     doc.from_date = LEAVE_PERIOD_FROM
     doc.to_date = LEAVE_PERIOD_TO
-    doc.company = COMPANY
+    doc.company = company
     doc.is_active = 1
     doc.insert(ignore_permissions=True)
     print(f"  Leave Period: created {doc.name} ({LEAVE_PERIOD_FROM} → {LEAVE_PERIOD_TO})")
@@ -149,41 +168,46 @@ def _ensure_leave_period():
 
 # ── Leave Policy ──────────────────────────────────────────────────
 
-def _ensure_leave_policy():
-    """Resolve or create the DSPL Standard Leave Policy (submitted); return its actual name."""
+def _ensure_leave_policy(policy_title):
+    """Resolve or create the named Leave Policy (submitted); return its actual name."""
     submitted = frappe.db.get_value("Leave Policy",
-        {"title": LEAVE_POLICY, "docstatus": 1}, "name")
+        {"title": policy_title, "docstatus": 1}, "name")
     if submitted:
-        print(f"  Leave Policy: reusing submitted {submitted} (title={LEAVE_POLICY})")
+        print(f"  Leave Policy: reusing submitted {submitted} (title={policy_title})")
         return submitted
     doc = frappe.new_doc("Leave Policy")
-    doc.title = LEAVE_POLICY
+    doc.title = policy_title
     doc.append("leave_policy_details", {"leave_type": PAID_LEAVE, "annual_allocation": 12})
     doc.append("leave_policy_details", {"leave_type": SICK_LEAVE, "annual_allocation": 6})
     doc.insert(ignore_permissions=True)
     doc.submit()
-    print(f"  Leave Policy: created {doc.name} (title={LEAVE_POLICY}, Paid 12 + Sick 6)")
+    print(f"  Leave Policy: created {doc.name} (title={policy_title}, Paid 12 + Sick 6)")
     return doc.name
 
 
 # ── Bulk Assignment ───────────────────────────────────────────────
 
-def _bulk_assign_employees(holiday_list, policy_name, period_name):
+def _bulk_assign_employees(company, holiday_list, policy_name, period_name):
     employees = frappe.get_all(
         "Employee",
-        filters={"status": "Active"},
-        fields=["name", "employee_name", "holiday_list", "leave_approver"],
+        filters={"status": "Active", "company": company},
+        fields=["name", "employee_name", "holiday_list",
+                "leave_approver", "expense_approver"],
     )
     assigned = 0
     allocated = 0
     errors = []
+    have_default_user = frappe.db.exists("User", DEFAULT_APPROVER)
     for emp in employees:
         # Holiday list — set if blank
         if not emp.holiday_list:
             frappe.db.set_value("Employee", emp.name, "holiday_list", holiday_list)
-        # Leave approver — set if blank
-        if not emp.leave_approver and frappe.db.exists("User", DEFAULT_APPROVER):
-            frappe.db.set_value("Employee", emp.name, "leave_approver", DEFAULT_APPROVER)
+        # Approvers — set if blank, never overwrite
+        if have_default_user:
+            if not emp.leave_approver:
+                frappe.db.set_value("Employee", emp.name, "leave_approver", DEFAULT_APPROVER)
+            if not emp.expense_approver:
+                frappe.db.set_value("Employee", emp.name, "expense_approver", DEFAULT_APPROVER)
         # Skip if already assigned for this period
         already = frappe.db.exists(
             "Leave Policy Assignment",

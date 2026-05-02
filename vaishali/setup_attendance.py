@@ -1,13 +1,16 @@
-"""One-time setup: Shift Type, Employee.attendance_mode field, Late Mark DocType.
+"""Per-company Attendance setup: Shift Type, attendance_mode, Late Mark.
 
 Idempotent. Run via:
     bench --site dgoc.logstop.com execute vaishali.setup_attendance.run
+    bench --site dgoc.logstop.com execute vaishali.setup_attendance.run --kwargs "{'company': 'Dynamic Crane Engineers Private Limited'}"
 
-- Creates Shift Type "Office Hours" 09:00–18:00, 30-min late-entry grace.
-- Adds custom field `attendance_mode` (Select Field/Office) on Employee, default Office.
-- Auto-classifies existing employees: Sales + Service → Field, others → Office.
-- Assigns Office shift to every Office-mode employee.
-- Creates custom DocType "Late Mark" — single-row log per (employee, date).
+With no `company` kwarg, classifies employees across all companies.
+
+- Creates Shift Type "Office Hours" 09:00–18:00, 30-min late-entry grace (global).
+- Adds custom field `attendance_mode` (Select Field/Office) on Employee, default Office (global).
+- Creates custom DocType "Late Mark" (global).
+- Classifies employees in scope: Sales + Service + Operations → Field, others → Office.
+- Assigns Office shift to every Office-mode employee that has none.
 """
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
@@ -18,14 +21,16 @@ SHIFT_NAME = "Office Hours"
 FIELD_PREFIXES = {"sales", "service", "operations"}
 
 
-def run():
-    print("\n=== DSPL Attendance Setup ===\n")
+def run(company=None):
+    """Run setup. If company is None, classifies employees across all companies."""
+    scope = company or "all companies"
+    print(f"\n=== Attendance Setup — {scope} ===\n")
     _ensure_shift_type()
     _ensure_attendance_mode_field()
     _ensure_late_mark_doctype()
-    classified = _classify_employees()
+    classified = _classify_employees(company)
     frappe.db.commit()
-    print(f"\n✓ Done. {classified['field']} Field, {classified['office']} Office.\n")
+    print(f"\n✓ Done ({scope}). {classified['field']} Field, {classified['office']} Office.\n")
 
 
 # ── Shift Type ────────────────────────────────────────────────────
@@ -114,10 +119,13 @@ def _is_field_dept(dept):
     return prefix in FIELD_PREFIXES
 
 
-def _classify_employees():
+def _classify_employees(company=None):
+    filters = {"status": "Active"}
+    if company:
+        filters["company"] = company
     employees = frappe.get_all(
         "Employee",
-        filters={"status": "Active"},
+        filters=filters,
         fields=["name", "department", "default_shift", "attendance_mode"],
     )
     counts = {"field": 0, "office": 0}
