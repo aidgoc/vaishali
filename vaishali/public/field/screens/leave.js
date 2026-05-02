@@ -72,7 +72,7 @@
       '&limit_page_length=0&order_by=creation desc';
 
     var appFilters = JSON.stringify([['employee', '=', empName]]);
-    var appFields = JSON.stringify(['name', 'leave_type', 'from_date', 'to_date', 'total_leave_days', 'status', 'posting_date']);
+    var appFields = JSON.stringify(['name', 'leave_type', 'from_date', 'to_date', 'total_leave_days', 'status', 'posting_date', 'half_day']);
     var appPath = '/api/resource/Leave Application?filters=' +
       encodeURIComponent(appFilters) +
       '&fields=' + encodeURIComponent(appFields) +
@@ -144,10 +144,18 @@
             var days = app.total_leave_days ? (app.total_leave_days + (app.total_leave_days === 1 ? ' day' : ' days')) : '';
             var sub = dateRange + (days ? '  ·  ' + days : '');
 
+            // Right column: status pill + optional half-day chip stacked.
+            var rightPills = el('div', {
+              style: { display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }
+            }, [
+              UI.pill(app.status, statusColor(app.status)),
+              app.half_day ? UI.pill('Half day', 'blue') : null
+            ].filter(Boolean));
+
             listWrap.appendChild(UI.listCard({
               title: app.leave_type,
               sub: sub,
-              right: UI.pill(app.status, statusColor(app.status)),
+              right: rightPills,
               onClick: function () { location.hash = '#/leave/' + app.name; }
             }));
           })(applications[k]);
@@ -190,9 +198,19 @@
     var toDateField = UI.m3TextField('To date', { type: 'date', value: todayISO(), required: true });
 
     var halfDay = false;
-    var halfDayToggle = UI.toggle('Half day', false, function (val) {
-      halfDay = val;
+    var durationLabel = el('div', {
+      textContent: 'Duration',
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '8px 0 4px',
+        letterSpacing: '0.5px'
+      }
     });
+    var durationSeg = UI.segmented([
+      { value: 'full', label: 'Full day' },
+      { value: 'half', label: 'Half day' }
+    ], { value: 'full', onChange: function (v) { halfDay = (v === 'half'); } });
 
     var reasonField = UI.m3TextField('Reason', {
       multiline: true,
@@ -225,7 +243,8 @@
     content.appendChild(leaveTypeField);
     content.appendChild(fromDateField);
     content.appendChild(toDateField);
-    content.appendChild(el('div', { style: { padding: '0 4px' } }, [halfDayToggle]));
+    content.appendChild(durationLabel);
+    content.appendChild(durationSeg);
     content.appendChild(reasonField);
     content.appendChild(errorBox);
     content.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' } }, [
@@ -250,9 +269,14 @@
       if (!fromDate) { showError('Please select a from date.'); return; }
       if (!toDate) { showError('Please select a to date.'); return; }
       if (toDate < fromDate) { showError('To date cannot be before from date.'); return; }
+      if (halfDay && fromDate !== toDate) {
+        showError('Half day applies to a single date — From and To must match.');
+        return;
+      }
 
       submitBtn._setLoading(true, 'Submitting...');
 
+      var emp = Auth.getEmployee() || {};
       var payload = {
         employee: empName,
         leave_type: leaveType,
@@ -260,7 +284,7 @@
         to_date: toDate,
         half_day: halfDay ? 1 : 0,
         description: reason,
-        company: 'Dynamic Servitech Private Limited',
+        company: emp.company || 'Dynamic Servitech Private Limited',
         posting_date: todayISO(),
         status: 'Open'
       };
@@ -323,19 +347,22 @@
         return;
       }
 
-      // Status pill
-      content.appendChild(el('div', { style: { marginBottom: '16px' } }, [
-        UI.pill(data.status, statusColor(data.status))
-      ]));
+      // Status pill row + optional half-day chip
+      var pillRow = el('div', {
+        style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }
+      }, [
+        UI.pill(data.status, statusColor(data.status)),
+        data.half_day ? UI.pill('Half day', 'blue') : null
+      ].filter(Boolean));
+      content.appendChild(pillRow);
 
-      // Detail card
+      // Detail card (half_day is shown as the pill above; omitted from rows)
       content.appendChild(UI.detailCard([
         { label: 'Status', value: data.status },
         { label: 'Leave type', value: data.leave_type || '' },
         { label: 'From', value: formatDate(data.from_date) },
         { label: 'To', value: formatDate(data.to_date) },
         { label: 'Days', value: data.total_leave_days != null ? String(data.total_leave_days) : '' },
-        { label: 'Half day', value: data.half_day ? 'Yes' : 'No' },
         { label: 'Reason', value: data.description || '—' },
         { label: 'Posted on', value: formatDate(data.posting_date) }
       ]));

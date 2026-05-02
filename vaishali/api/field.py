@@ -937,6 +937,7 @@ def get_session_info():
             "employee_name": emp.employee_name,
             "department": emp.department,
             "designation": emp.get("designation", ""),
+            "company": emp.get("company", ""),
         },
         "nav_tier": _get_nav_tier(),
         "user": frappe.session.user,

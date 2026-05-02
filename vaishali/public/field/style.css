@@ -421,6 +421,27 @@ body {
   flex-shrink: 0;
 }
 
+/* ── List Chevron — affordance that the row is tappable ──────── */
+.list-chevron {
+  flex-shrink: 0;
+  margin-left: 4px;
+  color: var(--m3-on-surface-variant, var(--ink-tertiary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.list-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+.list-card.tappable:active .list-chevron,
+.list-card.tappable:hover .list-chevron {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
 /* ── Action Cards (home screen) ──────────────────────────────── */
 .action-grid {
   display: grid;

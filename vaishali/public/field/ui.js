@@ -119,7 +119,18 @@
       parts.push(el('div', { className: 'list-right' }, [rightEl]));
     }
 
-    var attrs = { className: 'list-card' };
+    // Chevron — universal "tap to open" affordance. Suppressed by opts.noChevron
+    // for cases where the row already has a clear right-side action (e.g. swipe
+    // rows that show their own buttons).
+    if (opts.onClick && opts.noChevron !== true) {
+      var chev = el('div', { className: 'list-chevron', 'aria-hidden': 'true' });
+      setIconHTML(chev, 'chevronRight');
+      parts.push(chev);
+    }
+
+    var cls = 'list-card';
+    if (opts.onClick) cls += ' tappable';
+    var attrs = { className: cls };
     if (opts.onClick) {
       attrs.onClick = opts.onClick;
       attrs.role = 'button';
@@ -649,6 +660,7 @@
     // opts: { icon, label, value, sub, onClick, accent }
     // accent: 'green', 'red', or null
     var cls = 'action-card';
+    if (opts.onClick) cls += ' tappable';
     var children = [];
 
     // Icon
