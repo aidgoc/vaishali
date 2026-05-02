@@ -41,6 +41,7 @@ def run(company=None):
     """Entry point — runs setup for one company, or all companies if None."""
     # Globals are idempotent; call once
     _ensure_leave_types()
+    _ensure_pwa_visible_flag()
     _ensure_cancellation_reason_field()
     _ensure_hr_cc_on_notifications()
     frappe.db.commit()
@@ -242,6 +243,47 @@ def _bulk_assign_employees(company, holiday_list, policy_name, period_name):
         for n, en, msg in errors[:5]:
             print(f"    ! {en} ({n}): {msg}")
     return assigned, allocated
+
+
+# ── Custom field: Leave Type.pwa_visible ──────────────────────────
+
+# Leave Types that should NOT appear in the PWA leave-application picker:
+# - Privilege Leave / Casual Leave / Compensatory Off → legacy ERPNext defaults
+#   never used by DSPL or DCEPL; kept in DB only for historical records.
+# - Leave Without Pay → applied automatically by the unapproved-absence cron;
+#   should not be self-requested.
+PWA_HIDDEN_LEAVE_TYPES = {
+    "Privilege Leave",
+    "Casual Leave",
+    "Compensatory Off",
+    "Leave Without Pay",
+}
+
+
+def _ensure_pwa_visible_flag():
+    """Add Custom Field Leave Type.pwa_visible (default 1) and flip the legacy
+    types to 0 so the PWA only shows the policy-relevant ones."""
+    create_custom_field("Leave Type", {
+        "fieldname": "pwa_visible",
+        "label": "Show in PWA",
+        "fieldtype": "Check",
+        "default": "1",
+        "insert_after": "leave_type_name",
+        "description": "When unchecked, this leave type is hidden from the field PWA's apply-leave picker.",
+    })
+    print("  Custom Field: Leave Type.pwa_visible ensured")
+
+    for lt in PWA_HIDDEN_LEAVE_TYPES:
+        if frappe.db.exists("Leave Type", lt):
+            current = frappe.db.get_value("Leave Type", lt, "pwa_visible")
+            if current != 0:
+                frappe.db.set_value("Leave Type", lt, "pwa_visible", 0)
+                print(f"  Leave Type: hid {lt} from PWA")
+
+    # Make sure the policy types are visible
+    for lt in [PAID_LEAVE, SICK_LEAVE]:
+        if frappe.db.exists("Leave Type", lt):
+            frappe.db.set_value("Leave Type", lt, "pwa_visible", 1)
 
 
 # ── Custom field: cancellation_reason ─────────────────────────────

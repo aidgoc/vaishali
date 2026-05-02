@@ -472,6 +472,8 @@
         else path = '/api/method/vaishali.api.chat.get_history';
       }
       else if (path === '/api/field/leave-balance') path = '/api/method/vaishali.api.field.get_leave_balance';
+      else if (path === '/api/field/leave-types') path = '/api/method/vaishali.api.field.get_leave_types_for_pwa';
+      else if (path === '/api/field/attendance-summary') path = '/api/method/vaishali.api.field.get_attendance_summary';
       else if (path === '/api/field/pending-expenses') path = '/api/method/vaishali.api.field.get_pending_expenses';
       else if (path === '/api/field/expense-claim-types') path = '/api/method/vaishali.api.field.get_expense_claim_types';
       else if (path === '/api/field/modes-of-payment') path = '/api/method/vaishali.api.field.get_modes_of_payment';

@@ -25,8 +25,51 @@ SICK_DOC_THRESHOLD_DAYS = 2
 
 def validate(doc, method=None):
     """Run all leave-application validators on save (covers draft + on submit)."""
+    _validate_leave_type_visibility(doc)
+    _validate_half_day(doc)
     _validate_advance_notice(doc)
     _validate_sick_leave_attachment(doc)
+
+
+# ── Leave type policy: hide system-applied / legacy types ─────────
+
+def _validate_leave_type_visibility(doc):
+    """Reject Leave Applications using a leave type the policy hides from the
+    PWA. LWP is applied automatically for unapproved absences — users should
+    not self-request it. Privilege/Casual/Compensatory Off are legacy and not
+    part of the active DSPL/DCEPL policy."""
+    if not doc.leave_type:
+        return
+    # Read pwa_visible — default to 1 if the column is not present
+    visible = frappe.db.get_value("Leave Type", doc.leave_type, "pwa_visible")
+    if visible is None:
+        return
+    if not visible:
+        frappe.throw(_(
+            "Leave type '{0}' cannot be self-applied. "
+            "Use Paid Leave or Sick Leave; LWP is applied automatically by the system."
+        ).format(doc.leave_type), title=_("Leave Type Not Allowed"))
+
+
+# ── Half-day rule ────────────────────────────────────────────────
+
+def _validate_half_day(doc):
+    """A half-day Leave Application must cover a single calendar day.
+
+    The PWA enforces this client-side, but we double-check on the server so
+    the desk and the API can't bypass it."""
+    if not doc.half_day:
+        return
+    if doc.from_date and doc.to_date and getdate(doc.from_date) != getdate(doc.to_date):
+        frappe.throw(_(
+            "A half-day leave applies to a single date — "
+            "From and To must match. Got {0} → {1}."
+        ).format(doc.from_date, doc.to_date),
+        title=_("Invalid Half-day Range"))
+    if not doc.half_day_date:
+        # Auto-set to from_date so the user doesn't have to fill the desk
+        # field separately when applying via the PWA / API.
+        doc.half_day_date = doc.from_date
 
 
 # ── Advance notice ────────────────────────────────────────────────

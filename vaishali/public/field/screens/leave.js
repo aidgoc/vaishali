@@ -2,13 +2,17 @@
 (function () {
   'use strict';
 
-  var LEAVE_TYPES = [
-    'Casual Leave',
-    'Compensatory Off',
-    'Leave Without Pay',
-    'Privilege Leave',
-    'Sick Leave'
-  ];
+  // Fallback only — actual list comes from /api/field/leave-types so that
+  // legacy/system-managed types (LWP) are filtered out per company policy.
+  var LEAVE_TYPES_FALLBACK = ['Paid Leave', 'Sick Leave'];
+
+  function fetchLeaveTypes() {
+    return window.fieldAPI.apiCall('GET', '/api/field/leave-types').then(function (res) {
+      var data = (res && res.data && (res.data.message || res.data.data)) || [];
+      if (!Array.isArray(data) || data.length === 0) return LEAVE_TYPES_FALLBACK.slice();
+      return data;
+    }).catch(function () { return LEAVE_TYPES_FALLBACK.slice(); });
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -79,33 +83,27 @@
       '&order_by=posting_date desc&limit_page_length=20';
 
     Promise.all([
-      window.fieldAPI.apiCall('GET', balancePath),
-      window.fieldAPI.apiCall('GET', appPath)
+      window.fieldAPI.apiCall('GET', '/api/field/leave-types'),
+      window.fieldAPI.apiCall('GET', appPath),
+      window.fieldAPI.apiCall('GET', '/api/field/attendance-summary')
     ]).then(function (results) {
-      var balanceRes = results[0];
+      var typesRes = results[0];
       var appRes = results[1];
+      var attRes = results[2];
 
       skel.remove();
 
-      // ── Balance — uniform M3 stat grid ──
-      var allocations = (balanceRes && balanceRes.data && (balanceRes.data.data || balanceRes.data.message)) || [];
-      var byType = {};
-      for (var i = 0; i < allocations.length; i++) {
-        var a = allocations[i];
-        if (!byType[a.leave_type]) byType[a.leave_type] = a;
-      }
+      // ── Balance — pulled from /api/field/leave-types so it matches the
+      // policy-visible types only (Paid + Sick), with allocated/used/remaining.
+      var ltypes = (typesRes && typesRes.data && (typesRes.data.message || typesRes.data.data)) || [];
 
       var statItems = [];
-      var types = Object.keys(byType);
-      for (var j = 0; j < types.length; j++) {
-        var alloc = byType[types[j]];
-        var total = alloc.total_leaves_allocated || 0;
-        var used = alloc.total_leaves_encashed || 0;
-        var remaining = Math.max(0, total - used);
+      for (var j = 0; j < ltypes.length; j++) {
+        var t = ltypes[j];
         statItems.push({
-          value: remaining,
-          label: types[j],
-          support: 'of ' + total + ' allocated'
+          value: t.remaining,
+          label: t.leave_type,
+          support: t.used + ' used of ' + t.allocated
         });
       }
 
@@ -118,6 +116,29 @@
           textContent: 'No leave allocations found.',
           style: { color: 'var(--m3-on-surface-variant)', padding: '12px 0', font: 'var(--m3-body-medium)' }
         }));
+      }
+
+      // ── Attendance link — late marks this month (Office staff only) ──
+      var attData = (attRes && attRes.data && (attRes.data.message || attRes.data.data)) || null;
+      if (attData && attData.attendance_mode === 'Office') {
+        var lm = (attData.this_month && attData.this_month.late_marks) || 0;
+        var hd = (attData.this_month && attData.this_month.half_day_deductions) || 0;
+        if (lm > 0 || hd > 0) {
+          content.appendChild(UI.sectionHeader('This month', {
+            support: 'Late marks reduce your effective leave balance'
+          }));
+          var attRow = el('div', { className: 'm3-list' }, [
+            UI.listCard({
+              title: lm + (lm === 1 ? ' late mark' : ' late marks'),
+              sub: hd > 0
+                ? hd + (hd === 1 ? ' half-day deduction so far' : ' half-day deductions so far')
+                : 'No half-day deductions yet',
+              right: UI.pill(hd > 0 ? 'Action' : 'Track', hd > 0 ? 'red' : 'yellow'),
+              onClick: function () { location.hash = '#/attendance'; }
+            })
+          ]);
+          content.appendChild(attRow);
+        }
       }
 
       // ── Primary action — visible filled button ──
@@ -192,8 +213,32 @@
       'Choose leave type, dates and add a reason.'
     ));
 
+    // Pull policy-visible leave types asynchronously, then render the form.
+    // This avoids hardcoding types that don't match the active policy
+    // (e.g. older builds offered "Privilege Leave" which has no allocation).
+    var formArea = el('div');
+    var formSkel = UI.skeleton(3);
+    content.appendChild(formSkel);
+    content.appendChild(formArea);
+
+    fetchLeaveTypes().then(function (types) {
+      formSkel.remove();
+      var typeNames = types.map(function (t) {
+        return (t && typeof t === 'object') ? t.leave_type : t;
+      }).filter(Boolean);
+      renderForm(typeNames, types);
+    });
+
+    function renderForm(typeNames, fullTypes) {
+    var balanceByType = {};
+    if (fullTypes) {
+      for (var bi = 0; bi < fullTypes.length; bi++) {
+        var bt = fullTypes[bi];
+        if (bt && typeof bt === 'object' && bt.leave_type) balanceByType[bt.leave_type] = bt;
+      }
+    }
     // M3 floating-label fields
-    var leaveTypeField = UI.m3SelectField('Leave type', LEAVE_TYPES, { required: true });
+    var leaveTypeField = UI.m3SelectField('Leave type', typeNames, { required: true });
     var fromDateField = UI.m3TextField('From date', { type: 'date', value: todayISO(), required: true });
     var toDateField = UI.m3TextField('To date', { type: 'date', value: todayISO(), required: true });
 
@@ -240,14 +285,37 @@
       onClick: function () { location.hash = '#/leave'; }
     });
 
-    content.appendChild(leaveTypeField);
-    content.appendChild(fromDateField);
-    content.appendChild(toDateField);
-    content.appendChild(durationLabel);
-    content.appendChild(durationSeg);
-    content.appendChild(reasonField);
-    content.appendChild(errorBox);
-    content.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' } }, [
+    // Balance hint — only render when we have a balance for the picked type.
+    var balanceHint = el('div', {
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        padding: '4px 4px 8px',
+        letterSpacing: '0.5px',
+        minHeight: '18px'
+      }
+    });
+    function refreshBalanceHint() {
+      var lt = leaveTypeField._getValue();
+      var bt = balanceByType[lt];
+      if (!bt) { balanceHint.textContent = ''; return; }
+      balanceHint.textContent = lt + ': ' + bt.remaining + ' day' +
+        (bt.remaining === 1 ? '' : 's') + ' remaining of ' + bt.allocated;
+    }
+    var leaveTypeSelect = leaveTypeField._getSelect && leaveTypeField._getSelect();
+    if (leaveTypeSelect) {
+      leaveTypeSelect.addEventListener('change', refreshBalanceHint);
+    }
+
+    formArea.appendChild(leaveTypeField);
+    formArea.appendChild(balanceHint);
+    formArea.appendChild(fromDateField);
+    formArea.appendChild(toDateField);
+    formArea.appendChild(durationLabel);
+    formArea.appendChild(durationSeg);
+    formArea.appendChild(reasonField);
+    formArea.appendChild(errorBox);
+    formArea.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' } }, [
       cancelBtn,
       submitBtn
     ]));
@@ -322,6 +390,7 @@
         submitBtn._setLoading(false);
       });
     }
+    } // end renderForm
   };
 
   // ── Screen: Leave Detail ────────────────────────────────────────────

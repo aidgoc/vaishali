@@ -1037,6 +1037,118 @@ def get_leave_balance():
     return result
 
 
+@frappe.whitelist()
+def get_leave_types_for_pwa():
+    """List Leave Types available to the current employee for self-application.
+
+    Filters out:
+    - Types with `pwa_visible = 0` (Privilege/Casual/Compensatory Off legacy types,
+      and LWP which is system-applied for unapproved absences).
+    Returns each type with the employee's current allocated, used and remaining
+    balance for the active period."""
+    from frappe.utils import today
+
+    emp = _get_employee()
+    today_iso = today()
+
+    types = frappe.get_all("Leave Type",
+        filters={"pwa_visible": 1},
+        fields=["name", "max_leaves_allowed", "is_earned_leave",
+                "is_carry_forward", "include_holiday", "is_compensatory"],
+        order_by="name asc")
+
+    # Pull all current allocations once
+    allocs = frappe.get_all("Leave Allocation",
+        filters={"employee": emp.name, "docstatus": 1, "to_date": [">=", today_iso]},
+        fields=["leave_type", "total_leaves_allocated"])
+    alloc_by_type = {}
+    for a in allocs:
+        alloc_by_type[a.leave_type] = float(a.total_leaves_allocated or 0)
+
+    # Pull all used (approved) leaves once
+    used_rows = frappe.db.sql("""
+        SELECT leave_type, SUM(total_leave_days) AS used
+        FROM `tabLeave Application`
+        WHERE employee=%s AND status='Approved' AND docstatus=1
+        GROUP BY leave_type
+    """, (emp.name,), as_dict=True)
+    used_by_type = {r.leave_type: float(r.used or 0) for r in used_rows}
+
+    result = []
+    for t in types:
+        allocated = alloc_by_type.get(t.name, 0)
+        used = used_by_type.get(t.name, 0)
+        result.append({
+            "leave_type": t.name,
+            "allocated": allocated,
+            "used": used,
+            "remaining": max(0, allocated - used),
+            "is_earned_leave": t.is_earned_leave,
+            "include_holiday": t.include_holiday,
+        })
+    return result
+
+
+@frappe.whitelist()
+def get_attendance_summary():
+    """Today's attendance status + this-month late marks + open leaves.
+
+    Surfaces the connection between attendance policy (late marks, half-day
+    threshold) and leaves (pending applications, balance). Used by the
+    PWA leave home + attendance screens."""
+    from frappe.utils import today, getdate, get_first_day, get_last_day
+
+    emp = _get_employee()
+    today_iso = today()
+    month_start = str(get_first_day(today_iso))
+    month_end = str(get_last_day(today_iso))
+
+    # Today's attendance record (if any) — submitted only
+    att_today = frappe.db.get_value("Attendance",
+        {"employee": emp.name, "attendance_date": today_iso, "docstatus": 1},
+        ["name", "status", "in_time", "out_time", "working_hours"], as_dict=True)
+
+    # Late marks this month (submitted-or-saved Late Mark records)
+    late_marks_this_month = frappe.db.count("Late Mark",
+        {"employee": emp.name, "date": ["between", [month_start, month_end]]})
+    half_day_rolled_this_month = frappe.db.count("Late Mark",
+        {"employee": emp.name, "date": ["between", [month_start, month_end]],
+         "rolled_into_half_day": 1})
+
+    # Pending leave applications (not yet approved/rejected)
+    pending_leaves = frappe.get_all("Leave Application",
+        filters={"employee": emp.name, "status": "Open", "docstatus": 0},
+        fields=["name", "leave_type", "from_date", "to_date", "total_leave_days", "half_day"],
+        order_by="from_date asc")
+
+    # Approved upcoming leaves (today or future)
+    upcoming_leaves = frappe.get_all("Leave Application",
+        filters={"employee": emp.name, "status": "Approved", "docstatus": 1,
+                 "to_date": [">=", today_iso]},
+        fields=["name", "leave_type", "from_date", "to_date", "total_leave_days", "half_day"],
+        order_by="from_date asc",
+        limit_page_length=5)
+
+    return {
+        "attendance_mode": frappe.db.get_value("Employee", emp.name, "attendance_mode") or "Office",
+        "today": {
+            "date": today_iso,
+            "status": att_today.status if att_today else None,
+            "in_time": _to_ist(att_today.in_time) if att_today and att_today.in_time else None,
+            "out_time": _to_ist(att_today.out_time) if att_today and att_today.out_time else None,
+            "working_hours": att_today.working_hours if att_today else None,
+        },
+        "this_month": {
+            "late_marks": late_marks_this_month,
+            "half_day_deductions": half_day_rolled_this_month,
+            "month_start": month_start,
+            "month_end": month_end,
+        },
+        "pending_leaves": pending_leaves,
+        "upcoming_leaves": upcoming_leaves,
+    }
+
+
 # ── Pending Expenses ─────────────────────────────────────────
 
 @frappe.whitelist()
