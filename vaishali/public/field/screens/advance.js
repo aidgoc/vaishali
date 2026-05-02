@@ -3,6 +3,7 @@
   'use strict';
 
   var api = window.fieldAPI;
+  var MOP_CACHE = null;
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -17,42 +18,82 @@
     if (!isoDate) return '';
     var d = new Date(isoDate + 'T00:00:00');
     if (isNaN(d.getTime())) return '';
-    var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
   }
 
   function formatCurrency(amount) {
-    return '\u20B9' + Number(amount || 0).toLocaleString('en-IN');
+    return '₹' + Number(amount || 0).toLocaleString('en-IN');
+  }
+
+  function deriveStatus(adv) {
+    if (!adv) return 'Draft';
+    if (adv.docstatus === 2) return 'Cancelled';
+    if (adv.docstatus === 0) return 'Draft';
+    return adv.status || 'Submitted';
   }
 
   function statusColor(status) {
-    if (!status) return 'gray';
-    var s = status.toLowerCase();
+    var s = (status || '').toLowerCase();
     if (s === 'paid' || s === 'claimed' || s === 'returned') return 'green';
-    if (s === 'submitted' || s === 'partly claimed and returned') return 'yellow';
-    if (s === 'cancelled') return 'red';
+    if (s === 'submitted' || s === 'unpaid' || s === 'partly claimed and returned') return 'yellow';
+    if (s === 'cancelled' || s === 'rejected') return 'red';
     return 'gray';
+  }
+
+  function fetchModesOfPayment() {
+    if (MOP_CACHE) return Promise.resolve(MOP_CACHE);
+    return api.apiCall('GET', '/api/field/modes-of-payment').then(function (res) {
+      var list = (res && res.data && (res.data.message || res.data.data)) || [];
+      var names = list.map(function (m) { return m.name || m; }).filter(Boolean);
+      if (!names.length) names = ['Cash', 'Bank Transfer', 'UPI'];
+      MOP_CACHE = names;
+      return names;
+    }).catch(function () {
+      MOP_CACHE = ['Cash', 'Bank Transfer', 'UPI'];
+      return MOP_CACHE;
+    });
+  }
+
+  function loadAdvances() {
+    var emp = Auth.getEmployee() || {};
+    var empId = emp.name || '';
+    if (!empId) return Promise.resolve({ error: 'no_emp' });
+
+    var filters = JSON.stringify([['employee', '=', empId]]);
+    var fields = JSON.stringify([
+      'name', 'posting_date', 'advance_amount', 'paid_amount',
+      'claimed_amount', 'return_amount', 'status', 'purpose',
+      'docstatus', 'mode_of_payment'
+    ]);
+    var path = '/api/resource/Employee Advance'
+      + '?filters=' + encodeURIComponent(filters)
+      + '&fields=' + encodeURIComponent(fields)
+      + '&order_by=modified desc'
+      + '&limit_page_length=50';
+
+    return api.apiCall('GET', path).then(function (res) {
+      if (res.error) return { error: res.error };
+      var advances = (res.data && (res.data.data || res.data.message)) || [];
+      return { advances: advances };
+    });
   }
 
   // ── Screen: Advance List ─────────────────────────────────────────────
 
   window.Screens = window.Screens || {};
+
   window.Screens.advanceList = function (appEl) {
     var el = UI.el;
-    var emp = Auth.getEmployee() || {};
-    var empName = emp.name || emp.employee_id || '';
 
     appEl.appendChild(UI.pageHeader(
       'Advances',
-      'Request a salary advance and track repayment status.'
+      'Request a salary or expense advance and track repayment.'
     ));
 
-    // Stats placeholder, populated after fetch
     var statsArea = el('div');
     appEl.appendChild(statsArea);
 
-    // Request Advance button — primary action, always visible
     appEl.appendChild(el('div', { style: { margin: '8px 0 16px' } }, [
       UI.btn('Request advance', {
         type: 'primary',
@@ -62,164 +103,260 @@
       })
     ]));
 
+    var activeFilter = 'all';
+    var allAdvances = [];
+
+    appEl.appendChild(el('div', {
+      textContent: 'Filter by status',
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '8px 0 4px',
+        letterSpacing: '0.5px'
+      }
+    }));
+
+    var segBar = UI.segmented([
+      { value: 'all', label: 'All' },
+      { value: 'draft', label: 'Drafts' },
+      { value: 'open', label: 'Open' },
+      { value: 'closed', label: 'Closed' }
+    ], { value: 'all', onChange: function (v) { activeFilter = v; renderList(); } });
+    appEl.appendChild(segBar);
+
     appEl.appendChild(UI.sectionHeader('Your advances', { support: 'Most recent first' }));
 
     var listArea = el('div');
     listArea.appendChild(UI.skeleton(3));
     appEl.appendChild(listArea);
 
-    if (!empName) {
-      listArea.textContent = '';
-      listArea.appendChild(UI.error('Employee record not linked. Contact admin.'));
-      return;
+    function matchesFilter(adv) {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'draft') return adv.docstatus === 0;
+      if (activeFilter === 'closed') {
+        return adv.docstatus === 2 || adv.status === 'Claimed' || adv.status === 'Returned';
+      }
+      if (activeFilter === 'open') {
+        return adv.docstatus === 1 && (adv.status === 'Paid' || adv.status === 'Unpaid' ||
+          adv.status === 'Partly Claimed and Returned' || !adv.status);
+      }
+      return true;
     }
 
-    var filters = JSON.stringify([['employee', '=', empName], ['docstatus', '!=', 2]]);
-    var fields = JSON.stringify(['name', 'posting_date', 'advance_amount', 'paid_amount', 'claimed_amount', 'status', 'purpose']);
-    var path = '/api/resource/Employee Advance'
-      + '?filters=' + encodeURIComponent(filters)
-      + '&fields=' + encodeURIComponent(fields)
-      + '&order_by=posting_date desc'
-      + '&limit_page_length=20';
-
-    api.apiCall('GET', path).then(function (res) {
-      listArea.textContent = '';
-
-      if (res.error) {
-        listArea.appendChild(UI.error('Could not load advances'));
-        return;
+    function renderStats() {
+      statsArea.textContent = '';
+      var totalRequested = 0, totalPaid = 0, totalClaimed = 0, openCt = 0, draftCt = 0;
+      for (var i = 0; i < allAdvances.length; i++) {
+        var a = allAdvances[i];
+        if (a.docstatus === 2) continue;
+        totalRequested += (a.advance_amount || 0);
+        totalPaid += (a.paid_amount || 0);
+        totalClaimed += (a.claimed_amount || 0);
+        if (a.docstatus === 0) draftCt++;
+        else if (a.status !== 'Claimed' && a.status !== 'Returned') openCt++;
       }
-
-      var advances = (res.data && (res.data.data || res.data.message)) ? (res.data.data || res.data.message) : [];
-
-      // Stats — uniform M3
-      var totalRequested = 0, totalPaid = 0, totalClaimed = 0, openCt = 0;
-      for (var sIdx = 0; sIdx < advances.length; sIdx++) {
-        totalRequested += (advances[sIdx].advance_amount || 0);
-        totalPaid += (advances[sIdx].paid_amount || 0);
-        totalClaimed += (advances[sIdx].claimed_amount || 0);
-        if ((advances[sIdx].status || 'Draft') !== 'Claimed') openCt++;
-      }
-      function fmtINR(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+      var outstanding = Math.max(0, totalPaid - totalClaimed);
       statsArea.appendChild(UI.statGrid([
-        { value: fmtINR(totalRequested), label: 'Total requested', support: 'across all advances' },
-        { value: fmtINR(totalPaid - totalClaimed), label: 'Outstanding', support: 'yet to be claimed' },
+        { value: formatCurrency(totalRequested), label: 'Total requested', support: 'across all advances' },
+        { value: formatCurrency(outstanding), label: 'Outstanding', support: 'paid but not claimed' },
         { value: openCt, label: 'Open', support: 'in progress' },
-        { value: advances.length, label: 'Total', support: 'records' }
+        { value: draftCt, label: 'Drafts', support: 'not yet submitted' }
       ], 2));
+    }
 
-      if (advances.length === 0) {
-        listArea.appendChild(UI.empty('banknote', 'No advances yet', { text: 'Request advance', onClick: function() { location.hash = '#/advance/new'; } }));
+    function renderList() {
+      listArea.textContent = '';
+      var filtered = [];
+      for (var i = 0; i < allAdvances.length; i++) {
+        if (matchesFilter(allAdvances[i])) filtered.push(allAdvances[i]);
+      }
+
+      if (filtered.length === 0) {
+        listArea.appendChild(UI.empty('banknote',
+          activeFilter === 'all' ? 'No advances yet' : 'No advances match this filter',
+          activeFilter === 'all'
+            ? { text: 'Request advance', onClick: function () { location.hash = '#/advance/new'; } }
+            : null
+        ));
         return;
       }
 
       var listWrap = UI.el('div', { className: 'm3-list' });
-      for (var i = 0; i < advances.length; i++) {
+      for (var j = 0; j < filtered.length; j++) {
         (function (adv) {
-          var rightEl = UI.el('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' } }, [
+          var status = deriveStatus(adv);
+          var rightEl = UI.el('div', {
+            style: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }
+          }, [
             UI.amount(adv.advance_amount),
-            UI.pill(adv.status || 'Draft', statusColor(adv.status))
+            UI.pill(status, statusColor(status))
           ]);
 
           listWrap.appendChild(UI.listCard({
             title: adv.purpose || 'No purpose specified',
-            sub: formatDate(adv.posting_date),
+            sub: formatDate(adv.posting_date) + ' · ' + adv.name,
             right: rightEl,
             onClick: function () { location.hash = '#/advance/' + encodeURIComponent(adv.name); }
           }));
-        })(advances[i]);
+        })(filtered[j]);
       }
       listArea.appendChild(listWrap);
-    }).catch(function () {
+    }
+
+    loadAdvances().then(function (res) {
       listArea.textContent = '';
-      listArea.appendChild(UI.error('Could not load advances'));
+      if (res.error === 'no_emp') {
+        appEl.appendChild(UI.error('Employee record not linked. Contact admin.'));
+        return;
+      }
+      if (res.error) {
+        listArea.appendChild(UI.error('Could not load advances'));
+        return;
+      }
+      allAdvances = res.advances || [];
+      renderStats();
+      renderList();
     });
   };
 
-  // ── Screen: Advance New ──────────────────────────────────────────────
+  // ── Screen: Advance New / Edit ───────────────────────────────────────
 
-  window.Screens.advanceNew = function (appEl) {
-    var emp = Auth.getEmployee() || {};
-    var empName = emp.name || emp.employee_id || '';
+  function advanceFormScreen(appEl, params, isEdit) {
+    var el = UI.el;
+    var name = isEdit && params && params.id ? params.id : '';
 
     appEl.appendChild(UI.pageHeader(
-      'Request advance',
-      'Enter amount, purpose and date. HR will review and pay out.'
+      isEdit ? 'Edit advance request' : 'Request advance',
+      isEdit
+        ? 'Update amount, purpose or mode of payment.'
+        : 'Enter amount, purpose, date and preferred mode of payment.'
     ));
 
-    var amountField = UI.m3TextField('Amount (₹)', {
-      type: 'number',
-      name: 'amount',
-      min: '0',
-      step: '1',
-      required: true,
-      support: 'Whole rupees, no decimals.'
-    });
-    var purposeField = UI.m3TextField('Purpose of advance', {
-      multiline: true,
-      rows: 3,
-      name: 'purpose',
-      required: true,
-      support: 'Briefly describe what this advance is for.'
-    });
-    var dateField = UI.m3TextField('Date', { type: 'date', value: todayISO(), required: true });
+    var formArea = el('div');
+    var skel = UI.skeleton(3);
+    appEl.appendChild(skel);
+    appEl.appendChild(formArea);
 
-    appEl.appendChild(amountField);
-    appEl.appendChild(purposeField);
-    appEl.appendChild(dateField);
+    fetchModesOfPayment().then(function (mops) {
+      if (!isEdit) {
+        skel.remove();
+        renderForm(mops, null);
+        return;
+      }
+      api.apiCall('GET', '/api/resource/Employee Advance/' + encodeURIComponent(name)).then(function (res) {
+        skel.remove();
+        if (res.error || !res.data) {
+          formArea.appendChild(UI.error('Could not load advance'));
+          return;
+        }
+        var adv = res.data.data || res.data.message;
+        if (!adv || adv.docstatus !== 0) {
+          formArea.appendChild(UI.error('This advance cannot be edited'));
+          return;
+        }
+        renderForm(mops, adv);
+      });
+    });
 
-    var submitBtn = UI.btn('Submit request', {
-      type: 'primary',
-      block: true,
-      icon: 'check',
-      onClick: function () {
+    function renderForm(mops, existing) {
+      var amountField = UI.m3TextField('Amount (₹)', {
+        type: 'number',
+        min: '0',
+        step: '1',
+        required: true,
+        support: 'Whole rupees, no decimals.',
+        value: existing ? String(existing.advance_amount || '') : ''
+      });
+      var purposeField = UI.m3TextField('Purpose of advance', {
+        multiline: true,
+        rows: 3,
+        required: true,
+        support: 'Briefly describe what this advance is for.',
+        value: existing ? (existing.purpose || '') : ''
+      });
+      var dateField = UI.m3TextField('Date', {
+        type: 'date',
+        value: (existing && existing.posting_date) || todayISO(),
+        required: true
+      });
+
+      var mopOptions = [{ value: '', text: 'Select mode of payment…' }];
+      for (var i = 0; i < mops.length; i++) {
+        mopOptions.push({ value: mops[i], text: mops[i] });
+      }
+      var mopField = UI.m3SelectField('Mode of payment', mopOptions, {
+        support: 'How you want to receive the advance.',
+        value: existing ? (existing.mode_of_payment || '') : ''
+      });
+
+      formArea.appendChild(amountField);
+      formArea.appendChild(purposeField);
+      formArea.appendChild(dateField);
+      formArea.appendChild(mopField);
+
+      var submitBtn = UI.btn(isEdit ? 'Save changes' : 'Submit request', {
+        type: 'primary',
+        block: true,
+        icon: 'check',
+        onClick: doSubmit
+      });
+      formArea.appendChild(submitBtn);
+
+      function doSubmit() {
         var amount = parseFloat(amountField._getValue());
-        var purpose = purposeField._getValue().trim();
+        var purpose = (purposeField._getValue() || '').trim();
         var postingDate = dateField._getValue() || todayISO();
+        var mop = mopField._getSelect ? mopField._getSelect().value : '';
 
         if (!amount || amount <= 0) {
-          UI.toast('Please enter a valid amount', 'danger');
+          UI.toast('Enter a valid amount.', 'danger');
           return;
         }
         if (!purpose) {
-          UI.toast('Please enter a purpose', 'danger');
-          return;
-        }
-        if (!empName) {
-          UI.toast('Employee record not linked. Contact admin.', 'danger');
+          UI.toast('Enter the purpose.', 'danger');
           return;
         }
 
-        submitBtn._setLoading(true, 'Submitting...');
+        submitBtn._setLoading(true, isEdit ? 'Saving…' : 'Submitting…');
 
-        api.apiCall('POST', '/api/resource/Employee Advance', {
-          employee: empName,
-          company: 'Dynamic Servitech Private Limited',
-          posting_date: postingDate,
-          purpose: purpose,
+        var body = {
           advance_amount: amount,
-          advance_account: 'Employee Advances - DSPL',
-          currency: 'INR',
-          exchange_rate: 1
-        }).then(function (res) {
-          submitBtn._setLoading(false);
+          purpose: purpose,
+          posting_date: postingDate,
+          mode_of_payment: mop || null
+        };
 
+        var promise = isEdit
+          ? api.apiCall('POST', '/api/field/advance/' + encodeURIComponent(name), body)
+          : api.apiCall('POST', '/api/field/advance', body);
+
+        promise.then(function (res) {
           if (res.error) {
-            var msg = (res.data && res.data._server_messages) ? res.data._server_messages : 'Failed to submit advance request';
-            UI.toast(msg, 'danger');
+            var msg = res.error;
+            if (res.data && res.data._server_messages) {
+              try {
+                var arr = JSON.parse(res.data._server_messages);
+                msg = JSON.parse(arr[0]).message || msg;
+              } catch (e) { /* keep raw */ }
+            }
+            UI.toast('Failed: ' + msg, 'danger');
+            submitBtn._setLoading(false);
             return;
           }
-
-          UI.toast('Advance request submitted!', 'success');
-          location.hash = '#/advance';
-        }).catch(function () {
+          UI.toast(isEdit ? 'Advance updated.' : 'Advance request submitted.', 'success');
+          var newName = (res.data && (res.data.message && res.data.message.name)) || name;
+          if (newName) location.hash = '#/advance/' + encodeURIComponent(newName);
+          else location.hash = '#/advance';
+        }).catch(function (err) {
+          UI.toast('Failed: ' + (err.message || 'Network error'), 'danger');
           submitBtn._setLoading(false);
-          UI.toast('Network error. Try again.', 'danger');
         });
       }
-    });
-    appEl.appendChild(submitBtn);
-  };
+    }
+  }
+
+  window.Screens.advanceNew = function (appEl) { advanceFormScreen(appEl, null, false); };
+  window.Screens.advanceEdit = function (appEl, params) { advanceFormScreen(appEl, params, true); };
 
   // ── Screen: Advance Detail ───────────────────────────────────────────
 
@@ -251,18 +388,17 @@
         return;
       }
 
-      var status = adv.status || 'Draft';
+      var status = deriveStatus(adv);
       var paid = adv.paid_amount || 0;
       var claimed = adv.claimed_amount || 0;
       var requested = adv.advance_amount || 0;
       var outstanding = Math.max(0, paid - claimed);
 
-      // M3 hero \u2014 purpose + amount
       contentArea.appendChild(el('div', { className: 'm3-doc-hero' }, [
         el('div', { className: 'm3-doc-hero-top' }, [
           el('div', { className: 'm3-doc-hero-customer' }, [
             el('div', { className: 'm3-doc-hero-customer-name', textContent: adv.purpose || 'Advance' }),
-            el('div', { className: 'm3-doc-hero-customer-sub', textContent: adv.name + ' \u00b7 ' + formatDate(adv.posting_date) })
+            el('div', { className: 'm3-doc-hero-customer-sub', textContent: adv.name + ' · ' + formatDate(adv.posting_date) })
           ]),
           el('div', { className: 'm3-doc-hero-amount' }, [
             el('div', { className: 'm3-doc-hero-amount-value', textContent: formatCurrency(requested) }),
@@ -272,7 +408,6 @@
         el('div', {}, [UI.pill(status, statusColor(status))])
       ]));
 
-      // Totals \u2014 paid / claimed / outstanding
       contentArea.appendChild(UI.sectionHeader('Status'));
       var totalsBox = el('div', { className: 'm3-doc-totals' });
       totalsBox.appendChild(el('div', { className: 'm3-doc-totals-row' }, [
@@ -289,15 +424,51 @@
       ]));
       contentArea.appendChild(totalsBox);
 
-      // Details
       contentArea.appendChild(UI.sectionHeader('Details'));
       contentArea.appendChild(UI.detailCard([
         { label: 'Advance ID', value: adv.name },
-        { label: 'Purpose', value: adv.purpose || '\u2014' },
+        { label: 'Purpose', value: adv.purpose || '—' },
         { label: 'Date', value: formatDate(adv.posting_date) },
-        { label: 'Employee', value: adv.employee_name || adv.employee || '\u2014' },
+        { label: 'Employee', value: adv.employee_name || adv.employee || '—' },
+        { label: 'Mode of payment', value: adv.mode_of_payment || '—' },
+        { label: 'Advance account', value: adv.advance_account || '—' },
         { label: 'Status', value: status }
       ]));
+
+      // Owner actions on draft
+      if (adv.docstatus === 0) {
+        contentArea.appendChild(el('div', { style: { marginTop: '24px' } }, [
+          UI.actionBar([
+            {
+              text: 'Edit',
+              type: 'primary',
+              icon: 'edit',
+              onClick: function () { location.hash = '#/advance/' + encodeURIComponent(adv.name) + '/edit'; }
+            },
+            {
+              text: 'Delete draft',
+              type: 'outline-danger',
+              icon: 'x',
+              onClick: function () {
+                UI.confirmDialog('Delete this draft?',
+                  'The advance request will be removed permanently.',
+                  { confirmText: 'Delete', danger: true }
+                ).then(function (ok) {
+                  if (!ok) return;
+                  api.apiCall('DELETE', '/api/field/advance/' + encodeURIComponent(adv.name)).then(function (r) {
+                    if (r.error) {
+                      UI.toast('Could not delete', 'danger');
+                      return;
+                    }
+                    UI.toast('Draft deleted', 'success');
+                    location.hash = '#/advance';
+                  });
+                });
+              }
+            }
+          ])
+        ]));
+      }
     }).catch(function () {
       skel.remove();
       contentArea.appendChild(UI.error('Could not load advance details'));

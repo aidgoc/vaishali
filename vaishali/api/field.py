@@ -690,6 +690,239 @@ def process_approval(doctype, name, action):
     return {"success": True, "action": action, "doctype": doctype, "name": name}
 
 
+# ── Expense Claim CRUD ────────────────────────────────────────────
+
+def _resolve_expense_approver(emp):
+    """Resolve the User who should receive an expense claim for approval.
+
+    Order: Employee.expense_approver → reports_to.user_id → Department head.
+    Returns User (email) or empty string."""
+    approver = frappe.db.get_value("Employee", emp.name, "expense_approver")
+    if approver:
+        return approver
+    if emp.get("reports_to"):
+        approver = frappe.db.get_value("Employee", emp.reports_to, "user_id")
+        if approver:
+            return approver
+    if emp.get("department"):
+        # Department.expense_approvers is a child table — pick first row
+        rows = frappe.get_all("Department Approver",
+            filters={"parent": emp.department, "parentfield": "expense_approvers"},
+            fields=["approver"], order_by="idx asc", limit_page_length=1)
+        if rows:
+            return rows[0].approver
+    return ""
+
+
+@frappe.whitelist()
+def get_expense_claim_types():
+    """List enabled Expense Claim Types for the PWA dropdown."""
+    return frappe.get_all("Expense Claim Type", fields=["name"],
+                          order_by="name asc", pluck="name")
+
+
+@frappe.whitelist()
+def get_modes_of_payment():
+    """List enabled Modes of Payment for the PWA dropdown."""
+    return frappe.get_all("Mode of Payment",
+                          filters={"enabled": 1},
+                          fields=["name", "type"],
+                          order_by="name asc")
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_expense_claim(expenses, posting_date=None, approver=None):
+    """Create a draft Expense Claim for the current employee.
+
+    Auto-resolves company and expense_approver. Stays in Draft so the
+    approver can act on it via the Approvals queue."""
+    import json
+    if isinstance(expenses, str):
+        expenses = json.loads(expenses)
+    if not expenses:
+        frappe.throw(_("Add at least one expense item"))
+
+    emp = _get_employee()
+    doc = frappe.new_doc("Expense Claim")
+    doc.employee = emp.name
+    doc.company = emp.company
+    doc.posting_date = posting_date or date.today().isoformat()
+    doc.expense_approver = approver or _resolve_expense_approver(emp)
+
+    for line in expenses:
+        amt = float(line.get("amount") or 0)
+        if amt <= 0:
+            frappe.throw(_("Amount must be greater than zero"))
+        if not line.get("expense_type"):
+            frappe.throw(_("Expense type is required"))
+        doc.append("expenses", {
+            "expense_date": line.get("expense_date") or doc.posting_date,
+            "expense_type": line.get("expense_type"),
+            "amount": amt,
+            "description": line.get("description") or "",
+        })
+
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name, "approver": doc.expense_approver,
+            "total": doc.total_claimed_amount}
+
+
+@frappe.whitelist(methods=["POST"])
+def update_expense_claim(name, expenses=None, posting_date=None, approver=None):
+    """Edit a draft Expense Claim. Owner only, docstatus=0 only."""
+    import json
+    doc = frappe.get_doc("Expense Claim", name)
+    emp = _get_employee()
+    if doc.employee != emp.name:
+        frappe.throw(_("This is not your expense claim"), frappe.PermissionError)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft claims can be edited"))
+
+    if posting_date:
+        doc.posting_date = posting_date
+    if approver is not None:
+        doc.expense_approver = approver
+
+    if expenses is not None:
+        if isinstance(expenses, str):
+            expenses = json.loads(expenses)
+        doc.set("expenses", [])
+        for line in expenses:
+            amt = float(line.get("amount") or 0)
+            if amt <= 0:
+                frappe.throw(_("Amount must be greater than zero"))
+            if not line.get("expense_type"):
+                frappe.throw(_("Expense type is required"))
+            doc.append("expenses", {
+                "expense_date": line.get("expense_date") or doc.posting_date,
+                "expense_type": line.get("expense_type"),
+                "amount": amt,
+                "description": line.get("description") or "",
+            })
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name, "total": doc.total_claimed_amount}
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel_expense_claim(name):
+    """Delete a draft, or cancel a submitted Expense Claim. Owner only."""
+    doc = frappe.get_doc("Expense Claim", name)
+    emp = _get_employee()
+    if doc.employee != emp.name:
+        frappe.throw(_("This is not your expense claim"), frappe.PermissionError)
+
+    if doc.docstatus == 0:
+        frappe.delete_doc("Expense Claim", name, ignore_permissions=True)
+    elif doc.docstatus == 1:
+        if doc.approval_status == "Approved":
+            frappe.throw(_("Approved claims cannot be cancelled from the app"))
+        doc.cancel()
+    frappe.db.commit()
+    return {"deleted": True}
+
+
+# ── Employee Advance CRUD ─────────────────────────────────────────
+
+def _resolve_advance_account(company):
+    """Find the Employee Advance account for a company."""
+    acc = frappe.db.get_value("Company", company, "default_employee_advance_account")
+    if acc:
+        return acc
+    # Fall back to first ledger named like "Employee Advance%"
+    rows = frappe.get_all("Account",
+        filters={"company": company, "account_name": ["like", "Employee Advance%"],
+                 "is_group": 0},
+        fields=["name"], limit_page_length=1)
+    return rows[0].name if rows else ""
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_advance_request(advance_amount, purpose, posting_date=None,
+                            mode_of_payment=None):
+    """Create a draft Employee Advance for the current employee.
+
+    Auto-resolves company and advance_account. Stays in Draft so the
+    approver can submit it via the Approvals queue."""
+    emp = _get_employee()
+    amt = float(advance_amount or 0)
+    if amt <= 0:
+        frappe.throw(_("Amount must be greater than zero"))
+    if not purpose:
+        frappe.throw(_("Purpose is required"))
+
+    advance_account = _resolve_advance_account(emp.company)
+    if not advance_account:
+        frappe.throw(_("Set 'Default Employee Advance Account' on the Company {0}")
+                     .format(emp.company))
+
+    doc = frappe.new_doc("Employee Advance")
+    doc.employee = emp.name
+    doc.company = emp.company
+    doc.posting_date = posting_date or date.today().isoformat()
+    doc.purpose = purpose
+    doc.advance_amount = amt
+    doc.advance_account = advance_account
+    doc.currency = "INR"
+    doc.exchange_rate = 1
+    if mode_of_payment:
+        doc.mode_of_payment = mode_of_payment
+
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def update_advance_request(name, advance_amount=None, purpose=None,
+                            posting_date=None, mode_of_payment=None):
+    """Edit a draft Employee Advance. Owner only, docstatus=0 only."""
+    doc = frappe.get_doc("Employee Advance", name)
+    emp = _get_employee()
+    if doc.employee != emp.name:
+        frappe.throw(_("This is not your advance"), frappe.PermissionError)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft advances can be edited"))
+
+    if advance_amount is not None:
+        amt = float(advance_amount)
+        if amt <= 0:
+            frappe.throw(_("Amount must be greater than zero"))
+        doc.advance_amount = amt
+    if purpose is not None:
+        if not purpose.strip():
+            frappe.throw(_("Purpose is required"))
+        doc.purpose = purpose
+    if posting_date:
+        doc.posting_date = posting_date
+    if mode_of_payment is not None:
+        doc.mode_of_payment = mode_of_payment
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel_advance_request(name):
+    """Delete a draft, or cancel a submitted Employee Advance. Owner only."""
+    doc = frappe.get_doc("Employee Advance", name)
+    emp = _get_employee()
+    if doc.employee != emp.name:
+        frappe.throw(_("This is not your advance"), frappe.PermissionError)
+
+    if doc.docstatus == 0:
+        frappe.delete_doc("Employee Advance", name, ignore_permissions=True)
+    elif doc.docstatus == 1:
+        if (doc.paid_amount or 0) > 0:
+            frappe.throw(_("Advance has been paid out — cannot cancel from the app"))
+        doc.cancel()
+    frappe.db.commit()
+    return {"deleted": True}
+
+
 # ── Session Info ──────────────────────────────────────────────────
 
 @frappe.whitelist()

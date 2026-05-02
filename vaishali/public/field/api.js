@@ -473,6 +473,38 @@
       }
       else if (path === '/api/field/leave-balance') path = '/api/method/vaishali.api.field.get_leave_balance';
       else if (path === '/api/field/pending-expenses') path = '/api/method/vaishali.api.field.get_pending_expenses';
+      else if (path === '/api/field/expense-claim-types') path = '/api/method/vaishali.api.field.get_expense_claim_types';
+      else if (path === '/api/field/modes-of-payment') path = '/api/method/vaishali.api.field.get_modes_of_payment';
+      else if (path === '/api/field/expense' && method === 'POST') {
+        path = '/api/method/vaishali.api.field.submit_expense_claim';
+      }
+      else if (path.match(/^\/api\/field\/expense\/[^/]+$/)) {
+        var exId = decodeURIComponent(path.replace('/api/field/expense/', ''));
+        if (method === 'PUT' || method === 'PATCH' || method === 'POST') {
+          body = body || {}; body.name = exId;
+          path = '/api/method/vaishali.api.field.update_expense_claim';
+          method = 'POST';
+        } else if (method === 'DELETE') {
+          body = body || {}; body.name = exId;
+          path = '/api/method/vaishali.api.field.cancel_expense_claim';
+          method = 'POST';
+        }
+      }
+      else if (path === '/api/field/advance' && method === 'POST') {
+        path = '/api/method/vaishali.api.field.submit_advance_request';
+      }
+      else if (path.match(/^\/api\/field\/advance\/[^/]+$/)) {
+        var adId = decodeURIComponent(path.replace('/api/field/advance/', ''));
+        if (method === 'PUT' || method === 'PATCH' || method === 'POST') {
+          body = body || {}; body.name = adId;
+          path = '/api/method/vaishali.api.field.update_advance_request';
+          method = 'POST';
+        } else if (method === 'DELETE') {
+          body = body || {}; body.name = adId;
+          path = '/api/method/vaishali.api.field.cancel_advance_request';
+          method = 'POST';
+        }
+      }
       else if (path === '/api/field/holidays') path = '/api/method/vaishali.api.field.get_upcoming_holidays';
       else if (path === '/api/field/login') path = '/api/method/login';
       else if (path === '/api/field/sales-targets') path = '/api/method/vaishali.api.field.get_sales_targets';

@@ -177,14 +177,16 @@
     { pattern: '#/leave/:id',   handler: function (p) { S().leaveDetail(appEl, p); },tab: 'home', title: 'Leave Detail', back: '#/leave' },
 
     // Expense
-    { pattern: '#/expense/new', handler: function () { S().expenseNew(appEl); },         tab: 'home', title: 'New Expense',    back: '#/expense' },
-    { pattern: '#/expense',     handler: function () { S().expenseList(appEl); },        tab: 'home', title: 'Expenses',       back: '#/hr' },
-    { pattern: '#/expense/:id', handler: function (p) { S().expenseDetail(appEl, p); },  tab: 'home', title: 'Expense Detail', back: '#/expense' },
+    { pattern: '#/expense/new',       handler: function () { S().expenseNew(appEl); },           tab: 'home', title: 'New Expense',    back: '#/expense' },
+    { pattern: '#/expense',           handler: function () { S().expenseList(appEl); },          tab: 'home', title: 'Expenses',       back: '#/hr' },
+    { pattern: '#/expense/:id/edit',  handler: function (p) { S().expenseEdit(appEl, p); },      tab: 'home', title: 'Edit Expense',   back: '#/expense' },
+    { pattern: '#/expense/:id',       handler: function (p) { S().expenseDetail(appEl, p); },    tab: 'home', title: 'Expense Detail', back: '#/expense' },
 
     // Advance
-    { pattern: '#/advance/new', handler: function () { S().advanceNew(appEl); },         tab: 'home', title: 'Request Advance', back: '#/advance' },
-    { pattern: '#/advance',     handler: function () { S().advanceList(appEl); },        tab: 'home', title: 'Advances',        back: '#/hr' },
-    { pattern: '#/advance/:id', handler: function (p) { S().advanceDetail(appEl, p); },  tab: 'home', title: 'Advance Detail',  back: '#/advance' },
+    { pattern: '#/advance/new',       handler: function () { S().advanceNew(appEl); },           tab: 'home', title: 'Request Advance', back: '#/advance' },
+    { pattern: '#/advance',           handler: function () { S().advanceList(appEl); },          tab: 'home', title: 'Advances',        back: '#/hr' },
+    { pattern: '#/advance/:id/edit',  handler: function (p) { S().advanceEdit(appEl, p); },      tab: 'home', title: 'Edit Advance',    back: '#/advance' },
+    { pattern: '#/advance/:id',       handler: function (p) { S().advanceDetail(appEl, p); },    tab: 'home', title: 'Advance Detail',  back: '#/advance' },
 
     // Salary
     { pattern: '#/salary',     handler: function () { S().salaryList(appEl); },        tab: 'home', title: 'Salary Slips',  back: '#/hr' },
