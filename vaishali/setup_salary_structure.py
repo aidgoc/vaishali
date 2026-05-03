@@ -150,11 +150,13 @@ def _ensure_dcepl_structure():
 
     src = frappe.get_doc("Salary Structure", DSPL_STRUCTURE)
     new = frappe.copy_doc(src)
-    new.name = None
+    # autoname='prompt' on Salary Structure — must set name explicitly
+    new.name = DCEPL_STRUCTURE
     new.salary_structure_name = DCEPL_STRUCTURE
     new.company = DCEPL
     new.is_active = "Yes"
-    new.insert(ignore_permissions=True)
+    new.flags.name_set = True
+    new.insert(ignore_permissions=True, set_name=DCEPL_STRUCTURE)
     new.submit()
     print(f"  Salary Structure: created {DCEPL_STRUCTURE} (cloned from {DSPL_STRUCTURE})")
 
