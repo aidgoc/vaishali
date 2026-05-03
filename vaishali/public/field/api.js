@@ -471,6 +471,30 @@
         else if (method === 'DELETE') path = '/api/method/vaishali.api.chat.clear_history';
         else path = '/api/method/vaishali.api.chat.get_history';
       }
+      else if (path === '/api/field/logsheets' || path.indexOf('/api/field/logsheets?') === 0) {
+        if (method === 'POST') {
+          path = '/api/method/vaishali.api.field.submit_logsheet';
+        } else {
+          var lsQS = ''; var lsQI = path.indexOf('?'); if (lsQI !== -1) lsQS = path.substring(lsQI);
+          path = '/api/method/vaishali.api.field.get_my_logsheets' + lsQS;
+        }
+      }
+      else if (path === '/api/field/logsheet-summary') path = '/api/method/vaishali.api.field.get_logsheet_summary';
+      else if (path === '/api/field/recent-equipment') path = '/api/method/vaishali.api.field.get_recent_equipment_labels';
+      else if (path.match(/^\/api\/field\/logsheet\/[^/]+$/)) {
+        var lsId = decodeURIComponent(path.replace('/api/field/logsheet/', ''));
+        if (method === 'PUT' || method === 'PATCH' || method === 'POST') {
+          body = body || {}; body.name = lsId;
+          path = '/api/method/vaishali.api.field.submit_logsheet';
+          method = 'POST';
+        } else if (method === 'DELETE') {
+          body = body || {}; body.name = lsId;
+          path = '/api/method/vaishali.api.field.cancel_logsheet';
+          method = 'POST';
+        } else {
+          path = '/api/resource/Operator Logsheet/' + encodeURIComponent(lsId);
+        }
+      }
       else if (path === '/api/field/leave-balance') path = '/api/method/vaishali.api.field.get_leave_balance';
       else if (path === '/api/field/leave-types') path = '/api/method/vaishali.api.field.get_leave_types_for_pwa';
       else if (path === '/api/field/attendance-summary') path = '/api/method/vaishali.api.field.get_attendance_summary';

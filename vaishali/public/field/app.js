@@ -188,6 +188,11 @@
     { pattern: '#/advance/:id/edit',  handler: function (p) { S().advanceEdit(appEl, p); },      tab: 'home', title: 'Edit Advance',    back: '#/advance' },
     { pattern: '#/advance/:id',       handler: function (p) { S().advanceDetail(appEl, p); },    tab: 'home', title: 'Advance Detail',  back: '#/advance' },
 
+    // Operator Logsheet — for on-site rental operators
+    { pattern: '#/logsheet/new',      handler: function () { S().logsheetNew(appEl); },          tab: 'home', title: 'New Logsheet',     back: '#/logsheet' },
+    { pattern: '#/logsheet',          handler: function () { S().logsheetList(appEl); },         tab: 'home', title: 'Logsheet',         back: '#/home' },
+    { pattern: '#/logsheet/:id',      handler: function (p) { S().logsheetDetail(appEl, p); },   tab: 'home', title: 'Logsheet entry',   back: '#/logsheet' },
+
     // Salary
     { pattern: '#/salary',     handler: function () { S().salaryList(appEl); },        tab: 'home', title: 'Salary Slips',  back: '#/hr' },
     { pattern: '#/salary/:id', handler: function (p) { S().salaryDetail(appEl, p); },  tab: 'home', title: 'Salary Slip',   back: '#/salary' },

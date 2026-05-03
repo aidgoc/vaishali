@@ -690,6 +690,159 @@ def process_approval(doctype, name, action):
     return {"success": True, "action": action, "doctype": doctype, "name": name}
 
 
+# ── Operator Logsheet (Phase 2 — PWA replaces the paper logsheet) ─
+
+@frappe.whitelist()
+def get_my_logsheets(period_from=None, period_to=None, limit=50):
+    """Operator's own logsheets, most recent first. Used by the PWA list."""
+    emp = _get_employee()
+    filters = {"operator": emp.name}
+    if period_from and period_to:
+        filters["log_date"] = ["between", [period_from, period_to]]
+    rows = frappe.get_all("Operator Logsheet",
+        filters=filters,
+        fields=["name", "log_date", "customer", "customer_name", "site_name",
+                "equipment_label", "equipment_item", "work_type", "shift",
+                "total_hours", "idle_hours", "amount", "status", "docstatus",
+                "supervisor_signature", "signed_by", "sales_invoice"],
+        order_by="log_date desc, creation desc",
+        limit_page_length=int(limit))
+    return rows
+
+
+@frappe.whitelist()
+def get_logsheet_summary():
+    """This-month roll-up for the operator's home tile.
+
+    Returns hours / amount totals split by status so the operator can see
+    what's done, what's pending verification, and what the customer has
+    been billed for."""
+    from frappe.utils import today, get_first_day, get_last_day
+    emp = _get_employee()
+    today_iso = today()
+    month_start = str(get_first_day(today_iso))
+    month_end = str(get_last_day(today_iso))
+
+    rows = frappe.get_all("Operator Logsheet",
+        filters={"operator": emp.name,
+                 "log_date": ["between", [month_start, month_end]]},
+        fields=["status", "docstatus", "total_hours", "amount"])
+
+    out = {
+        "month_start": month_start,
+        "month_end": month_end,
+        "draft":    {"count": 0, "hours": 0.0, "amount": 0.0},
+        "open":     {"count": 0, "hours": 0.0, "amount": 0.0},
+        "verified": {"count": 0, "hours": 0.0, "amount": 0.0},
+        "billed":   {"count": 0, "hours": 0.0, "amount": 0.0},
+    }
+    for r in rows:
+        if r.docstatus == 0:
+            bucket = out["draft"]
+        elif r.status == "Verified":
+            bucket = out["verified"]
+        elif r.status == "Billed":
+            bucket = out["billed"]
+        else:
+            bucket = out["open"]
+        bucket["count"] += 1
+        bucket["hours"] += float(r.total_hours or 0)
+        bucket["amount"] += float(r.amount or 0)
+    return out
+
+
+@frappe.whitelist()
+def get_recent_equipment_labels(limit=20):
+    """Distinct equipment_labels recently used by the operator — used by the
+    PWA to autocomplete the equipment field."""
+    emp = _get_employee()
+    rows = frappe.db.sql("""
+        SELECT DISTINCT equipment_label
+        FROM `tabOperator Logsheet`
+        WHERE operator=%s AND IFNULL(equipment_label,'') != ''
+        ORDER BY log_date DESC
+        LIMIT %s
+    """, (emp.name, int(limit)), as_dict=True)
+    return [r.equipment_label for r in rows]
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_logsheet(log_date, customer, site_name, total_hours,
+                    work_type="Lifting", shift="Day", idle_hours=0,
+                    equipment_label=None, equipment_item=None,
+                    signed_by=None, remarks=None,
+                    rate_per_hour=0, do_submit=0, name=None):
+    """Create or update an Operator Logsheet from the PWA.
+
+    Pass `name` to update an existing draft; omit to create new.
+    Pass `do_submit=1` to also submit (requires signed_by + photo).
+    The supervisor_signature photo is uploaded separately via
+    /api/method/upload_file (standard Frappe upload) and the file URL
+    is stamped here once available.
+    """
+    emp = _get_employee()
+    do_submit = bool(int(do_submit))
+
+    if name:
+        doc = frappe.get_doc("Operator Logsheet", name)
+        if doc.operator != emp.name:
+            frappe.throw(_("Not your logsheet"), frappe.PermissionError)
+        if doc.docstatus != 0:
+            frappe.throw(_("Only draft logsheets can be edited"))
+    else:
+        doc = frappe.new_doc("Operator Logsheet")
+        doc.operator = emp.name
+        doc.company = emp.company
+
+    doc.log_date = log_date
+    doc.customer = customer
+    doc.site_name = site_name
+    doc.total_hours = float(total_hours or 0)
+    doc.idle_hours = float(idle_hours or 0)
+    doc.work_type = work_type
+    doc.shift = shift
+    if equipment_label is not None:
+        doc.equipment_label = equipment_label
+    if equipment_item is not None:
+        doc.equipment_item = equipment_item
+    if signed_by is not None:
+        doc.signed_by = signed_by
+    if remarks is not None:
+        doc.remarks = remarks
+    if rate_per_hour:
+        doc.rate_per_hour = float(rate_per_hour)
+
+    if name:
+        doc.save(ignore_permissions=True)
+    else:
+        doc.insert(ignore_permissions=True)
+
+    if do_submit:
+        doc.submit()
+
+    frappe.db.commit()
+    return {"name": doc.name, "amount": doc.amount, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel_logsheet(name):
+    """Delete a draft, or cancel a submitted logsheet (only if not yet billed)."""
+    doc = frappe.get_doc("Operator Logsheet", name)
+    emp = _get_employee()
+    if doc.operator != emp.name:
+        frappe.throw(_("Not your logsheet"), frappe.PermissionError)
+    if doc.docstatus == 0:
+        frappe.delete_doc("Operator Logsheet", name, ignore_permissions=True)
+    elif doc.docstatus == 1:
+        if doc.sales_invoice:
+            frappe.throw(_("Logsheet has been billed — cannot cancel"))
+        if doc.status == "Verified":
+            frappe.throw(_("Logsheet already verified by manager — ask them to cancel"))
+        doc.cancel()
+    frappe.db.commit()
+    return {"deleted": True}
+
+
 # ── Expense Claim CRUD ────────────────────────────────────────────
 
 def _resolve_expense_approver(emp):
