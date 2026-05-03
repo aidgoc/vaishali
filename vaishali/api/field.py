@@ -94,13 +94,21 @@ def create_checkin(log_type, latitude=None, longitude=None, time=None):
 
     # Bound any caller-supplied `time` to within ±2h of now. Stops an
     # employee from posting backdated check-ins to dodge the late-mark
-    # threshold.
+    # threshold. The PWA does not currently send `time` — server uses
+    # datetime.now() — but a direct API caller might.
     if time:
         from frappe.utils import get_datetime as _gd
         try:
             requested = _gd(time)
         except Exception:
             frappe.throw(_("Invalid checkin time"))
+        # Normalise to naive UTC: Frappe's get_datetime returns naive
+        # local-time on the server (UTC here). If the caller sent an
+        # offset-aware ISO string (e.g. JS Date.toISOString() ends in
+        # `Z`), dateutil parses it tz-aware; subtract that from a naive
+        # `now_utc` and Python raises TypeError → 500. Convert.
+        if requested.tzinfo is not None:
+            requested = requested.astimezone(timezone.utc).replace(tzinfo=None)
         now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         delta_minutes = abs((now_utc - requested).total_seconds()) / 60
         if delta_minutes > 120:

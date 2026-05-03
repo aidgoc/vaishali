@@ -274,7 +274,10 @@ def generate_logsheet_invoices(month=None):
                 message=frappe.get_traceback(),
             )
 
-    frappe.db.commit()
+    # No trailing commit — every group already committed (success) or
+    # rolled back (failure) inside the loop. A trailing commit() here
+    # would either be a no-op or, after a final-iteration rollback,
+    # commit the empty next-transaction — confusing and unnecessary.
 
     return {
         "month": (month or _previous_month_str()),
