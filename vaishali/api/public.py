@@ -126,17 +126,43 @@ def approve_logsheet(token, decision, signed_by, signature_data_url=None,
 	return {"status": doc.approval_status, "name": doc.name}
 
 
-def _save_signature_image(doc, data_url):
-	"""Decode a data: URL and save it as a File row attached to the logsheet."""
-	import base64
-	header, _, b64 = data_url.partition(",")
-	# header looks like 'data:image/png;base64'
-	mime = "image/png"
-	if "image/" in header:
-		mime = header.split("data:")[1].split(";")[0] or "image/png"
-	ext = mime.split("/")[-1] or "png"
-	content = base64.b64decode(b64)
+_SIG_MAX_BYTES = 500_000   # 375 KB max — canvas signatures are typically 8–30 KB
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_JPEG_MAGIC_PREFIXES = (b"\xff\xd8\xff",)
 
+
+def _save_signature_image(doc, data_url):
+	"""Decode a `data:image/...` URL and save it as a public File attached
+	to the logsheet's `supervisor_signature` field.
+
+	Hardened for the Guest-allowed approve endpoint:
+	- Cap raw URL length and decoded bytes (no DoS via giant uploads).
+	- Verify the decoded bytes start with PNG or JPEG magic bytes —
+	  prevents arbitrary blobs from being stored under an image/* MIME
+	  claim.
+	- Force the saved extension to a clean lowercase value so the data:
+	  URL header can't influence the file name (e.g. data:image/../../).
+	"""
+	import base64
+	if not data_url or not data_url.startswith("data:image/"):
+		raise frappe.ValidationError(_("Signature must be a data:image URL"))
+	if len(data_url) > _SIG_MAX_BYTES:
+		raise frappe.ValidationError(_("Signature image too large"))
+
+	_, _, b64 = data_url.partition(",")
+	try:
+		content = base64.b64decode(b64, validate=True)
+	except Exception:
+		raise frappe.ValidationError(_("Signature payload is not valid base64"))
+
+	if len(content) > _SIG_MAX_BYTES:
+		raise frappe.ValidationError(_("Signature image too large"))
+	is_png = content.startswith(_PNG_MAGIC)
+	is_jpeg = any(content.startswith(p) for p in _JPEG_MAGIC_PREFIXES)
+	if not (is_png or is_jpeg):
+		raise frappe.ValidationError(_("Signature payload is not a recognised image"))
+
+	ext = "png" if is_png else "jpg"
 	file_doc = frappe.get_doc({
 		"doctype": "File",
 		"file_name": f"signature_{doc.name}.{ext}",

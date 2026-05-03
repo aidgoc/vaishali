@@ -92,10 +92,27 @@ def create_checkin(log_type, latitude=None, longitude=None, time=None):
     lon = float(longitude) if longitude else None
     _enforce_geofence(emp, lat, lon)
 
+    # Bound any caller-supplied `time` to within ±2h of now. Stops an
+    # employee from posting backdated check-ins to dodge the late-mark
+    # threshold.
+    if time:
+        from frappe.utils import get_datetime as _gd
+        try:
+            requested = _gd(time)
+        except Exception:
+            frappe.throw(_("Invalid checkin time"))
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        delta_minutes = abs((now_utc - requested).total_seconds()) / 60
+        if delta_minutes > 120:
+            frappe.throw(_("Check-in time must be within 2 hours of now"))
+        checkin_time = requested
+    else:
+        checkin_time = datetime.now()
+
     doc = frappe.new_doc("Employee Checkin")
     doc.employee = emp.name
     doc.log_type = log_type
-    doc.time = time or datetime.now()
+    doc.time = checkin_time
     if lat is not None: doc.latitude = lat
     if lon is not None: doc.longitude = lon
     doc.insert(ignore_permissions=True)
@@ -870,6 +887,14 @@ def cancel_logsheet(name):
             frappe.throw(_("Logsheet has been billed — cannot cancel"))
         if doc.status == "Verified":
             frappe.throw(_("Logsheet already verified by manager — ask them to cancel"))
+        # Once the client has digitally approved (Phase 2.2), the operator
+        # cannot unilaterally erase that sign-off — it would leave billing
+        # records out of sync with what the client actually approved.
+        if doc.approval_status == "Approved":
+            frappe.throw(_(
+                "Client has already approved this logsheet — contact "
+                "management to cancel."
+            ))
         doc.cancel()
     frappe.db.commit()
     return {"deleted": True}

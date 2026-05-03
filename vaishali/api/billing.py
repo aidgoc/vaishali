@@ -256,6 +256,10 @@ def generate_logsheet_invoices(month=None):
                     update_modified=True,
                 )
 
+            # Commit per group — narrows the TOCTOU window between
+            # concurrent billing runs and means a crash mid-batch
+            # doesn't leave invoices created but logsheets unbilled.
+            frappe.db.commit()
             created_invoices.append(si.name)
 
         except Exception as exc:

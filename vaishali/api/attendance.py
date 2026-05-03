@@ -21,13 +21,35 @@ Overtime:
 """
 import frappe
 from frappe.utils import getdate, today, add_days, get_datetime, nowdate
-from datetime import time, timedelta
+from datetime import time, timedelta, timezone
 
 OFFICE_SHIFT = "Office Hours"
 LATE_THRESHOLD = time(9, 30)             # 09:30 IST → late mark
 STRAIGHT_HALF_DAY_THRESHOLD = time(11, 0)  # 11:00 IST → straight half day
 HALF_DAY_THRESHOLD = 3  # 3 lates in a month → 1 half day
 REGULAR_HOURS_CAP = 9.0  # daily hours beyond this count as overtime
+
+# Server runs in UTC, business runs in IST. Employee Checkin stores
+# `time` as UTC; all the thresholds above are IST walls. Helper to
+# convert before comparing.
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _to_ist(dt):
+    """Convert a naive UTC datetime to an IST-aware datetime."""
+    return dt.replace(tzinfo=timezone.utc).astimezone(_IST)
+
+
+def _ist_day_window_in_utc(target_date):
+    """Return (start_utc_str, end_utc_str) covering the IST calendar day
+    `target_date`. Used in SQL WHERE clauses against Employee Checkin.time
+    which is stored as naive UTC."""
+    start_ist = get_datetime(f"{target_date} 00:00:00").replace(tzinfo=_IST)
+    end_ist = start_ist + timedelta(days=1)
+    return (
+        start_ist.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        end_ist.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 # ── Late-mark daily logger ────────────────────────────────────────
@@ -55,27 +77,34 @@ def process_late_marks(target_date=None):
     )
     late_created = 0
     half_day_created = 0
+    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
     for emp in employees:
         if frappe.db.exists("Late Mark", {"employee": emp.name, "date": target_date}):
             continue
         first_in = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='IN'
-               AND DATE(time)=%s
+               AND time >= %s AND time < %s
                ORDER BY time ASC LIMIT 1""",
-            (emp.name, target_date),
+            (emp.name, day_start_utc, day_end_utc),
             as_dict=True,
         )
         if not first_in:
             continue  # absent — handled by mark_lwp_for_unapproved_absence
-        checkin_dt = get_datetime(first_in[0]["time"])
-        if checkin_dt.time() <= LATE_THRESHOLD:
+        # Server stores UTC; thresholds are IST walls. Convert before comparing.
+        checkin_utc = get_datetime(first_in[0]["time"])
+        checkin_ist = _to_ist(checkin_utc)
+        ist_time = checkin_ist.time()
+        if ist_time <= LATE_THRESHOLD:
             continue
 
-        is_straight_half_day = checkin_dt.time() > STRAIGHT_HALF_DAY_THRESHOLD
-        minutes_late = int((checkin_dt - checkin_dt.replace(
-            hour=LATE_THRESHOLD.hour, minute=LATE_THRESHOLD.minute, second=0
-        )).total_seconds() // 60)
+        is_straight_half_day = ist_time > STRAIGHT_HALF_DAY_THRESHOLD
+        minutes_late = int((
+            ist_time.hour * 60 + ist_time.minute
+            - (LATE_THRESHOLD.hour * 60 + LATE_THRESHOLD.minute)
+        ))
+        # Persist the local-naive IST datetime (Frappe stores naive site-local)
+        checkin_dt = checkin_ist.replace(tzinfo=None)
         frappe.get_doc({
             "doctype": "Late Mark",
             "employee": emp.name,
@@ -149,6 +178,7 @@ def roll_late_marks_to_half_day():
             order_by="date asc",
             limit=half_days * HALF_DAY_THRESHOLD,
         )
+        emp_company = frappe.db.get_value("Employee", row["employee"], "company")
         for i in range(half_days):
             chunk = late_rows[i * HALF_DAY_THRESHOLD:(i + 1) * HALF_DAY_THRESHOLD]
             anchor_date = chunk[-1].date
@@ -161,6 +191,9 @@ def roll_late_marks_to_half_day():
                     "attendance_date": anchor_date,
                     "status": "Half Day",
                     "shift": OFFICE_SHIFT,
+                    # Attendance requires `company` — was missing previously
+                    # so the rollup crashed mid-loop on the 1st of every month.
+                    "company": emp_company,
                 }).insert(ignore_permissions=True).submit()
                 rolled += 1
             for lm in chunk:
@@ -183,12 +216,15 @@ def mark_lwp_for_unapproved_absence(target_date=None):
         fields=["name", "company"],
     )
     marked = 0
+    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
     for emp in employees:
-        if frappe.db.exists("Employee Checkin", {
-            "employee": emp.name, "time": ["between", [
-                f"{target_date} 00:00:00", f"{target_date} 23:59:59"
-            ]],
-        }):
+        # Checkin.time is naive UTC; the IST calendar day for target_date
+        # spans UTC [date−1 18:30 → date 18:30).
+        if frappe.db.sql(
+            """SELECT 1 FROM `tabEmployee Checkin`
+               WHERE employee=%s AND time >= %s AND time < %s LIMIT 1""",
+            (emp.name, day_start_utc, day_end_utc),
+        ):
             continue
         on_approved_leave = frappe.db.sql(
             """SELECT 1 FROM `tabLeave Application`
@@ -252,25 +288,28 @@ def compute_overtime(target_date=None):
 
 def _create_ot_logs(employees, target_date, holiday=False):
     created = 0
+    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
     for emp in employees:
         if frappe.db.exists("Overtime Log", {"employee": emp.name, "date": target_date}):
             continue
         first_in_row = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='IN'
-               AND DATE(time)=%s ORDER BY time ASC LIMIT 1""",
-            (emp.name, target_date), as_dict=True,
+               AND time >= %s AND time < %s ORDER BY time ASC LIMIT 1""",
+            (emp.name, day_start_utc, day_end_utc), as_dict=True,
         )
         last_out_row = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='OUT'
-               AND DATE(time)=%s ORDER BY time DESC LIMIT 1""",
-            (emp.name, target_date), as_dict=True,
+               AND time >= %s AND time < %s ORDER BY time DESC LIMIT 1""",
+            (emp.name, day_start_utc, day_end_utc), as_dict=True,
         )
         if not first_in_row or not last_out_row:
             continue  # incomplete — skip; will retry only if cron re-runs
-        first_in = get_datetime(first_in_row[0]["time"])
-        last_out = get_datetime(last_out_row[0]["time"])
+        # Convert to IST so persisted timestamps match what the operator
+        # would expect to see on the desk for an IST shift.
+        first_in = _to_ist(get_datetime(first_in_row[0]["time"])).replace(tzinfo=None)
+        last_out = _to_ist(get_datetime(last_out_row[0]["time"])).replace(tzinfo=None)
         if last_out <= first_in:
             continue
         gross = (last_out - first_in).total_seconds() / 3600.0
@@ -313,8 +352,28 @@ def _create_ot_logs(employees, target_date, holiday=False):
 
 # ── Helpers ───────────────────────────────────────────────────────
 
-def _is_holiday(d):
-    """True if d is in any active Holiday List."""
+def _is_holiday(d, holiday_list=None):
+    """True if d is in the named Holiday List, or in any default Company
+    Holiday List when holiday_list is None.
+
+    Defaulting to "any holiday on any list" was the previous behaviour, but
+    that incorrectly treated a DCEPL workshop holiday as a holiday for DSPL
+    Office staff too. We now restrict to the active companies' default
+    holiday lists."""
+    if holiday_list:
+        return bool(frappe.db.sql(
+            "SELECT 1 FROM `tabHoliday` WHERE holiday_date=%s AND parent=%s LIMIT 1",
+            (d, holiday_list),
+        ))
+    company_lists = frappe.get_all(
+        "Company",
+        filters={"default_holiday_list": ["is", "set"]},
+        pluck="default_holiday_list",
+    )
+    if not company_lists:
+        return False
+    placeholders = ", ".join(["%s"] * len(company_lists))
     return bool(frappe.db.sql(
-        "SELECT 1 FROM `tabHoliday` WHERE holiday_date=%s LIMIT 1", (d,)
+        f"SELECT 1 FROM `tabHoliday` WHERE holiday_date=%s AND parent IN ({placeholders}) LIMIT 1",
+        tuple([d] + list(company_lists)),
     ))
