@@ -167,8 +167,13 @@ def _bulk_assign():
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active"},
-        fields=["name", "employee_name", "company", "designation", "department"],
+        fields=["name", "employee_name", "company", "designation",
+                "department", "date_of_joining"],
     )
+    # SSA from_date can't be before the employee's joining date; default
+    # to FY 26-27 start, fall back to joining date for late starters.
+    from frappe.utils import getdate
+    fy_start = getdate(EFFECTIVE_FROM)
 
     structure_for = {DSPL: DSPL_STRUCTURE, DCEPL: DCEPL_STRUCTURE}
 
@@ -199,10 +204,13 @@ def _bulk_assign():
         counts[f"from_{source}"] += 1
 
         try:
+            from_date = EFFECTIVE_FROM
+            if emp.date_of_joining and getdate(emp.date_of_joining) > fy_start:
+                from_date = str(emp.date_of_joining)
             ssa = frappe.new_doc("Salary Structure Assignment")
             ssa.employee = emp.name
             ssa.salary_structure = structure
-            ssa.from_date = EFFECTIVE_FROM
+            ssa.from_date = from_date
             ssa.base = base
             ssa.company = emp.company
             ssa.insert(ignore_permissions=True)
