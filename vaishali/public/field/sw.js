@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v69';
+var CACHE_NAME = 'dspl-field-v70';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',

@@ -118,26 +118,58 @@
         }));
       }
 
-      // ── Attendance link — late marks this month (Office staff only) ──
+      // ── Attendance link — late marks + straight half-days + OT ──
       var attData = (attRes && attRes.data && (attRes.data.message || attRes.data.data)) || null;
-      if (attData && attData.attendance_mode === 'Office') {
+      if (attData) {
         var lm = (attData.this_month && attData.this_month.late_marks) || 0;
-        var hd = (attData.this_month && attData.this_month.half_day_deductions) || 0;
-        if (lm > 0 || hd > 0) {
-          content.appendChild(UI.sectionHeader('This month', {
-            support: 'Late marks reduce your effective leave balance'
+        var hdRoll = (attData.this_month && attData.this_month.half_day_deductions) || 0;
+        var hdStraight = (attData.this_month && attData.this_month.straight_half_days) || 0;
+        var otH = (attData.this_month && attData.this_month.ot_hours) || 0;
+        var otOpen = (attData.this_month && attData.this_month.ot_open_count) || 0;
+
+        var rows = [];
+
+        // Office mode → late marks + half-day rows
+        if (attData.attendance_mode === 'Office' && (lm > 0 || hdRoll > 0 || hdStraight > 0)) {
+          var totalHd = hdRoll + hdStraight;
+          var subText;
+          if (hdStraight > 0 && hdRoll > 0) {
+            subText = hdStraight + ' from late check-in (after 11:00) · ' +
+                      hdRoll + ' from 3-late rollup';
+          } else if (hdStraight > 0) {
+            subText = hdStraight + (hdStraight === 1 ? ' day' : ' days') + ' from check-in after 11:00';
+          } else if (hdRoll > 0) {
+            subText = hdRoll + (hdRoll === 1 ? ' day' : ' days') + ' from 3-late rollup';
+          } else {
+            subText = 'No half-day deductions yet — 3 lates → 1 deduction';
+          }
+          rows.push(UI.listCard({
+            title: lm + (lm === 1 ? ' late mark' : ' late marks') + (totalHd > 0 ? ' · ' + totalHd + ' half-day' + (totalHd === 1 ? '' : 's') : ''),
+            sub: subText,
+            right: UI.pill(totalHd > 0 ? 'Deduction' : 'Watch', totalHd > 0 ? 'red' : 'yellow'),
+            onClick: function () { location.hash = '#/attendance'; }
           }));
-          var attRow = el('div', { className: 'm3-list' }, [
-            UI.listCard({
-              title: lm + (lm === 1 ? ' late mark' : ' late marks'),
-              sub: hd > 0
-                ? hd + (hd === 1 ? ' half-day deduction so far' : ' half-day deductions so far')
-                : 'No half-day deductions yet',
-              right: UI.pill(hd > 0 ? 'Action' : 'Track', hd > 0 ? 'red' : 'yellow'),
-              onClick: function () { location.hash = '#/attendance'; }
-            })
-          ]);
-          content.appendChild(attRow);
+        }
+
+        // OT-eligible → OT hours row
+        if (attData.overtime_eligible) {
+          rows.push(UI.listCard({
+            title: otH.toFixed(2) + ' OT hours',
+            sub: otOpen > 0
+              ? otOpen + (otOpen === 1 ? ' day' : ' days') + ' awaiting approval'
+              : 'No OT pending approval',
+            right: UI.pill(otOpen > 0 ? 'Open' : 'Logged', otOpen > 0 ? 'yellow' : 'green'),
+            onClick: function () { location.hash = '#/attendance'; }
+          }));
+        }
+
+        if (rows.length) {
+          content.appendChild(UI.sectionHeader('This month', {
+            support: attData.overtime_eligible
+              ? 'Late marks reduce leave; overtime accrues for payroll'
+              : 'Late marks reduce your effective leave balance'
+          }));
+          content.appendChild(el('div', { className: 'm3-list' }, rows));
         }
       }
 

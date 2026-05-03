@@ -1114,6 +1114,10 @@ def get_attendance_summary():
     half_day_rolled_this_month = frappe.db.count("Late Mark",
         {"employee": emp.name, "date": ["between", [month_start, month_end]],
          "rolled_into_half_day": 1})
+    # Straight half-days from check-in after 11:00 (Attendance rows)
+    straight_half_days_this_month = frappe.db.count("Attendance",
+        {"employee": emp.name, "status": "Half Day", "docstatus": 1,
+         "attendance_date": ["between", [month_start, month_end]]})
 
     # Pending leave applications (not yet approved/rejected)
     pending_leaves = frappe.get_all("Leave Application",
@@ -1129,8 +1133,25 @@ def get_attendance_summary():
         order_by="from_date asc",
         limit_page_length=5)
 
+    # Overtime — only relevant when Employee.overtime_eligible
+    emp_meta = frappe.db.get_value("Employee", emp.name,
+        ["attendance_mode", "overtime_eligible"], as_dict=True) or {}
+    ot_hours_total = 0.0
+    ot_open_count = 0
+    if emp_meta.get("overtime_eligible"):
+        rows = frappe.db.sql("""
+            SELECT IFNULL(SUM(ot_hours), 0) AS hrs,
+                   SUM(CASE WHEN status='Open' THEN 1 ELSE 0 END) AS open_ct
+            FROM `tabOvertime Log`
+            WHERE employee=%s AND date BETWEEN %s AND %s
+        """, (emp.name, month_start, month_end), as_dict=True)
+        if rows:
+            ot_hours_total = float(rows[0].hrs or 0)
+            ot_open_count = int(rows[0].open_ct or 0)
+
     return {
-        "attendance_mode": frappe.db.get_value("Employee", emp.name, "attendance_mode") or "Office",
+        "attendance_mode": emp_meta.get("attendance_mode") or "Office",
+        "overtime_eligible": int(emp_meta.get("overtime_eligible") or 0),
         "today": {
             "date": today_iso,
             "status": att_today.status if att_today else None,
@@ -1141,6 +1162,9 @@ def get_attendance_summary():
         "this_month": {
             "late_marks": late_marks_this_month,
             "half_day_deductions": half_day_rolled_this_month,
+            "straight_half_days": straight_half_days_this_month,
+            "ot_hours": round(ot_hours_total, 2),
+            "ot_open_count": ot_open_count,
             "month_start": month_start,
             "month_end": month_end,
         },

@@ -1,23 +1,46 @@
-"""Attendance rules — late marks, half-day rollup, auto-LWP for unapproved absence.
+"""Attendance rules — late marks, half-day rollup, auto-LWP, overtime.
 
 Scheduler entry points (registered in hooks.py):
     daily 23:30: process_late_marks()
+    daily 23:45: compute_overtime()
     monthly 1st: roll_late_marks_to_half_day()
     daily 23:00: mark_lwp_for_unapproved_absence()
+
+DSPL/DCEPL attendance policy (Office mode only):
+- 09:00 shift start, 09:30 grace cutoff
+- 09:31–11:00 first IN → Late Mark (3 in a calendar month → 1 Half Day)
+- After 11:00 first IN → straight Half Day (Attendance row + Late Mark
+  with rolled_into_half_day=1 so it isn't counted twice in the rollup)
+- No checkin and no approved leave → auto-LWP via Leave Without Pay
+
+Overtime:
+- Per-Employee Custom Field `overtime_eligible` (default 0)
+- For eligible employees with both IN and OUT logs, daily cron creates
+  an Overtime Log row with regular_hours capped at REGULAR_HOURS_CAP
+  and the rest as ot_hours
 """
 import frappe
 from frappe.utils import getdate, today, add_days, get_datetime, nowdate
 from datetime import time, timedelta
 
 OFFICE_SHIFT = "Office Hours"
-LATE_THRESHOLD = time(9, 30)  # 09:30 IST
+LATE_THRESHOLD = time(9, 30)             # 09:30 IST → late mark
+STRAIGHT_HALF_DAY_THRESHOLD = time(11, 0)  # 11:00 IST → straight half day
 HALF_DAY_THRESHOLD = 3  # 3 lates in a month → 1 half day
+REGULAR_HOURS_CAP = 9.0  # daily hours beyond this count as overtime
 
 
 # ── Late-mark daily logger ────────────────────────────────────────
 
 def process_late_marks(target_date=None):
-    """For each Office-mode active employee, log a Late Mark if first IN is after 09:30.
+    """For each Office-mode active employee, apply the late-mark / half-day rules.
+
+    - First IN ≤ 09:30 → no action
+    - 09:31 – 11:00 → Late Mark (rolled_into_half_day=0)
+    - After 11:00 → Late Mark (rolled_into_half_day=1) AND submitted Attendance
+      row with status='Half Day' so the deduction is immediate, not deferred to
+      the monthly rollup. The flagged Late Mark prevents the rollup from
+      double-counting it.
 
     Idempotent: skips if a Late Mark already exists for (employee, date).
     """
@@ -28,18 +51,19 @@ def process_late_marks(target_date=None):
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active", "attendance_mode": "Office"},
-        pluck="name",
+        fields=["name", "company"],
     )
-    created = 0
+    late_created = 0
+    half_day_created = 0
     for emp in employees:
-        if frappe.db.exists("Late Mark", {"employee": emp, "date": target_date}):
+        if frappe.db.exists("Late Mark", {"employee": emp.name, "date": target_date}):
             continue
         first_in = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='IN'
                AND DATE(time)=%s
                ORDER BY time ASC LIMIT 1""",
-            (emp, target_date),
+            (emp.name, target_date),
             as_dict=True,
         )
         if not first_in:
@@ -47,19 +71,48 @@ def process_late_marks(target_date=None):
         checkin_dt = get_datetime(first_in[0]["time"])
         if checkin_dt.time() <= LATE_THRESHOLD:
             continue
+
+        is_straight_half_day = checkin_dt.time() > STRAIGHT_HALF_DAY_THRESHOLD
         minutes_late = int((checkin_dt - checkin_dt.replace(
             hour=LATE_THRESHOLD.hour, minute=LATE_THRESHOLD.minute, second=0
         )).total_seconds() // 60)
         frappe.get_doc({
             "doctype": "Late Mark",
-            "employee": emp,
+            "employee": emp.name,
             "date": target_date,
             "checkin_time": checkin_dt,
             "minutes_late": minutes_late,
+            # If we are creating the Half Day attendance row immediately, mark
+            # the Late Mark as already rolled so the monthly cron skips it.
+            "rolled_into_half_day": 1 if is_straight_half_day else 0,
         }).insert(ignore_permissions=True)
-        created += 1
+        late_created += 1
+
+        if is_straight_half_day and not frappe.db.exists("Attendance", {
+            "employee": emp.name, "attendance_date": target_date
+        }):
+            try:
+                frappe.get_doc({
+                    "doctype": "Attendance",
+                    "employee": emp.name,
+                    "attendance_date": target_date,
+                    "status": "Half Day",
+                    "shift": OFFICE_SHIFT,
+                    "company": emp.company,
+                    "in_time": checkin_dt,
+                }).insert(ignore_permissions=True).submit()
+                half_day_created += 1
+            except Exception as e:
+                frappe.log_error(
+                    f"Straight half-day failed for {emp.name} on {target_date}: {e}",
+                    "Straight Half Day"
+                )
     frappe.db.commit()
-    return {"date": str(target_date), "late_marks_created": created}
+    return {
+        "date": str(target_date),
+        "late_marks_created": late_created,
+        "half_days_created": half_day_created,
+    }
 
 
 # ── Monthly rollup → Half-day Attendance ──────────────────────────
@@ -163,6 +216,96 @@ def mark_lwp_for_unapproved_absence(target_date=None):
             frappe.log_error(f"Auto-LWP failed for {emp.name}: {e}", "Auto-LWP")
     frappe.db.commit()
     return {"date": str(target_date), "lwp_marked": marked}
+
+
+# ── Overtime — daily compute for OT-eligible employees ───────────
+
+def compute_overtime(target_date=None):
+    """For each Active Office-mode employee with overtime_eligible=1, log
+    overtime hours into the custom Overtime Log DocType.
+
+    Hours model:
+        total_hours = (last OUT − first IN) − 1h break
+        regular_hours = min(total_hours, REGULAR_HOURS_CAP)
+        ot_hours = max(0, total_hours − REGULAR_HOURS_CAP)
+
+    Idempotent: skips (employee, date) pairs that already have an
+    Overtime Log row.
+    """
+    target_date = getdate(target_date or today())
+    if _is_holiday(target_date):
+        # Holiday work counts entirely as overtime
+        all_eligible = frappe.get_all(
+            "Employee",
+            filters={"status": "Active", "overtime_eligible": 1},
+            fields=["name", "company"],
+        )
+        return _create_ot_logs(all_eligible, target_date, holiday=True)
+
+    eligible = frappe.get_all(
+        "Employee",
+        filters={"status": "Active", "overtime_eligible": 1},
+        fields=["name", "company"],
+    )
+    return _create_ot_logs(eligible, target_date, holiday=False)
+
+
+def _create_ot_logs(employees, target_date, holiday=False):
+    created = 0
+    for emp in employees:
+        if frappe.db.exists("Overtime Log", {"employee": emp.name, "date": target_date}):
+            continue
+        first_in_row = frappe.db.sql(
+            """SELECT time FROM `tabEmployee Checkin`
+               WHERE employee=%s AND log_type='IN'
+               AND DATE(time)=%s ORDER BY time ASC LIMIT 1""",
+            (emp.name, target_date), as_dict=True,
+        )
+        last_out_row = frappe.db.sql(
+            """SELECT time FROM `tabEmployee Checkin`
+               WHERE employee=%s AND log_type='OUT'
+               AND DATE(time)=%s ORDER BY time DESC LIMIT 1""",
+            (emp.name, target_date), as_dict=True,
+        )
+        if not first_in_row or not last_out_row:
+            continue  # incomplete — skip; will retry only if cron re-runs
+        first_in = get_datetime(first_in_row[0]["time"])
+        last_out = get_datetime(last_out_row[0]["time"])
+        if last_out <= first_in:
+            continue
+        gross = (last_out - first_in).total_seconds() / 3600.0
+        # 1h unpaid lunch deducted from working day; not from holiday work
+        total_hours = round(max(0.0, gross - (0.0 if holiday else 1.0)), 2)
+        if holiday:
+            regular = 0.0
+            ot = total_hours
+        else:
+            regular = min(total_hours, REGULAR_HOURS_CAP)
+            ot = max(0.0, total_hours - REGULAR_HOURS_CAP)
+        if ot <= 0 and not holiday:
+            continue  # no OT to log
+        try:
+            frappe.get_doc({
+                "doctype": "Overtime Log",
+                "employee": emp.name,
+                "date": target_date,
+                "in_time": first_in,
+                "out_time": last_out,
+                "total_hours": total_hours,
+                "regular_hours": round(regular, 2),
+                "ot_hours": round(ot, 2),
+                "is_holiday_work": 1 if holiday else 0,
+                "status": "Open",
+                "company": emp.company,
+            }).insert(ignore_permissions=True)
+            created += 1
+        except Exception as e:
+            frappe.log_error(
+                f"OT log failed for {emp.name} on {target_date}: {e}",
+                "Overtime Log",
+            )
+    frappe.db.commit()
+    return {"date": str(target_date), "ot_logs_created": created, "holiday": holiday}
 
 
 # ── Helpers ───────────────────────────────────────────────────────
