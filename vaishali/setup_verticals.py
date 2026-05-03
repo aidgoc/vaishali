@@ -138,22 +138,40 @@ def _normalise(s):
 def _match(tally_name_norm, emp_index):
     """Return ERPNext Employee.name or None.
 
-    Strategy:
+    Strategy (strict — avoid false positives):
     1. Exact normalised match
-    2. Token-set overlap ≥ 2 — handles word order swaps and middle names
+    2. Token-set match where ALL tokens of the shorter name are present in
+       the longer name, AND the first token (typically the personal name)
+       is shared. Common surnames like 'kumar' / 'singh' / 'prajapati' on
+       their own are not enough — we require at least one rarer token.
     """
     if tally_name_norm in emp_index:
         return emp_index[tally_name_norm]
-    cc_tokens = set(tally_name_norm.split())
+
+    cc_tokens = [t for t in tally_name_norm.split() if t]
     if len(cc_tokens) < 2:
         return None
-    best, best_overlap = None, 1
+    cc_set = set(cc_tokens)
+
+    # Reject matches solely on common Indian-name particles
+    common = {"kumar", "singh", "ali", "prasad", "prajapati", "yadav",
+              "kishor", "kishore", "ram", "lal", "raj", "shah", "sharma",
+              "paswan", "khan", "bhai", "shri"}
+
     for full, emp in emp_index.items():
-        emp_tokens = set(full.split())
-        overlap = len(cc_tokens & emp_tokens)
-        if overlap > best_overlap:
-            best, best_overlap = emp, overlap
-    return best
+        emp_tokens = [t for t in full.split() if t]
+        if len(emp_tokens) < 2:
+            continue
+        emp_set = set(emp_tokens)
+        shared = cc_set & emp_set
+        rare_shared = shared - common
+        if not rare_shared:
+            continue
+        shorter = min(len(cc_set), len(emp_set))
+        # All tokens of the shorter name must appear in the longer name
+        if len(shared) >= shorter and len(rare_shared) >= 1:
+            return emp
+    return None
 
 
 # ── Apply ─────────────────────────────────────────────────────────
