@@ -23,6 +23,15 @@
       { label: 'Budget', ic: 'receipt', hash: '#/budget', sub: 'Expense budget tracker' }
     ];
 
+    // Manager-only tiles: verification queue + month-end billing trigger.
+    var isManager = window.Auth && Auth.isManager && Auth.isManager();
+    if (isManager) {
+      tiles.push({ label: 'Verify logsheets', ic: 'check', hash: '#/logsheet-verify',
+                   sub: 'Paper-signed entries waiting for sign-off' });
+      tiles.push({ label: 'Logsheet billing', ic: 'wallet', hash: '#/logsheet-billing',
+                   sub: 'Generate month-end Sales Invoices' });
+    }
+
     var listWrap = el('div', { className: 'm3-list' });
     for (var i = 0; i < tiles.length; i++) {
       (function (t) {

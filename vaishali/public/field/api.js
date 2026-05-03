@@ -481,6 +481,33 @@
       }
       else if (path === '/api/field/logsheet-summary') path = '/api/method/vaishali.api.field.get_logsheet_summary';
       else if (path === '/api/field/recent-equipment') path = '/api/method/vaishali.api.field.get_recent_equipment_labels';
+      // Logsheet billing — manager month-end Sales Invoice generator
+      else if (path === '/api/field/logsheet-billing/summary') {
+        path = '/api/method/vaishali.api.billing.get_logsheet_billing_summary';
+      }
+      else if (path === '/api/field/logsheet-billing/preview' || path.indexOf('/api/field/logsheet-billing/preview?') === 0) {
+        var lbpQS = ''; var lbpQI = path.indexOf('?'); if (lbpQI !== -1) lbpQS = path.substring(lbpQI);
+        path = '/api/method/vaishali.api.billing.preview_logsheet_billing' + lbpQS;
+      }
+      else if (path === '/api/field/logsheet-billing/generate' && method === 'POST') {
+        path = '/api/method/vaishali.api.billing.generate_logsheet_invoices';
+      }
+      // Logsheet verification — manager queue
+      else if (path === '/api/field/logsheets-pending-verification' || path.indexOf('/api/field/logsheets-pending-verification?') === 0) {
+        var lpvQS = ''; var lpvQI = path.indexOf('?'); if (lpvQI !== -1) lpvQS = path.substring(lpvQI);
+        path = '/api/method/vaishali.api.logsheet_admin.get_logsheets_pending_verification' + lpvQS;
+      }
+      else if (path.match(/^\/api\/field\/logsheet-verify\/[^/]+\/(verify|dispute)$/)) {
+        var lvParts = path.replace('/api/field/logsheet-verify/', '').split('/');
+        body = body || {};
+        body.name = decodeURIComponent(lvParts[0]);
+        body.decision = lvParts[1];
+        path = '/api/method/vaishali.api.logsheet_admin.verify_logsheet';
+        method = 'POST';
+      }
+      else if (path === '/api/field/logsheet-verify/bulk' && method === 'POST') {
+        path = '/api/method/vaishali.api.logsheet_admin.bulk_verify';
+      }
       else if (path.match(/^\/api\/field\/logsheet\/[^/]+\/approval-link$/)) {
         var alId = decodeURIComponent(path.replace('/api/field/logsheet/', '').replace('/approval-link', ''));
         path = '/api/method/vaishali.api.field.get_logsheet_approval_link?name=' + encodeURIComponent(alId);

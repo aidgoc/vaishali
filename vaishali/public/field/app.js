@@ -193,6 +193,10 @@
     { pattern: '#/logsheet',          handler: function () { S().logsheetList(appEl); },         tab: 'home', title: 'Logsheet',         back: '#/home' },
     { pattern: '#/logsheet/:id',      handler: function (p) { S().logsheetDetail(appEl, p); },   tab: 'home', title: 'Logsheet entry',   back: '#/logsheet' },
 
+    // Logsheet manager screens (verification + month-end billing)
+    { pattern: '#/logsheet-verify',   handler: function () { S().logsheetVerifyList(appEl); },   tab: 'home', title: 'Verify logsheets',  back: '#/hr' },
+    { pattern: '#/logsheet-billing',  handler: function () { S().logsheetBilling(appEl); },      tab: 'home', title: 'Logsheet billing',  back: '#/hr' },
+
     // Salary
     { pattern: '#/salary',     handler: function () { S().salaryList(appEl); },        tab: 'home', title: 'Salary Slips',  back: '#/hr' },
     { pattern: '#/salary/:id', handler: function (p) { S().salaryDetail(appEl, p); },  tab: 'home', title: 'Salary Slip',   back: '#/salary' },

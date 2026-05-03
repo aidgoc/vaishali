@@ -199,5 +199,18 @@ scheduler_events = {
         "0 1 1 * *": [
             "vaishali.api.attendance.roll_late_marks_to_half_day",
         ],
+        # Month-end Operator Logsheet billing — drafts Sales Invoices on
+        # the 1st of every month for the previous month's billable
+        # logsheets (one SI per customer × equipment × month). Runs first
+        # so payroll (later in the morning) sees the Billed status.
+        "0 6 1 * *": [
+            "vaishali.api.billing.generate_logsheet_invoices",
+        ],
+        # Month-end operator pay — Additional Salary docs created from
+        # the previous month's Billed logsheet hours × Employee.operator_pay_rate.
+        # Runs after billing so we only pay for hours that actually went out.
+        "0 9 1 * *": [
+            "vaishali.api.payroll.run_monthly_payroll_cron",
+        ],
     },
 }
