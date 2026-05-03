@@ -73,40 +73,23 @@ def _ensure_attendance_mode_field():
 # ── Late Mark DocType ─────────────────────────────────────────────
 
 def _ensure_late_mark_doctype():
-    if frappe.db.exists("DocType", "Late Mark"):
-        print("  DocType: Late Mark exists")
+    """Late Mark is now an App DocType under vaishali/vaishali/doctype/late_mark/.
+    On a fresh bench install, `bench install-app vaishali` picks up the JSON
+    automatically. This function only handles legacy databases that still
+    have a custom=1 record for Late Mark — flips it back to custom=0 so the
+    app code wins on the next `bench migrate`."""
+    if not frappe.db.exists("DocType", "Late Mark"):
+        # The DocType JSON ships with the app; bench install-app or
+        # bench migrate creates it. If it's missing here, the migrate
+        # step hasn't run yet — surfaced via the bench restart pipeline.
+        print("  DocType: Late Mark missing — run `bench migrate`")
         return
-    doc = frappe.get_doc({
-        "doctype": "DocType",
-        "name": "Late Mark",
-        "module": "Vaishali",
-        "custom": 1,
-        "naming_rule": "Expression",
-        "autoname": "format:LM-{employee}-{date}",
-        "track_changes": 1,
-        "fields": [
-            {"fieldname": "employee", "label": "Employee", "fieldtype": "Link",
-             "options": "Employee", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
-            {"fieldname": "employee_name", "label": "Employee Name", "fieldtype": "Data",
-             "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
-            {"fieldname": "date", "label": "Date", "fieldtype": "Date",
-             "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
-            {"fieldname": "checkin_time", "label": "Check-in Time", "fieldtype": "Datetime",
-             "in_list_view": 1},
-            {"fieldname": "minutes_late", "label": "Minutes Late", "fieldtype": "Int",
-             "in_list_view": 1},
-            {"fieldname": "rolled_into_half_day", "label": "Rolled into Half Day",
-             "fieldtype": "Check", "default": 0,
-             "description": "Set when this Late Mark has been counted toward a monthly half-day deduction."},
-        ],
-        "permissions": [
-            {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
-            {"role": "HR User", "read": 1, "write": 1, "create": 1},
-            {"role": "Employee", "read": 1, "if_owner": 1},
-        ],
-    })
-    doc.insert(ignore_permissions=True)
-    print("  DocType: created Late Mark")
+    is_custom = frappe.db.get_value("DocType", "Late Mark", "custom")
+    if is_custom:
+        frappe.db.set_value("DocType", "Late Mark", "custom", 0)
+        print("  DocType: Late Mark flipped from custom=1 → custom=0")
+    else:
+        print("  DocType: Late Mark in app code (custom=0)")
 
 
 # ── Classify employees ────────────────────────────────────────────

@@ -51,31 +51,26 @@ def run():
     print("\n=== Overtime Setup ===\n")
     _ensure_overtime_eligible_field()
     _ensure_overtime_log_doctype()
-    _ensure_pay_multiplier_field()
+    _drop_legacy_pay_multiplier_custom_field()
     flag_pirangut()
     frappe.db.commit()
     print("\n✓ Overtime infrastructure ready.\n")
 
 
-# ── Custom Field: Overtime Log.pay_multiplier (1:1 default) ───────
+# ── Cleanup: drop legacy pay_multiplier Custom Field ──────────────
 
-def _ensure_pay_multiplier_field():
-    """Pay multiplier on each OT Log row. Default 1.0 (Pirangut 1:1 policy);
-    can be overridden per row if management approves a different rate
-    (e.g. 1.5x for a specific holiday). The actual amount is derived by
-    payroll from `ot_hours × pay_multiplier × hourly_rate`."""
-    create_custom_field("Overtime Log", {
-        "fieldname": "pay_multiplier",
-        "label": "Pay multiplier",
-        "fieldtype": "Float",
-        "default": "1.0",
-        "precision": "2",
-        "insert_after": "is_holiday_work",
-        "description": "1.0 = same hourly rate as regular pay (Pirangut policy). "
-                       "Bump if management approves a higher multiplier for "
-                       "a specific date.",
-    })
-    print("  Custom Field: Overtime Log.pay_multiplier ensured (default 1.0)")
+def _drop_legacy_pay_multiplier_custom_field():
+    """Earlier setup added Overtime Log.pay_multiplier as a Custom Field on
+    top of a custom=1 DocType. Now that Overtime Log ships as an App DocType
+    (vaishali/vaishali/doctype/overtime_log/overtime_log.json) with
+    pay_multiplier baked into the standard fields, the Custom Field record
+    becomes a duplicate and must go."""
+    cf = frappe.db.exists("Custom Field",
+                          {"dt": "Overtime Log", "fieldname": "pay_multiplier"})
+    if cf:
+        frappe.delete_doc("Custom Field", cf, ignore_permissions=True)
+        print("  Custom Field: removed legacy Overtime Log.pay_multiplier "
+              "(now a standard field on the App DocType)")
 
 
 def flag_pirangut():
@@ -120,58 +115,17 @@ def _ensure_overtime_eligible_field():
 # ── DocType: Overtime Log ─────────────────────────────────────────
 
 def _ensure_overtime_log_doctype():
-    if frappe.db.exists("DocType", "Overtime Log"):
-        print("  DocType: Overtime Log exists")
+    """Overtime Log is an App DocType under vaishali/vaishali/doctype/overtime_log/.
+    On a fresh bench install, the JSON file is loaded by `bench migrate`.
+    This function only handles legacy databases where the DocType was first
+    created with custom=1 — flips the flag back to 0 so the app code is
+    authoritative."""
+    if not frappe.db.exists("DocType", "Overtime Log"):
+        print("  DocType: Overtime Log missing — run `bench migrate`")
         return
-    doc = frappe.get_doc({
-        "doctype": "DocType",
-        "name": "Overtime Log",
-        "module": "Vaishali",
-        "custom": 1,
-        "naming_rule": "Expression",
-        "autoname": "format:OT-{employee}-{date}",
-        "track_changes": 1,
-        "fields": [
-            {"fieldname": "employee", "label": "Employee", "fieldtype": "Link",
-             "options": "Employee", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
-            {"fieldname": "employee_name", "label": "Employee Name", "fieldtype": "Data",
-             "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
-            {"fieldname": "date", "label": "Date", "fieldtype": "Date",
-             "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
-            {"fieldname": "company", "label": "Company", "fieldtype": "Link",
-             "options": "Company", "in_standard_filter": 1},
-            {"fieldname": "section_break_times", "fieldtype": "Section Break",
-             "label": "Times"},
-            {"fieldname": "in_time", "label": "First In", "fieldtype": "Datetime"},
-            {"fieldname": "out_time", "label": "Last Out", "fieldtype": "Datetime"},
-            {"fieldname": "section_break_hours", "fieldtype": "Section Break",
-             "label": "Hours"},
-            {"fieldname": "total_hours", "label": "Total hours", "fieldtype": "Float",
-             "in_list_view": 1, "precision": "2",
-             "description": "(Last Out − First In) minus 1h lunch on a working day."},
-            {"fieldname": "regular_hours", "label": "Regular hours", "fieldtype": "Float",
-             "precision": "2"},
-            {"fieldname": "ot_hours", "label": "OT hours", "fieldtype": "Float",
-             "in_list_view": 1, "precision": "2"},
-            {"fieldname": "is_holiday_work", "label": "Holiday work?",
-             "fieldtype": "Check", "default": 0,
-             "description": "On holidays, every hour worked counts as overtime."},
-            {"fieldname": "section_break_status", "fieldtype": "Section Break",
-             "label": "Status"},
-            {"fieldname": "status", "label": "Status", "fieldtype": "Select",
-             "options": "Open\nApproved\nPaid\nRejected", "default": "Open",
-             "in_list_view": 1, "in_standard_filter": 1},
-            {"fieldname": "approved_by", "label": "Approved by", "fieldtype": "Link",
-             "options": "User"},
-            {"fieldname": "approval_remark", "label": "Approval remark",
-             "fieldtype": "Small Text"},
-        ],
-        "permissions": [
-            {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
-            {"role": "HR User", "read": 1, "write": 1, "create": 1},
-            {"role": "Service Manager", "read": 1, "write": 1},
-            {"role": "Employee", "read": 1, "if_owner": 1},
-        ],
-    })
-    doc.insert(ignore_permissions=True)
-    print("  DocType: created Overtime Log")
+    is_custom = frappe.db.get_value("DocType", "Overtime Log", "custom")
+    if is_custom:
+        frappe.db.set_value("DocType", "Overtime Log", "custom", 0)
+        print("  DocType: Overtime Log flipped from custom=1 → custom=0")
+    else:
+        print("  DocType: Overtime Log in app code (custom=0)")
