@@ -2682,13 +2682,14 @@ def get_spanco_kanban():
 
     sections = {}
 
-    # Suspect — fresh leads
+    # Suspect — fresh leads. Capped at 200; cold-lead pool is large
+    # (Apollo enrichment + organic) and 50 hides too much.
     suspect = frappe.get_all("Lead",
         filters=_scope({"status": ["in", ["Lead", "Open"]]}),
         fields=["name", "lead_name", "company_name", "source", "status",
-                "creation", "mobile_no", "email_id"],
+                "creation", "modified", "mobile_no", "email_id"],
         order_by="creation desc",
-        limit_page_length=50)
+        limit_page_length=200)
     for r in suspect:
         r["doctype"] = "Lead"
     sections["suspect"] = suspect
@@ -2697,16 +2698,17 @@ def get_spanco_kanban():
     interested = frappe.get_all("Lead",
         filters=_scope({"status": "Interested"}),
         fields=["name", "lead_name", "company_name", "source", "status",
-                "creation", "mobile_no", "email_id"],
+                "creation", "modified", "mobile_no", "email_id"],
         order_by="creation desc",
-        limit_page_length=25)
+        limit_page_length=50)
     for r in interested:
         r["doctype"] = "Lead"
 
     own_clause = "AND o.owner = %(user)s" if own else ""
     open_opps = frappe.db.sql(f"""
         SELECT o.name, o.party_name, o.customer_name, o.opportunity_amount,
-               o.status, o.creation, o.source, o.contact_email, o.contact_mobile
+               o.status, o.creation, o.modified, o.source,
+               o.contact_email, o.contact_mobile
         FROM `tabOpportunity` o
         LEFT JOIN `tabQuotation` q
             ON q.opportunity = o.name AND q.docstatus = 1
@@ -2715,7 +2717,7 @@ def get_spanco_kanban():
           AND q.name IS NULL
           {own_clause}
         ORDER BY o.creation DESC
-        LIMIT 25
+        LIMIT 50
     """, {"user": user, "company": COMPANY}, as_dict=True)
     for r in open_opps:
         r["doctype"] = "Opportunity"
@@ -2725,9 +2727,10 @@ def get_spanco_kanban():
     approach = frappe.get_all("Opportunity",
         filters=_scope({"status": "Replied", "company": COMPANY}),
         fields=["name", "party_name", "customer_name", "opportunity_amount",
-                "status", "creation", "source", "contact_email", "contact_mobile"],
+                "status", "creation", "modified", "source",
+                "contact_email", "contact_mobile"],
         order_by="modified desc",
-        limit_page_length=50)
+        limit_page_length=100)
     for r in approach:
         r["doctype"] = "Opportunity"
     sections["approach"] = approach
@@ -2736,10 +2739,10 @@ def get_spanco_kanban():
     negotiation = frappe.get_all("Quotation",
         filters=_scope({"docstatus": 1, "status": "Open", "company": COMPANY}),
         fields=["name", "party_name", "customer_name", "grand_total", "status",
-                "transaction_date", "valid_till", "quotation_temperature",
-                "contact_email", "contact_mobile"],
+                "transaction_date", "modified", "valid_till",
+                "quotation_temperature", "contact_email", "contact_mobile"],
         order_by="transaction_date desc",
-        limit_page_length=50)
+        limit_page_length=100)
     for r in negotiation:
         r["doctype"] = "Quotation"
     sections["negotiation"] = negotiation
@@ -2749,9 +2752,10 @@ def get_spanco_kanban():
         filters=_scope({"docstatus": 1, "status": "Open",
                         "quotation_temperature": "Hot", "company": COMPANY}),
         fields=["name", "party_name", "customer_name", "grand_total", "status",
-                "transaction_date", "valid_till", "quotation_temperature"],
+                "transaction_date", "modified", "valid_till",
+                "quotation_temperature"],
         order_by="transaction_date desc",
-        limit_page_length=50)
+        limit_page_length=100)
     for r in closing:
         r["doctype"] = "Quotation"
     sections["closing"] = closing
@@ -2761,9 +2765,10 @@ def get_spanco_kanban():
         filters=_scope({"docstatus": 1, "company": COMPANY,
                         "transaction_date": [">=", cutoff]}),
         fields=["name", "customer_name", "customer", "grand_total", "status",
-                "transaction_date", "delivery_date", "per_billed", "per_delivered"],
+                "transaction_date", "modified", "delivery_date",
+                "per_billed", "per_delivered"],
         order_by="transaction_date desc",
-        limit_page_length=50)
+        limit_page_length=100)
     for r in orders:
         r["doctype"] = "Sales Order"
     sections["order"] = orders

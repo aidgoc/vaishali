@@ -7309,6 +7309,24 @@ body, #app, #app-header, #bottom-nav, .bottom-nav {
   margin: 0 auto;
 }
 
+/* ─── Stale-deal badge on cards ────────────────────────────────── */
+
+.spanco-card-stale {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--m3-warning-container, #FFDBC9);
+  color: var(--m3-on-warning-container, #2E1500);
+  font: var(--m3-label-small);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.spanco-card-stale-label {
+  font-feature-settings: 'tnum' 1;
+}
+
 /* ─── Tappable stage chip on each card ─────────────────────────── */
 
 .spanco-card-stage {

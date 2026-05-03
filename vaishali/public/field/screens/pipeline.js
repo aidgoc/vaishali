@@ -77,6 +77,31 @@
     return bits;
   }
 
+  // ─── Staleness ────────────────────────────────────────────────────
+  // Days a card can sit in a stage before it counts as stale.
+  // Closing is tightest because Hot quotes should close fast.
+
+  var STALE_DAYS = {
+    suspect:     30,
+    prospect:    30,
+    approach:    14,
+    negotiation: 14,
+    closing:     7,
+    order:       null
+  };
+
+  function staleDays(item, stage) {
+    var threshold = STALE_DAYS[stage.key];
+    if (!threshold) return null;
+    var ref = item.modified || item.creation || item.transaction_date;
+    if (!ref) return null;
+    var d = new Date(ref);
+    if (isNaN(d.getTime())) return null;
+    var days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (days <= threshold) return null;
+    return days;
+  }
+
   function detailHashFor(item) {
     if (!item || !item.name) return null;
     if (item.doctype === 'Lead') return '#/lead/' + encodeURIComponent(item.name);
@@ -262,10 +287,19 @@
     var amt = cardAmount(item, stage.amountField);
     var subBits = cardSubBits(item, stage);
     var canMove = (ALLOWED_TARGETS[item.doctype] || []).length > 0;
+    var stale = staleDays(item, stage);
 
     var rightChildren = [];
     if (amt > 0) {
       rightChildren.push(el('div', { className: 'spanco-card-amount', textContent: formatINR(amt) }));
+    }
+    if (stale !== null) {
+      rightChildren.push(el('div', {
+        className: 'spanco-card-stale',
+        title: 'No movement in ' + stale + ' days'
+      }, [
+        el('span', { className: 'spanco-card-stale-label', textContent: 'Stale ' + stale + 'd' })
+      ]));
     }
 
     // Stage chip — shows current SPANCO stage (matches column), tappable to move.
