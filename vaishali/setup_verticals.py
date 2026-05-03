@@ -177,7 +177,14 @@ def _match(tally_name_norm, emp_index):
 # ── Apply ─────────────────────────────────────────────────────────
 
 def run(dry_run=0):
-    """Apply the Tally vertical mapping to DCEPL employees.
+    """Apply the Tally vertical mapping to DCEPL employees, then fall back to
+    department-based defaults for anyone Tally doesn't cover.
+
+    Department fallback (DCEPL only):
+    - Operations - DCEPL → ERS  (operators on client sites + Pirangut
+      workshop crew — both run under the Equipment Rental Services
+      division per Tally cost-centre parents "MAIN GROUP OPERATORS ER",
+      "Operators-ER HRC", "Operator ER NON HRC", and "ER STAFF")
 
     Pass dry_run=1 to preview the changes without writing."""
     dry_run = bool(int(dry_run))
@@ -212,18 +219,39 @@ def run(dry_run=0):
         updated += 1
         by_vertical[target] += 1
 
+    # Department fallback — operators not in Tally still belong to ERS.
+    # User direction: "operators are always on site, they go with their
+    # equipment. they fill a logsheet for their daily work and get paid
+    # accordingly." Workshop crew at CWS also runs under ERS in Tally.
+    fallback_updates = 0
+    for e in dcepl_emps:
+        if e.name in seen_emps or e.vertical:
+            continue
+        if e.department == "Operations - DCEPL":
+            if dry_run:
+                print(f"  WOULD set {e.name}.vertical (fallback): '' → ERS")
+            else:
+                frappe.db.set_value("Employee", e.name, "vertical", "ERS")
+            fallback_updates += 1
+            by_vertical["ERS"] += 1
+            updated += 1
+
     if not dry_run:
         frappe.db.commit()
 
-    print(f"\n  Updated: {updated} ({by_vertical})")
+    print(f"\n  Updated: {updated} ({by_vertical}) "
+          f"— Tally: {updated - fallback_updates}, dept fallback: {fallback_updates}")
     if unmatched_tally:
         print(f"  Unmatched Tally names ({len(unmatched_tally)}, first 10):")
         for n in unmatched_tally[:10]:
             print(f"    {n}")
 
-    untouched = [e for e in dcepl_emps if e.name not in seen_emps and not e.vertical]
+    untouched = [e for e in dcepl_emps
+                 if e.name not in seen_emps
+                 and not e.vertical
+                 and e.department != "Operations - DCEPL"]
     if untouched:
-        print(f"\n  DCEPL employees with no vertical and no Tally match "
-              f"({len(untouched)}, first 10):")
-        for e in untouched[:10]:
+        print(f"\n  DCEPL employees still without a vertical "
+              f"({len(untouched)} — non-Operations, no Tally match):")
+        for e in untouched[:20]:
             print(f"    {e.name} ({e.employee_name}) dept={e.department}")
