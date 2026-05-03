@@ -292,6 +292,7 @@
     // Reports
     { pattern: '#/monthly-report', handler: function () { S().monthlyReport(appEl); }, tab: 'home', title: 'Monthly Report', back: '#/home' },
     { pattern: '#/budget', handler: function () { S().budgetDashboard(appEl); }, tab: 'home', title: 'Budget', back: '#/home' },
+    { pattern: '#/lost-reasons', handler: function () { S().lostReasons(appEl); }, tab: 'home', title: 'Why we lose', back: '#/home' },
 
     // Inbox (notifications hub — tab destination)
     { pattern: '#/inbox', handler: function () { S().inbox(appEl); }, tab: 'inbox', title: 'Inbox', back: null },
@@ -386,6 +387,7 @@
     // Manager
     '#/team':          'Your team — attendance, visits and performance today.',
     '#/monthly-report':'Monthly performance report card across departments.',
+    '#/lost-reasons':  'Why deals are dying — by reason, by owner, by quote.',
 
     // Salary
     '#/salary':        'Your salary slips by month. Tap to download.',

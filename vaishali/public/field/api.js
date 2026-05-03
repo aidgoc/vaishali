@@ -568,6 +568,10 @@
       else if (path === '/api/field/my-performance') path = '/api/method/vaishali.api.field.get_my_sales_performance';
       else if (path === '/api/field/sales-funnel') path = '/api/method/vaishali.api.field.get_sales_funnel';
       else if (path === '/api/field/monthly-report') path = '/api/method/vaishali.api.field.get_monthly_report';
+      else if (path === '/api/field/lost-reasons' || path.indexOf('/api/field/lost-reasons?') === 0) {
+        var lrQS = ''; var lrQI = path.indexOf('?'); if (lrQI !== -1) lrQS = path.substring(lrQI);
+        path = '/api/method/vaishali.api.field.get_lost_reasons' + lrQS;
+      }
       else if (path === '/api/field/budget-summary' || path.indexOf('/api/field/budget-summary?') === 0) {
         var bsQS = ''; var bsQI = path.indexOf('?'); if (bsQI !== -1) bsQS = path.substring(bsQI);
         path = '/api/method/vaishali.api.field.get_budget_summary' + bsQS;

@@ -412,6 +412,12 @@
         }
       });
 
+      var lossBtn = el('button', {
+        className: 'spanco-hero-action',
+        type: 'button',
+        textContent: 'Why we lose →',
+        onclick: function () { location.hash = '#/lost-reasons'; }
+      });
       appEl.appendChild(el('div', { className: 'spanco-hero' }, [
         el('div', { className: 'spanco-hero-row' }, [
           el('div', { className: 'spanco-hero-block' }, [
@@ -425,7 +431,8 @@
             el('div', { className: 'spanco-hero-value won', textContent: formatShortINR(wonValue) }),
             el('div', { className: 'spanco-hero-meta', textContent: wonCount + (wonCount === 1 ? ' order' : ' orders') })
           ])
-        ])
+        ]),
+        lossBtn
       ]));
 
       var chips = el('div', { className: 'spanco-chips', role: 'tablist', 'aria-label': 'Pipeline stages' });

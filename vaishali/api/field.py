@@ -2916,6 +2916,120 @@ def move_kanban_stage(doctype, name, target_stage,
     frappe.throw(_("Unsupported doctype: {0}").format(doctype))
 
 
+# ── Lost Reasons Dashboard ──────────────────────────────────
+
+@frappe.whitelist()
+def get_lost_reasons(period="90", owner=None):
+    """Aggregate Lost quotations by reason category + recent drill-down.
+
+    Args:
+        period: "30", "90", "365", or "all"
+        owner:  optional user-id filter (defaults to all)
+
+    Returns:
+        {
+          "summary": [
+            {"category": "Price", "count": 12, "amount": 4500000},
+            ...
+          ],
+          "total_lost": {"count": 24, "amount": 9800000},
+          "recent": [{name, customer_name, transaction_date, grand_total,
+                      lost_reason_category, lost_remark, owner_name}, ...],
+          "by_owner": [{owner, owner_name, count, amount}, ...],
+          "period": "90",
+          "from_date": "YYYY-MM-DD"
+        }
+    """
+    _get_employee()
+
+    # Period filter
+    filters = {"status": "Lost"}
+    from_date = None
+    try:
+        days = int(period) if period and period != "all" else None
+    except (TypeError, ValueError):
+        days = 90
+    if days:
+        from_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        filters["transaction_date"] = [">=", from_date]
+    if owner:
+        filters["owner"] = owner
+
+    rows = frappe.get_all(
+        "Quotation",
+        filters=filters,
+        fields=["name", "party_name", "customer_name", "transaction_date",
+                "grand_total", "lost_reason_category", "lost_remark",
+                "owner", "modified"],
+        order_by="transaction_date desc",
+        limit_page_length=0,
+    )
+
+    # Aggregate by category
+    cat_buckets = {}
+    owner_buckets = {}
+    total_count = 0
+    total_amount = 0.0
+    for r in rows:
+        cat = r.get("lost_reason_category") or "Unspecified"
+        amt = float(r.get("grand_total") or 0)
+        b = cat_buckets.setdefault(cat, {"category": cat, "count": 0, "amount": 0.0})
+        b["count"] += 1
+        b["amount"] += amt
+
+        ow = r.get("owner") or "Unknown"
+        ob = owner_buckets.setdefault(ow, {"owner": ow, "count": 0, "amount": 0.0})
+        ob["count"] += 1
+        ob["amount"] += amt
+
+        total_count += 1
+        total_amount += amt
+
+    summary = sorted(cat_buckets.values(), key=lambda x: x["count"], reverse=True)
+
+    # Resolve owner display names
+    owner_names = {}
+    if owner_buckets:
+        owner_ids = list(owner_buckets.keys())
+        users = frappe.get_all("User",
+                               filters=[["name", "in", owner_ids]],
+                               fields=["name", "full_name"])
+        owner_names = {u["name"]: u.get("full_name") or u["name"] for u in users}
+
+    by_owner = []
+    for ow, b in owner_buckets.items():
+        by_owner.append({
+            "owner": ow,
+            "owner_name": owner_names.get(ow, ow),
+            "count": b["count"],
+            "amount": b["amount"],
+        })
+    by_owner.sort(key=lambda x: x["count"], reverse=True)
+
+    # Recent drill-down (last 25)
+    recent = []
+    for r in rows[:25]:
+        recent.append({
+            "name": r["name"],
+            "customer_name": r.get("customer_name") or r.get("party_name") or "",
+            "transaction_date": r.get("transaction_date").isoformat() if r.get("transaction_date") else None,
+            "grand_total": float(r.get("grand_total") or 0),
+            "lost_reason_category": r.get("lost_reason_category") or "Unspecified",
+            "lost_remark": r.get("lost_remark") or "",
+            "owner": r.get("owner"),
+            "owner_name": owner_names.get(r.get("owner"), r.get("owner") or ""),
+        })
+
+    return {
+        "summary": summary,
+        "total_lost": {"count": total_count, "amount": total_amount},
+        "recent": recent,
+        "by_owner": by_owner,
+        "period": str(period),
+        "from_date": from_date,
+    }
+
+
 # ── Customer Open Items (for DCR follow-up linking) ──────────
 
 @frappe.whitelist()
