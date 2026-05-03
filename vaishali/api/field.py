@@ -2942,8 +2942,10 @@ def get_lost_reasons(period="90", owner=None):
     """
     _get_employee()
 
-    # Period filter
-    filters = {"status": "Lost"}
+    # Period filter — only count submitted quotations marked Lost
+    # (skip drafts and cancelled — those represent abandoned/rolled-back work,
+    #  not lost deals)
+    filters = {"status": "Lost", "docstatus": 1}
     from_date = None
     try:
         days = int(period) if period and period != "all" else None

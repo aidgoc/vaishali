@@ -15,9 +15,9 @@
 
   function formatINR(value) {
     var num = Number(value) || 0;
-    if (num >= 10000000) return '₹' + (num / 10000000).toFixed(2) + 'Cr';
-    if (num >= 100000)   return '₹' + (num / 100000).toFixed(1) + 'L';
-    if (num >= 1000)     return '₹' + (num / 1000).toFixed(1) + 'K';
+    if (num >= 10000000) return '₹' + (num / 10000000).toFixed(2) + ' Cr';
+    if (num >= 100000)   return '₹' + (num / 100000).toFixed(1) + ' L';
+    if (num >= 1000)     return '₹' + (num / 1000).toFixed(1) + ' K';
     return '₹' + num.toLocaleString('en-IN');
   }
 
@@ -166,12 +166,19 @@
       appEl.appendChild(skel);
 
       api.apiCall('GET', '/api/field/lost-reasons?period=' + encodeURIComponent(period))
-        .then(function (data) {
+        .then(function (res) {
           appEl.textContent = '';
           appEl.appendChild(buildPeriodChips(period, function (next) { period = next; load(); }));
 
+          if (!res || res.error || !res.data) {
+            appEl.appendChild(UI.error('Failed to load: ' + ((res && res.error) || 'no response')));
+            return;
+          }
+          var raw = res.data || {};
+          var data = raw.message || raw.data || raw;
+
           var total = data.total_lost || { count: 0, amount: 0 };
-          appEl.appendChild(buildHero(total, data.from_date, data.period));
+          appEl.appendChild(buildHero(total, data.from_date, data.period || period));
 
           if (total.count === 0) {
             appEl.appendChild(el('div', { className: 'lost-empty',
