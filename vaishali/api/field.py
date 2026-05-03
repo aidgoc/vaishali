@@ -32,7 +32,7 @@ def _get_employee(user=None):
     emps = frappe.get_list("Employee",
         filters={"user_id": user, "company": ["in", COMPANIES], "status": "Active"},
         fields=["name", "employee_name", "department", "designation", "company",
-                "reports_to"],
+                "reports_to", "attendance_mode"],
         limit_page_length=1)
     if not emps:
         frappe.throw(_("No active employee found for {0}").format(user))
@@ -59,9 +59,14 @@ def _get_nav_tier(user=None):
 @frappe.whitelist()
 def attendance_today():
     emp = _get_employee()
-    today = date.today().isoformat()
+    # Server is UTC, business day is IST. Use the IST-day-window helper so
+    # a 6 AM IST checkin (00:30 UTC) doesn't get filtered out for sitting
+    # before "00:00:00" in the wrong calendar's day.
+    from vaishali.api.attendance import _ist_day_window_in_utc
+    day_start, day_end = _ist_day_window_in_utc(date.today())
     checkins = frappe.get_list("Employee Checkin",
-        filters={"employee": emp.name, "time": [">=", f"{today} 00:00:00"]},
+        filters={"employee": emp.name,
+                 "time": ["between", [day_start, day_end]]},
         fields=["name", "log_type", "time", "latitude", "longitude"],
         order_by="time asc", limit_page_length=50)
 
@@ -448,10 +453,17 @@ def get_conversion_funnel(period="month", employee=None, department=None):
         fy_start = f"{t.year}-04-01" if t.month >= 4 else f"{t.year - 1}-04-01"
         filters["date"] = [">=", fy_start]
 
-    if employee:
-        filters["employee"] = employee
-    if department:
-        filters["department"] = department
+    # Field-tier callers can only see their own funnel; manager/admin can
+    # filter to any employee. Without this gate, any authenticated employee
+    # could read another rep's pipeline counts via this endpoint.
+    tier = _get_nav_tier()
+    if tier == "field":
+        filters["employee"] = _get_employee().name
+    else:
+        if employee:
+            filters["employee"] = employee
+        if department:
+            filters["department"] = department
 
     total = frappe.db.count("Daily Call Report", filters)
     leads = frappe.db.count("Daily Call Report", {**filters, "conversion_status": ["in", ["Lead Created", "Opportunity", "Quoted", "Won"]]})
@@ -536,18 +548,34 @@ def get_stats(month=None):
 
 @frappe.whitelist()
 def get_team():
-    """Team overview for managers — today's attendance status of all DSPL employees."""
+    """Team overview for managers — today's attendance status of all DSPL employees.
+
+    Manager / admin only. Without the role gate, any authenticated
+    employee could enumerate the entire roster + real-time presence.
+    """
+    if _get_nav_tier() == "field":
+        frappe.throw(_("Only managers can view team status"),
+                     frappe.PermissionError)
+
+    from vaishali.api.attendance import _ist_day_window_in_utc
     today = date.today().isoformat()
+    day_start, day_end = _ist_day_window_in_utc(date.today())
+
     employees = frappe.get_list("Employee",
         filters={"company": COMPANY, "status": "Active"},
         fields=["name", "employee_name", "department", "designation"],
         order_by="employee_name asc", limit_page_length=0)
 
-    # Get today's checkins for all employees
-    checkins = frappe.get_list("Employee Checkin",
-        filters={"time": [">=", f"{today} 00:00:00"]},
-        fields=["employee", "log_type", "time"],
-        order_by="time asc", limit_page_length=0)
+    # Scope today's checkins to the DSPL employee set (not every company's
+    # checkins) and use the IST-day window so 06:00 IST checkins are captured.
+    emp_names = [e.name for e in employees]
+    checkins = []
+    if emp_names:
+        checkins = frappe.get_list("Employee Checkin",
+            filters={"employee": ["in", emp_names],
+                     "time": ["between", [day_start, day_end]]},
+            fields=["employee", "log_type", "time"],
+            order_by="time asc", limit_page_length=0)
 
     # Build per-employee status
     emp_status = {}
@@ -721,6 +749,14 @@ def process_approval(doctype, name, action):
 def get_my_logsheets(period_from=None, period_to=None, limit=50):
     """Operator's own logsheets, most recent first. Used by the PWA list."""
     emp = _get_employee()
+    # Cap caller-supplied limit. A field operator could otherwise pass
+    # limit=999999 and force a full-table scan of their logsheets.
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = 50
+    if limit <= 0 or limit > 500:
+        limit = 50
     filters = {"operator": emp.name}
     if period_from and period_to:
         filters["log_date"] = ["between", [period_from, period_to]]
@@ -806,6 +842,7 @@ def submit_logsheet(log_date, customer, site_name, total_hours,
     is stamped here once available.
     """
     emp = _get_employee()
+    tier = _get_nav_tier()
     do_submit = bool(int(do_submit))
 
     if name:
@@ -819,11 +856,45 @@ def submit_logsheet(log_date, customer, site_name, total_hours,
         doc.operator = emp.name
         doc.company = emp.company
 
+    # ── Bounds & sanity checks ───────────────────────────────────
+    # log_date: reject backdates older than 7 days, reject future dates.
+    # Without this an operator could file for a closed month and force
+    # a surprise invoice on the next billing run.
+    from frappe.utils import getdate, today, date_diff
+    try:
+        ld = getdate(log_date)
+    except Exception:
+        frappe.throw(_("Invalid log_date"))
+    diff = date_diff(today(), ld)
+    if diff < 0:
+        frappe.throw(_("log_date cannot be in the future"))
+    if diff > 7:
+        frappe.throw(_("log_date must be within the last 7 days"))
+
+    # total_hours bounds (0–24); idle_hours non-negative and ≤ total.
+    th = float(total_hours or 0)
+    if th < 0 or th > 24:
+        frappe.throw(_("total_hours must be between 0 and 24"))
+    ih = float(idle_hours or 0)
+    if ih < 0 or ih > th:
+        frappe.throw(_("idle_hours cannot be negative or exceed total_hours"))
+
+    # Free-text length caps (DB columns are typically VARCHAR(140); cap
+    # before write rather than relying on Frappe's CharacterLengthExceeded)
+    if site_name and len(site_name) > 140:
+        site_name = site_name[:140]
+    if equipment_label and len(equipment_label) > 140:
+        equipment_label = equipment_label[:140]
+    if signed_by and len(signed_by) > 140:
+        signed_by = signed_by[:140]
+    if remarks and len(remarks) > 2000:
+        remarks = remarks[:2000]
+
     doc.log_date = log_date
     doc.customer = customer
     doc.site_name = site_name
-    doc.total_hours = float(total_hours or 0)
-    doc.idle_hours = float(idle_hours or 0)
+    doc.total_hours = th
+    doc.idle_hours = ih
     doc.work_type = work_type
     doc.shift = shift
     if equipment_label is not None:
@@ -834,8 +905,14 @@ def submit_logsheet(log_date, customer, site_name, total_hours,
         doc.signed_by = signed_by
     if remarks is not None:
         doc.remarks = remarks
-    if rate_per_hour:
-        doc.rate_per_hour = float(rate_per_hour)
+    # rate_per_hour: only managers/admins can set this. Operators cannot
+    # influence the customer-billing rate from the API; manager fills
+    # it on the desk before billing runs.
+    if rate_per_hour and tier in ("manager", "admin"):
+        rate = float(rate_per_hour)
+        if rate < 0 or rate > 100000:
+            frappe.throw(_("rate_per_hour out of range (0–100000)"))
+        doc.rate_per_hour = rate
 
     if name:
         doc.save(ignore_permissions=True)
@@ -889,6 +966,7 @@ def cancel_logsheet(name):
     if doc.operator != emp.name:
         frappe.throw(_("Not your logsheet"), frappe.PermissionError)
     if doc.docstatus == 0:
+        _cleanup_logsheet_files(name)
         frappe.delete_doc("Operator Logsheet", name, ignore_permissions=True)
     elif doc.docstatus == 1:
         if doc.sales_invoice:
@@ -904,8 +982,27 @@ def cancel_logsheet(name):
                 "management to cancel."
             ))
         doc.cancel()
+        _cleanup_logsheet_files(name)
     frappe.db.commit()
     return {"deleted": True}
+
+
+def _cleanup_logsheet_files(logsheet_name):
+    """Delete File rows attached to a logsheet — supervisor signature
+    photo and any other uploads. Without this, the public signature
+    image lives on disk indefinitely after a cancellation."""
+    files = frappe.get_all("File",
+        filters={"attached_to_doctype": "Operator Logsheet",
+                 "attached_to_name": logsheet_name},
+        pluck="name")
+    for f in files:
+        try:
+            frappe.delete_doc("File", f, ignore_permissions=True, force=True)
+        except Exception as exc:
+            frappe.log_error(
+                f"Failed to delete File {f} for logsheet {logsheet_name}: {exc}",
+                "Logsheet File cleanup",
+            )
 
 
 # ── Expense Claim CRUD ────────────────────────────────────────────

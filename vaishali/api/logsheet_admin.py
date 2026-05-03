@@ -235,38 +235,51 @@ def bulk_verify(names):
 
     verified = []
     skipped = []
+    errors = []
 
     for raw in names:
         n = (raw or "").strip() if isinstance(raw, str) else None
         if not n:
             continue
 
-        row = frappe.db.get_value(
-            "Operator Logsheet", n,
-            ["docstatus", "status", "approval_status"],
-            as_dict=True,
-        )
-        if not row:
-            skipped.append({"name": n, "reason": "not found"})
-            continue
-        if row.docstatus != 1:
-            skipped.append({"name": n, "reason": "not submitted"})
-            continue
-        if row.status != "Open":
-            skipped.append({"name": n, "reason": "status=" + (row.status or "")})
-            continue
-        if row.approval_status in ("Approved", "Rejected"):
-            skipped.append({"name": n, "reason": "client already decided"})
-            continue
+        try:
+            row = frappe.db.get_value(
+                "Operator Logsheet", n,
+                ["docstatus", "status", "approval_status"],
+                as_dict=True,
+            )
+            if not row:
+                skipped.append({"name": n, "reason": "not found"})
+                continue
+            if row.docstatus != 1:
+                skipped.append({"name": n, "reason": "not submitted"})
+                continue
+            if row.status != "Open":
+                skipped.append({"name": n, "reason": "status=" + (row.status or "")})
+                continue
+            if row.approval_status in ("Approved", "Rejected"):
+                skipped.append({"name": n, "reason": "client already decided"})
+                continue
 
-        frappe.db.set_value("Operator Logsheet", n, "status", "Verified")
-        verified.append(n)
+            frappe.db.set_value("Operator Logsheet", n, "status", "Verified")
+            # Commit per row so a downstream failure (e.g. trigger raises
+            # on a single name) doesn't roll back already-verified rows.
+            frappe.db.commit()
+            verified.append(n)
+        except Exception as exc:
+            frappe.db.rollback()
+            errors.append({"name": n, "error": str(exc)[:200]})
+            frappe.log_error(
+                title=f"bulk_verify failed for {n}",
+                message=frappe.get_traceback(),
+            )
 
-    frappe.db.commit()
     return {
         "success": True,
         "verified_count": len(verified),
         "skipped_count": len(skipped),
+        "error_count": len(errors),
         "verified": verified,
         "skipped": skipped,
+        "errors": errors,
     }

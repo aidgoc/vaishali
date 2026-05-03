@@ -96,6 +96,27 @@ def approve_logsheet(token, decision, signed_by, signature_data_url=None,
 	if not signed_by:
 		frappe.throw(_("Please enter your name to sign off"), frappe.ValidationError)
 
+	# Length caps — endpoint is allow_guest=True; reject huge payloads
+	# before they go anywhere near the DB.
+	if len(signed_by) > 140:
+		signed_by = signed_by[:140]
+	if remark and len(remark) > 1000:
+		frappe.throw(_("Remark too long (max 1000 characters)"), frappe.ValidationError)
+
+	# Atomic check-and-set on approval_status: a forwarded WhatsApp link
+	# tapped twice (or one tab approve, another tab reject) would
+	# previously race on the in-memory doc. Use a SELECT-FOR-UPDATE-style
+	# row lock, then only proceed if the lock-read still shows Pending/Sent.
+	frappe.db.sql(
+		"""SELECT approval_status FROM `tabOperator Logsheet`
+		   WHERE name=%s FOR UPDATE""",
+		(doc.name,),
+	)
+	current_status = frappe.db.get_value("Operator Logsheet", doc.name, "approval_status")
+	if current_status in ("Approved", "Rejected"):
+		frappe.throw(_("This logsheet has already been {0}").format(current_status.lower()),
+			frappe.PermissionError)
+
 	doc.signed_by = signed_by
 	if remark:
 		doc.remarks = (doc.remarks or "")

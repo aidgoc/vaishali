@@ -241,6 +241,11 @@ def create_additional_salaries(period_from, period_to, payroll_date=None):
             )
             doc.insert(ignore_permissions=True)
             doc.submit()
+            # Commit per operator — without this, an exception on the Nth
+            # operator would roll back every Additional Salary created
+            # earlier in the loop (caller sees `created` populated but the
+            # writes never landed).
+            frappe.db.commit()
             created.append({
                 "employee": row["employee"],
                 "additional_salary": doc.name,
@@ -249,20 +254,19 @@ def create_additional_salaries(period_from, period_to, payroll_date=None):
                 "logsheet_count": row["logsheet_count"],
             })
         except Exception:
-            # Don't swallow — log full traceback and re-raise so the
-            # caller sees which operator broke and why. Anything left
-            # uncreated for this run can be retried after the fix.
+            # Roll back this operator's failed insert, log, continue with
+            # the rest of the batch. Earlier successful operators stay
+            # committed thanks to the per-iteration commit above.
+            frappe.db.rollback()
             frappe.log_error(
                 title=f"Operator pay: Additional Salary failed for {row['employee']}",
                 message=frappe.get_traceback(),
             )
             errors.append({
                 "employee": row["employee"],
-                "error": frappe.get_traceback(with_context=False),
+                "error": str(frappe.get_traceback(with_context=False))[:500],
             })
-            raise
-
-    frappe.db.commit()
+            continue
     return {
         "period_from": pf.isoformat(),
         "period_to": pt.isoformat(),
