@@ -481,6 +481,10 @@
       }
       else if (path === '/api/field/logsheet-summary') path = '/api/method/vaishali.api.field.get_logsheet_summary';
       else if (path === '/api/field/recent-equipment') path = '/api/method/vaishali.api.field.get_recent_equipment_labels';
+      else if (path.match(/^\/api\/field\/logsheet\/[^/]+\/approval-link$/)) {
+        var alId = decodeURIComponent(path.replace('/api/field/logsheet/', '').replace('/approval-link', ''));
+        path = '/api/method/vaishali.api.field.get_logsheet_approval_link?name=' + encodeURIComponent(alId);
+      }
       else if (path.match(/^\/api\/field\/logsheet\/[^/]+$/)) {
         var lsId = decodeURIComponent(path.replace('/api/field/logsheet/', ''));
         if (method === 'PUT' || method === 'PATCH' || method === 'POST') {

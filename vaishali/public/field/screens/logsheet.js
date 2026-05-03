@@ -527,8 +527,12 @@
       // Sign-off
       appEl.appendChild(UI.sectionHeader('Site sign-off'));
       var signoffRows = [
-        { label: 'Signed by', value: doc.signed_by || '—' }
+        { label: 'Signed by', value: doc.signed_by || '—' },
+        { label: 'Approval status', value: doc.approval_status || 'Pending' }
       ];
+      if (doc.approval_decided_at) {
+        signoffRows.push({ label: 'Decided at', value: doc.approval_decided_at });
+      }
       if (doc.amount) {
         signoffRows.push({ label: 'Amount', value: formatCurrency(doc.amount) });
       }
@@ -538,7 +542,24 @@
           el('img', {
             src: doc.supervisor_signature,
             style: { maxWidth: '100%', borderRadius: '8px', maxHeight: '400px' },
-            alt: 'Signed paper photo'
+            alt: 'Signed proof'
+          })
+        ]));
+      }
+
+      // Share approval link — only when not yet decided and not billed
+      if (doc.approval_status !== 'Approved' &&
+          doc.approval_status !== 'Rejected' &&
+          !doc.sales_invoice) {
+        appEl.appendChild(UI.sectionHeader('Get client approval', {
+          support: 'Send a single-use link — the client opens it on their phone and signs digitally'
+        }));
+        appEl.appendChild(el('div', { style: { margin: '8px 0 16px' } }, [
+          UI.btn('Send to client for approval', {
+            type: 'primary',
+            block: true,
+            icon: 'clip',
+            onClick: function () { showShareSheet(doc.name); }
           })
         ]));
       }
@@ -584,5 +605,89 @@
       appEl.appendChild(UI.error('Could not load logsheet'));
     });
   };
+
+  // ── Share approval link ─────────────────────────────────────────────
+
+  function showShareSheet(logsheetName) {
+    var el = UI.el;
+    api.apiCall('GET', '/api/field/logsheet/' + encodeURIComponent(logsheetName) + '/approval-link')
+      .then(function (res) {
+        if (res.error || !res.data) {
+          UI.toast('Could not generate link', 'danger');
+          return;
+        }
+        var data = res.data.message || res.data.data || {};
+        var url = data.url;
+        if (!url) {
+          UI.toast('No URL returned', 'danger');
+          return;
+        }
+
+        var msg = 'Daily logsheet for your approval — ' +
+                  (data.customer_name || '') + ' · ' +
+                  (data.log_date || '') + ' · ' +
+                  (data.total_hours || 0) + 'h\n\n' + url;
+
+        var sheetBody = el('div', { style: { padding: '8px 16px 16px' } });
+
+        // URL display + copy
+        var urlBox = el('div', {
+          style: { background: 'var(--m3-surface-container-low)',
+                   borderRadius: '8px', padding: '12px',
+                   font: '13px monospace', wordBreak: 'break-all',
+                   margin: '8px 0' },
+          textContent: url
+        });
+        sheetBody.appendChild(urlBox);
+
+        // Action buttons
+        sheetBody.appendChild(UI.btn('Copy link', {
+          type: 'outline', block: true, icon: 'clip',
+          onClick: function () {
+            var tmp = document.createElement('textarea');
+            tmp.value = url;
+            document.body.appendChild(tmp);
+            tmp.select();
+            try { document.execCommand('copy'); UI.toast('Link copied', 'success'); }
+            catch (e) { UI.toast('Could not copy — long-press the URL above', 'danger'); }
+            document.body.removeChild(tmp);
+          }
+        }));
+
+        sheetBody.appendChild(el('div', { style: { height: '8px' } }));
+
+        sheetBody.appendChild(UI.btn('Share via WhatsApp', {
+          type: 'success', block: true,
+          onClick: function () {
+            window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+          }
+        }));
+
+        sheetBody.appendChild(el('div', { style: { height: '8px' } }));
+
+        // Native share API where available (iOS/Android share sheet)
+        if (navigator.share) {
+          sheetBody.appendChild(UI.btn('More share options', {
+            type: 'outline', block: true,
+            onClick: function () {
+              navigator.share({
+                title: 'Daily logsheet',
+                text: msg,
+                url: url
+              }).catch(function () { /* user cancelled */ });
+            }
+          }));
+        }
+
+        sheetBody.appendChild(el('div', {
+          style: { marginTop: '12px', font: 'var(--m3-body-small)',
+                   color: 'var(--m3-on-surface-variant)' },
+          textContent: 'The site supervisor opens this link, signs on screen, and taps Approve. The decision shows up here automatically.'
+        }));
+
+        var sheet = UI.bottomSheet('Approval link ready', sheetBody);
+        document.body.appendChild(sheet);
+      });
+  }
 
 })();

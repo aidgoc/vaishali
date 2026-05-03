@@ -12,6 +12,9 @@ import frappe
 # Vaishali endpoints that may be hit by Guest (mirror @frappe.whitelist(allow_guest=True))
 _GUEST_ALLOWED_PREFIXES = (
 	"/api/method/vaishali.www.",
+	# Public Operator-Logsheet approval — site supervisors approve via a
+	# token URL we send them; no Frappe login required.
+	"/api/method/vaishali.api.public.",
 )
 
 

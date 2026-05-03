@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Approve Logsheet · {{ company_short or "Dynamic" }}</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #111;
+      background: #f6f6f6;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
+    .hero {
+      background: #E60005;
+      color: #fff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .hero h1 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+    .hero .sub { font-size: 13px; opacity: 0.9; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .row:last-child { border-bottom: 0; }
+    .row .label { color: #666; font-size: 13px; }
+    .row .value { font-weight: 600; font-size: 14px; text-align: right; max-width: 60%; }
+    .hours { font-size: 28px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
+    .hours-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    label { display: block; margin-top: 12px; font-size: 13px; color: #555; font-weight: 500; }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
+      margin-top: 4px;
+      font-family: inherit;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .signature-pad {
+      border: 1px dashed #aaa;
+      border-radius: 8px;
+      background: #fff;
+      width: 100%;
+      height: 180px;
+      margin-top: 4px;
+      touch-action: none;
+    }
+    .clear-sig {
+      background: transparent;
+      border: 0;
+      color: #E60005;
+      font-size: 13px;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
+    .btn {
+      padding: 14px;
+      border-radius: 8px;
+      border: 0;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn-approve { background: #16a34a; color: #fff; }
+    .btn-approve:active { background: #15803d; }
+    .btn-reject { background: #fff; color: #dc2626; border: 1px solid #dc2626; }
+    .btn-reject:active { background: #fef2f2; }
+    .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .pill-approved { background: #d1fae5; color: #065F46; }
+    .pill-rejected { background: #fee2e2; color: #991B1B; }
+    .pill-pending  { background: #fef3c7; color: #92400E; }
+    .error-card { background: #fee2e2; color: #991B1B; padding: 14px; border-radius: 8px; margin-bottom: 12px; }
+    .footer { text-align: center; color: #999; font-size: 11px; padding: 24px 0; }
+    .done-card { text-align: center; padding: 32px 16px; }
+    .done-card .check {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #d1fae5; color: #065F46;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin: 0 auto 12px;
+    }
+    .done-card .check.reject { background: #fee2e2; color: #991B1B; }
+    .done-card .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .done-card .sub { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+  {% if error %}
+    <div class="error-card">{{ error }}</div>
+  {% else %}
+    <div class="hero">
+      <h1>Approve daily logsheet</h1>
+      <div class="sub">{{ company_short }} · {{ logsheet.operator_name }}</div>
+    </div>
+
+    <div class="card">
+      <div style="text-align:center; margin-bottom:8px;">
+        <div class="hours">{{ "%.1f"|format(logsheet.total_hours or 0) }}h</div>
+        <div class="hours-label">{{ logsheet.shift or "Day" }} shift · {{ logsheet.work_type or "Work" }}</div>
+      </div>
+      <div class="row">
+        <span class="label">Date</span>
+        <span class="value">{{ logsheet.log_date or "—" }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Customer</span>
+        <span class="value">{{ logsheet.customer_name or "—" }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Site</span>
+        <span class="value">{{ logsheet.site_name or "—" }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Equipment</span>
+        <span class="value">{{ logsheet.equipment_label or "—" }}</span>
+      </div>
+      {% if logsheet.idle_hours %}
+      <div class="row">
+        <span class="label">Idle hours</span>
+        <span class="value">{{ logsheet.idle_hours }}h</span>
+      </div>
+      {% endif %}
+      {% if logsheet.remarks %}
+      <div class="row">
+        <span class="label">Remarks</span>
+        <span class="value" style="max-width:65%; white-space:pre-wrap; text-align:left;">{{ logsheet.remarks }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if already_decided %}
+      <div class="card done-card">
+        <div class="check{% if logsheet.approval_status == 'Rejected' %} reject{% endif %}">
+          {{ "✓" if logsheet.approval_status == "Approved" else "✕" }}
+        </div>
+        <div class="title">Already {{ logsheet.approval_status|lower }}</div>
+        <div class="sub">
+          {% if logsheet.signed_by %}Signed by <strong>{{ logsheet.signed_by }}</strong>{% endif %}
+          {% if logsheet.approval_decided_at %}<br>on {{ logsheet.approval_decided_at }}{% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="card" id="approval-form-card">
+        <div style="margin-bottom:8px; font-weight:700;">Site supervisor sign-off</div>
+
+        <label for="sig-name">Your name</label>
+        <input id="sig-name" type="text" autocomplete="name" placeholder="e.g. Rajesh Mehta">
+
+        <label>Signature (optional — sign with your finger)</label>
+        <canvas id="sig-pad" class="signature-pad"></canvas>
+        <button type="button" class="clear-sig" id="clear-sig">Clear signature</button>
+
+        <label for="sig-remark">Remark (optional)</label>
+        <textarea id="sig-remark" placeholder="Anything to note for the operator / accounts team"></textarea>
+
+        <div class="actions">
+          <button type="button" class="btn btn-reject" id="btn-reject">Reject</button>
+          <button type="button" class="btn btn-approve" id="btn-approve">Approve</button>
+        </div>
+      </div>
+      <div id="result"></div>
+    {% endif %}
+  {% endif %}
+    <div class="footer">Powered by Dynamic Group ERP · token-based approval, no login required</div>
+  </div>
+
+  {% if not error and not already_decided %}
+  <script>
+    (function () {
+      var token = {{ token|tojson }};
+      var canvas = document.getElementById('sig-pad');
+      var ctx = canvas.getContext('2d');
+      var hasInk = false;
+
+      function resize() {
+        var rect = canvas.getBoundingClientRect();
+        var ratio = window.devicePixelRatio || 1;
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#111';
+      }
+      resize();
+
+      var drawing = false, lastX = 0, lastY = 0;
+      function getPoint(e) {
+        var rect = canvas.getBoundingClientRect();
+        var x, y;
+        if (e.touches && e.touches[0]) {
+          x = e.touches[0].clientX - rect.left;
+          y = e.touches[0].clientY - rect.top;
+        } else {
+          x = e.clientX - rect.left;
+          y = e.clientY - rect.top;
+        }
+        return { x: x, y: y };
+      }
+      function start(e) {
+        e.preventDefault();
+        drawing = true;
+        var p = getPoint(e);
+        lastX = p.x; lastY = p.y;
+      }
+      function move(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        var p = getPoint(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x; lastY = p.y;
+        hasInk = true;
+      }
+      function end() { drawing = false; }
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      canvas.addEventListener('mouseup', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+
+      document.getElementById('clear-sig').addEventListener('click', function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasInk = false;
+      });
+
+      function showDoneCard(decision, signerName) {
+        // Build the success card with safe DOM methods (no innerHTML for
+        // anything that might contain user input).
+        var resultEl = document.getElementById('result');
+        while (resultEl.firstChild) resultEl.removeChild(resultEl.firstChild);
+
+        var card = document.createElement('div');
+        card.className = 'card done-card';
+
+        var check = document.createElement('div');
+        check.className = 'check' + (decision === 'reject' ? ' reject' : '');
+        check.textContent = decision === 'reject' ? '✕' : '✓';
+        card.appendChild(check);
+
+        var title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = 'Logsheet ' + (decision === 'reject' ? 'rejected' : 'approved');
+        card.appendChild(title);
+
+        var sub = document.createElement('div');
+        sub.className = 'sub';
+        sub.textContent = 'Thank you, ' + signerName + '.';
+        card.appendChild(sub);
+
+        resultEl.appendChild(card);
+
+        var formCard = document.getElementById('approval-form-card');
+        if (formCard) formCard.style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function send(decision) {
+        var name = document.getElementById('sig-name').value.trim();
+        if (!name) {
+          alert('Please enter your name first');
+          return;
+        }
+        var remark = document.getElementById('sig-remark').value.trim();
+        var sigDataUrl = hasInk ? canvas.toDataURL('image/png') : '';
+
+        var btn = document.getElementById('btn-' + decision);
+        btn.disabled = true;
+        btn.textContent = (decision === 'approve' ? 'Approving…' : 'Rejecting…');
+
+        var fd = new FormData();
+        fd.append('token', token);
+        fd.append('decision', decision);
+        fd.append('signed_by', name);
+        if (sigDataUrl) fd.append('signature_data_url', sigDataUrl);
+        if (remark) fd.append('remark', remark);
+
+        fetch('/api/method/vaishali.api.public.approve_logsheet', {
+          method: 'POST',
+          body: fd,
+        }).then(function (r) { return r.json(); })
+          .then(function (resp) {
+            var msg = resp && resp.message;
+            if (msg && msg.status) {
+              showDoneCard(decision, name);
+            } else {
+              alert('Could not record decision. Please try again.');
+              btn.disabled = false;
+              btn.textContent = (decision === 'approve' ? 'Approve' : 'Reject');
+            }
+          })
+          .catch(function () {
+            alert('Network error. Please try again.');
+            btn.disabled = false;
+            btn.textContent = (decision === 'approve' ? 'Approve' : 'Reject');
+          });
+      }
+
+      document.getElementById('btn-approve').addEventListener('click', function () { send('approve'); });
+      document.getElementById('btn-reject').addEventListener('click', function () { send('reject'); });
+    })();
+  </script>
+  {% endif %}
+</body>
+</html>

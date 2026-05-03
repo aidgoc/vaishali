@@ -4,9 +4,13 @@ from frappe.model.document import Document
 
 
 class OperatorLogsheet(Document):
+	def before_insert(self):
+		self._ensure_approval_token()
+
 	def validate(self):
 		self._compute_totals()
 		self._guard_required_fields()
+		self._ensure_approval_token()  # safety net for legacy rows
 
 	def _compute_totals(self):
 		"""amount = total_hours * rate_per_hour."""
@@ -15,14 +19,26 @@ class OperatorLogsheet(Document):
 		self.amount = round(hours * rate, 2)
 
 	def _guard_required_fields(self):
-		"""On submit, the supervisor signature photo and signed_by name are
-		mandatory — that's the whole point of the logsheet (proof for
-		billing). On draft we let it through so PWA can save in stages."""
+		"""On submit, the operator must have proof of sign-off — either the
+		photo of the paper logsheet, OR a digital approval recorded via the
+		public approval URL. On draft we let it through so the PWA can save
+		in stages."""
 		if self.docstatus != 1:
 			return
-		if not self.supervisor_signature:
-			frappe.throw(_("Attach the photo of the signed paper logsheet before submitting."),
-				title=_("Signature Photo Required"))
-		if not self.signed_by:
-			frappe.throw(_("Enter the name of the client site supervisor who signed."),
-				title=_("Signer Name Required"))
+		has_paper_proof = bool(self.supervisor_signature and self.signed_by)
+		has_digital_proof = (
+			self.approval_status == "Approved"
+			and self.signed_by
+			and self.supervisor_signature
+		)
+		if not (has_paper_proof or has_digital_proof):
+			frappe.throw(_(
+				"Logsheet needs sign-off before submitting — either attach a "
+				"photo of the signed paper, or send the approval link to the "
+				"client and wait for their approval."
+			), title=_("Sign-off Required"))
+
+	def _ensure_approval_token(self):
+		if not self.approval_token:
+			# 22 chars of url-safe randomness — practically guess-proof
+			self.approval_token = frappe.generate_hash(length=22)

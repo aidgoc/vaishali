@@ -824,6 +824,38 @@ def submit_logsheet(log_date, customer, site_name, total_hours,
     return {"name": doc.name, "amount": doc.amount, "docstatus": doc.docstatus}
 
 
+@frappe.whitelist()
+def get_logsheet_approval_link(name):
+    """Return the public approval URL for a logsheet the operator owns.
+
+    Used by the PWA "Send to client for approval" share flow. Stamps
+    approval_status='Sent' so the rest of the system knows the link has
+    been issued."""
+    doc = frappe.get_doc("Operator Logsheet", name)
+    emp = _get_employee()
+    if doc.operator != emp.name:
+        frappe.throw(_("Not your logsheet"), frappe.PermissionError)
+    if doc.docstatus == 2:
+        frappe.throw(_("This logsheet has been cancelled"))
+    if not doc.approval_token:
+        # Legacy rows pre-token — generate one now via save trigger
+        doc.save(ignore_permissions=True)
+        doc.reload()
+    site_url = frappe.utils.get_url()
+    public_url = f"{site_url}/logsheet_approve?t={doc.approval_token}"
+    if doc.approval_status == "Pending":
+        frappe.db.set_value("Operator Logsheet", doc.name, "approval_status", "Sent")
+        frappe.db.commit()
+    return {
+        "url": public_url,
+        "approval_status": frappe.db.get_value("Operator Logsheet", doc.name, "approval_status"),
+        "customer_name": doc.customer_name,
+        "operator_name": doc.operator_name,
+        "log_date": str(doc.log_date) if doc.log_date else None,
+        "total_hours": doc.total_hours,
+    }
+
+
 @frappe.whitelist(methods=["POST"])
 def cancel_logsheet(name):
     """Delete a draft, or cancel a submitted logsheet (only if not yet billed)."""
