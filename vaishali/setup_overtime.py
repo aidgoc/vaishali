@@ -91,7 +91,7 @@ def _ensure_overtime_log_doctype():
              "fieldtype": "Small Text"},
         ],
         "permissions": [
-            {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1},
+            {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
             {"role": "HR User", "read": 1, "write": 1, "create": 1},
             {"role": "Service Manager", "read": 1, "write": 1},
             {"role": "Employee", "read": 1, "if_owner": 1},
