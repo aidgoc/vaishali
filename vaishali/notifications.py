@@ -332,6 +332,90 @@ def check_expiring_quotations():
         _notify(emp_id, msg)
 
 
+def check_stale_opportunities():
+    """Run daily at 9 AM. Nudge owners about Opportunities that haven't
+    moved in 14+ days (status=Open). Pairs with the SPANCO kanban —
+    surfaces deals that are stuck so reps can advance or mark Lost.
+    Manager gets the aggregate; each owner gets just their own list.
+    """
+    from frappe.utils import today, add_days, date_diff
+
+    cutoff = add_days(today(), -14)
+
+    stale = frappe.get_all(
+        "Opportunity",
+        filters={
+            "status": "Open",
+            "modified": ["<", cutoff],
+        },
+        fields=[
+            "name", "party_name", "customer_name", "opportunity_amount",
+            "modified", "owner", "company",
+        ],
+        order_by="modified asc",
+        limit_page_length=200,
+    )
+
+    if not stale:
+        return
+
+    today_date = today()
+
+    by_owner = {}
+    for o in stale:
+        by_owner.setdefault(o.owner, []).append(o)
+
+    for owner, opps in by_owner.items():
+        emp_id = frappe.db.get_value(
+            "Employee", {"user_id": owner, "status": "Active"}, "name"
+        )
+        if not emp_id:
+            continue
+
+        lines = []
+        for o in opps[:10]:
+            days = date_diff(today_date, o.modified)
+            customer = o.customer_name or o.party_name or "—"
+            amt = (
+                f" ₹{o.opportunity_amount:,.0f}"
+                if o.opportunity_amount
+                else ""
+            )
+            lines.append(f"  {o.name} — {customer}{amt} ({days}d stale)")
+
+        more = len(opps) - 10
+        suffix = f"\n  …and {more} more" if more > 0 else ""
+        msg = (
+            f"Stale opportunities ({len(opps)}) — haven't moved in 14+ days:\n"
+            + "\n".join(lines)
+            + suffix
+            + "\n\nAdvance or mark Lost from the SPANCO board: /field#/pipeline"
+        )
+        _notify(emp_id, msg)
+
+    # Aggregate to managers
+    managers = _get_managers()
+    if not managers:
+        return
+    summary_lines = []
+    for o in stale[:15]:
+        days = date_diff(today_date, o.modified)
+        customer = o.customer_name or o.party_name or "—"
+        amt = f" ₹{o.opportunity_amount:,.0f}" if o.opportunity_amount else ""
+        summary_lines.append(
+            f"  {o.name} — {customer}{amt} ({days}d, owner: {o.owner})"
+        )
+    more = len(stale) - 15
+    suffix = f"\n  …and {more} more" if more > 0 else ""
+    msg = (
+        f"Stale opportunities across the team ({len(stale)}):\n"
+        + "\n".join(summary_lines)
+        + suffix
+    )
+    for emp_id in managers:
+        _notify(emp_id, msg)
+
+
 # ── Purchase Cycle Notifications ────────────────────────────
 
 

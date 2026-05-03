@@ -179,6 +179,7 @@ scheduler_events = {
             "vaishali.complaint.check_sla_breaches",
             "vaishali.complaint.check_capa_overdue",
             "vaishali.notifications.check_expiring_quotations",
+            "vaishali.notifications.check_stale_opportunities",
             "vaishali.notifications.check_overdue_purchase_orders",
             "vaishali.notifications.check_pending_purchase_invoices",
             "vaishali.notifications.check_overdue_work_orders",
