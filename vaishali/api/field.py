@@ -2651,6 +2651,126 @@ def submit_delivery_note(name):
     return doc.as_dict()
 
 
+# ── SPANCO sales kanban ──────────────────────────────────────
+
+@frappe.whitelist()
+def get_spanco_kanban():
+    """Return 6-stage SPANCO board: suspect, prospect, approach, negotiation, closing, order.
+
+    Stage rules (one or two doctypes per stage; queries are kept simple):
+        Suspect:     Lead.status in (Lead, Open)
+        Prospect:    Lead.status='Interested' UNION Opportunity.status='Open' with no submitted Quotation
+        Approach:    Opportunity.status='Replied'
+        Negotiation: Quotation docstatus=1, status='Open'
+        Closing:     Quotation docstatus=1, status='Open', quotation_temperature='Hot'
+                     (these also appear in Negotiation — Closing column flags ones to push first)
+        Order:       Sales Order docstatus=1, last 90 days
+
+    Field-tier sees rows they own; manager+ sees all (within COMPANY for Opp/Quote/SO).
+    """
+    from frappe.utils import add_days, today
+
+    tier = _get_nav_tier()
+    own = (tier == "field")
+    user = frappe.session.user
+    cutoff = add_days(today(), -90)
+
+    def _scope(filters):
+        if own:
+            filters["owner"] = user
+        return filters
+
+    sections = {}
+
+    # Suspect — fresh leads
+    suspect = frappe.get_all("Lead",
+        filters=_scope({"status": ["in", ["Lead", "Open"]]}),
+        fields=["name", "lead_name", "company_name", "source", "status",
+                "creation", "mobile_no", "email_id"],
+        order_by="creation desc",
+        limit_page_length=50)
+    for r in suspect:
+        r["doctype"] = "Lead"
+    sections["suspect"] = suspect
+
+    # Prospect — interested leads + open opps without a submitted quotation
+    interested = frappe.get_all("Lead",
+        filters=_scope({"status": "Interested"}),
+        fields=["name", "lead_name", "company_name", "source", "status",
+                "creation", "mobile_no", "email_id"],
+        order_by="creation desc",
+        limit_page_length=25)
+    for r in interested:
+        r["doctype"] = "Lead"
+
+    own_clause = "AND o.owner = %(user)s" if own else ""
+    open_opps = frappe.db.sql(f"""
+        SELECT o.name, o.party_name, o.customer_name, o.opportunity_amount,
+               o.status, o.creation, o.source, o.contact_email, o.contact_mobile
+        FROM `tabOpportunity` o
+        LEFT JOIN `tabQuotation` q
+            ON q.opportunity = o.name AND q.docstatus = 1
+        WHERE o.status = 'Open'
+          AND o.company = %(company)s
+          AND q.name IS NULL
+          {own_clause}
+        ORDER BY o.creation DESC
+        LIMIT 25
+    """, {"user": user, "company": COMPANY}, as_dict=True)
+    for r in open_opps:
+        r["doctype"] = "Opportunity"
+    sections["prospect"] = interested + open_opps
+
+    # Approach — opportunities the customer has engaged with
+    approach = frappe.get_all("Opportunity",
+        filters=_scope({"status": "Replied", "company": COMPANY}),
+        fields=["name", "party_name", "customer_name", "opportunity_amount",
+                "status", "creation", "source", "contact_email", "contact_mobile"],
+        order_by="modified desc",
+        limit_page_length=50)
+    for r in approach:
+        r["doctype"] = "Opportunity"
+    sections["approach"] = approach
+
+    # Negotiation — submitted quotations awaiting decision
+    negotiation = frappe.get_all("Quotation",
+        filters=_scope({"docstatus": 1, "status": "Open", "company": COMPANY}),
+        fields=["name", "party_name", "customer_name", "grand_total", "status",
+                "transaction_date", "valid_till", "quotation_temperature",
+                "contact_email", "contact_mobile"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+    for r in negotiation:
+        r["doctype"] = "Quotation"
+    sections["negotiation"] = negotiation
+
+    # Closing — hot quotes (subset of Negotiation, intentionally duplicated)
+    closing = frappe.get_all("Quotation",
+        filters=_scope({"docstatus": 1, "status": "Open",
+                        "quotation_temperature": "Hot", "company": COMPANY}),
+        fields=["name", "party_name", "customer_name", "grand_total", "status",
+                "transaction_date", "valid_till", "quotation_temperature"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+    for r in closing:
+        r["doctype"] = "Quotation"
+    sections["closing"] = closing
+
+    # Order — won, last 90 days
+    orders = frappe.get_all("Sales Order",
+        filters=_scope({"docstatus": 1, "company": COMPANY,
+                        "transaction_date": [">=", cutoff]}),
+        fields=["name", "customer_name", "customer", "grand_total", "status",
+                "transaction_date", "delivery_date", "per_billed", "per_delivered"],
+        order_by="transaction_date desc",
+        limit_page_length=50)
+    for r in orders:
+        r["doctype"] = "Sales Order"
+    sections["order"] = orders
+
+    return {"sections": sections}
+
+
 # ── Customer Open Items (for DCR follow-up linking) ──────────
 
 @frappe.whitelist()

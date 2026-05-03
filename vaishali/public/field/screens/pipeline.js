@@ -1,8 +1,9 @@
-/* pipeline.js — Sales Pipeline KANBAN screen for DSPL Field App
+/* pipeline.js — SPANCO Sales Kanban for DSPL Field App
  *
- * Mobile-first horizontal kanban: each stage is a full-width column.
- * Tabs strip at top scrolls active column into view (and follows manual swipes
- * via IntersectionObserver). Sticky column headers show count + total value.
+ * 6-stage mobile kanban: Suspect → Prospect → Approach → Negotiation → Closing → Order.
+ * Tap a stage chip or swipe horizontally to switch columns.
+ * Tap a card to open the underlying doc's detail screen.
+ * Server: vaishali.api.field.get_spanco_kanban
  */
 (function () {
   'use strict';
@@ -10,7 +11,7 @@
   var api = window.fieldAPI;
   var el = UI.el;
 
-  // ─── Currency formatting ──────────────────────────────────────────
+  // ─── Currency ─────────────────────────────────────────────────────
 
   function formatINR(val) {
     var n = Number(val) || 0;
@@ -24,94 +25,112 @@
     return '₹' + Math.round(n).toLocaleString('en-IN');
   }
 
-  // ─── Stage configuration ──────────────────────────────────────────
-  // Maps section keys returned by the sales_pipeline view → display label
-  // and which doc field carries the monetary value.
+  function relativeAge(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var diff = Date.now() - d.getTime();
+    var days = Math.floor(diff / 86400000);
+    if (days <= 0) return 'today';
+    if (days === 1) return '1d';
+    if (days < 30) return days + 'd';
+    if (days < 365) return Math.floor(days / 30) + 'mo';
+    return Math.floor(days / 365) + 'y';
+  }
+
+  // ─── Stages ───────────────────────────────────────────────────────
 
   var STAGES = [
-    { key: 'leads',         label: 'Leads',         doctype: 'Lead',         amountField: null,                  status: 'Open' },
-    { key: 'opportunities', label: 'Opportunities', doctype: 'Opportunity',  amountField: 'opportunity_amount',  status: 'Open' },
-    { key: 'quotations',    label: 'Quotations',    doctype: 'Quotation',    amountField: 'grand_total',         status: 'Quoted' },
-    { key: 'orders',        label: 'Orders',        doctype: 'Sales Order',  amountField: 'grand_total',         status: 'Won' }
+    { key: 'suspect',     label: 'Suspect',     hint: 'Fresh leads, not yet qualified',     accent: '#7c3aed', amountField: null },
+    { key: 'prospect',    label: 'Prospect',    hint: 'Qualified — leads & open opps',      accent: '#2563eb', amountField: 'opportunity_amount' },
+    { key: 'approach',    label: 'Approach',    hint: 'Customer engaged',                   accent: '#0891b2', amountField: 'opportunity_amount' },
+    { key: 'negotiation', label: 'Negotiation', hint: 'Quotation sent, awaiting decision',  accent: '#d97706', amountField: 'grand_total' },
+    { key: 'closing',     label: 'Closing',     hint: 'Hot quotes — push to win',           accent: '#dc2626', amountField: 'grand_total' },
+    { key: 'order',       label: 'Order',       hint: 'Won — last 90 days',                 accent: '#059669', amountField: 'grand_total' }
   ];
 
-  function stageColor(status) {
-    if (!status) return 'gray';
-    var s = String(status).toLowerCase();
-    if (s === 'open' || s === 'lead' || s === 'draft') return 'blue';
-    if (s === 'won' || s === 'submitted' || s === 'completed' || s === 'ordered' || s === 'converted') return 'green';
-    if (s === 'lost' || s === 'cancelled' || s === 'closed') return 'red';
-    if (s === 'replied' || s === 'quotation' || s === 'quoted' || s === 'opportunity' || s === 'interested') return 'orange';
-    return 'gray';
+  // ─── Cards ────────────────────────────────────────────────────────
+
+  function cardTitle(item) {
+    return item.customer_name || item.party_name || item.lead_name || item.company_name || item.customer || item.name || 'Untitled';
   }
 
-  function itemTitle(item) {
-    return item.customer_name
-        || item.party_name
-        || item.lead_name
-        || item.company_name
-        || item.customer
-        || item.name
-        || 'Untitled';
-  }
-
-  function itemAmount(item, amountField) {
+  function cardAmount(item, amountField) {
     if (amountField && item[amountField] != null) return Number(item[amountField]) || 0;
     if (item.opportunity_amount != null) return Number(item.opportunity_amount) || 0;
     if (item.grand_total != null) return Number(item.grand_total) || 0;
     return 0;
   }
 
-  // ─── Card ─────────────────────────────────────────────────────────
+  function cardSubBits(item, stage) {
+    var bits = [];
+    if (stage.key === 'suspect' || stage.key === 'prospect') {
+      if (item.source) bits.push(item.source);
+    }
+    if (item.name) bits.push(item.name);
+    var d = item.transaction_date || item.creation;
+    var age = relativeAge(d);
+    if (age) bits.push(age);
+    if (stage.key === 'negotiation' && item.quotation_temperature && item.quotation_temperature !== 'Hot') {
+      bits.push(item.quotation_temperature);
+    }
+    return bits;
+  }
+
+  function detailHashFor(item) {
+    if (!item || !item.name) return null;
+    if (item.doctype === 'Lead') return '#/lead/' + encodeURIComponent(item.name);
+    if (item.doctype === 'Opportunity') return '#/opportunity/' + encodeURIComponent(item.name);
+    if (item.doctype === 'Quotation') return '#/quotation/' + encodeURIComponent(item.name);
+    if (item.doctype === 'Sales Order') return '#/sales-order/' + encodeURIComponent(item.name);
+    return null;
+  }
+
+  function statusColor(status) {
+    if (!status) return 'gray';
+    var s = String(status).toLowerCase();
+    if (s === 'open' || s === 'lead' || s === 'draft') return 'blue';
+    if (s === 'won' || s === 'completed' || s === 'ordered' || s === 'converted' || s === 'to deliver and bill' || s === 'to bill' || s === 'to deliver') return 'green';
+    if (s === 'lost' || s === 'cancelled' || s === 'closed') return 'red';
+    if (s === 'replied' || s === 'quoted' || s === 'opportunity' || s === 'interested' || s === 'hot') return 'orange';
+    return 'gray';
+  }
 
   function buildCard(item, stage) {
-    var children = [];
+    var amt = cardAmount(item, stage.amountField);
+    var subBits = cardSubBits(item, stage);
 
-    children.push(el('div', { className: 'm3-kanban-card-name', textContent: itemTitle(item) }));
-
-    var amt = itemAmount(item, stage.amountField);
+    var rightChildren = [];
     if (amt > 0) {
-      children.push(el('div', { className: 'm3-kanban-card-amount', textContent: formatINR(amt) }));
+      rightChildren.push(el('div', { className: 'spanco-card-amount', textContent: formatINR(amt) }));
     }
+    var statusText = item.status || stage.label;
+    if (stage.key === 'closing' && item.quotation_temperature) {
+      statusText = item.quotation_temperature;
+    }
+    rightChildren.push(UI.pill(statusText, statusColor(statusText)));
 
-    var metaBits = [];
-    if (item.probability != null && item.probability !== '') {
-      metaBits.push(el('span', { textContent: item.probability + '% probability' }));
-    }
-    if (item.status) {
-      metaBits.push(UI.pill(item.status, stageColor(item.status)));
-    } else {
-      metaBits.push(UI.pill(stage.label, stageColor(stage.status || stage.label)));
-    }
-    children.push(el('div', { className: 'm3-kanban-card-meta' }, metaBits));
-
-    var subBits = [];
-    if (item.name) subBits.push(item.name);
-    if (item.expected_closing) subBits.push('Closing ' + item.expected_closing);
-    else if (item.valid_till) subBits.push('Valid till ' + item.valid_till);
-    else if (item.delivery_date) subBits.push('Delivery ' + item.delivery_date);
-    else if (item.transaction_date) subBits.push(item.transaction_date);
+    var textChildren = [el('div', { className: 'spanco-card-title', textContent: cardTitle(item) })];
     if (subBits.length) {
-      children.push(el('div', { className: 'm3-kanban-card-meta', textContent: subBits.join(' · ') }));
+      textChildren.push(el('div', { className: 'spanco-card-sub', textContent: subBits.join(' · ') }));
     }
 
     var card = el('div', {
-      className: 'm3-kanban-card',
+      className: 'spanco-card',
+      style: { borderLeftColor: stage.accent },
       role: 'button',
       tabIndex: '0',
       onClick: function () {
-        // Opportunity has a native PWA detail screen
-        if (stage.doctype === 'Opportunity' && item.name) {
-          window.location.hash = '#/opportunity/' + encodeURIComponent(item.name);
-          return;
-        }
-        // Others fall back to ERPNext desk
-        if (item.name) {
-          var slug = stage.doctype.toLowerCase().replace(/ /g, '-');
-          window.open('/app/' + slug + '/' + encodeURIComponent(item.name), '_blank');
-        }
+        var hash = detailHashFor(item);
+        if (hash) location.hash = hash;
       }
-    }, children);
+    }, [
+      el('div', { className: 'spanco-card-main' }, [
+        UI.avatar ? UI.avatar(cardTitle(item), 40) : null,
+        el('div', { className: 'spanco-card-text' }, textChildren)
+      ]),
+      el('div', { className: 'spanco-card-right' }, rightChildren)
+    ]);
 
     card.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -119,194 +138,187 @@
         card.click();
       }
     });
-
     return card;
   }
 
-  // ─── Column ───────────────────────────────────────────────────────
-
-  function buildColumn(stage, items) {
-    items = items || [];
-    var total = 0;
-    for (var i = 0; i < items.length; i++) total += itemAmount(items[i], stage.amountField);
-
-    var headerMeta = items.length + (items.length === 1 ? ' item' : ' items');
-    if (total > 0) headerMeta += ' · ' + formatShortINR(total);
-
-    var header = el('div', { className: 'm3-kanban-col-header' }, [
-      el('span', { className: 'm3-kanban-col-title', textContent: stage.label }),
-      el('span', { className: 'm3-kanban-col-meta', textContent: headerMeta })
+  function buildEmpty(stage) {
+    var msg = {
+      suspect:     'No fresh leads yet. Add one to start the funnel.',
+      prospect:    'No qualified prospects.',
+      approach:    'No opportunities the customer has replied to yet.',
+      negotiation: 'No quotations awaiting a decision.',
+      closing:     'No hot quotes. Mark a Quotation as Hot from desk to flag it here.',
+      order:       'No orders won in the last 90 days.'
+    };
+    return el('div', { className: 'spanco-empty' }, [
+      el('div', { className: 'spanco-empty-text', textContent: msg[stage.key] || 'Nothing here.' })
     ]);
-
-    var body = el('div', { className: 'm3-kanban-col-body' });
-    if (items.length === 0) {
-      body.appendChild(el('div', { className: 'm3-kanban-empty', textContent: 'No opportunities in this stage' }));
-    } else {
-      for (var k = 0; k < items.length; k++) {
-        body.appendChild(buildCard(items[k], stage));
-      }
-    }
-
-    var col = el('div', {
-      className: 'm3-kanban-column',
-      'data-stage': stage.key,
-      role: 'region',
-      'aria-label': stage.label
-    }, [header, body]);
-
-    return { el: col, total: total, count: items.length };
   }
 
-  // ─── Tab strip ────────────────────────────────────────────────────
-
-  function buildTab(stage, count, total, onTap) {
-    var label = stage.label + ' · ' + count;
-    if (total > 0) label += ' · ' + formatShortINR(total);
-    var tab = el('button', {
-      type: 'button',
-      className: 'm3-kanban-tab',
-      'data-stage': stage.key,
-      onClick: function () { onTap(stage.key); }
-    }, [document.createTextNode(label)]);
-    return tab;
-  }
-
-  // ─── Main render ──────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────
 
   function renderPipeline(appEl) {
     var skel = UI.skeleton(4);
     appEl.appendChild(skel);
 
-    api.apiCall('GET', '/api/field/view/sales_pipeline').then(function (res) {
-      // Clear skeletons
-      var skeletons = appEl.querySelectorAll('.skeleton');
-      for (var i = 0; i < skeletons.length; i++) {
-        if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
-      }
+    api.apiCall('GET', '/api/method/vaishali.api.field.get_spanco_kanban').then(function (res) {
+      appEl.textContent = '';
 
       if (!res || res.error || !res.data) {
-        appEl.appendChild(UI.error('Could not load pipeline data'));
+        appEl.appendChild(UI.error('Could not load pipeline'));
         return;
       }
 
       var data = res.data;
-      var sections = data.sections || data.message || data || {};
-      // Some view envelopes nest under .data
-      if (sections.sections) sections = sections.sections;
+      var sections = (data.message && data.message.sections) || data.sections || {};
 
-      // Container — bleeds past page padding for full-width columns
-      var kanban = el('div', { className: 'm3-kanban' });
+      var stageData = STAGES.map(function (stg) {
+        var items = sections[stg.key] || [];
+        var total = 0;
+        for (var i = 0; i < items.length; i++) total += cardAmount(items[i], stg.amountField);
+        return { stage: stg, items: items, total: total };
+      });
 
-      // Header (total + label)
-      var grandTotal = 0;
-      var stageData = [];
-      for (var s = 0; s < STAGES.length; s++) {
-        var stg = STAGES[s];
-        var items = Array.isArray(sections[stg.key]) ? sections[stg.key] : [];
-        var t = 0;
-        for (var ii = 0; ii < items.length; ii++) t += itemAmount(items[ii], stg.amountField);
-        stageData.push({ stage: stg, items: items, total: t });
-        grandTotal += t;
-      }
+      // Hero KPIs — pipeline value (approach+negotiation+closing) and won (order)
+      var pipelineValue = 0, wonValue = 0;
+      var pipelineCount = 0, wonCount = 0;
+      stageData.forEach(function (sd) {
+        if (sd.stage.key === 'order') {
+          wonValue += sd.total;
+          wonCount += sd.items.length;
+        } else if (['approach', 'negotiation', 'closing'].indexOf(sd.stage.key) !== -1) {
+          pipelineValue += sd.total;
+          pipelineCount += sd.items.length;
+        }
+      });
 
-      var header = el('div', { className: 'm3-kanban-header' }, [
-        el('div', { className: 'm3-kanban-total-label', textContent: 'Total pipeline value' }),
-        el('div', { className: 'm3-kanban-total', textContent: formatShortINR(grandTotal) })
-      ]);
-      kanban.appendChild(header);
+      appEl.appendChild(el('div', { className: 'spanco-hero' }, [
+        el('div', { className: 'spanco-hero-row' }, [
+          el('div', { className: 'spanco-hero-block' }, [
+            el('div', { className: 'spanco-hero-label', textContent: 'Pipeline value' }),
+            el('div', { className: 'spanco-hero-value', textContent: formatShortINR(pipelineValue) }),
+            el('div', { className: 'spanco-hero-meta', textContent: pipelineCount + (pipelineCount === 1 ? ' deal' : ' deals') })
+          ]),
+          el('div', { className: 'spanco-hero-divider' }),
+          el('div', { className: 'spanco-hero-block' }, [
+            el('div', { className: 'spanco-hero-label', textContent: 'Won (90d)' }),
+            el('div', { className: 'spanco-hero-value won', textContent: formatShortINR(wonValue) }),
+            el('div', { className: 'spanco-hero-meta', textContent: wonCount + (wonCount === 1 ? ' order' : ' orders') })
+          ])
+        ])
+      ]));
 
-      // Columns area (built first so we can pass references to tabs)
-      var columnsWrap = el('div', { className: 'm3-kanban-columns', role: 'tabpanel' });
+      var chips = el('div', { className: 'spanco-chips', role: 'tablist', 'aria-label': 'Pipeline stages' });
+      var chipEls = {};
+      var columns = el('div', { className: 'spanco-columns', role: 'tabpanel' });
       var columnEls = {};
 
-      // Tabs strip (built second; needs scroll handler that targets columnsWrap)
-      var tabsWrap = el('div', { className: 'm3-kanban-tabs', role: 'tablist' });
-      var tabEls = {};
-
-      function setActiveTab(key) {
-        for (var k in tabEls) {
-          if (tabEls.hasOwnProperty(k)) {
-            if (k === key) tabEls[k].classList.add('active');
-            else tabEls[k].classList.remove('active');
+      function setActiveStage(key) {
+        for (var k in chipEls) {
+          if (chipEls.hasOwnProperty(k)) {
+            var on = (k === key);
+            chipEls[k].classList.toggle('active', on);
+            chipEls[k].setAttribute('aria-selected', on ? 'true' : 'false');
           }
         }
-        // Keep active tab visible in the strip
-        var activeTab = tabEls[key];
-        if (activeTab && activeTab.scrollIntoView) {
-          try { activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch (_) {}
+        var active = chipEls[key];
+        if (active && active.scrollIntoView) {
+          try { active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch (_) {}
         }
       }
 
       function scrollToColumn(key) {
-        var col = columnEls[key];
-        if (!col) return;
-        // Use scrollLeft on the columns wrapper directly (more reliable on mobile than scrollIntoView)
-        var idx = STAGES.findIndex(function (s) { return s.key === key; });
-        if (idx < 0) return;
-        var width = columnsWrap.clientWidth;
-        try {
-          columnsWrap.scrollTo({ left: idx * width, behavior: 'smooth' });
-        } catch (_) {
-          columnsWrap.scrollLeft = idx * width;
+        var idx = -1;
+        for (var i = 0; i < STAGES.length; i++) {
+          if (STAGES[i].key === key) { idx = i; break; }
         }
-        setActiveTab(key);
+        if (idx < 0) return;
+        var w = columns.clientWidth;
+        try { columns.scrollTo({ left: idx * w, behavior: 'smooth' }); }
+        catch (_) { columns.scrollLeft = idx * w; }
+        setActiveStage(key);
       }
 
-      for (var t = 0; t < stageData.length; t++) {
-        var sd = stageData[t];
-        var col = buildColumn(sd.stage, sd.items);
-        columnEls[sd.stage.key] = col.el;
-        columnsWrap.appendChild(col.el);
+      stageData.forEach(function (sd) {
+        var amountLabel = sd.total > 0 ? formatShortINR(sd.total) : '';
+        var chipChildren = [
+          el('span', { className: 'spanco-chip-dot', style: { background: sd.stage.accent } }),
+          el('span', { className: 'spanco-chip-name', textContent: sd.stage.label }),
+          el('span', { className: 'spanco-chip-count', textContent: String(sd.items.length) })
+        ];
+        if (amountLabel) {
+          chipChildren.push(el('span', { className: 'spanco-chip-amount', textContent: amountLabel }));
+        }
 
-        var tab = buildTab(sd.stage, sd.items.length, sd.total, scrollToColumn);
-        tabEls[sd.stage.key] = tab;
-        tabsWrap.appendChild(tab);
-      }
+        var chip = el('button', {
+          type: 'button',
+          className: 'spanco-chip',
+          role: 'tab',
+          'data-stage': sd.stage.key,
+          'aria-selected': 'false',
+          onClick: function () { scrollToColumn(sd.stage.key); }
+        }, chipChildren);
+        chipEls[sd.stage.key] = chip;
+        chips.appendChild(chip);
 
-      kanban.appendChild(tabsWrap);
-      kanban.appendChild(columnsWrap);
-      appEl.appendChild(kanban);
+        var colHeader = el('div', { className: 'spanco-col-header' }, [
+          el('div', { className: 'spanco-col-titlerow' }, [
+            el('span', { className: 'spanco-col-dot', style: { background: sd.stage.accent } }),
+            el('span', { className: 'spanco-col-title', textContent: sd.stage.label })
+          ]),
+          el('div', { className: 'spanco-col-hint', textContent: sd.stage.hint })
+        ]);
 
-      // Initial active tab — first stage
-      setActiveTab(STAGES[0].key);
+        var colBody = el('div', { className: 'spanco-col-body' });
+        if (sd.items.length === 0) {
+          colBody.appendChild(buildEmpty(sd.stage));
+        } else {
+          for (var c = 0; c < sd.items.length; c++) {
+            colBody.appendChild(buildCard(sd.items[c], sd.stage));
+          }
+        }
 
-      // Sync tabs with manual swipes via IntersectionObserver
+        var col = el('div', {
+          className: 'spanco-column',
+          'data-stage': sd.stage.key,
+          role: 'region',
+          'aria-label': sd.stage.label
+        }, [colHeader, colBody]);
+
+        columnEls[sd.stage.key] = col;
+        columns.appendChild(col);
+      });
+
+      appEl.appendChild(chips);
+      appEl.appendChild(columns);
+
+      setActiveStage(STAGES[0].key);
+
+      // Sync chip ↔ column on manual swipe
       if ('IntersectionObserver' in window) {
         var io = new IntersectionObserver(function (entries) {
-          // Pick the entry with the largest intersection ratio
           var best = null;
           for (var e = 0; e < entries.length; e++) {
             if (!entries[e].isIntersecting) continue;
-            if (!best || entries[e].intersectionRatio > best.intersectionRatio) {
-              best = entries[e];
-            }
+            if (!best || entries[e].intersectionRatio > best.intersectionRatio) best = entries[e];
           }
           if (best) {
             var key = best.target.getAttribute('data-stage');
-            if (key) setActiveTab(key);
+            if (key) setActiveStage(key);
           }
-        }, {
-          root: columnsWrap,
-          threshold: [0.5, 0.75]
-        });
+        }, { root: columns, threshold: [0.5, 0.75] });
         for (var ck in columnEls) {
           if (columnEls.hasOwnProperty(ck)) io.observe(columnEls[ck]);
         }
       }
-    }).catch(function () {
-      var skeletons = appEl.querySelectorAll('.skeleton');
-      for (var i = 0; i < skeletons.length; i++) {
-        if (skeletons[i].parentNode) skeletons[i].parentNode.removeChild(skeletons[i]);
-      }
-      appEl.appendChild(UI.error('Could not load pipeline data'));
+    }).catch(function (err) {
+      appEl.textContent = '';
+      appEl.appendChild(UI.error('Could not load pipeline: ' + (err.message || err)));
     });
   }
 
-  // ─── Export ────────────────────────────────────────────────────────
+  // ─── Export ──────────────────────────────────────────────────────
 
   window.Screens = window.Screens || {};
-  window.Screens.pipeline = function (appEl) {
-    renderPipeline(appEl);
-  };
-
+  window.Screens.pipeline = function (appEl) { renderPipeline(appEl); };
 })();

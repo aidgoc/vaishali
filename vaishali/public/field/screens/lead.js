@@ -94,14 +94,39 @@
               right: UI.pill(status, statusColor(status)),
               onClick: function () { location.hash = '#/lead/' + lead.name; }
             });
-            // Swipe-row: leading=Call (if mobile), trailing=Convert
+            // Swipe-row: leading=Call (if mobile), trailing=one-tap Convert to Opportunity
+            // Skip Convert if already converted/lost/do-not-contact.
+            var leadStatus = (lead.status || '').toLowerCase();
+            var canConvert = ['converted', 'lost', 'do not contact'].indexOf(leadStatus) === -1;
             if (UI.swipeRow) {
               var leading = [];
               var trailing = [];
               if (lead.mobile_no) {
                 leading.push({ icon: 'phone', label: 'Call', color: 'success', onClick: function () { location.href = 'tel:' + lead.mobile_no; } });
               }
-              trailing.push({ icon: 'plus', label: 'Convert', color: 'primary', onClick: function () { location.hash = '#/lead/' + lead.name; } });
+              if (canConvert) {
+                trailing.push({
+                  icon: 'plus', label: 'Make Opp', color: 'primary',
+                  onClick: function () {
+                    UI.toast('Creating opportunity...', 'info');
+                    window.fieldAPI.apiCall('POST', '/api/field/opportunities', { lead_name: lead.name }).then(function (res) {
+                      if (res.error || (res.status && res.status >= 400)) {
+                        var msg = res.error || 'Failed';
+                        if (res.data && res.data._server_messages) {
+                          try { msg = JSON.parse(JSON.parse(res.data._server_messages)[0]).message; } catch (e) {}
+                        }
+                        UI.toast(msg, 'error');
+                        return;
+                      }
+                      var newOpp = (res.data && res.data.message) || res.data || {};
+                      UI.toast('Opportunity created', 'success');
+                      location.hash = '#/opportunity/' + encodeURIComponent(newOpp.name);
+                    }).catch(function (err) {
+                      UI.toast('Failed: ' + (err.message || err), 'error');
+                    });
+                  }
+                });
+              }
               listWrap.appendChild(UI.swipeRow(card, { leadingActions: leading, trailingActions: trailing }));
             } else {
               listWrap.appendChild(card);

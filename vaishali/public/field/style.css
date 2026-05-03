@@ -7050,6 +7050,271 @@ body, #app, #app-header, #bottom-nav, .bottom-nav {
   .m3-kanban-card { transition: none; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   SPANCO Kanban — Suspect / Prospect / Approach / Negotiation / Closing / Order
+   ═══════════════════════════════════════════════════════════════════ */
+
+.spanco-hero {
+  margin: 0 -16px;
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.spanco-hero-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+.spanco-hero-block {
+  flex: 1;
+  min-width: 0;
+}
+.spanco-hero-divider {
+  width: 1px;
+  background: var(--m3-outline-variant);
+  flex-shrink: 0;
+}
+.spanco-hero-label {
+  font: var(--m3-label-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.spanco-hero-value {
+  font: var(--m3-headline-medium);
+  letter-spacing: -0.5px;
+  color: var(--m3-on-surface);
+  font-feature-settings: 'tnum' 1;
+  line-height: 1.1;
+}
+.spanco-hero-value.won {
+  color: var(--m3-success, #2E7D32);
+}
+.spanco-hero-meta {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+  margin-top: 4px;
+}
+
+.spanco-chips {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  margin: 0 -16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--m3-outline-variant);
+  background: var(--m3-surface-container-lowest, #FFF);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.spanco-chips::-webkit-scrollbar { display: none; }
+
+.spanco-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  font: var(--m3-label-large);
+  letter-spacing: 0.1px;
+  background: transparent;
+  color: var(--m3-on-surface-variant);
+  border: 1px solid var(--m3-outline-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s var(--m3-easing-standard, ease),
+              color 0.15s var(--m3-easing-standard, ease),
+              border-color 0.15s var(--m3-easing-standard, ease);
+}
+.spanco-chip:hover {
+  background: var(--m3-surface-container);
+}
+.spanco-chip.active {
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  border-color: transparent;
+  font-weight: 600;
+}
+.spanco-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.spanco-chip-name {
+  letter-spacing: 0.1px;
+}
+.spanco-chip-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--m3-on-surface-variant);
+  min-width: 18px;
+  text-align: center;
+  font-feature-settings: 'tnum' 1;
+}
+.spanco-chip.active .spanco-chip-count {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--m3-on-primary-container);
+}
+.spanco-chip-amount {
+  font-size: 11px;
+  color: var(--m3-on-surface-variant);
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0.2px;
+  padding-left: 4px;
+  border-left: 1px solid var(--m3-outline-variant);
+  margin-left: 2px;
+}
+.spanco-chip.active .spanco-chip-amount {
+  color: var(--m3-on-primary-container);
+  border-left-color: rgba(255, 255, 255, 0.45);
+}
+
+.spanco-columns {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -16px;
+}
+.spanco-columns::-webkit-scrollbar { display: none; }
+
+.spanco-column {
+  flex-shrink: 0;
+  min-width: 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.spanco-col-header {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.spanco-col-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.spanco-col-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.spanco-col-title {
+  font: var(--m3-title-large);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+}
+.spanco-col-hint {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.25px;
+  margin-top: 4px;
+  margin-left: 18px;
+}
+
+.spanco-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spanco-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--m3-surface-container-low);
+  border-radius: var(--m3-shape-md, 12px);
+  border: 1px solid var(--m3-outline-variant);
+  border-left: 4px solid var(--m3-outline-variant);
+  cursor: pointer;
+  transition: background 0.12s var(--m3-easing-standard, ease);
+}
+.spanco-card:hover { background: var(--m3-surface-container); }
+.spanco-card:active { background: var(--m3-surface-container-high, var(--m3-surface-container)); }
+.spanco-card:focus-visible {
+  outline: 2px solid var(--m3-primary, #B3261E);
+  outline-offset: 2px;
+}
+
+.spanco-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.spanco-card-text {
+  min-width: 0;
+  flex: 1;
+}
+.spanco-card-title {
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  color: var(--m3-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.spanco-card-sub {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spanco-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.spanco-card-amount {
+  font: var(--m3-title-small);
+  letter-spacing: 0;
+  color: var(--m3-on-surface);
+  font-feature-settings: 'tnum' 1;
+  font-weight: 600;
+}
+
+.spanco-empty {
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--m3-on-surface-variant);
+}
+.spanco-empty-text {
+  font: var(--m3-body-medium);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.25px;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spanco-columns { scroll-snap-type: none; }
+  .spanco-chip,
+  .spanco-card { transition: none; }
+}
+
 /* ──────────────────────────────────────────────────────────────
    M3 Email Composer (UI.emailComposer)
    Reuses .bottom-sheet shell; only composer-specific tweaks below.
