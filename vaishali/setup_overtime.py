@@ -3,53 +3,102 @@
 Idempotent. Run via:
     bench --site dgoc.logstop.com execute vaishali.setup_overtime.run
 
-Pirangut service-engineering staff (and anyone else management opts in)
-need overtime tracking. This script:
+Pirangut workshop policy (CWS branch — DCEPL workshop crew + DSPL
+service engineers):
+- Saturdays are working days (Sundays + public holidays are off)
+- Standard 9 working hours per day; anything beyond counts as overtime
+- OT is paid at a 1:1 rate (one hour OT = one hour regular pay) — the
+  pay_multiplier field on Overtime Log captures this so payroll can
+  pick it up directly
+- On a public holiday, every worked hour counts as overtime
+
+This script:
 - Adds Custom Field `Employee.overtime_eligible` (Check, default 0)
 - Creates the custom DocType `Overtime Log` (one row per eligible
   employee per worked day, populated by
   `vaishali.api.attendance.compute_overtime`)
-
-Marking employees eligible is left as a desk action — the field appears
-just under `attendance_mode` on the Employee form.
+- flag_pirangut() flips overtime_eligible=1 for every active employee
+  that fits the Pirangut policy (DCEPL/CWS shop-floor crew + DSPL/CWS
+  service engineers)
 """
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 
-# Pirangut workshop = CWS branch under DCEPL. Every active CWS-DCEPL
-# employee is overtime-eligible per management policy (mechanics, drivers,
-# electricians, service technicians, maintenance — the shop-floor crew).
-PIRANGUT_FILTER = {
-    "company": "Dynamic Crane Engineers Private Limited",
-    "branch": "CWS",
-    "status": "Active",
-}
+# Pirangut workshop = CWS branch.
+# - Every active DCEPL/CWS employee (the shop-floor crew — mechanics,
+#   drivers, electricians, technicians, maintenance manager, stores) is
+#   overtime-eligible.
+# - DSPL/CWS service engineers (Service department only — not Sales BD)
+#   are also OT-eligible per management direction; they share the
+#   workshop and follow the same 1:1 OT pay rule.
+PIRANGUT_FILTERS = [
+    {
+        "company": "Dynamic Crane Engineers Private Limited",
+        "branch": "CWS",
+        "status": "Active",
+    },
+    {
+        "company": "Dynamic Servitech Private Limited",
+        "branch": "CWS",
+        "department": ["like", "SERVICE%"],
+        "status": "Active",
+    },
+]
 
 
 def run():
     print("\n=== Overtime Setup ===\n")
     _ensure_overtime_eligible_field()
     _ensure_overtime_log_doctype()
+    _ensure_pay_multiplier_field()
     flag_pirangut()
     frappe.db.commit()
     print("\n✓ Overtime infrastructure ready.\n")
 
 
+# ── Custom Field: Overtime Log.pay_multiplier (1:1 default) ───────
+
+def _ensure_pay_multiplier_field():
+    """Pay multiplier on each OT Log row. Default 1.0 (Pirangut 1:1 policy);
+    can be overridden per row if management approves a different rate
+    (e.g. 1.5x for a specific holiday). The actual amount is derived by
+    payroll from `ot_hours × pay_multiplier × hourly_rate`."""
+    create_custom_field("Overtime Log", {
+        "fieldname": "pay_multiplier",
+        "label": "Pay multiplier",
+        "fieldtype": "Float",
+        "default": "1.0",
+        "precision": "2",
+        "insert_after": "is_holiday_work",
+        "description": "1.0 = same hourly rate as regular pay (Pirangut policy). "
+                       "Bump if management approves a higher multiplier for "
+                       "a specific date.",
+    })
+    print("  Custom Field: Overtime Log.pay_multiplier ensured (default 1.0)")
+
+
 def flag_pirangut():
-    """Idempotently mark every active DCEPL employee in branch CWS (Pirangut
-    workshop) as overtime_eligible. Re-runnable: only flips employees whose
-    flag is currently 0; never touches anyone outside the filter."""
-    emps = frappe.get_all("Employee", filters=PIRANGUT_FILTER,
-                          fields=["name", "employee_name", "overtime_eligible"])
+    """Mark every employee that fits the Pirangut OT policy (DCEPL/CWS shop-
+    floor + DSPL/CWS service engineers) as overtime_eligible. Idempotent —
+    only flips employees whose flag is currently 0."""
+    seen = set()
+    matched = 0
     flipped = 0
-    for e in emps:
-        if not e.overtime_eligible:
-            frappe.db.set_value("Employee", e.name, "overtime_eligible", 1)
-            flipped += 1
-    print(f"  Pirangut OT: {flipped} of {len(emps)} DCEPL/CWS employees flagged "
+    for filt in PIRANGUT_FILTERS:
+        emps = frappe.get_all("Employee", filters=filt,
+                              fields=["name", "employee_name", "overtime_eligible"])
+        for e in emps:
+            if e.name in seen:
+                continue
+            seen.add(e.name)
+            matched += 1
+            if not e.overtime_eligible:
+                frappe.db.set_value("Employee", e.name, "overtime_eligible", 1)
+                flipped += 1
+    print(f"  Pirangut OT: {flipped} of {matched} employees newly flagged "
           f"(rest already on)")
-    return {"matched": len(emps), "flipped": flipped}
+    return {"matched": matched, "flipped": flipped}
 
 
 # ── Custom Field: Employee.overtime_eligible ──────────────────────

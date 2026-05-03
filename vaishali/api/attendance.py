@@ -295,6 +295,9 @@ def _create_ot_logs(employees, target_date, holiday=False):
                 "regular_hours": round(regular, 2),
                 "ot_hours": round(ot, 2),
                 "is_holiday_work": 1 if holiday else 0,
+                # Pirangut policy: 1:1 OT pay rate. Payroll multiplies
+                # ot_hours × pay_multiplier × hourly_rate.
+                "pay_multiplier": 1.0,
                 "status": "Open",
                 "company": emp.company,
             }).insert(ignore_permissions=True)
