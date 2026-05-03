@@ -38,6 +38,7 @@ doc_events = {
         "before_save": "vaishali.service_call_guard.enforce",
     },
     "Quotation": {
+        "before_submit": "vaishali.quotation_guard.validate_discount_approval",
         "on_submit": [
             "vaishali.api.linking.link_quotation_to_dcr",
             "vaishali.notifications.on_quotation_submit",
