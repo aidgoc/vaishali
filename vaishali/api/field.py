@@ -2585,6 +2585,72 @@ def create_payment_entry(sales_invoice, amount=None, mode_of_payment=None, refer
     return pe.as_dict()
 
 
+# ── CRM submit actions (advance the funnel) ──────────────────
+
+@frappe.whitelist(methods=["POST"])
+def submit_quotation(name):
+    """Submit a draft Quotation. Same gate as create_quotation."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(_("You do not have permission to submit quotations"), frappe.PermissionError)
+    doc = frappe.get_doc("Quotation", name)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft quotations can be submitted"))
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_sales_order(name):
+    """Submit a draft Sales Order. Same gate as create_sales_order_from_quotation."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(_("You do not have permission to submit sales orders"), frappe.PermissionError)
+    doc = frappe.get_doc("Sales Order", name)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft sales orders can be submitted"))
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_sales_invoice(name):
+    """Submit a draft Sales Invoice. Requires Accounts Manager for field tier."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Accounts Manager" not in roles:
+        frappe.throw(_("You do not have permission to submit invoices"), frappe.PermissionError)
+    doc = frappe.get_doc("Sales Invoice", name)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft invoices can be submitted"))
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_delivery_note(name):
+    """Submit a draft Delivery Note. Requires Stock Manager for field tier."""
+    tier = _get_nav_tier()
+    roles = set(frappe.get_roles())
+    if tier == "field" and "Stock Manager" not in roles:
+        frappe.throw(_("You do not have permission to submit delivery notes"), frappe.PermissionError)
+    doc = frappe.get_doc("Delivery Note", name)
+    if doc.docstatus != 0:
+        frappe.throw(_("Only draft delivery notes can be submitted"))
+    doc.submit()
+    frappe.db.commit()
+    return doc.as_dict()
+
+
 # ── Customer Open Items (for DCR follow-up linking) ──────────
 
 @frappe.whitelist()

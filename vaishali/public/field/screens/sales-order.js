@@ -312,7 +312,92 @@
       }
 
       // Actions
+      function extractError(res, fallback) {
+        if (res && res.data && res.data._server_messages) {
+          try {
+            var msgs = JSON.parse(res.data._server_messages);
+            return JSON.parse(msgs[0]).message;
+          } catch (e) { /* fall through */ }
+        }
+        return (res && res.error) || fallback;
+      }
+
       var actionBtns = [];
+
+      if (so.docstatus === 0) {
+        actionBtns.push(UI.btn('Submit', {
+          type: 'primary',
+          icon: 'check',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Submitting...');
+            window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.submit_sales_order', {
+              name: so.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Submit failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              UI.toast('Sales order submitted', 'success');
+              location.hash = '#/sales-orders';
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+      } else if (so.docstatus === 1 && so.status !== 'Closed' && so.status !== 'Completed' && so.status !== 'Cancelled') {
+        if ((so.per_delivered || 0) < 100) {
+          actionBtns.push(UI.btn('Make delivery', {
+            type: 'primary',
+            icon: 'plus',
+            onClick: function () {
+              var btn = this;
+              btn._setLoading(true, 'Creating...');
+              window.fieldAPI.apiCall('POST', '/api/field/delivery-notes', { sales_order: so.name }).then(function (res) {
+                if (res.error || (res.status && res.status >= 400)) {
+                  UI.toast(extractError(res, 'Failed'), 'error');
+                  btn._setLoading(false);
+                  return;
+                }
+                var newDn = (res.data && res.data.message) || res.data || {};
+                UI.toast('Delivery note created', 'success');
+                location.hash = '#/delivery-note/' + encodeURIComponent(newDn.name);
+              }).catch(function (err) {
+                UI.toast('Failed: ' + (err.message || err), 'error');
+                btn._setLoading(false);
+              });
+            }
+          }));
+        }
+        if ((so.per_billed || 0) < 100) {
+          actionBtns.push(UI.btn('Make invoice', {
+            type: 'tonal',
+            icon: 'plus',
+            onClick: function () {
+              var btn = this;
+              btn._setLoading(true, 'Creating...');
+              window.fieldAPI.apiCall('POST', '/api/field/sales-invoices', {
+                source_type: 'Sales Order', source_name: so.name
+              }).then(function (res) {
+                if (res.error || (res.status && res.status >= 400)) {
+                  UI.toast(extractError(res, 'Failed'), 'error');
+                  btn._setLoading(false);
+                  return;
+                }
+                var newSi = (res.data && res.data.message) || res.data || {};
+                UI.toast('Invoice created', 'success');
+                location.hash = '#/sales-invoice/' + encodeURIComponent(newSi.name);
+              }).catch(function (err) {
+                UI.toast('Failed: ' + (err.message || err), 'error');
+                btn._setLoading(false);
+              });
+            }
+          }));
+        }
+      }
+
       actionBtns.push(UI.btn('PDF', {
         type: 'tonal',
         icon: 'file',
@@ -321,15 +406,6 @@
           window.open(pdfUrl, '_blank');
         }
       }));
-      if (so.docstatus === 1 && so.status !== 'Closed' && so.status !== 'Completed') {
-        actionBtns.push(UI.btn('Make delivery', {
-          type: 'primary',
-          icon: 'plus',
-          onClick: function () {
-            location.hash = '#/delivery-notes/new?sales_order=' + encodeURIComponent(so.name);
-          }
-        }));
-      }
       appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
 
       // Items

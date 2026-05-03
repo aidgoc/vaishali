@@ -109,11 +109,29 @@
               ]),
               onClick: function () { location.hash = '#/quotation/' + encodeURIComponent(q.name); }
             });
-            // Swipe: trailing = Convert to Sales Order (when quote is open)
-            if (UI.swipeRow && status !== 'Cancelled') {
+            // Swipe: trailing = Convert to Sales Order. Only on submitted, non-terminal quotes.
+            var canConvert = q.docstatus === 1 && ['Lost', 'Ordered', 'Cancelled'].indexOf(status) === -1;
+            if (UI.swipeRow && canConvert) {
               var trailing = [{
                 icon: 'plus', label: 'Make SO', color: 'primary',
-                onClick: function () { location.hash = '#/sales-orders/new?quotation=' + encodeURIComponent(q.name); }
+                onClick: function () {
+                  UI.toast('Creating sales order...', 'info');
+                  window.fieldAPI.apiCall('POST', '/api/field/sales-orders', { quotation: q.name }).then(function (res) {
+                    if (res.error || (res.status && res.status >= 400)) {
+                      var msg = res.error || 'Failed';
+                      if (res.data && res.data._server_messages) {
+                        try { msg = JSON.parse(JSON.parse(res.data._server_messages)[0]).message; } catch (e) {}
+                      }
+                      UI.toast(msg, 'error');
+                      return;
+                    }
+                    var newSo = (res.data && res.data.message) || res.data || {};
+                    UI.toast('Sales order created', 'success');
+                    location.hash = '#/sales-order/' + encodeURIComponent(newSo.name);
+                  }).catch(function (err) {
+                    UI.toast('Failed: ' + (err.message || err), 'error');
+                  });
+                }
               }];
               listWrap.appendChild(UI.swipeRow(card, { trailingActions: trailing }));
             } else {
@@ -577,16 +595,103 @@
       appEl.appendChild(hero);
 
       // ── Quick action row ──
+      function extractError(res, fallback) {
+        if (res && res.data && res.data._server_messages) {
+          try {
+            var msgs = JSON.parse(res.data._server_messages);
+            return JSON.parse(msgs[0]).message;
+          } catch (e) { /* fall through */ }
+        }
+        return (res && res.error) || fallback;
+      }
+
       var actionBtns = [];
-      if (q.docstatus !== 2) {
+      var statusLower = (q.status || '').toLowerCase();
+      var canConvert = q.docstatus === 1 && ['lost', 'ordered', 'cancelled'].indexOf(statusLower) === -1;
+
+      if (q.docstatus === 0) {
+        actionBtns.push(UI.btn('Submit & convert to SO', {
+          type: 'primary',
+          icon: 'check',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Submitting...');
+            window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.submit_quotation', {
+              name: q.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Submit failed'), 'error');
+                btn._setLoading(false);
+                return null;
+              }
+              btn._setLoading(true, 'Creating SO...');
+              return window.fieldAPI.apiCall('POST', '/api/field/sales-orders', { quotation: q.name });
+            }).then(function (res) {
+              if (!res) return;
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast('Submitted, but SO creation failed: ' + extractError(res, ''), 'error');
+                btn._setLoading(false);
+                location.hash = '#/quotations';
+                return;
+              }
+              var newSo = (res.data && res.data.message) || res.data || {};
+              UI.toast('Sales order ' + (newSo.name || '') + ' created', 'success');
+              location.hash = '#/sales-order/' + encodeURIComponent(newSo.name);
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+
+        actionBtns.push(UI.btn('Submit only', {
+          type: 'tonal',
+          icon: 'check',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Submitting...');
+            window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.submit_quotation', {
+              name: q.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Submit failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              UI.toast('Quotation submitted', 'success');
+              location.hash = '#/quotations';
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+      }
+
+      if (canConvert) {
         actionBtns.push(UI.btn('Convert to SO', {
           type: 'primary',
           icon: 'plus',
           onClick: function () {
-            location.hash = '#/sales-orders/new?quotation=' + encodeURIComponent(q.name);
+            var btn = this;
+            btn._setLoading(true, 'Creating SO...');
+            window.fieldAPI.apiCall('POST', '/api/field/sales-orders', { quotation: q.name }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Convert failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              var newSo = (res.data && res.data.message) || res.data || {};
+              UI.toast('Sales order created', 'success');
+              location.hash = '#/sales-order/' + encodeURIComponent(newSo.name);
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
           }
         }));
       }
+
       if (q.contact_email) {
         actionBtns.push(UI.btn('Email', {
           type: 'tonal',

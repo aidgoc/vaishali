@@ -285,7 +285,67 @@
       }
 
       // Actions
+      function extractError(res, fallback) {
+        if (res && res.data && res.data._server_messages) {
+          try {
+            var msgs = JSON.parse(res.data._server_messages);
+            return JSON.parse(msgs[0]).message;
+          } catch (e) { /* fall through */ }
+        }
+        return (res && res.error) || fallback;
+      }
+
       var actionBtns = [];
+
+      if (dn.docstatus === 0) {
+        actionBtns.push(UI.btn('Submit', {
+          type: 'primary',
+          icon: 'check',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Submitting...');
+            window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.submit_delivery_note', {
+              name: dn.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Submit failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              UI.toast('Delivery note submitted', 'success');
+              location.hash = '#/delivery-notes';
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+      } else if (dn.docstatus === 1 && dn.status !== 'Completed' && dn.status !== 'Cancelled' && (dn.per_billed || 0) < 100) {
+        actionBtns.push(UI.btn('Make invoice', {
+          type: 'primary',
+          icon: 'plus',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Creating...');
+            window.fieldAPI.apiCall('POST', '/api/field/sales-invoices', {
+              source_type: 'Delivery Note', source_name: dn.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              var newSi = (res.data && res.data.message) || res.data || {};
+              UI.toast('Invoice created', 'success');
+              location.hash = '#/sales-invoice/' + encodeURIComponent(newSi.name);
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+      }
+
       actionBtns.push(UI.btn('PDF', {
         type: 'tonal',
         icon: 'file',
@@ -293,15 +353,6 @@
           window.open('/api/method/frappe.utils.print_format.download_pdf?doctype=Delivery Note&name=' + encodeURIComponent(dn.name) + '&format=Standard', '_blank');
         }
       }));
-      if (dn.docstatus === 1 && dn.status !== 'Completed') {
-        actionBtns.push(UI.btn('Make invoice', {
-          type: 'primary',
-          icon: 'plus',
-          onClick: function () {
-            location.hash = '#/sales-invoices/new?delivery_note=' + encodeURIComponent(dn.name);
-          }
-        }));
-      }
       appEl.appendChild(el('div', { className: 'm3-doc-actions' }, actionBtns));
 
       // Items

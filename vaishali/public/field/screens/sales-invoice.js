@@ -321,7 +321,43 @@
       }
 
       // Actions
+      function extractError(res, fallback) {
+        if (res && res.data && res.data._server_messages) {
+          try {
+            var msgs = JSON.parse(res.data._server_messages);
+            return JSON.parse(msgs[0]).message;
+          } catch (e) { /* fall through */ }
+        }
+        return (res && res.error) || fallback;
+      }
+
       var actionBtns = [];
+
+      if (si.docstatus === 0) {
+        actionBtns.push(UI.btn('Submit invoice', {
+          type: 'primary',
+          icon: 'check',
+          onClick: function () {
+            var btn = this;
+            btn._setLoading(true, 'Submitting...');
+            window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.submit_sales_invoice', {
+              name: si.name
+            }).then(function (res) {
+              if (res.error || (res.status && res.status >= 400)) {
+                UI.toast(extractError(res, 'Submit failed'), 'error');
+                btn._setLoading(false);
+                return;
+              }
+              UI.toast('Invoice submitted', 'success');
+              location.hash = '#/sales-invoices';
+            }).catch(function (err) {
+              UI.toast('Failed: ' + (err.message || err), 'error');
+              btn._setLoading(false);
+            });
+          }
+        }));
+      }
+
       actionBtns.push(UI.btn('PDF', {
         type: 'tonal',
         icon: 'file',
