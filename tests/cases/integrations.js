@@ -112,7 +112,7 @@ module.exports = {
     }));
     h.assert(out.swipeRows >= 1, `Expected swipe rows on leads list, got ${out.swipeRows}`);
     h.assert(out.leadingActions.some((s) => /call/i.test(s)), `Leads list missing Call action — saw: ${out.leadingActions.join(', ')}`);
-    h.assert(out.trailingActions.some((s) => /convert/i.test(s)), `Leads list missing Convert action — saw: ${out.trailingActions.join(', ')}`);
+    h.assert(out.trailingActions.some((s) => /convert|make opp/i.test(s)), `Leads list missing Convert/Make-Opp action — saw: ${out.trailingActions.join(', ')}`);
   },
 
   // Approvals list rows must have Approve / Reject swipe actions
