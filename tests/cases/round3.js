@@ -1,25 +1,7 @@
 // round3.js — kanban pipeline, notification bell, SO/DN/SI stage paths, email composer
 'use strict';
 
-const PIPELINE_FIXTURE = {
-  match: '/api/field/view/sales_pipeline',
-  // Frappe-style envelope: res.data = { message: { sections: {...} } }
-  data: { message: { sections: {
-    leads: [
-      { name: 'CRM-LEAD-1', lead_name: 'Anil Kumar', company_name: 'Tata' },
-      { name: 'CRM-LEAD-2', lead_name: 'Bharti Ent', company_name: 'BAL' }
-    ],
-    opportunities: [
-      { name: 'CRM-OPP-1', party_name: 'Larsen & Toubro', opportunity_amount: 4250000 }
-    ],
-    quotations: [
-      { name: 'QTN-1', party_name: 'Tata Motors', grand_total: 198240, status: 'Open' }
-    ],
-    orders: [
-      { name: 'SO-1', customer_name: 'Reliance', grand_total: 980000, status: 'To Deliver and Bill' }
-    ]
-  } } }
-};
+// PIPELINE_FIXTURE removed — see tests/cases/spanco.js for the 6-stage board.
 
 const SO_FIXTURE = {
   match: '/api/method/frappe.client.get?doctype=Sales Order',
@@ -54,26 +36,9 @@ const COMMENTS_FIXTURE = { match: '/api/resource/Comment', data: { data: [] } };
 const VERSIONS_FIXTURE = { match: '/api/resource/Version', data: { data: [] } };
 
 module.exports = {
-  // Pipeline screen now renders kanban columns
-  async pipelineKanbanRenders(page, h) {
-    await h.gotoRoute(page, '#/pipeline', {
-      session: { navTier: 'manager' },
-      api: [PIPELINE_FIXTURE]
-    });
-    await page.waitForTimeout(500);
-    const out = await page.evaluate(() => ({
-      kanbanRoot: !!document.querySelector('.m3-kanban'),
-      tabCount: document.querySelectorAll('.m3-kanban-tab').length,
-      columnCount: document.querySelectorAll('.m3-kanban-column').length,
-      cardCount: document.querySelectorAll('.m3-kanban-card').length,
-      hasTotal: !!document.querySelector('.m3-kanban-total')
-    }));
-    h.assert(out.kanbanRoot, 'Pipeline missing m3-kanban root');
-    h.assert(out.tabCount >= 4, `Expected ≥4 stage tabs, got ${out.tabCount}`);
-    h.assert(out.columnCount >= 4, `Expected ≥4 stage columns, got ${out.columnCount}`);
-    h.assert(out.cardCount >= 4, `Expected cards across stages, got ${out.cardCount}`);
-    h.assert(out.hasTotal, 'Total pipeline value missing');
-  },
+  // Pipeline kanban — superseded by tests/cases/spanco.js. The 4-stage
+  // m3-kanban was replaced by the 6-stage SPANCO board with .spanco-* selectors.
+  // (case removed)
 
   // Bell icon shows in top app bar
   async bellInAppBar(page, h) {
