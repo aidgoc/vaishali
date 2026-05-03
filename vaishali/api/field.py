@@ -2771,6 +2771,146 @@ def get_spanco_kanban():
     return {"sections": sections}
 
 
+def _check_sales_role():
+    """Field tier needs sales/marketing dept (or manager+)."""
+    tier = _get_nav_tier()
+    if tier == "field":
+        emp = _get_employee()
+        dept = (emp.get("department") or "").lower()
+        if "sales" not in dept and "marketing" not in dept:
+            frappe.throw(
+                _("You do not have permission to move pipeline stages"),
+                frappe.PermissionError,
+            )
+
+
+@frappe.whitelist(methods=["POST"])
+def move_kanban_stage(doctype, name, target_stage,
+                      lost_reason=None, lost_remark=None):
+    """Move a SPANCO card to `target_stage`.
+
+    Handles in-place status flips (Lead.status, Opp.status, Quote.quotation_temperature,
+    Quote.status=Lost) and one cross-doctype create (Quote → Sales Order).
+
+    Lead → Approach also creates an Opportunity (via ERPNext's make_opportunity).
+    Opp → Negotiation needs items, so we return action='navigate' to send the user
+    to the new-quotation form prefilled from the Opp.
+
+    Returns {action, doctype, name, message}:
+        action='updated': existing doc was changed
+        action='created': new doc was created (caller routes there)
+        action='navigate': caller routes to a form to finish input
+    """
+    _check_sales_role()
+
+    if not doctype or not name or not target_stage:
+        frappe.throw(_("doctype, name, and target_stage are required"))
+
+    target = (target_stage or "").strip().lower()
+
+    # ── Lead ─────────────────────────────────────────────────────
+    if doctype == "Lead":
+        doc = frappe.get_doc("Lead", name)
+        if target == "suspect":
+            doc.status = "Open"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Lead",
+                    "name": name, "message": "Moved to Suspect"}
+        if target == "prospect":
+            doc.status = "Interested"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Lead",
+                    "name": name, "message": "Moved to Prospect"}
+        if target == "lost":
+            # Lead status options don't include "Lost". "Do Not Contact"
+            # is ERPNext's terminal cold-storage state for dead leads.
+            doc.status = "Do Not Contact"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Lead",
+                    "name": name, "message": "Marked as Lost"}
+        if target == "approach":
+            from erpnext.crm.doctype.lead.lead import make_opportunity
+            opp = make_opportunity(name)
+            opp.company = COMPANY
+            opp.status = "Replied"
+            opp.insert(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "created", "doctype": "Opportunity",
+                    "name": opp.name,
+                    "message": "Lead converted to Opportunity (Approach)"}
+        frappe.throw(_("Cannot move a Lead directly to {0}").format(target_stage))
+
+    # ── Opportunity ──────────────────────────────────────────────
+    if doctype == "Opportunity":
+        doc = frappe.get_doc("Opportunity", name)
+        if target == "prospect":
+            doc.status = "Open"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Opportunity",
+                    "name": name, "message": "Moved to Prospect"}
+        if target == "approach":
+            doc.status = "Replied"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Opportunity",
+                    "name": name, "message": "Moved to Approach"}
+        if target == "lost":
+            doc.status = "Lost"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Opportunity",
+                    "name": name, "message": "Marked as Lost"}
+        if target == "negotiation":
+            return {"action": "navigate",
+                    "url": "#/quotations/new?opportunity=" + name,
+                    "message": "Add items + submit to enter Negotiation"}
+        frappe.throw(_("Cannot move an Opportunity directly to {0}").format(target_stage))
+
+    # ── Quotation ────────────────────────────────────────────────
+    if doctype == "Quotation":
+        if target == "negotiation":
+            frappe.db.set_value("Quotation", name, "quotation_temperature", "Warm")
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Quotation",
+                    "name": name, "message": "Marked as Warm"}
+        if target == "closing":
+            frappe.db.set_value("Quotation", name, "quotation_temperature", "Hot")
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Quotation",
+                    "name": name, "message": "Marked as Hot"}
+        if target == "lost":
+            updates = {
+                "status": "Lost",
+                "lost_reason_category": (lost_reason or "Other"),
+                "lost_remark": (lost_remark or ""),
+            }
+            frappe.db.set_value("Quotation", name, updates)
+            frappe.db.commit()
+            return {"action": "updated", "doctype": "Quotation",
+                    "name": name, "message": "Marked as Lost"}
+        if target == "order":
+            from erpnext.selling.doctype.quotation.quotation import make_sales_order
+            so = make_sales_order(name)
+            from frappe.utils import add_days, today as _today
+            if not so.delivery_date:
+                so.delivery_date = add_days(_today(), 30)
+            so.insert(ignore_permissions=True)
+            frappe.db.commit()
+            return {"action": "created", "doctype": "Sales Order",
+                    "name": so.name, "message": "Sales Order created"}
+        frappe.throw(_("Cannot move a Quotation directly to {0}").format(target_stage))
+
+    # ── Sales Order ──────────────────────────────────────────────
+    if doctype == "Sales Order":
+        frappe.throw(_("Sales Orders can only be cancelled from the desk"))
+
+    frappe.throw(_("Unsupported doctype: {0}").format(doctype))
+
+
 # ── Customer Open Items (for DCR follow-up linking) ──────────
 
 @frappe.whitelist()

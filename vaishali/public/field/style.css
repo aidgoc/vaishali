@@ -7309,10 +7309,170 @@ body, #app, #app-header, #bottom-nav, .bottom-nav {
   margin: 0 auto;
 }
 
+/* ─── Tappable stage chip on each card ─────────────────────────── */
+
+.spanco-card-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1px solid currentColor;
+  font: var(--m3-label-small);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s var(--m3-easing-standard, ease);
+}
+.spanco-card-stage:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.spanco-card-stage:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+.spanco-card-stage:focus-visible {
+  outline: 2px solid var(--m3-primary, #B3261E);
+  outline-offset: 2px;
+}
+.spanco-card-stage-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.spanco-card-stage-label {
+  letter-spacing: 0.4px;
+}
+.spanco-card-stage-chev {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.65;
+  margin-left: 1px;
+}
+
+/* ─── Move-stage bottom sheet ──────────────────────────────────── */
+
+.spanco-move-summary {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--m3-outline-variant);
+}
+.spanco-move-summary-name {
+  font: var(--m3-title-medium);
+  letter-spacing: 0.15px;
+  color: var(--m3-on-surface);
+  margin-bottom: 4px;
+}
+.spanco-move-summary-meta {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+}
+
+.spanco-move-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spanco-move-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--m3-shape-md, 12px);
+  background: transparent;
+  border: 1px solid var(--m3-outline-variant);
+  cursor: pointer;
+  transition: background 0.12s var(--m3-easing-standard, ease),
+              border-color 0.12s var(--m3-easing-standard, ease);
+}
+.spanco-move-option:hover {
+  background: var(--m3-surface-container-low);
+}
+.spanco-move-option.selected {
+  border-color: var(--m3-primary, #B3261E);
+  background: var(--m3-primary-container);
+}
+.spanco-move-option:focus-visible {
+  outline: 2px solid var(--m3-primary, #B3261E);
+  outline-offset: 2px;
+}
+
+.spanco-move-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--m3-outline);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s var(--m3-easing-standard, ease);
+}
+.spanco-move-option.selected .spanco-move-radio {
+  border-color: var(--m3-primary, #B3261E);
+}
+.spanco-move-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.15s var(--m3-easing-emphasized, ease);
+}
+.spanco-move-option.selected .spanco-move-radio-inner {
+  transform: scale(1);
+}
+
+.spanco-move-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.spanco-move-text {
+  flex: 1;
+  min-width: 0;
+}
+.spanco-move-label {
+  font: var(--m3-title-small);
+  letter-spacing: 0.1px;
+  color: var(--m3-on-surface);
+  font-weight: 600;
+}
+.spanco-move-hint {
+  font: var(--m3-body-small);
+  color: var(--m3-on-surface-variant);
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+}
+
+.spanco-move-lost-fields {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--m3-outline-variant);
+}
+
+.spanco-move-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--m3-outline-variant);
+  justify-content: flex-end;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spanco-columns { scroll-snap-type: none; }
   .spanco-chip,
-  .spanco-card { transition: none; }
+  .spanco-card,
+  .spanco-card-stage,
+  .spanco-move-option,
+  .spanco-move-radio,
+  .spanco-move-radio-inner { transition: none; }
 }
 
 /* ──────────────────────────────────────────────────────────────

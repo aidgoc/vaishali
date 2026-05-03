@@ -96,19 +96,200 @@
     return 'gray';
   }
 
-  function buildCard(item, stage) {
+  // ─── Stage transitions ────────────────────────────────────────────
+
+  // Which target stages each item type can move to. Order matters:
+  // forward moves first, then sideways, then "lost" at the end.
+  var ALLOWED_TARGETS = {
+    'Lead':         ['suspect', 'prospect', 'approach', 'lost'],
+    'Opportunity':  ['prospect', 'approach', 'negotiation', 'lost'],
+    'Quotation':    ['negotiation', 'closing', 'order', 'lost'],
+    'Sales Order':  []
+  };
+
+  var ALL_TARGETS = [
+    { key: 'suspect',     label: 'Suspect',     hint: 'Fresh, not yet qualified',   accent: '#7c3aed' },
+    { key: 'prospect',    label: 'Prospect',    hint: 'Qualified — keep nurturing', accent: '#2563eb' },
+    { key: 'approach',    label: 'Approach',    hint: 'Customer engaged',           accent: '#0891b2' },
+    { key: 'negotiation', label: 'Negotiation', hint: 'Quote sent, mark Warm',      accent: '#d97706' },
+    { key: 'closing',     label: 'Closing',     hint: 'Hot — about to win',         accent: '#dc2626' },
+    { key: 'order',       label: 'Order',       hint: 'Create the Sales Order',     accent: '#059669' },
+    { key: 'lost',        label: 'Lost',        hint: 'Dead deal',                  accent: '#6b7280' }
+  ];
+
+  function getMoveTargets(item, currentStageKey) {
+    var allowed = ALLOWED_TARGETS[item.doctype] || [];
+    return ALL_TARGETS.filter(function (t) {
+      return allowed.indexOf(t.key) !== -1 && t.key !== currentStageKey;
+    });
+  }
+
+  function openMoveStageSheet(item, currentStage, onMoved) {
+    var targets = getMoveTargets(item, currentStage.key);
+    if (!targets.length) {
+      UI.toast('No moves available for this card', 'info');
+      return;
+    }
+
+    var selected = null;
+    var rows = [];
+    var lostFields;
+    var moveBtn;
+
+    var optionsBox = el('div', { className: 'spanco-move-options', role: 'radiogroup' });
+    targets.forEach(function (t) {
+      var row = el('div', {
+        className: 'spanco-move-option',
+        role: 'radio',
+        tabIndex: '0',
+        'aria-checked': 'false',
+        'data-target': t.key,
+        onClick: function () {
+          for (var i = 0; i < rows.length; i++) {
+            rows[i].classList.remove('selected');
+            rows[i].setAttribute('aria-checked', 'false');
+          }
+          row.classList.add('selected');
+          row.setAttribute('aria-checked', 'true');
+          selected = t.key;
+          if (lostFields) lostFields.style.display = (t.key === 'lost') ? '' : 'none';
+        }
+      }, [
+        el('span', { className: 'spanco-move-radio' }, [
+          el('span', { className: 'spanco-move-radio-inner', style: { background: t.accent } })
+        ]),
+        el('span', { className: 'spanco-move-dot', style: { background: t.accent } }),
+        el('div', { className: 'spanco-move-text' }, [
+          el('div', { className: 'spanco-move-label', textContent: t.label }),
+          el('div', { className: 'spanco-move-hint', textContent: t.hint })
+        ])
+      ]);
+      row.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          row.click();
+        }
+      });
+      rows.push(row);
+      optionsBox.appendChild(row);
+    });
+
+    // Lost-reason fields, hidden until "Lost" is selected
+    var reasonSelect = UI.select(null, [
+      { value: 'Price', label: 'Price' },
+      { value: 'Technical', label: 'Technical' },
+      { value: 'Budget', label: 'Budget' },
+      { value: 'Other', label: 'Other' }
+    ], 'Other');
+    var remarkArea = UI.textarea('What killed it? (optional)', { rows: 2 });
+    lostFields = el('div', {
+      className: 'spanco-move-lost-fields',
+      style: { display: 'none' }
+    }, [
+      UI.field('Lost reason', reasonSelect),
+      el('div', { style: { marginTop: '8px' } }),
+      UI.field('Remark', remarkArea)
+    ]);
+
+    var summary = el('div', { className: 'spanco-move-summary' }, [
+      el('div', { className: 'spanco-move-summary-name', textContent: cardTitle(item) }),
+      el('div', { className: 'spanco-move-summary-meta',
+        textContent: item.name + ' · ' + (item.doctype || '') + ' · currently ' + currentStage.label })
+    ]);
+
+    var content = el('div', null, [
+      summary,
+      optionsBox,
+      lostFields
+    ]);
+
+    var sheet = UI.bottomSheet('Move to', content);
+    document.body.appendChild(sheet);
+
+    // Action buttons sit inside the sheet content (below the radios)
+    var cancelBtn = UI.btn('Cancel', {
+      type: 'tonal',
+      block: false,
+      onClick: function () { if (sheet._close) sheet._close(); }
+    });
+    moveBtn = UI.btn('Move stage', {
+      type: 'primary',
+      block: false,
+      onClick: function () {
+        if (!selected) {
+          UI.toast('Pick a stage first', 'error');
+          return;
+        }
+        moveBtn._setLoading(true, 'Moving...');
+
+        var payload = { doctype: item.doctype, name: item.name, target_stage: selected };
+        if (selected === 'lost') {
+          var sel = reasonSelect.querySelector ? reasonSelect.querySelector('select') : null;
+          payload.lost_reason = sel ? (sel.value || 'Other') : 'Other';
+          var ta = remarkArea.tagName === 'TEXTAREA' ? remarkArea : (remarkArea.querySelector ? remarkArea.querySelector('textarea') : null);
+          payload.lost_remark = ta ? (ta.value || '') : '';
+        }
+
+        window.fieldAPI.apiCall('POST', '/api/method/vaishali.api.field.move_kanban_stage', payload).then(function (res) {
+          if (res.error || (res.status && res.status >= 400)) {
+            var msg = res.error || 'Move failed';
+            if (res.data && res.data._server_messages) {
+              try { msg = JSON.parse(JSON.parse(res.data._server_messages)[0]).message; } catch (e) {}
+            }
+            UI.toast(msg, 'error');
+            moveBtn._setLoading(false);
+            return;
+          }
+          var result = (res.data && res.data.message) || res.data || {};
+          UI.toast(result.message || 'Moved', 'success');
+          if (sheet._close) sheet._close();
+          if (result.action === 'navigate' && result.url) {
+            location.hash = result.url;
+            return;
+          }
+          if (typeof onMoved === 'function') onMoved(result);
+        }).catch(function (err) {
+          UI.toast('Failed: ' + (err.message || err), 'error');
+          moveBtn._setLoading(false);
+        });
+      }
+    });
+
+    content.appendChild(el('div', { className: 'spanco-move-actions' }, [cancelBtn, moveBtn]));
+  }
+
+  function buildCard(item, stage, onMoved) {
     var amt = cardAmount(item, stage.amountField);
     var subBits = cardSubBits(item, stage);
+    var canMove = (ALLOWED_TARGETS[item.doctype] || []).length > 0;
 
     var rightChildren = [];
     if (amt > 0) {
       rightChildren.push(el('div', { className: 'spanco-card-amount', textContent: formatINR(amt) }));
     }
-    var statusText = item.status || stage.label;
-    if (stage.key === 'closing' && item.quotation_temperature) {
-      statusText = item.quotation_temperature;
+
+    // Stage chip — shows current SPANCO stage (matches column), tappable to move.
+    // Falls back to a static UI.pill when no moves are available (e.g. Sales Order).
+    if (canMove) {
+      var chip = el('button', {
+        type: 'button',
+        className: 'spanco-card-stage',
+        style: { borderColor: stage.accent, color: stage.accent },
+        'aria-label': 'Move ' + cardTitle(item) + ' to a different stage',
+        onClick: function (e) {
+          e.stopPropagation();
+          openMoveStageSheet(item, stage, onMoved);
+        }
+      }, [
+        el('span', { className: 'spanco-card-stage-dot', style: { background: stage.accent } }),
+        el('span', { className: 'spanco-card-stage-label', textContent: stage.label }),
+        el('span', { className: 'spanco-card-stage-chev', textContent: '▾' })
+      ]);
+      rightChildren.push(chip);
+    } else {
+      var staticText = item.status || stage.label;
+      rightChildren.push(UI.pill(staticText, statusColor(staticText)));
     }
-    rightChildren.push(UI.pill(statusText, statusColor(statusText)));
 
     var textChildren = [el('div', { className: 'spanco-card-title', textContent: cardTitle(item) })];
     if (subBits.length) {
@@ -158,16 +339,21 @@
   // ─── Render ───────────────────────────────────────────────────────
 
   function renderPipeline(appEl) {
-    var skel = UI.skeleton(4);
-    appEl.appendChild(skel);
+    // Track which stage the user was viewing so a refresh after a move
+    // doesn't snap them back to Suspect.
+    var lastStageKey = STAGES[0].key;
 
-    api.apiCall('GET', '/api/method/vaishali.api.field.get_spanco_kanban').then(function (res) {
+    function load() {
       appEl.textContent = '';
+      appEl.appendChild(UI.skeleton(4));
 
-      if (!res || res.error || !res.data) {
-        appEl.appendChild(UI.error('Could not load pipeline'));
-        return;
-      }
+      api.apiCall('GET', '/api/method/vaishali.api.field.get_spanco_kanban').then(function (res) {
+        appEl.textContent = '';
+
+        if (!res || res.error || !res.data) {
+          appEl.appendChild(UI.error('Could not load pipeline'));
+          return;
+        }
 
       var data = res.data;
       var sections = (data.message && data.message.sections) || data.sections || {};
@@ -274,7 +460,7 @@
           colBody.appendChild(buildEmpty(sd.stage));
         } else {
           for (var c = 0; c < sd.items.length; c++) {
-            colBody.appendChild(buildCard(sd.items[c], sd.stage));
+            colBody.appendChild(buildCard(sd.items[c], sd.stage, load));
           }
         }
 
@@ -292,7 +478,12 @@
       appEl.appendChild(chips);
       appEl.appendChild(columns);
 
-      setActiveStage(STAGES[0].key);
+      // Restore the user's last-viewed stage on refresh after a move,
+      // otherwise default to the first stage.
+      var initialStage = (chipEls[lastStageKey] && lastStageKey) || STAGES[0].key;
+      setActiveStage(initialStage);
+      // Defer the column scroll so layout has measured the columns wrapper.
+      setTimeout(function () { scrollToColumn(initialStage); }, 0);
 
       // Sync chip ↔ column on manual swipe
       if ('IntersectionObserver' in window) {
@@ -304,17 +495,23 @@
           }
           if (best) {
             var key = best.target.getAttribute('data-stage');
-            if (key) setActiveStage(key);
+            if (key) {
+              setActiveStage(key);
+              lastStageKey = key;
+            }
           }
         }, { root: columns, threshold: [0.5, 0.75] });
         for (var ck in columnEls) {
           if (columnEls.hasOwnProperty(ck)) io.observe(columnEls[ck]);
         }
       }
-    }).catch(function (err) {
-      appEl.textContent = '';
-      appEl.appendChild(UI.error('Could not load pipeline: ' + (err.message || err)));
-    });
+      }).catch(function (err) {
+        appEl.textContent = '';
+        appEl.appendChild(UI.error('Could not load pipeline: ' + (err.message || err)));
+      });
+    }
+
+    load();
   }
 
   // ─── Export ──────────────────────────────────────────────────────
