@@ -63,9 +63,28 @@ def _create_payroll_entry(label: str, company: str) -> str:
     pe.save(ignore_permissions=True)
     pe.submit()
     # NOW generate the actual Salary Slips. Payroll Entry.submit() only marks
-    # the entry as submitted — it does not create slips. The desk UI calls
-    # create_salary_slips() then submit_salary_slips() in two button clicks.
-    pe.create_salary_slips()
+    # the entry as submitted — it does not create slips. HRMS's
+    # `create_salary_slips()` enqueues a background job for >30 employees, so
+    # we call the underlying `create_salary_slips_for_employees()` directly
+    # to keep this synchronous.
+    employees = [e.employee for e in pe.employees if not e.is_salary_withheld]
+    args = {
+        "doctype": "Salary Slip",
+        "salary_slip_based_on_timesheet": pe.salary_slip_based_on_timesheet,
+        "payroll_frequency": pe.payroll_frequency,
+        "start_date": pe.start_date,
+        "end_date": pe.end_date,
+        "company": pe.company,
+        "posting_date": pe.posting_date,
+        "deduct_tax_for_unclaimed_employee_benefits": pe.deduct_tax_for_unclaimed_employee_benefits,
+        "deduct_tax_for_unsubmitted_tax_exemption_proof": pe.deduct_tax_for_unsubmitted_tax_exemption_proof,
+        "payroll_entry": pe.name,
+        "exchange_rate": pe.exchange_rate,
+        "currency": pe.currency,
+    }
+    pe.create_salary_slips_for_employees(employees, args, publish_progress=False)
+    frappe.db.commit()
+    # Submit each created (draft) slip
     pe.submit_salary_slips()
     frappe.db.commit()
     pe.reload()
