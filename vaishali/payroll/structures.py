@@ -36,34 +36,50 @@ STAFF_EARNINGS = [
     ("Special Allowance",  "base * 0.36668 - 5470",                      None, None, 1, 0),
 ]
 
+# Frappe's salary formula sandbox has no `min`, `max`, or `month` in scope.
+# Formulas must use ternary expressions and reference fields available on
+# the SalarySlip data dict (`base`, `gross_pay`, `start_date`, etc.) plus
+# Employee custom fields (`base_basic_da`, `site_allowance`, `pf_applicable`,
+# `esic_applicable`).
+
 STAFF_DEDUCTIONS = [
-    ("Provident Fund",      "min(base * 0.40 * 0.12, 1800)", None,
-        "pf_applicable",                                       1, 0),
-    ("ESIC",                "gross_pay * 0.0075",            None,
-        "esic_applicable and gross_pay <= 21000",              1, 0),
-    ("Professional Tax",    None, None, None, 0, 0),  # Frappe's standard PT
-    ("MLWF",                "6 if month in (6, 12) else 0",  None,
-        None,                                                  1, 0),
+    # PF: 12% of Basic+DA capped at 1800. Ternary instead of min().
+    ("Provident Fund",
+        "(base * 0.40 * 0.12) if (base * 0.40 * 0.12) < 1800 else 1800",
+        None, "pf_applicable", 1, 0),
+    ("ESIC", "gross_pay * 0.0075", None,
+        "esic_applicable and gross_pay <= 21000", 1, 0),
+    ("Professional Tax", None, None, None, 0, 0),
+    # MLWF: ₹6 in Jun + Dec, else 0. start_date.month is in eval scope.
+    ("MLWF",
+        "6 if start_date.month == 6 or start_date.month == 12 else 0",
+        None, None, 1, 0),
 ]
 
 OPERATOR_EARNINGS = [
-    # Basic+DA capped at the employee's min-wage anchor (base_basic_da).
-    # HRA = residual. base_basic_da is set per-employee from the Excel.
-    ("Basic + DA",      "min(base, base_basic_da)",                      None, None, 1, 0),
-    ("HRA",             "max(0, base - base_basic_da)",                  None, None, 1, 0),
-    ("Site Allowance",  "site_allowance",                                None, None, 1, 0),
+    # Basic+DA capped at base_basic_da min-wage anchor. Ternary instead of min().
+    ("Basic + DA",
+        "base if base < base_basic_da else base_basic_da",
+        None, None, 1, 0),
+    # HRA = residual = max(0, base - base_basic_da). Ternary instead of max().
+    ("HRA",
+        "(base - base_basic_da) if base > base_basic_da else 0",
+        None, None, 1, 0),
+    ("Site Allowance", "site_allowance", None, None, 1, 0),
 ]
 
 OPERATOR_DEDUCTIONS = [
-    ("Provident Fund",   "min(base_basic_da * 0.12, 1800)", None,
-        "pf_applicable",                                     1, 0),
-    ("ESIC",             "gross_pay * 0.0075",              None,
-        "esic_applicable",                                   1, 0),
-    # Operator ESIC has no 21k cap because already-enrolled members
-    # continue contributing past the threshold (DINESH ADEY at gross
-    # 21,842 still being deducted, per the Excel).
+    # PF: 12% of base_basic_da, capped at 1800.
+    ("Provident Fund",
+        "(base_basic_da * 0.12) if (base_basic_da * 0.12) < 1800 else 1800",
+        None, "pf_applicable", 1, 0),
+    # Operator ESIC has no 21k cap (already-enrolled members keep contributing
+    # past the threshold, per DINESH ADEY at gross 21,842 in the Excel).
+    ("ESIC", "gross_pay * 0.0075", None, "esic_applicable", 1, 0),
     ("Professional Tax", None, None, None, 0, 0),
-    ("MLWF",             "6 if month in (6, 12) else 0", None, None, 1, 0),
+    ("MLWF",
+        "6 if start_date.month == 6 or start_date.month == 12 else 0",
+        None, None, 1, 0),
 ]
 
 OVERHEAD_EARNINGS = [
@@ -76,7 +92,9 @@ OVERHEAD_EARNINGS = [
 
 OVERHEAD_DEDUCTIONS = [
     ("Professional Tax", None, None, None, 0, 0),
-    ("MLWF", "6 if month in (6, 12) else 0", None, None, 1, 0),
+    ("MLWF",
+        "6 if start_date.month == 6 or start_date.month == 12 else 0",
+        None, None, 1, 0),
 ]
 
 
@@ -146,3 +164,49 @@ def ensure_all():
     ensure_operator()
     ensure_overhead()
     frappe.db.commit()
+
+
+# ── In-place formula repair for already-deployed structures ──────────
+
+STRUCTURE_BLUEPRINTS = {
+    "Staff - DCEPL":    (STAFF_EARNINGS, STAFF_DEDUCTIONS),
+    "Staff - DSPL":     (STAFF_EARNINGS, STAFF_DEDUCTIONS),
+    "Operator - DCEPL": (OPERATOR_EARNINGS, OPERATOR_DEDUCTIONS),
+    "Overhead - DSPL":  (OVERHEAD_EARNINGS, OVERHEAD_DEDUCTIONS),
+}
+
+
+def repair_formulas():
+    """Update each Salary Detail child row's formula/condition in-place via
+    direct DB writes, bypassing the parent doc's submit-immutability. Used
+    when a structure is already submitted but its formulas need updating.
+
+    For each row in our blueprint, find the matching row in the deployed
+    structure (by salary_component name) and update formula + condition.
+    """
+    fixed_count = 0
+    for struct_name, (earnings, deductions) in STRUCTURE_BLUEPRINTS.items():
+        if not frappe.db.exists("Salary Structure", struct_name):
+            print(f"  Skip: Salary Structure {struct_name} not found")
+            continue
+        for parentfield, blueprint in (("earnings", earnings), ("deductions", deductions)):
+            for comp_name, formula, amount, condition, _, _ in blueprint:
+                row_name = frappe.db.get_value("Salary Detail", {
+                    "parent": struct_name,
+                    "parentfield": parentfield,
+                    "salary_component": comp_name,
+                }, "name")
+                if not row_name:
+                    print(f"    Miss: {struct_name}.{parentfield}.{comp_name}")
+                    continue
+                frappe.db.set_value("Salary Detail", row_name, {
+                    "formula": formula or "",
+                    "condition": condition or "",
+                    "amount_based_on_formula": 1 if formula else 0,
+                    "amount": amount or 0,
+                }, update_modified=False)
+                fixed_count += 1
+        print(f"  Repaired: {struct_name}")
+    frappe.db.commit()
+    print(f"  Total rows updated: {fixed_count}")
+    return fixed_count
