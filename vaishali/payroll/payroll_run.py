@@ -62,6 +62,10 @@ def _create_payroll_entry(label: str, company: str) -> str:
     pe.fill_employee_details()
     pe.save(ignore_permissions=True)
     pe.submit()
+    # Commit so the Payroll Entry persists even if slip creation later fails.
+    # Without this commit, any ValidationError in create_salary_slips_for_employees
+    # would roll back the entire transaction including the just-submitted entry.
+    frappe.db.commit()
     # NOW generate the actual Salary Slips. Payroll Entry.submit() only marks
     # the entry as submitted — it does not create slips. HRMS's
     # `create_salary_slips()` enqueues a background job for >30 employees, so
