@@ -55,6 +55,27 @@ def _emp(emp_code, name="", expected_company=None):
     return None, None
 
 
+def _employment_window(emp: str) -> tuple[date, date]:
+    """Return (window_start, window_end) clamped to Mar 2026 by the
+    employee's date_of_joining and relieving_date. HRMS rejects
+    attendance before DOJ or after relieving."""
+    from frappe.utils import getdate
+    doj, relieving = frappe.db.get_value(
+        "Employee", emp, ["date_of_joining", "relieving_date"]
+    ) or (None, None)
+    start = MAR_START
+    end = MAR_START + timedelta(days=MAR_DAYS - 1)
+    if doj:
+        d = getdate(doj)
+        if d > start:
+            start = d
+    if relieving:
+        d = getdate(relieving)
+        if d < end:
+            end = d
+    return start, end
+
+
 def _create_attendance(emp: str, company: str, day: date, status: str,
                        leave_type: str = None) -> str:
     if frappe.db.exists("Attendance", {"employee": emp, "attendance_date": day}):
@@ -82,17 +103,24 @@ def synthesise_for(rows, days_present_key, unpaid_leaves_key, expected_company=N
             continue
         days_present = int(float(row.get(days_present_key) or 0))
         unpaid = int(float(row.get(unpaid_leaves_key) or 0)) if unpaid_leaves_key else 0
-        days_present = min(days_present, MAR_DAYS)
-        unpaid = min(unpaid, MAR_DAYS - days_present)
+        # Clamp to employee's actual employment window — HRMS rejects
+        # attendance dates before DOJ or after relieving_date.
+        win_start, win_end = _employment_window(emp)
+        window_days = (win_end - win_start).days + 1
+        if window_days <= 0:
+            counts["skipped"] += days_present + unpaid
+            continue
+        days_present = min(days_present, window_days)
+        unpaid = min(unpaid, window_days - days_present)
         for offset in range(days_present):
-            r = _create_attendance(emp, company, MAR_START + timedelta(days=offset), "Present")
+            r = _create_attendance(emp, company, win_start + timedelta(days=offset), "Present")
             if r != "skipped-existing":
                 counts["created"] += 1
             else:
                 counts["skipped"] += 1
         for offset in range(days_present, days_present + unpaid):
             r = _create_attendance(
-                emp, company, MAR_START + timedelta(days=offset),
+                emp, company, win_start + timedelta(days=offset),
                 "On Leave", leave_type="Leave Without Pay",
             )
             if r != "skipped-existing":
