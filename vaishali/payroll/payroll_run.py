@@ -42,7 +42,12 @@ def _create_payroll_entry(label: str, company: str) -> str:
         "docstatus": 1,
     }, "name")
     if existing:
-        print(f"  Payroll Entry: {label} already exists as {existing} — skipping")
+        # Already submitted — count slips already created and skip
+        slip_count = frappe.db.count("Salary Slip", {
+            "payroll_entry": existing, "docstatus": ["!=", 2],
+        })
+        print(f"  Payroll Entry: {label} already exists as {existing} "
+              f"({slip_count} slips) — skipping")
         return existing
     pe = frappe.new_doc("Payroll Entry")
     pe.posting_date = POSTING_DATE
@@ -57,7 +62,17 @@ def _create_payroll_entry(label: str, company: str) -> str:
     pe.fill_employee_details()
     pe.save(ignore_permissions=True)
     pe.submit()
-    print(f"  Payroll Entry: {label} → {pe.name} ({company})")
+    # NOW generate the actual Salary Slips. Payroll Entry.submit() only marks
+    # the entry as submitted — it does not create slips. The desk UI calls
+    # create_salary_slips() then submit_salary_slips() in two button clicks.
+    pe.create_salary_slips()
+    pe.submit_salary_slips()
+    frappe.db.commit()
+    pe.reload()
+    slip_count = frappe.db.count("Salary Slip", {
+        "payroll_entry": pe.name, "docstatus": ["!=", 2],
+    })
+    print(f"  Payroll Entry: {label} → {pe.name} ({company}) — {slip_count} slips")
     return pe.name
 
 
