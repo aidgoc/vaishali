@@ -46,14 +46,21 @@ def _yn_to_int(v) -> int:
 
 
 def _create_ssa(employee: str, structure: str, base: float, company: str) -> str | None:
+    # If the employee joined after our default FROM_DATE, the SSA from_date
+    # must be at least the joining date. HRMS rejects from_date < DOJ.
+    doj = frappe.db.get_value("Employee", employee, "date_of_joining")
+    from_date = FROM_DATE
+    if doj and getdate(doj) > getdate(FROM_DATE):
+        from_date = str(doj)
+
     if frappe.db.exists("Salary Structure Assignment",
-                        {"employee": employee, "from_date": FROM_DATE,
+                        {"employee": employee, "from_date": from_date,
                          "salary_structure": structure, "docstatus": 1}):
         return None
     ssa = frappe.new_doc("Salary Structure Assignment")
     ssa.employee = employee
     ssa.salary_structure = structure
-    ssa.from_date = FROM_DATE
+    ssa.from_date = from_date
     ssa.base = float(base or 0)
     ssa.company = company
     ssa.insert(ignore_permissions=True)
