@@ -56,9 +56,9 @@ def test_subhash_not_treated_as_subtotal(dcepl_staff_xlsx, monkeypatch):
     assert len(names) == 23
     # Negative check on the substring trap — demonstrate the new logic.
     # The file has no "Subhash" but if there were one, it must survive.
-    # We can't synthesise a row in the live file; instead assert the new helper
-    # is the lowercase-startswith form, not substring.
+    # The skip logic now lives in the shared _staff_layout module — inspect there.
     import inspect
-    src = inspect.getsource(parse)
+    from vaishali.payroll.ingest import _staff_layout
+    src = inspect.getsource(_staff_layout.parse_staff_sheet)
     assert "in str(name)" not in src, "must not use substring 'in' check"
     assert "startswith" in src, "must use prefix check"
