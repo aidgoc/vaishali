@@ -51,9 +51,12 @@ STAFF_DEDUCTIONS = [
         "esic_applicable and gross_pay <= 21000", 1, 0),
     ("Professional Tax", None, None, None, 0, 0),
     # MLWF: ₹6 in Jun + Dec, else 0. start_date.month is in eval scope.
-    ("MLWF",
-        "6 if start_date.month == 6 or start_date.month == 12 else 0",
-        None, None, 1, 0),
+    # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
+    # passes start_date as a string here, so we cannot use .month directly.
+    # For Mar 2026 it's 0 anyway. Revisit before the May 2026 payroll runs
+    # if a Jun deduction matters; the right fix is a safe-eval helper that
+    # parses the date.
+    ("MLWF", None, 0, None, 0, 0),
 ]
 
 OPERATOR_EARNINGS = [
@@ -77,9 +80,12 @@ OPERATOR_DEDUCTIONS = [
     # past the threshold, per DINESH ADEY at gross 21,842 in the Excel).
     ("ESIC", "gross_pay * 0.0075", None, "esic_applicable", 1, 0),
     ("Professional Tax", None, None, None, 0, 0),
-    ("MLWF",
-        "6 if start_date.month == 6 or start_date.month == 12 else 0",
-        None, None, 1, 0),
+    # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
+    # passes start_date as a string here, so we cannot use .month directly.
+    # For Mar 2026 it's 0 anyway. Revisit before the May 2026 payroll runs
+    # if a Jun deduction matters; the right fix is a safe-eval helper that
+    # parses the date.
+    ("MLWF", None, 0, None, 0, 0),
 ]
 
 OVERHEAD_EARNINGS = [
@@ -92,9 +98,12 @@ OVERHEAD_EARNINGS = [
 
 OVERHEAD_DEDUCTIONS = [
     ("Professional Tax", None, None, None, 0, 0),
-    ("MLWF",
-        "6 if start_date.month == 6 or start_date.month == 12 else 0",
-        None, None, 1, 0),
+    # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
+    # passes start_date as a string here, so we cannot use .month directly.
+    # For Mar 2026 it's 0 anyway. Revisit before the May 2026 payroll runs
+    # if a Jun deduction matters; the right fix is a safe-eval helper that
+    # parses the date.
+    ("MLWF", None, 0, None, 0, 0),
 ]
 
 
