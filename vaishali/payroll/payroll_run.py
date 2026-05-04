@@ -65,11 +65,14 @@ def _create_payroll_entry(label: str, company: str) -> str:
     # NOW generate the actual Salary Slips. Payroll Entry.submit() only marks
     # the entry as submitted — it does not create slips. HRMS's
     # `create_salary_slips()` enqueues a background job for >30 employees, so
-    # we call the underlying `create_salary_slips_for_employees()` directly
-    # to keep this synchronous.
+    # we call the underlying module-level functions directly to keep this
+    # synchronous.
+    from hrms.payroll.doctype.payroll_entry.payroll_entry import (
+        create_salary_slips_for_employees,
+        submit_salary_slips_for_employees,
+    )
     employees = [e.employee for e in pe.employees if not e.is_salary_withheld]
-    args = {
-        "doctype": "Salary Slip",
+    args = frappe._dict({
         "salary_slip_based_on_timesheet": pe.salary_slip_based_on_timesheet,
         "payroll_frequency": pe.payroll_frequency,
         "start_date": pe.start_date,
@@ -81,11 +84,12 @@ def _create_payroll_entry(label: str, company: str) -> str:
         "payroll_entry": pe.name,
         "exchange_rate": pe.exchange_rate,
         "currency": pe.currency,
-    }
-    pe.create_salary_slips_for_employees(employees, args, publish_progress=False)
+    })
+    create_salary_slips_for_employees(employees, args, publish_progress=False)
     frappe.db.commit()
-    # Submit each created (draft) slip
-    pe.submit_salary_slips()
+    # Submit each created (draft) slip — also bypass the >30 queue threshold
+    salary_slips = pe.get_sal_slip_list(ss_status=0)
+    submit_salary_slips_for_employees(pe, salary_slips, publish_progress=False)
     frappe.db.commit()
     pe.reload()
     slip_count = frappe.db.count("Salary Slip", {
