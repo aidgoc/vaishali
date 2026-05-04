@@ -9,3 +9,5 @@ logs/
 config/
 Procfile
 .worktrees/
+data/
+Vivek BOMs/
