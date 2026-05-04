@@ -12,6 +12,8 @@ Idempotent — skips employees that already have a submitted SSA against the
 same from_date and structure.
 """
 from __future__ import annotations
+import re
+
 import frappe
 from frappe.utils import getdate
 
@@ -27,11 +29,31 @@ FROM_DATE = "2026-03-01"
 DCEPL = "Dynamic Crane Engineers Private Limited"
 DSPL = "Dynamic Servitech Private Limited"
 
+_REAL_CODE_RE = re.compile(r"^[A-Z]+\d+$")
 
-def _resolve_employee(emp_code: str, expected_company: str | None = None) -> str | None:
-    if not emp_code:
+
+def _resolve_employee(emp_code: str, name: str = "",
+                      expected_company: str | None = None) -> str | None:
+    """Resolve to Employee.name. Try legacy_emp_code first (only if the code
+    looks real — e.g. 'ST109', not 'VB'/'NA'/blank), then fall back to a
+    case-insensitive name match within the expected_company.
+    """
+    if emp_code and _REAL_CODE_RE.match(emp_code):
+        row = frappe.db.get_value(
+            "Employee",
+            {"legacy_emp_code": emp_code, "status": "Active"},
+            ["name", "company"],
+        )
+        if row:
+            emp_name, comp = row
+            if expected_company and comp != expected_company:
+                return None  # company mismatch
+            return emp_name
+
+    if not name:
         return None
-    filters = {"legacy_emp_code": emp_code, "status": "Active"}
+
+    filters = {"employee_name": ["like", name], "status": "Active"}
     if expected_company:
         filters["company"] = expected_company
     return frappe.db.get_value("Employee", filters, "name")
@@ -76,9 +98,10 @@ def assign_staff() -> dict:
     ):
         for row in parser(excel_path(src)):
             code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
-            emp = _resolve_employee(code, expected_company=company)
+            nm = (row.get("name") or "").strip()
+            emp = _resolve_employee(code, name=nm, expected_company=company)
             if not emp:
-                if code and _resolve_employee(code):
+                if code and _resolve_employee(code, name=nm):
                     counts["company_mismatch"] += 1
                 else:
                     counts["missing_employee"] += 1
@@ -106,9 +129,10 @@ def assign_operator() -> dict:
     counts = {"created": 0, "skipped": 0, "missing_employee": 0, "company_mismatch": 0}
     for row in parse_dcepl_operator(excel_path("dcepl_operator")):
         code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
-        emp = _resolve_employee(code, expected_company=DCEPL)
+        nm = (row.get("name") or "").strip()
+        emp = _resolve_employee(code, name=nm, expected_company=DCEPL)
         if not emp:
-            if code and _resolve_employee(code):
+            if code and _resolve_employee(code, name=nm):
                 counts["company_mismatch"] += 1
             else:
                 counts["missing_employee"] += 1
@@ -139,9 +163,10 @@ def assign_overhead() -> dict:
     counts = {"created": 0, "skipped": 0, "missing_employee": 0, "company_mismatch": 0}
     for row in parse_overhead(excel_path("overhead")):
         code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
-        emp = _resolve_employee(code, expected_company=DSPL)
+        nm = (row.get("name") or "").strip()
+        emp = _resolve_employee(code, name=nm, expected_company=DSPL)
         if not emp:
-            if code and _resolve_employee(code):
+            if code and _resolve_employee(code, name=nm):
                 counts["company_mismatch"] += 1
             else:
                 counts["missing_employee"] += 1

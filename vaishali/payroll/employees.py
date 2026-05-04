@@ -5,12 +5,25 @@ Idempotent — safe to re-run. Uses Frappe's create_custom_field which is upsert
 from __future__ import annotations
 import json
 import os
+import re
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 
 UNMATCHED_REPORT = "/home/frappe/vaishali_data/2026-03/payroll_unmatched.json"
+
+# 4-letter Excel "company" short-code → full ERPNext Company name. NA / blank
+# means "don't filter by company" — used by Overhead rows where the routing
+# company is ambiguous.
+COMPANY_SHORT_MAP = {
+    "DCEPL": "Dynamic Crane Engineers Private Limited",
+    "DSPL":  "Dynamic Servitech Private Limited",
+}
+
+# Real legacy emp_code looks like ST109 / OP003 / OH012 — letters then digits.
+# Things like "VB" or "NA" are routing flags, not codes; we don't write them.
+_REAL_CODE_RE = re.compile(r"^[A-Z]+\d+$")
 
 
 CUSTOM_FIELDS = [
@@ -111,9 +124,18 @@ def populate_legacy_emp_code():
         fields=["name", "employee_name", "employee_number", "company"],
     )
 
+    # Global indexes (used when no company filter applies — e.g. NA rows).
     name_index = {e["employee_name"].upper().strip(): e["name"] for e in employees}
     number_index = {(e["employee_number"] or "").strip(): e["name"]
                     for e in employees if e.get("employee_number")}
+
+    # Per-company name index — used to narrow the fuzzy-match candidate pool
+    # so e.g. a DCEPL operator can't accidentally match a DSPL staff name.
+    name_index_by_company: dict[str, dict[str, str]] = {}
+    for e in employees:
+        comp = e.get("company") or ""
+        nm = e["employee_name"].upper().strip()
+        name_index_by_company.setdefault(comp, {})[nm] = e["name"]
 
     matched, unmatched = [], []
 
@@ -121,18 +143,30 @@ def populate_legacy_emp_code():
         emp_name = None
         if ex["emp_code"]:
             emp_name = number_index.get(ex["emp_code"])
+
+        # Pick the candidate pool: filter by company if the Excel "company"
+        # short-code is recognised; otherwise fall back to the global pool.
+        expected_company = COMPANY_SHORT_MAP.get(ex["company_short"])
+        if expected_company:
+            candidate_index = name_index_by_company.get(expected_company, {})
+        else:
+            candidate_index = name_index
+
         if not emp_name and ex["name_upper"]:
-            emp_name = name_index.get(ex["name_upper"])
+            emp_name = candidate_index.get(ex["name_upper"])
         if not emp_name and ex["name_upper"]:
-            choices = list(name_index.keys())
+            choices = list(candidate_index.keys())
             if choices:
                 best = process.extractOne(ex["name_upper"], choices,
-                                          scorer=fuzz.token_sort_ratio)
-                if best and best[1] >= 90:
-                    emp_name = name_index[best[0]]
+                                          scorer=fuzz.token_set_ratio)
+                if best and best[1] >= 80:
+                    emp_name = candidate_index[best[0]]
 
         if emp_name:
-            if ex["emp_code"]:
+            # Only stamp legacy_emp_code if it looks like a real code. "VB" /
+            # "NA" / blank are routing flags, not codes — writing them would
+            # corrupt the Employee record and break the resolver downstream.
+            if ex["emp_code"] and _REAL_CODE_RE.match(ex["emp_code"]):
                 frappe.db.set_value(
                     "Employee", emp_name,
                     "legacy_emp_code", ex["emp_code"], update_modified=False)
