@@ -7,10 +7,11 @@
 
   // ─── Helpers ─────────────────────────────────────────────────────
 
+  // Server now stores naive IST. Honour explicit tz suffix; otherwise let
+  // the browser parse the bare ISO as local time (user devices are in IST).
   function formatDateTime(iso) {
     if (!iso) return '';
     var t = String(iso).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     if (isNaN(d.getTime())) return '';
     var h = d.getHours();
@@ -19,6 +20,15 @@
     h = h % 12 || 12;
     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return months[d.getMonth()] + ' ' + d.getDate() + ' · ' + h + ':' + (m<10?'0':'') + m + ' ' + ampm;
+  }
+
+  // Naive IST datetime string in MySQL format ("YYYY-MM-DD HH:MM:SS").
+  function nowIST() {
+    var d = new Date();
+    var ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+    var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return ist.getUTCFullYear() + '-' + pad(ist.getUTCMonth() + 1) + '-' + pad(ist.getUTCDate())
+         + ' ' + pad(ist.getUTCHours()) + ':' + pad(ist.getUTCMinutes()) + ':' + pad(ist.getUTCSeconds());
   }
 
   function outcomeColor(outcome) {
@@ -73,7 +83,7 @@
   // ─── New / form screen ───────────────────────────────────────────
 
   window.Screens.serviceCallNew = function (appEl) {
-    var openedAt = new Date().toISOString();
+    var openedAt = nowIST();
     var qs = (location.hash.split('?')[1] || '');
     var params = new URLSearchParams(qs);
     var prefilledCustomer = params.get('customer') || '';
@@ -146,7 +156,7 @@
           warranty_claim: inputValue(warrantyInput) || null,
           contact: inputValue(contactInput) || null,
           form_opened_at: openedAt,
-          form_saved_at: new Date().toISOString()
+          form_saved_at: nowIST()
         };
         api.apiCall('POST', '/api/field/service-calls', body).then(function (res) {
           saveBtn._setLoading(false);

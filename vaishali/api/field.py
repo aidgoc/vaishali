@@ -20,6 +20,31 @@ def _to_ist(dt):
     if hasattr(dt, 'replace'):
         return dt.replace(tzinfo=timezone.utc).astimezone(_IST).strftime("%Y-%m-%dT%H:%M:%S+05:30")
     return str(dt)
+
+
+def _normalise_dt_to_ist(val):
+    """Coerce a client-supplied datetime into a naive-IST MySQL string.
+
+    The PWA now sends naive IST ("YYYY-MM-DD HH:MM:SS"). Older cached
+    PWA builds send UTC ISO with a trailing 'Z' (or +offset). Honour the
+    suffix if present and shift to IST; otherwise treat as already-IST.
+    """
+    if not val or not isinstance(val, str):
+        return val
+    s = val.strip()
+    if "T" not in s and "Z" not in s and "+" not in s:
+        return s  # already naive IST, keep verbatim
+    # Normalise ISO separator
+    iso = s.replace(" ", "T")
+    try:
+        # Python 3.11+ accepts 'Z' suffix natively; pre-3.11 needs +00:00.
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except ValueError:
+        # Fall back to the old behaviour rather than 500 the request.
+        return iso.replace("T", " ").replace("Z", "").split(".")[0]
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(_IST).replace(tzinfo=None)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 COMPANIES = [
     "Dynamic Servitech Private Limited",
     "Dynamic Crane Engineers Private Limited",
@@ -288,11 +313,12 @@ def create_dcr(**kwargs):
     valid_dcr_depts = {"Sales", "Service", "Office"}
     if doc.department not in valid_dcr_depts:
         doc.department = "Office"
-    # Convert ISO datetime (2026-03-31T15:27:15.386Z) to MySQL format
+    # Normalise to naive IST for both new IST clients and stale Z-suffixed
+    # clients (see _normalise_dt_to_ist).
     for dt_field in ("check_in_time", "check_out_time"):
         val = doc.get(dt_field)
-        if val and isinstance(val, str) and "T" in val:
-            doc.set(dt_field, val.replace("T", " ").replace("Z", "").split(".")[0])
+        if val:
+            doc.set(dt_field, _normalise_dt_to_ist(val))
     if not doc.status:
         doc.status = "Ongoing"
     # Wire follow-up selection into the DCR Link fields used by linking.py
@@ -357,9 +383,9 @@ def checkout_dcr(dcr_id, check_out_time=None, check_out_gps=None, remarks=None,
     if doc.status == "Completed":
         frappe.throw(_("DCR already completed"))
     doc.status = status
-    # Convert ISO datetime to MySQL format
-    if check_out_time and isinstance(check_out_time, str) and "T" in check_out_time:
-        check_out_time = check_out_time.replace("T", " ").replace("Z", "").split(".")[0]
+    # Normalise client-supplied datetime to naive IST.
+    if check_out_time:
+        check_out_time = _normalise_dt_to_ist(check_out_time)
     if check_out_time: doc.check_out_time = check_out_time
     if check_out_gps: doc.check_out_gps = check_out_gps
     if remarks: doc.remarks = remarks
@@ -3260,11 +3286,11 @@ def create_service_call(**kwargs):
 	              "contact", "form_opened_at", "form_saved_at"]:
 		if field in kwargs and kwargs[field] not in (None, ""):
 			doc.set(field, kwargs[field])
-	# Convert ISO datetimes (YYYY-MM-DDTHH:MM:SS.sssZ) → MySQL format
+	# Normalise client-supplied datetimes to naive IST.
 	for dt_field in ("call_datetime", "form_opened_at", "form_saved_at"):
 		val = doc.get(dt_field)
-		if val and isinstance(val, str) and "T" in val:
-			doc.set(dt_field, val.replace("T", " ").replace("Z", "").split(".")[0])
+		if val:
+			doc.set(dt_field, _normalise_dt_to_ist(val))
 	if not doc.call_datetime:
 		doc.call_datetime = frappe.utils.now()
 	doc.insert(ignore_permissions=True)

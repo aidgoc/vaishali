@@ -8,7 +8,7 @@ app_icon = "octicon octicon-robot"
 app_color = "#E60005"
 
 # Desk theme + chat widget
-app_include_css = "/assets/vaishali/css/vaishali.css?v=20260410b"
+app_include_css = "/assets/vaishali/css/vaishali.css?v=20260504a"
 app_include_js = "vaishali.bundle.js"
 
 # Client scripts for desk forms

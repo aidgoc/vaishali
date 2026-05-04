@@ -53,10 +53,12 @@
     });
   }
 
+  // Server returns naive IST for DCR/Service Call fields, and tz-aware
+  // strings (with +05:30) for Employee Checkin via _to_ist. Either way,
+  // browser parses correctly without us appending 'Z'.
   function parseUTC(s) {
     if (!s) return null;
     var t = String(s).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     return isNaN(d.getTime()) ? null : d;
   }

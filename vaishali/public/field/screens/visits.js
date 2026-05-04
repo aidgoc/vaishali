@@ -19,12 +19,25 @@
     return d.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
   }
 
+  // Server now stores naive IST (not UTC). If the value carries an explicit
+  // timezone suffix (Z or +HH:MM), honour it; otherwise let the browser
+  // parse the bare ISO as local time — user devices are in IST so the
+  // wall-clock matches.
   function parseUTC(s) {
     if (!s) return null;
     var t = String(s).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Naive IST datetime string in MySQL format ("YYYY-MM-DD HH:MM:SS").
+  // Used for fields the server persists verbatim (DCR check_in/out_time).
+  function nowIST() {
+    var d = new Date();
+    var ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+    var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return ist.getUTCFullYear() + '-' + pad(ist.getUTCMonth() + 1) + '-' + pad(ist.getUTCDate())
+         + ' ' + pad(ist.getUTCHours()) + ':' + pad(ist.getUTCMinutes()) + ':' + pad(ist.getUTCSeconds());
   }
 
   function formatTime(isoString) {
@@ -641,7 +654,7 @@
 
       submitBtn._setLoading(true, 'Checking in...');
 
-      var now = new Date().toISOString();
+      var now = nowIST();
       var payload = {
         date: todayISO(),
         department: emp.department || '',
@@ -901,7 +914,7 @@
               onClick: function () {
                 confirmBtn._setLoading(true, 'Checking out...');
                 getGPS().then(function (gpsResult) {
-                  var now = new Date().toISOString();
+                  var now = nowIST();
                   var gpsStr = (gpsResult.lat != null && gpsResult.lng != null) ? gpsResult.lat + ',' + gpsResult.lng : '';
                   var dateInput = nextDateInput.querySelector('input');
                   var payload = {

@@ -20,11 +20,11 @@
     return null;
   }
 
-  // Parse Frappe-format datetimes (UTC, no Z) into local Date.
+  // Server stores naive IST. Browser parses bare ISO as local time, which
+  // is IST on user devices. Tz-aware values (with +05:30) are honoured.
   function parseUTC(iso) {
     if (!iso) return null;
     var t = String(iso).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     return isNaN(d.getTime()) ? null : d;
   }

@@ -28,10 +28,11 @@
     return days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
   }
 
+  // Server returns naive IST or tz-aware ISO. Browser parses both correctly
+  // without us appending 'Z'.
   function parseUTC(s) {
     if (!s) return null;
     var t = String(s).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     return isNaN(d.getTime()) ? null : d;
   }

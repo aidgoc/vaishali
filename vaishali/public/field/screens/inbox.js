@@ -23,12 +23,11 @@
     return null;
   }
 
-  // Server datetimes are UTC; append 'Z' so JS treats the naive ISO string
-  // as UTC and getHours() converts to the user's local timezone (IST).
+  // Server stores naive IST. Browser parses bare ISO as local time (IST on
+  // user devices). Tz-aware values (with +05:30) are honoured as-is.
   function parseUTC(iso) {
     if (!iso) return null;
     var t = String(iso).replace(' ', 'T');
-    if (!/[Z+\-]\d/.test(t)) t += 'Z';
     var d = new Date(t);
     return isNaN(d.getTime()) ? null : d;
   }
