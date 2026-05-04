@@ -28,12 +28,17 @@ DCEPL = "Dynamic Crane Engineers Private Limited"
 DSPL = "Dynamic Servitech Private Limited"
 
 
-def _resolve_employee(emp_code: str) -> str | None:
+def _resolve_employee(emp_code: str, expected_company: str | None = None) -> str | None:
     if not emp_code:
         return None
-    return frappe.db.get_value("Employee",
-                               {"legacy_emp_code": emp_code, "status": "Active"},
-                               "name")
+    filters = {"legacy_emp_code": emp_code, "status": "Active"}
+    if expected_company:
+        filters["company"] = expected_company
+    return frappe.db.get_value("Employee", filters, "name")
+
+
+def _employee_company(employee: str) -> str | None:
+    return frappe.db.get_value("Employee", employee, "company")
 
 
 def _yn_to_int(v) -> int:
@@ -57,15 +62,19 @@ def _create_ssa(employee: str, structure: str, base: float, company: str) -> str
 
 
 def assign_staff() -> dict:
-    counts = {"created": 0, "skipped": 0, "missing_employee": 0}
+    counts = {"created": 0, "skipped": 0, "missing_employee": 0, "company_mismatch": 0}
     for src, parser, structure, company in (
         ("dcepl_staff", parse_dcepl_staff, "Staff - DCEPL", DCEPL),
         ("dspl_staff",  parse_dspl_staff,  "Staff - DSPL",  DSPL),
     ):
         for row in parser(excel_path(src)):
-            emp = _resolve_employee(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+            code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
+            emp = _resolve_employee(code, expected_company=company)
             if not emp:
-                counts["missing_employee"] += 1
+                if code and _resolve_employee(code):
+                    counts["company_mismatch"] += 1
+                else:
+                    counts["missing_employee"] += 1
                 continue
             base = row.get("gross_pay_target") or 0
             if not base:
@@ -87,11 +96,15 @@ def assign_staff() -> dict:
 
 
 def assign_operator() -> dict:
-    counts = {"created": 0, "skipped": 0, "missing_employee": 0}
+    counts = {"created": 0, "skipped": 0, "missing_employee": 0, "company_mismatch": 0}
     for row in parse_dcepl_operator(excel_path("dcepl_operator")):
-        emp = _resolve_employee(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+        code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
+        emp = _resolve_employee(code, expected_company=DCEPL)
         if not emp:
-            counts["missing_employee"] += 1
+            if code and _resolve_employee(code):
+                counts["company_mismatch"] += 1
+            else:
+                counts["missing_employee"] += 1
             continue
         base = row.get("salary_gross_target") or 0
         if not base:
@@ -116,11 +129,15 @@ def assign_operator() -> dict:
 
 
 def assign_overhead() -> dict:
-    counts = {"created": 0, "skipped": 0, "missing_employee": 0}
+    counts = {"created": 0, "skipped": 0, "missing_employee": 0, "company_mismatch": 0}
     for row in parse_overhead(excel_path("overhead")):
-        emp = _resolve_employee(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+        code = str(row["emp_code"]).strip() if row.get("emp_code") else ""
+        emp = _resolve_employee(code, expected_company=DSPL)
         if not emp:
-            counts["missing_employee"] += 1
+            if code and _resolve_employee(code):
+                counts["company_mismatch"] += 1
+            else:
+                counts["missing_employee"] += 1
             continue
         base = row.get("salary_gross_target") or 0
         if not base:

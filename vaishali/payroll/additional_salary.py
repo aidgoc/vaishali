@@ -20,12 +20,13 @@ DCEPL = "Dynamic Crane Engineers Private Limited"
 DSPL = "Dynamic Servitech Private Limited"
 
 
-def _emp(emp_code: str) -> str | None:
+def _emp(emp_code: str, expected_company: str | None = None) -> str | None:
     if not emp_code:
         return None
-    return frappe.db.get_value("Employee",
-                               {"legacy_emp_code": emp_code, "status": "Active"},
-                               "name")
+    filters = {"legacy_emp_code": emp_code, "status": "Active"}
+    if expected_company:
+        filters["company"] = expected_company
+    return frappe.db.get_value("Employee", filters, "name")
 
 
 def _create(employee: str, component: str, amount: float,
@@ -57,7 +58,8 @@ def create_for_staff() -> dict:
         (parse_dspl_staff,  "dspl_staff",  DSPL),
     ):
         for row in parser(excel_path(key)):
-            emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+            emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "",
+                       expected_company=company)
             if not emp:
                 continue
             for comp, val in (
@@ -79,7 +81,8 @@ def create_for_staff() -> dict:
 def create_for_operator() -> dict:
     counts = {"created": 0, "skipped": 0}
     for row in parse_dcepl_operator(excel_path("dcepl_operator")):
-        emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+        emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "",
+                   expected_company=DCEPL)
         if not emp:
             continue
         for comp, val in (
@@ -104,7 +107,8 @@ def create_for_operator() -> dict:
 def create_for_overhead() -> dict:
     counts = {"created": 0, "skipped": 0}
     for row in parse_overhead(excel_path("overhead")):
-        emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "")
+        emp = _emp(str(row["emp_code"]).strip() if row.get("emp_code") else "",
+                   expected_company=DSPL)
         if not emp:
             continue
         for comp, val in (
