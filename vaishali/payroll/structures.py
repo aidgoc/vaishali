@@ -49,7 +49,12 @@ STAFF_DEDUCTIONS = [
         None, "pf_applicable", 1, 0),
     ("ESIC", "gross_pay * 0.0075", None,
         "esic_applicable and gross_pay <= 21000", 1, 0),
-    ("Professional Tax", None, None, None, 0, 0),
+    # Professional Tax — Maharashtra flat ₹200/month for our salary range.
+    # The proper India PT slab (₹200 most months, ₹300 in February) varies
+    # by state and salary band; for Mar 2026 the Excel shows ₹200 across all
+    # rows, so we hardcode 200. Revisit when we run February or when an
+    # employee crosses a slab boundary.
+    ("Professional Tax", None, 200, None, 0, 0),
     # MLWF: ₹6 in Jun + Dec, else 0. start_date.month is in eval scope.
     # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
     # passes start_date as a string here, so we cannot use .month directly.
@@ -79,7 +84,12 @@ OPERATOR_DEDUCTIONS = [
     # Operator ESIC has no 21k cap (already-enrolled members keep contributing
     # past the threshold, per DINESH ADEY at gross 21,842 in the Excel).
     ("ESIC", "gross_pay * 0.0075", None, "esic_applicable", 1, 0),
-    ("Professional Tax", None, None, None, 0, 0),
+    # Professional Tax — Maharashtra flat ₹200/month for our salary range.
+    # The proper India PT slab (₹200 most months, ₹300 in February) varies
+    # by state and salary band; for Mar 2026 the Excel shows ₹200 across all
+    # rows, so we hardcode 200. Revisit when we run February or when an
+    # employee crosses a slab boundary.
+    ("Professional Tax", None, 200, None, 0, 0),
     # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
     # passes start_date as a string here, so we cannot use .month directly.
     # For Mar 2026 it's 0 anyway. Revisit before the May 2026 payroll runs
@@ -97,7 +107,12 @@ OVERHEAD_EARNINGS = [
 ]
 
 OVERHEAD_DEDUCTIONS = [
-    ("Professional Tax", None, None, None, 0, 0),
+    # Professional Tax — Maharashtra flat ₹200/month for our salary range.
+    # The proper India PT slab (₹200 most months, ₹300 in February) varies
+    # by state and salary band; for Mar 2026 the Excel shows ₹200 across all
+    # rows, so we hardcode 200. Revisit when we run February or when an
+    # employee crosses a slab boundary.
+    ("Professional Tax", None, 200, None, 0, 0),
     # MLWF is half-yearly (Jun + Dec) at ₹6 employee. Frappe's eval scope
     # passes start_date as a string here, so we cannot use .month directly.
     # For Mar 2026 it's 0 anyway. Revisit before the May 2026 payroll runs
