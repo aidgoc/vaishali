@@ -4,7 +4,6 @@ DSPL Employee uses the same Excel template as DCEPL Employee — these tests pin
 known rows from the actual Mar 2026 file to catch column-shift / row-offset
 regressions in the shared layout module.
 """
-import pytest
 from vaishali.payroll.ingest.parse_dspl_staff import parse
 
 

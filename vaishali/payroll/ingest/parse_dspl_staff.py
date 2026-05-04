@@ -1,8 +1,8 @@
 """Parser for file 2 — DSPL Employee Salary Register & Attendance Mar 2026.
 
-Same column layout as DCEPL Employee — see _staff_layout.py.
+Same column layout as DCEPL Employee — see staff_layout.py.
 """
-from vaishali.payroll.ingest._staff_layout import parse_staff_sheet
+from vaishali.payroll.ingest.staff_layout import parse_staff_sheet
 
 SHEET = "DSPL Salary Sheet-Mar 2026"
 

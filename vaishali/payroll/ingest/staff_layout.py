@@ -44,6 +44,11 @@ def parse_staff_sheet(xlsx_path: str, sheet_name: str) -> list[dict]:
     similar; user must re-save in Excel).
     """
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+    if sheet_name not in wb.sheetnames:
+        raise ValueError(
+            f"Sheet {sheet_name!r} not found in {xlsx_path}. "
+            f"Available sheets: {wb.sheetnames}"
+        )
     ws = wb[sheet_name]
 
     rows = []

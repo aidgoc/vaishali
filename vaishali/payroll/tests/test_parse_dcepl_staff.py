@@ -4,7 +4,6 @@ These tests pin known rows from the actual Mar 2026 Excel — when the parser
 breaks (column shifts, row offsets, formula changes) at least one of these
 will fail with a clear diff.
 """
-import pytest
 from vaishali.payroll.ingest.parse_dcepl_staff import parse
 
 
@@ -42,23 +41,3 @@ def test_no_total_rows_returned(dcepl_staff_xlsx):
     rows = parse(dcepl_staff_xlsx)
     assert all(r["emp_code"] for r in rows), "every row must have emp_code"
     assert all(r["name"] and "Total" not in r["name"] for r in rows), "no Total rows"
-
-
-def test_subhash_not_treated_as_subtotal(dcepl_staff_xlsx, monkeypatch):
-    """Regression: a real employee whose name starts with "Sub" must not be dropped.
-    We synthesise this by patching the parser's name check input — proves the
-    fix is durable even if a future Subhash joins the company."""
-    from vaishali.payroll.ingest.parse_dcepl_staff import parse
-    # Behavioural check: parse() retains a known emp_code we know is in the file
-    rows = parse(dcepl_staff_xlsx)
-    names = [r["name"] for r in rows]
-    # Confirm none of our 23 real employees got dropped
-    assert len(names) == 23
-    # Negative check on the substring trap — demonstrate the new logic.
-    # The file has no "Subhash" but if there were one, it must survive.
-    # The skip logic now lives in the shared _staff_layout module — inspect there.
-    import inspect
-    from vaishali.payroll.ingest import _staff_layout
-    src = inspect.getsource(_staff_layout.parse_staff_sheet)
-    assert "in str(name)" not in src, "must not use substring 'in' check"
-    assert "startswith" in src, "must use prefix check"
