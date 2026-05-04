@@ -131,11 +131,40 @@ def synthesise_for(rows, days_present_key, unpaid_leaves_key, expected_company=N
     return counts
 
 
+DCEPL = "Dynamic Crane Engineers Private Limited"
+DSPL = "Dynamic Servitech Private Limited"
+
+
+def _synth_dcepl_staff() -> dict:
+    return synthesise_for(
+        list(parse_a(excel_path("dcepl_staff"))),
+        "days_worked", None, expected_company=DCEPL,
+    )
+
+
+def _synth_dspl_staff() -> dict:
+    return synthesise_for(
+        list(parse_b(excel_path("dspl_staff"))),
+        "days_worked", None, expected_company=DSPL,
+    )
+
+
+def _synth_operator() -> dict:
+    return synthesise_for(
+        list(parse_c(excel_path("dcepl_operator"))),
+        "days_present", None, expected_company=DCEPL,
+    )
+
+
+def _synth_overhead() -> dict:
+    return synthesise_for(
+        list(parse_d(excel_path("overhead"))),
+        "days_present", None, expected_company=DSPL,
+    )
+
+
 def synthesise_all() -> dict:
     """Top-level entry. Skips if existing count >= 100."""
-    DCEPL = "Dynamic Crane Engineers Private Limited"
-    DSPL = "Dynamic Servitech Private Limited"
-
     n = existing_count()
     if n >= SKIP_THRESHOLD:
         print(f"  Skip: {n} Attendance records already exist for Mar 2026 — "
@@ -143,18 +172,28 @@ def synthesise_all() -> dict:
         return {"skipped": True, "existing": n}
 
     print(f"  Synthesising — existing count {n} < {SKIP_THRESHOLD}")
-    s_dcepl = synthesise_for(
-        list(parse_a(excel_path("dcepl_staff"))),
-        "days_worked", None, expected_company=DCEPL,
-    )
-    s_dspl = synthesise_for(
-        list(parse_b(excel_path("dspl_staff"))),
-        "days_worked", None, expected_company=DSPL,
-    )
-    op_rows = list(parse_c(excel_path("dcepl_operator")))
-    o = synthesise_for(op_rows, "days_present", None, expected_company=DCEPL)
-    oh_rows = list(parse_d(excel_path("overhead")))
-    h = synthesise_for(oh_rows, "days_present", None, expected_company=DSPL)
+    s_dcepl = _synth_dcepl_staff()
+    s_dspl = _synth_dspl_staff()
+    o = _synth_operator()
+    h = _synth_overhead()
+    print(f"  DCEPL Staff: {s_dcepl}")
+    print(f"  DSPL Staff:  {s_dspl}")
+    print(f"  Operator:    {o}")
+    print(f"  Overhead:    {h}")
+    return {"dcepl_staff": s_dcepl, "dspl_staff": s_dspl,
+            "operator": o, "overhead": h}
+
+
+def force_synthesise_missing_pools() -> dict:
+    """Run all four pools regardless of the global skip threshold. Each
+    Attendance is still deduped on (employee, attendance_date), so this
+    is safe to re-run after a partial failure. Used to recover from a
+    crash that synthesised some pools but not others."""
+    print("  Force-synthesising all pools (idempotent on existing rows)")
+    s_dcepl = _synth_dcepl_staff()
+    s_dspl = _synth_dspl_staff()
+    o = _synth_operator()
+    h = _synth_overhead()
     print(f"  DCEPL Staff: {s_dcepl}")
     print(f"  DSPL Staff:  {s_dspl}")
     print(f"  Operator:    {o}")
