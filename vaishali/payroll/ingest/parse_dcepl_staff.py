@@ -43,11 +43,21 @@ def parse(xlsx_path: str) -> list[dict]:
         name = ws.cell(row=r, column=COLS["name"]).value
         if sr is None or name is None:
             continue
-        if "Total" in str(name) or "Sub" in str(name):
+        name_str = str(name).strip()
+        if name_str.lower().startswith(("total", "sub total", "subtotal", "grand total")):
             continue
         row = {key: ws.cell(row=r, column=col).value for key, col in COLS.items()}
         row["name"] = str(row["name"]).strip()
         if not row["emp_code"]:
             continue
         rows.append(row)
+
+    # Guard against uncached formulas — openpyxl returns None for un-recalculated cells.
+    # If a worker with days_worked > 0 shows None on gross_pay_payable, the cache is stale.
+    for row in rows:
+        if row.get("days_worked") and row.get("gross_pay_payable") is None:
+            raise ValueError(
+                f"Row for {row.get('name')!r}: gross_pay_payable is None but days_worked={row['days_worked']}. "
+                "Excel formulas appear uncached. Open the file in Microsoft Excel and re-save before parsing."
+            )
     return rows
