@@ -19,12 +19,28 @@ PERIOD_END = "2026-03-31"
 POSTING_DATE = "2026-03-31"
 
 
+def _payable_account(company: str) -> str:
+    """Read default_payroll_payable_account from Company. Frappe doesn't
+    auto-fetch this onto Payroll Entry before mandatory-field validation,
+    so we set it explicitly."""
+    acc = frappe.db.get_value("Company", company, "default_payroll_payable_account")
+    if not acc:
+        frappe.throw(f"Company {company} has no default_payroll_payable_account set")
+    return acc
+
+
 def _create_payroll_entry(name: str, company: str, structure_name: str | None,
                            branch: str | None = None) -> str:
-    if frappe.db.exists("Payroll Entry", {"title": name, "docstatus": 1}):
-        existing = frappe.db.get_value("Payroll Entry",
-                                       {"title": name, "docstatus": 1}, "name")
-        print(f"  Payroll Entry: {name} already submitted ({existing}) — skipping")
+    # Idempotency check on (company, period, structure)
+    existing = frappe.db.get_value("Payroll Entry", {
+        "company": company,
+        "start_date": PERIOD_START,
+        "end_date": PERIOD_END,
+        "salary_structure": structure_name or "",
+        "docstatus": 1,
+    }, "name")
+    if existing:
+        print(f"  Payroll Entry: {name} already exists as {existing} — skipping")
         return existing
     pe = frappe.new_doc("Payroll Entry")
     pe.posting_date = POSTING_DATE
@@ -32,17 +48,18 @@ def _create_payroll_entry(name: str, company: str, structure_name: str | None,
     pe.start_date = PERIOD_START
     pe.end_date = PERIOD_END
     pe.company = company
+    pe.payroll_payable_account = _payable_account(company)
     if structure_name:
         pe.salary_structure = structure_name
     if branch:
         pe.branch = branch
     pe.exchange_rate = 1.0
-    pe.title = name
     pe.insert(ignore_permissions=True)
     # Pull employees → fills child table
     pe.fill_employee_details()
     pe.save(ignore_permissions=True)
     pe.submit()
+    print(f"  Payroll Entry: {name} → {pe.name} ({company} / {structure_name})")
     return pe.name
 
 
