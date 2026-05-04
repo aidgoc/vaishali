@@ -1,4 +1,4 @@
-/* team.js — Team Overview screen for DSPL Field PWA (Manager) */
+/* team.js — Team Overview screen for Field PWA (Manager) */
 (function () {
   'use strict';
 

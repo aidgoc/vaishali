@@ -1,4 +1,4 @@
-/* amc.js — AMC Tracker screen for DSPL Field PWA */
+/* amc.js — AMC Tracker screen for Field PWA */
 (function () {
   'use strict';
 

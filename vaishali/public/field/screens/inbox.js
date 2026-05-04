@@ -1,4 +1,4 @@
-/* inbox.js — Inbox / notifications screen for DSPL Field PWA
+/* inbox.js — Inbox / notifications screen for Field PWA
    Sections:
      1. Pending approvals (manager only) — /api/field/approvals
      2. Assigned to me — Frappe ToDo (status=Open, allocated_to=current user)

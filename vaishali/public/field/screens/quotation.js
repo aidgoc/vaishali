@@ -1,4 +1,4 @@
-/* quotation.js — Quotation screens for DSPL Field PWA (List + New) */
+/* quotation.js — Quotation screens for Field PWA (List + New) */
 (function () {
   'use strict';
 

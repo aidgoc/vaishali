@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dspl-field-v79';
+var CACHE_NAME = 'dspl-field-v80';
 var PRECACHE_URLS = [
   '/field',
   '/assets/vaishali/field/style.css',
@@ -245,7 +245,7 @@ function doBackgroundSync() {
           body = failed + ' action' + (failed > 1 ? 's' : '') + ' failed to sync';
         }
 
-        return self.registration.showNotification('DSPL Field Sync', {
+        return self.registration.showNotification('Field Sync', {
           body: body,
           icon: '/assets/vaishali/field/icons/icon-192.png',
           badge: '/assets/vaishali/field/icons/icon-192.png'

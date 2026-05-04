@@ -1,4 +1,4 @@
-/* expense.js — Expense Claim screens for DSPL Field PWA */
+/* expense.js — Expense Claim screens for Field PWA */
 (function () {
   'use strict';
 

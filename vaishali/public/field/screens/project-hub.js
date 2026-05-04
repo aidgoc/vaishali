@@ -1,4 +1,4 @@
-/* project-hub.js — Project List + Project Detail screens for DSPL Field PWA */
+/* project-hub.js — Project List + Project Detail screens for Field PWA */
 (function () {
   'use strict';
 

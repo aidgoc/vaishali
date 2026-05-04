@@ -1,4 +1,4 @@
-/* my-targets.js — My Targets screen for DSPL Field App */
+/* my-targets.js — My Targets screen for Field App */
 (function () {
   'use strict';
 

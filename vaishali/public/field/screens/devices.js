@@ -1,4 +1,4 @@
-/* devices.js — Device Tracker for DSPL Field PWA */
+/* devices.js — Device Tracker for Field PWA */
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* advance.js — Employee Advance screens for DSPL Field PWA */
+/* advance.js — Employee Advance screens for Field PWA */
 (function () {
   'use strict';
 

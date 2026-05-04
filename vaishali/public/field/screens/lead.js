@@ -1,4 +1,4 @@
-/* lead.js — Lead screens for DSPL Field PWA (List, New) */
+/* lead.js — Lead screens for Field PWA (List, New) */
 (function () {
   'use strict';
 

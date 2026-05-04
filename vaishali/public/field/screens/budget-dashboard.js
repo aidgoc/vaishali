@@ -1,4 +1,4 @@
-/* budget-dashboard.js — Expense Budget Dashboard for DSPL Field PWA
+/* budget-dashboard.js — Expense Budget Dashboard for Field PWA
    Three role-based views: field staff (personal), manager (team), admin (all verticals).
 */
 (function () {

@@ -1034,7 +1034,7 @@
   "columns": 0,
   "default": null,
   "depends_on": null,
-  "description": "Linked via DSPL Field App profile",
+  "description": "Linked via Field App profile",
   "docstatus": 0,
   "doctype": "Custom Field",
   "dt": "Employee",

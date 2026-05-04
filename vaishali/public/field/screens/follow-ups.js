@@ -1,4 +1,4 @@
-/* follow-ups.js — Follow Ups screen for DSPL Field App */
+/* follow-ups.js — Follow Ups screen for Field App */
 (function () {
   'use strict';
 

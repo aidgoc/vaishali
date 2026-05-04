@@ -1,4 +1,4 @@
-/* opportunity.js — Opportunity screens for DSPL Field PWA (List + Detail) */
+/* opportunity.js — Opportunity screens for Field PWA (List + Detail) */
 (function () {
   'use strict';
 

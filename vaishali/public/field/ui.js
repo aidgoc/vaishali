@@ -1,4 +1,4 @@
-/* ui.js — DOM-builder component library for DSPL Field App */
+/* ui.js — DOM-builder component library for Field App */
 (function () {
   'use strict';
 

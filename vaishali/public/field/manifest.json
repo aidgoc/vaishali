@@ -1,7 +1,7 @@
 {
-  "name": "DSPL Field",
+  "name": "Dynamic Field",
   "short_name": "Field",
-  "description": "DSPL field staff attendance and customer visit tracking",
+  "description": "Field staff attendance and customer visit tracking",
   "start_url": "/field",
   "scope": "/",
   "display": "standalone",

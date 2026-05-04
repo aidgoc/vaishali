@@ -1,4 +1,4 @@
-/* leave.js — Leave screens for DSPL Field PWA (Home, Apply, Detail) — M3 */
+/* leave.js — Leave screens for Field PWA (Home, Apply, Detail) — M3 */
 (function () {
   'use strict';
 

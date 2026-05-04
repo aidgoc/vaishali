@@ -1,4 +1,4 @@
-# DSPL Field PWA — Test Suite
+# Field PWA — Test Suite
 
 End-to-end tests against the deployed PWA at `https://dgoc.logstop.com/field`.
 

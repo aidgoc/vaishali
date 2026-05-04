@@ -1,4 +1,4 @@
-/* stock.js — Stock list + Stock update screens for DSPL Field App */
+/* stock.js — Stock list + Stock update screens for Field App */
 (function () {
   'use strict';
 

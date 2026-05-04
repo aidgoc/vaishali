@@ -1,4 +1,4 @@
-/* revenue.js — Revenue Dashboard for DSPL Field App */
+/* revenue.js — Revenue Dashboard for Field App */
 (function () {
   'use strict';
 

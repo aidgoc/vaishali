@@ -1,4 +1,4 @@
-/* attendance.js — Attendance screen for DSPL Field PWA */
+/* attendance.js — Attendance screen for Field PWA */
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* monthly-report.js — Monthly Report Card for DSPL Field App */
+/* monthly-report.js — Monthly Report Card for Field App */
 (function () {
   'use strict';
 

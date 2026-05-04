@@ -1,4 +1,4 @@
-/* customer-detail.js — Customer 360 view for DSPL Field App */
+/* customer-detail.js — Customer 360 view for Field App */
 (function () {
   'use strict';
 

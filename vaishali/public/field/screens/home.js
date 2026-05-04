@@ -1,4 +1,4 @@
-/* home.js — Home screen for DSPL Field App (field staff + manager views) */
+/* home.js — Home screen for Field App (field staff + manager views) */
 (function () {
   'use strict';
 

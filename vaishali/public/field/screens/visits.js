@@ -1,4 +1,4 @@
-/* visits.js — DCR / Visit screens for DSPL Field PWA (List, New, Detail) */
+/* visits.js — DCR / Visit screens for Field PWA (List, New, Detail) */
 (function () {
   'use strict';
 

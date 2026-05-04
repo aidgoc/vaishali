@@ -1,4 +1,4 @@
-"""DSPL Field PWA — www page controller.
+"""Field PWA — www page controller.
 
 Serves the Field PWA at /field with CSRF token and boot context.
 Follows the same pattern as Frappe HRMS, CRM, and Helpdesk.

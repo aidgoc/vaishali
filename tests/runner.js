@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// runner.js — DSPL Field PWA test runner
+// runner.js — Field PWA test runner
 // Usage:
 //   node runner.js              -> all suites
 //   node runner.js smoke        -> only smoke
@@ -22,7 +22,7 @@ const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const ARG = (process.argv[2] || '').trim();
-const SUITES = ['smoke', 'navigation', 'forms', 'details', 'integrations', 'round2', 'round3'];
+const SUITES = ['smoke', 'navigation', 'forms', 'details', 'integrations', 'round2', 'round3', 'spanco', 'crm_smoke'];
 
 function shouldRun(suite, name) {
   if (!ARG) return true;

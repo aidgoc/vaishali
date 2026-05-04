@@ -1,4 +1,4 @@
-/* customer-timeline.js — Sales Timeline for a customer in DSPL Field App */
+/* customer-timeline.js — Sales Timeline for a customer in Field App */
 (function () {
   'use strict';
 

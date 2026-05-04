@@ -74,7 +74,7 @@
         icon: 'logOut',
         onClick: function () {
           UI.confirmDialog(
-            'Sign out of DSPL Field?',
+            'Sign out of Field?',
             'You will need to sign in again with your email and password to access the app.',
             { confirmText: 'Sign out', cancelText: 'Cancel', danger: true, icon: 'logOut' }
           ).then(function (ok) {

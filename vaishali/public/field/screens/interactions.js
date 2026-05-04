@@ -1,4 +1,4 @@
-/* interactions.js — Sales Interaction screens for DSPL Field PWA (List, New, Detail) */
+/* interactions.js — Sales Interaction screens for Field PWA (List, New, Detail) */
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* api.js — DSPL Field App: IndexedDB, offline queue, GPS, sync, API client */
+/* api.js — Field App: IndexedDB, offline queue, GPS, sync, API client */
 /* eslint-disable no-unused-vars */
 (function () {
   'use strict';

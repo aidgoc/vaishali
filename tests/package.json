@@ -2,7 +2,7 @@
   "name": "vaishali-pwa-tests",
   "version": "1.0.0",
   "private": true,
-  "description": "End-to-end test suite for the DSPL Field PWA",
+  "description": "End-to-end test suite for the Field PWA",
   "scripts": {
     "test": "node runner.js",
     "smoke": "node runner.js smoke",

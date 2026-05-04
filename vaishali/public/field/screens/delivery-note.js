@@ -1,4 +1,4 @@
-/* delivery-note.js — Delivery Note screens for DSPL Field PWA (List + New from SO) */
+/* delivery-note.js — Delivery Note screens for Field PWA (List + New from SO) */
 (function () {
   'use strict';
 

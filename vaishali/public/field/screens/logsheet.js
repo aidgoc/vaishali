@@ -1,4 +1,4 @@
-/* logsheet.js — Operator Logsheet screens for DSPL Field PWA
+/* logsheet.js — Operator Logsheet screens for Field PWA
  *
  * The paper logsheet that on-site operators have filled in for years
  * lives here digitally:

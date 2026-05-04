@@ -1,4 +1,4 @@
-"""Field API — @frappe.whitelist endpoints for the DSPL Field PWA."""
+"""Field API — @frappe.whitelist endpoints for the Field PWA."""
 import frappe
 from frappe import _
 from datetime import date, datetime, timezone, timedelta

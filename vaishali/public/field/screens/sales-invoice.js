@@ -1,4 +1,4 @@
-/* sales-invoice.js — Sales Invoice screens for DSPL Field PWA (List + New) */
+/* sales-invoice.js — Sales Invoice screens for Field PWA (List + New) */
 (function () {
   'use strict';
 

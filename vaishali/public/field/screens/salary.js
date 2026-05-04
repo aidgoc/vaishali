@@ -1,4 +1,4 @@
-/* salary.js — Salary Slip screens for DSPL Field PWA */
+/* salary.js — Salary Slip screens for Field PWA */
 (function () {
   'use strict';
 

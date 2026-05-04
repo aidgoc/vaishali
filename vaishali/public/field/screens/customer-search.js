@@ -1,4 +1,4 @@
-/* customer-search.js — Customer Search screen for DSPL Field App */
+/* customer-search.js — Customer Search screen for Field App */
 (function () {
   'use strict';
 

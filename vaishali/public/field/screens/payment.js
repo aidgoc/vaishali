@@ -1,4 +1,4 @@
-/* payment.js — Payment Entry screen for DSPL Field PWA */
+/* payment.js — Payment Entry screen for Field PWA */
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* sales-order.js — Sales Order screens for DSPL Field PWA (List + New from Quotation) */
+/* sales-order.js — Sales Order screens for Field PWA (List + New from Quotation) */
 (function () {
   'use strict';
 

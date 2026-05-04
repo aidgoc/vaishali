@@ -1,4 +1,4 @@
-/* debtors.js — Debtor Dashboard for DSPL Field App */
+/* debtors.js — Debtor Dashboard for Field App */
 (function () {
   'use strict';
 

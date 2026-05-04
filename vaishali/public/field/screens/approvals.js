@@ -1,4 +1,4 @@
-/* approvals.js — Manager Approval screens for DSPL Field PWA */
+/* approvals.js — Manager Approval screens for Field PWA */
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* app.js — DSPL Field App: route dispatcher + login screen
+/* app.js — Field App: route dispatcher + login screen
    All other screens live in screens/*.js and register on window.Screens.
    HTML provides #app-header, #app, #bottom-nav — no dynamic shell creation.
 */
@@ -160,7 +160,7 @@
     { pattern: '#/login', handler: renderLogin, tab: null, title: null, back: null },
 
     // Core
-    { pattern: '#/home',       handler: function () { S().home(appEl); },       tab: 'home',    title: 'DSPL Field', back: null },
+    { pattern: '#/home',       handler: function () { S().home(appEl); },       tab: 'home',    title: 'Field', back: null },
     { pattern: '#/attendance', handler: function () { S().attendance(appEl); },  tab: 'home',    title: 'Attendance', back: '#/home' },
 
     // Visits / DCR
@@ -698,7 +698,7 @@
 
       var form = el('div', { className: 'login-container' }, [
         el('img', { src: '/files/Dyamic Logo - Colour.png', className: 'login-logo', alt: 'DSPL' }),
-        el('h1', { textContent: 'DSPL Field' }),
+        el('h1', { textContent: 'Field' }),
         el('p', { className: 'login-subtitle', textContent: 'Dynamic Servitech Private Limited' }),
         emailWrap,
         passWrap,
@@ -809,7 +809,7 @@
     var banner = el('div', { className: 'pwa-install-banner' }, [
       el('img', { src: 'icons/icon-192.png', className: 'pwa-icon', alt: '' }),
       el('div', { className: 'pwa-text' }, [
-        el('div', { className: 'pwa-title', textContent: 'Install DSPL Field' }),
+        el('div', { className: 'pwa-title', textContent: 'Install Field' }),
         el('div', { className: 'pwa-subtitle', textContent: 'Add to home screen for the full app experience' })
       ]),
       el('button', {
@@ -825,7 +825,7 @@
           } else {
             var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
             if (isIOS) {
-              var sheet = UI.bottomSheet('Install DSPL Field', el('div', {}, [
+              var sheet = UI.bottomSheet('Install Field', el('div', {}, [
                 el('div', {
                   textContent: 'Tap the share button in Safari, then scroll down and tap "Add to Home Screen".',
                   style: { fontSize: '15px', lineHeight: '1.5', color: 'var(--ink-secondary)' }

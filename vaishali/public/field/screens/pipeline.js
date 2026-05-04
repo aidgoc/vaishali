@@ -1,4 +1,4 @@
-/* pipeline.js — SPANCO Sales Kanban for DSPL Field App
+/* pipeline.js — SPANCO Sales Kanban for Field App
  *
  * 6-stage mobile kanban: Suspect → Prospect → Approach → Negotiation → Closing → Order.
  * Tap a stage chip or swipe horizontally to switch columns.
