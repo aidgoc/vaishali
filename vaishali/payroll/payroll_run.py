@@ -1,8 +1,12 @@
-"""Mar 2026 Payroll Entry — 4 batches.
+"""Mar 2026 Payroll Entry — 2 batches (one per company).
+
+Frappe routes each employee's Salary Slip via their submitted SSA, so
+a single Payroll Entry per company can cover multiple Salary Structures.
+DCEPL pulls Staff + Operator; DSPL pulls Staff + Overhead.
 
 Each Payroll Entry:
-  - filters Employees by company + structure
-  - creates draft Salary Slips (one per employee)
+  - filters Employees by company
+  - creates draft Salary Slips (one per employee, structure-aware)
   - submits each slip
 We don't auto-make the Bank Entry; the accountant continues using the
 external bank file for now.
@@ -29,18 +33,16 @@ def _payable_account(company: str) -> str:
     return acc
 
 
-def _create_payroll_entry(name: str, company: str, structure_name: str | None,
-                           branch: str | None = None) -> str:
-    # Idempotency check on (company, period, structure)
+def _create_payroll_entry(label: str, company: str) -> str:
+    # Idempotency on (company, period)
     existing = frappe.db.get_value("Payroll Entry", {
         "company": company,
         "start_date": PERIOD_START,
         "end_date": PERIOD_END,
-        "salary_structure": structure_name or "",
         "docstatus": 1,
     }, "name")
     if existing:
-        print(f"  Payroll Entry: {name} already exists as {existing} — skipping")
+        print(f"  Payroll Entry: {label} already exists as {existing} — skipping")
         return existing
     pe = frappe.new_doc("Payroll Entry")
     pe.posting_date = POSTING_DATE
@@ -49,34 +51,22 @@ def _create_payroll_entry(name: str, company: str, structure_name: str | None,
     pe.end_date = PERIOD_END
     pe.company = company
     pe.payroll_payable_account = _payable_account(company)
-    if structure_name:
-        pe.salary_structure = structure_name
-    if branch:
-        pe.branch = branch
     pe.exchange_rate = 1.0
     pe.insert(ignore_permissions=True)
-    # Pull employees → fills child table
+    # Pull all employees in this company who have a submitted SSA
     pe.fill_employee_details()
     pe.save(ignore_permissions=True)
     pe.submit()
-    print(f"  Payroll Entry: {name} → {pe.name} ({company} / {structure_name})")
+    print(f"  Payroll Entry: {label} → {pe.name} ({company})")
     return pe.name
 
 
-def run_dcepl_staff() -> str:
-    return _create_payroll_entry("Mar-2026 DCEPL Staff", DCEPL, "Staff - DCEPL")
+def run_dcepl() -> str:
+    return _create_payroll_entry("Mar-2026 DCEPL", DCEPL)
 
 
-def run_dcepl_operator() -> str:
-    return _create_payroll_entry("Mar-2026 DCEPL Operator", DCEPL, "Operator - DCEPL")
-
-
-def run_dspl_staff() -> str:
-    return _create_payroll_entry("Mar-2026 DSPL Staff", DSPL, "Staff - DSPL")
-
-
-def run_dspl_overhead() -> str:
-    return _create_payroll_entry("Mar-2026 DSPL Overhead", DSPL, "Overhead - DSPL")
+def run_dspl() -> str:
+    return _create_payroll_entry("Mar-2026 DSPL", DSPL)
 
 
 def submit_all_slips() -> dict:
@@ -99,11 +89,9 @@ def submit_all_slips() -> dict:
 
 
 def run_all() -> dict:
-    a = run_dcepl_staff()
-    b = run_dcepl_operator()
-    c = run_dspl_staff()
-    d = run_dspl_overhead()
+    a = run_dcepl()
+    b = run_dspl()
     s = submit_all_slips()
-    print(f"  Payroll Entries: {[a, b, c, d]}")
+    print(f"  Payroll Entries: {[a, b]}")
     print(f"  Slips submission: {s}")
-    return {"entries": [a, b, c, d], "slips": s}
+    return {"entries": [a, b], "slips": s}
