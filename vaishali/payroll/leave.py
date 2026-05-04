@@ -27,26 +27,57 @@ FROM_DATE = "2026-04-01"
 TO_DATE = "2027-03-31"
 
 
+_EMPLOYEE_NAME_INDEX = None
+
+
+def _build_name_index() -> dict[str, str]:
+    """Build {upper_name: Employee.name} once per call to import."""
+    global _EMPLOYEE_NAME_INDEX
+    if _EMPLOYEE_NAME_INDEX is None:
+        rows = frappe.get_all(
+            "Employee",
+            filters={"status": "Active"},
+            fields=["name", "employee_name"],
+            limit_page_length=0,
+        )
+        _EMPLOYEE_NAME_INDEX = {
+            (r["employee_name"] or "").upper().strip(): r["name"] for r in rows
+        }
+    return _EMPLOYEE_NAME_INDEX
+
+
 def _resolve_employee(key: str) -> str | None:
-    """Try emp_code (e.g. 'ST004') first if the key looks like a real code,
-    else fall back to a case-insensitive employee_name match against active
-    employees. Returns Employee.name or None."""
+    """Try emp_code first when the key matches /^[A-Z]+\\d+$/, then name match
+    via exact upper, then fuzzy via rapidfuzz token_set_ratio at threshold 80.
+    Required because 63/79 leave-tracker blocks have blank emp_code (col 2
+    NULL) and tracker names are mixed-case + missing middle names while
+    ERPNext stores upper-case full names."""
     if not key:
         return None
-    if re.match(r"^[A-Z]+\d+$", key.strip()):
+    key = key.strip()
+    if re.match(r"^[A-Z]+\d+$", key):
         emp = frappe.db.get_value(
             "Employee",
-            {"legacy_emp_code": key.strip(), "status": "Active"},
+            {"legacy_emp_code": key, "status": "Active"},
             "name",
         )
         if emp:
             return emp
-    # Name fallback — case-insensitive LIKE match
-    return frappe.db.get_value(
-        "Employee",
-        {"employee_name": ["like", key.strip()], "status": "Active"},
-        "name",
-    )
+    # Name fallback — exact upper match
+    index = _build_name_index()
+    upper = key.upper()
+    if upper in index:
+        return index[upper]
+    # Fuzzy fallback — token_set_ratio handles missing middle names
+    try:
+        from rapidfuzz import fuzz, process
+    except ImportError:
+        return None
+    best = process.extractOne(upper, list(index.keys()),
+                              scorer=fuzz.token_set_ratio)
+    if best and best[1] >= 80:
+        return index[best[0]]
+    return None
 
 
 def import_opening_balances() -> dict:
