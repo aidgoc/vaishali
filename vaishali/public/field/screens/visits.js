@@ -118,6 +118,64 @@
     return mon.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
   }
 
+  // Parse "lat,lng" string from check_in_gps / check_out_gps
+  function parseGPS(s) {
+    if (!s) return null;
+    var parts = String(s).split(',');
+    if (parts.length !== 2) return null;
+    var lat = parseFloat(parts[0]);
+    var lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return { lat: lat, lng: lng };
+  }
+
+  // Lazy-load Leaflet (~40KB JS + 14KB CSS) on first map open
+  var _leafletPromise = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (_leafletPromise) return _leafletPromise;
+    _leafletPromise = new Promise(function (resolve, reject) {
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      css.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      css.crossOrigin = '';
+      document.head.appendChild(css);
+
+      var script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+      script.crossOrigin = '';
+      script.onload = function () { resolve(window.L); };
+      script.onerror = function () { reject(new Error('Failed to load Leaflet')); };
+      document.head.appendChild(script);
+    });
+    return _leafletPromise;
+  }
+
+  // Status → marker colour (matches PWA pill colours)
+  function markerColor(status) {
+    var s = (status || '').toLowerCase();
+    if (s === 'completed') return '#16a34a'; // green
+    if (s === 'ongoing' || s === 'in progress') return '#f59e0b'; // amber
+    return '#6b7280'; // gray (planned / unknown)
+  }
+
+  function svgMarkerIcon(L, color) {
+    var html =
+      '<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M14 0C6.27 0 0 6.27 0 14c0 9.5 14 22 14 22s14-12.5 14-22C28 6.27 21.73 0 14 0z" fill="' + color + '"/>' +
+      '<circle cx="14" cy="14" r="5" fill="#fff"/></svg>';
+    return L.divIcon({
+      html: html,
+      className: 'dcr-map-marker',
+      iconSize: [28, 36],
+      iconAnchor: [14, 36],
+      popupAnchor: [0, -32]
+    });
+  }
+
   // ── Screen: Visits List ───────────────────────────────────────────────
 
   window.Screens = window.Screens || {};
@@ -131,10 +189,12 @@
     ));
 
     var activeTab = 'today';
+    var viewMode = 'list';
+    var lastItems = [];
     var statsContainer = el('div');
     appEl.appendChild(statsContainer);
 
-    var listContainer = el('div', { style: { marginTop: '12px' } });
+    var contentContainer = el('div', { style: { marginTop: '12px' } });
 
     // Filter — segmented (3 options, single-select)
     var segLabel = el('div', {
@@ -157,6 +217,26 @@
     } });
     appEl.appendChild(segBar);
 
+    // View toggle \u2014 List / Map
+    var viewLabel = el('div', {
+      textContent: 'View',
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '12px 0 4px',
+        letterSpacing: '0.5px'
+      }
+    });
+    appEl.appendChild(viewLabel);
+    var viewSeg = UI.segmented([
+      { value: 'list', label: 'List' },
+      { value: 'map', label: 'Map' }
+    ], { value: 'list', onChange: function (val) {
+      viewMode = val;
+      render();
+    } });
+    appEl.appendChild(viewSeg);
+
     appEl.appendChild(el('div', { style: { padding: '16px 0 8px' } }, [
       UI.btn('Log new visit', {
         type: 'primary',
@@ -166,11 +246,176 @@
       })
     ]));
 
-    appEl.appendChild(listContainer);
+    appEl.appendChild(contentContainer);
+
+    function render() {
+      contentContainer.textContent = '';
+      if (!lastItems.length) {
+        contentContainer.appendChild(UI.empty('clip', 'No visits yet'));
+        return;
+      }
+      if (viewMode === 'map') {
+        renderMap(lastItems);
+      } else {
+        renderList(lastItems);
+      }
+    }
+
+    function renderList(items) {
+      var listWrap = el('div', { className: 'm3-list' });
+      for (var i = 0; i < items.length; i++) {
+        (function (dcr) {
+          var customer = dcr.customer || dcr.prospect_name || 'Unknown';
+          var purpose = dcr.visit_purpose || dcr.service_purpose || '';
+          var time = formatTime(dcr.check_in_time);
+          var duration = '';
+          if (dcr.check_in_time && dcr.check_out_time) {
+            duration = formatDuration(dcr.check_in_time, dcr.check_out_time);
+          } else if (dcr.check_in_time) {
+            duration = 'ongoing';
+          }
+          var status = dcr.status || 'Planned';
+          var sub = [purpose, time, duration].filter(Boolean).join(' \u00b7 ');
+
+          listWrap.appendChild(UI.listCard({
+            avatar: customer,
+            title: customer,
+            sub: sub,
+            right: UI.pill(status, statusColor(status)),
+            onClick: function () { location.hash = '#/dcr/' + dcr.name; }
+          }));
+        })(items[i]);
+      }
+      contentContainer.appendChild(listWrap);
+    }
+
+    function renderMap(items) {
+      var points = [];
+      var withoutGps = 0;
+      for (var i = 0; i < items.length; i++) {
+        var dcr = items[i];
+        var gps = parseGPS(dcr.check_in_gps) || parseGPS(dcr.check_out_gps);
+        if (gps) {
+          points.push({ dcr: dcr, lat: gps.lat, lng: gps.lng });
+        } else {
+          withoutGps++;
+        }
+      }
+
+      var mapEl = el('div', {
+        style: {
+          width: '100%',
+          height: '60vh',
+          minHeight: '320px',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          background: 'var(--m3-surface-variant, #f1f1f1)'
+        }
+      });
+      contentContainer.appendChild(mapEl);
+
+      if (withoutGps > 0) {
+        contentContainer.appendChild(el('div', {
+          textContent: withoutGps + ' visit' + (withoutGps === 1 ? '' : 's') + ' without GPS \u2014 not shown on map',
+          style: {
+            font: 'var(--m3-label-medium)',
+            color: 'var(--m3-on-surface-variant)',
+            marginTop: '8px',
+            textAlign: 'center'
+          }
+        }));
+      }
+
+      if (!points.length) {
+        mapEl.appendChild(el('div', {
+          textContent: 'No GPS coordinates on these visits',
+          style: {
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '100%', color: 'var(--m3-on-surface-variant)'
+          }
+        }));
+        return;
+      }
+
+      var loading = el('div', {
+        textContent: 'Loading map\u2026',
+        style: {
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100%', color: 'var(--m3-on-surface-variant)'
+        }
+      });
+      mapEl.appendChild(loading);
+
+      loadLeaflet().then(function (L) {
+        if (!mapEl.isConnected) return;
+        mapEl.textContent = '';
+
+        var first = points[0];
+        var map = L.map(mapEl, {
+          zoomControl: true,
+          attributionControl: true
+        }).setView([first.lat, first.lng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '\u00a9 OpenStreetMap'
+        }).addTo(map);
+
+        var bounds = [];
+        for (var i = 0; i < points.length; i++) {
+          (function (p) {
+            var dcr = p.dcr;
+            var customer = dcr.customer || dcr.prospect_name || 'Unknown';
+            var purpose = dcr.visit_purpose || dcr.service_purpose || '';
+            var time = formatTime(dcr.check_in_time);
+            var status = dcr.status || 'Planned';
+
+            var marker = L.marker([p.lat, p.lng], {
+              icon: svgMarkerIcon(L, markerColor(status))
+            }).addTo(map);
+
+            var pop = el('div', { style: { minWidth: '180px', font: 'var(--m3-body-medium)' } });
+            pop.appendChild(el('div', {
+              textContent: customer,
+              style: { fontWeight: '600', marginBottom: '4px' }
+            }));
+            if (purpose) {
+              pop.appendChild(el('div', {
+                textContent: purpose,
+                style: { color: 'var(--m3-on-surface-variant)', marginBottom: '2px' }
+              }));
+            }
+            if (time) {
+              pop.appendChild(el('div', {
+                textContent: time + ' \u00b7 ' + status,
+                style: { color: 'var(--m3-on-surface-variant)', marginBottom: '8px' }
+              }));
+            }
+            var openLink = el('a', {
+              textContent: 'Open visit \u2192',
+              href: '#/dcr/' + dcr.name,
+              style: { color: 'var(--m3-primary, #1a73e8)', fontWeight: '500' }
+            });
+            pop.appendChild(openLink);
+            marker.bindPopup(pop);
+            bounds.push([p.lat, p.lng]);
+          })(points[i]);
+        }
+
+        if (bounds.length > 1) {
+          map.fitBounds(bounds, { padding: [32, 32], maxZoom: 15 });
+        }
+
+        setTimeout(function () { map.invalidateSize(); }, 100);
+      }).catch(function (err) {
+        mapEl.textContent = '';
+        mapEl.appendChild(UI.error('Failed to load map: ' + (err.message || err)));
+      });
+    }
 
     function loadVisits() {
-      listContainer.textContent = '';
-      listContainer.appendChild(UI.skeleton(3));
+      contentContainer.textContent = '';
+      contentContainer.appendChild(UI.skeleton(3));
 
       var path = '/api/field/dcr';
       if (activeTab === 'today') {
@@ -180,15 +425,14 @@
       }
 
       window.fieldAPI.apiCall('GET', path).then(function (res) {
-        listContainer.textContent = '';
         statsContainer.textContent = '';
 
         var items = [];
         if (res && res.data) {
           items = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
         }
+        lastItems = items;
 
-        // Stats
         var ongoing = 0, completed = 0, planned = 0;
         for (var sIdx = 0; sIdx < items.length; sIdx++) {
           var st = items[sIdx].status || 'Planned';
@@ -202,39 +446,10 @@
           { value: ongoing, label: 'Ongoing', support: 'currently active' }
         ], 3));
 
-        if (items.length === 0) {
-          listContainer.appendChild(UI.empty('clip', 'No visits yet'));
-          return;
-        }
-
-        var listWrap = el('div', { className: 'm3-list' });
-        for (var i = 0; i < items.length; i++) {
-          (function (dcr) {
-            var customer = dcr.customer || dcr.prospect_name || 'Unknown';
-            var purpose = dcr.visit_purpose || dcr.service_purpose || '';
-            var time = formatTime(dcr.check_in_time);
-            var duration = '';
-            if (dcr.check_in_time && dcr.check_out_time) {
-              duration = formatDuration(dcr.check_in_time, dcr.check_out_time);
-            } else if (dcr.check_in_time) {
-              duration = 'ongoing';
-            }
-            var status = dcr.status || 'Planned';
-            var sub = [purpose, time, duration].filter(Boolean).join(' \u00b7 ');
-
-            listWrap.appendChild(UI.listCard({
-              avatar: customer,
-              title: customer,
-              sub: sub,
-              right: UI.pill(status, statusColor(status)),
-              onClick: function () { location.hash = '#/dcr/' + dcr.name; }
-            }));
-          })(items[i]);
-        }
-        listContainer.appendChild(listWrap);
+        render();
       }).catch(function (err) {
-        listContainer.textContent = '';
-        listContainer.appendChild(UI.error('Failed to load visits: ' + (err.message || err)));
+        contentContainer.textContent = '';
+        contentContainer.appendChild(UI.error('Failed to load visits: ' + (err.message || err)));
       });
     }
 
