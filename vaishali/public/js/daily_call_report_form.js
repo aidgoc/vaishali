@@ -1,5 +1,17 @@
 /* daily_call_report_form.js — embed a mini-map of the visit's GPS points */
 
+// CSS reset for the divIcon wrapper (Leaflet adds .leaflet-marker-icon by
+// default, which on some themes inherits a background + border).
+function _dcr_inject_pin_css() {
+	if (document.getElementById('dcr-pin-css')) return;
+	var style = document.createElement('style');
+	style.id = 'dcr-pin-css';
+	style.textContent =
+		'.dcr-form-pin,.dcr-map-marker{background:transparent !important;border:0 !important;}'
+		+ '.dcr-form-pin svg,.dcr-map-marker svg{display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25));}';
+	document.head.appendChild(style);
+}
+
 function _dcr_load_leaflet() {
 	if (window.L) return Promise.resolve(window.L);
 	if (window._leafletLoading) return window._leafletLoading;
@@ -34,43 +46,21 @@ function _dcr_parse_gps(s) {
 }
 
 function _dcr_pin_icon(L, color, label) {
-	var svgNS = 'http://www.w3.org/2000/svg';
-	var svg = document.createElementNS(svgNS, 'svg');
-	svg.setAttribute('width', '32');
-	svg.setAttribute('height', '40');
-	svg.setAttribute('viewBox', '0 0 32 40');
-
-	var path = document.createElementNS(svgNS, 'path');
-	path.setAttribute('d', 'M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z');
-	path.setAttribute('fill', color);
-	svg.appendChild(path);
-
-	var circle = document.createElementNS(svgNS, 'circle');
-	circle.setAttribute('cx', '16');
-	circle.setAttribute('cy', '16');
-	circle.setAttribute('r', '8');
-	circle.setAttribute('fill', '#fff');
-	svg.appendChild(circle);
-
-	var text = document.createElementNS(svgNS, 'text');
-	text.setAttribute('x', '16');
-	text.setAttribute('y', '20');
-	text.setAttribute('text-anchor', 'middle');
-	text.setAttribute('font-size', '11');
-	text.setAttribute('font-weight', '700');
-	text.setAttribute('fill', color);
-	text.textContent = label;
-	svg.appendChild(text);
-
-	var wrap = document.createElement('div');
-	wrap.appendChild(svg);
+	// Teardrop pin SVG, passed as string (Leaflet's tested code path)
+	var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">'
+		+ '<path d="M16 1.5C8 1.5 1.5 8 1.5 16c0 11 14.5 24.5 14.5 24.5S30.5 27 30.5 16C30.5 8 24 1.5 16 1.5z" '
+		+ 'fill="' + color + '" stroke="#fff" stroke-width="2"/>'
+		+ '<circle cx="16" cy="16" r="9" fill="#fff"/>'
+		+ '<text x="16" y="20" text-anchor="middle" font-size="10" font-weight="700" '
+		+ 'font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" fill="' + color + '">' + label + '</text>'
+		+ '</svg>';
 
 	return L.divIcon({
-		html: wrap,
+		html: svg,
 		className: 'dcr-form-pin',
-		iconSize: [32, 40],
-		iconAnchor: [16, 40],
-		popupAnchor: [0, -36]
+		iconSize: [32, 42],
+		iconAnchor: [16, 42],
+		popupAnchor: [0, -38]
 	});
 }
 
@@ -118,6 +108,7 @@ function _dcr_render_map(frm, mapDiv) {
 	}
 	mapDiv.appendChild(actions);
 
+	_dcr_inject_pin_css();
 	_dcr_load_leaflet().then(function (L) {
 		canvas.textContent = '';
 		canvas.style.display = 'block';

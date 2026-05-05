@@ -49,31 +49,17 @@ function status_color(status) {
 }
 
 function svg_marker_icon(L, color) {
-	var svgNS = 'http://www.w3.org/2000/svg';
-	var svg = document.createElementNS(svgNS, 'svg');
-	svg.setAttribute('width', '28');
-	svg.setAttribute('height', '36');
-	svg.setAttribute('viewBox', '0 0 28 36');
-	var path = document.createElementNS(svgNS, 'path');
-	path.setAttribute('d', 'M14 0C6.27 0 0 6.27 0 14c0 9.5 14 22 14 22s14-12.5 14-22C28 6.27 21.73 0 14 0z');
-	path.setAttribute('fill', color);
-	svg.appendChild(path);
-	var circle = document.createElementNS(svgNS, 'circle');
-	circle.setAttribute('cx', '14');
-	circle.setAttribute('cy', '14');
-	circle.setAttribute('r', '5');
-	circle.setAttribute('fill', '#fff');
-	svg.appendChild(circle);
-
-	var wrapper = document.createElement('div');
-	wrapper.appendChild(svg);
-
+	var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">'
+		+ '<path d="M14 1C6.82 1 1 6.82 1 14c0 9.5 13 22 13 22s13-12.5 13-22C27 6.82 21.18 1 14 1z" '
+		+ 'fill="' + color + '" stroke="#fff" stroke-width="2"/>'
+		+ '<circle cx="14" cy="14" r="5.5" fill="#fff"/>'
+		+ '</svg>';
 	return L.divIcon({
-		html: wrapper,
+		html: svg,
 		className: 'dcr-map-marker',
-		iconSize: [28, 36],
-		iconAnchor: [14, 36],
-		popupAnchor: [0, -32]
+		iconSize: [28, 38],
+		iconAnchor: [14, 38],
+		popupAnchor: [0, -34]
 	});
 }
 
@@ -163,6 +149,7 @@ function render_map(dialog, container, items) {
 		return;
 	}
 
+	if (typeof _dcr_inject_pin_css === 'function') _dcr_inject_pin_css();
 	load_leaflet().then(function (L) {
 		container.textContent = '';
 		container.style.display = 'block';
