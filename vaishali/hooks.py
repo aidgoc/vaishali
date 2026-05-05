@@ -18,11 +18,13 @@ doctype_js = {
     "Customer": "public/js/customer.js",
     "Communication": "public/js/communication.js",
 }
-
-# Client scripts for desk list views
-doctype_list_js = {
-    "Daily Call Report": "public/js/daily_call_report_list.js",
-}
+# Note: doctype_list_js is intentionally NOT used. Daily Call Report (and
+# other db-defined custom DocTypes) are flagged `custom=1` in their meta,
+# which makes Frappe's FormMeta.add_code() return early — so doctype_list_js
+# is silently ignored for them. The DCR list-view "Map view" registration
+# lives in `vaishali.bundle.js` instead, which is loaded on every desk page
+# via `app_include_js` and registers `frappe.listview_settings[...]` early
+# enough for the list view to pick it up.
 
 # SPA catch-all: /field/* → www/field.py (same pattern as HRMS, CRM, Helpdesk)
 website_route_rules = [
