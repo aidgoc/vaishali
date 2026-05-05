@@ -19,6 +19,11 @@ doctype_js = {
     "Communication": "public/js/communication.js",
 }
 
+# Client scripts for desk list views
+doctype_list_js = {
+    "Daily Call Report": "public/js/daily_call_report_list.js",
+}
+
 # SPA catch-all: /field/* → www/field.py (same pattern as HRMS, CRM, Helpdesk)
 website_route_rules = [
     {"from_route": "/field/<path:app_path>", "to_route": "field"},
