@@ -1,5 +1,6 @@
 /* vaishali_chat.js — Floating Vaishali AI chat widget for Desk (v2) */
 import './daily_call_report_list.js';
+import './daily_call_report_form.js';
 
 (function () {
   'use strict';
