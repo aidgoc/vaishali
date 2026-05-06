@@ -1,10 +1,11 @@
 """Attendance rules — late marks, half-day rollup, auto-LWP, overtime.
 
 Scheduler entry points (registered in hooks.py):
+    daily 23:00: mark_lwp_for_unapproved_absence()
     daily 23:30: process_late_marks()
+    daily 23:35: mark_present_attendance()
     daily 23:45: compute_overtime()
     monthly 1st: roll_late_marks_to_half_day()
-    daily 23:00: mark_lwp_for_unapproved_absence()
 
 DSPL/DCEPL attendance policy (Office mode only):
 - 09:00 shift start, 09:30 grace cutoff
@@ -339,6 +340,149 @@ def _create_ot_logs(employees, target_date, holiday=False):
             )
     frappe.db.commit()
     return {"date": str(target_date), "ot_logs_created": created, "holiday": holiday}
+
+
+# ── Mark Present Attendance ───────────────────────────────────────
+
+OFFICE_LUNCH_HOURS = 1.0  # unpaid lunch deducted from working_hours for Office mode
+
+
+def mark_present_attendance(target_date=None):
+    """Daily 23:35: for each employee with at least one IN checkin and no
+    existing Attendance row for the day, create a submitted Attendance row
+    with status='Present'.
+
+    Runs *after* `process_late_marks` (which may have inserted Half Day
+    rows for 11:00+ first-IN) and `mark_lwp_for_unapproved_absence`
+    (which inserts LWP rows for unapproved absences). Both leave the
+    existing Attendance row in place; this job only fills the gap for
+    employees who came in but have no row yet.
+
+    Holidays: skipped via _is_holiday — same as the other crons.
+
+    Field-mode is included (they check in on the PWA too). They get a
+    Present row but no late_entry flag (no shift threshold to compare).
+    """
+    target_date = getdate(target_date or today())
+    if _is_holiday(target_date):
+        return {"date": str(target_date), "marked": 0, "reason": "holiday"}
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        fields=["name", "company", "department", "default_shift",
+                "attendance_mode"],
+    )
+
+    day_start, day_end = _ist_day_window(target_date)
+    marked = 0
+    skipped_existing = 0
+    skipped_no_company = 0
+
+    for emp in employees:
+        if not emp.company:
+            skipped_no_company += 1
+            continue
+
+        # Idempotent — leave any existing Attendance row alone (Half Day
+        # from late mark cron, LWP from absence cron, leave-derived,
+        # manually corrected).
+        if frappe.db.exists("Attendance", {
+            "employee": emp.name, "attendance_date": target_date,
+            "docstatus": ["!=", 2],  # not cancelled
+        }):
+            skipped_existing += 1
+            continue
+
+        # First IN and last OUT for this IST day
+        in_row = frappe.db.sql(
+            """SELECT time FROM `tabEmployee Checkin`
+               WHERE employee=%s AND log_type='IN'
+               AND time >= %s AND time <= %s
+               ORDER BY time ASC LIMIT 1""",
+            (emp.name, day_start, day_end), as_dict=True,
+        )
+        if not in_row:
+            continue  # absent — Office handled by LWP cron, Field just absent
+
+        out_row = frappe.db.sql(
+            """SELECT time FROM `tabEmployee Checkin`
+               WHERE employee=%s AND log_type='OUT'
+               AND time >= %s AND time <= %s
+               ORDER BY time DESC LIMIT 1""",
+            (emp.name, day_start, day_end), as_dict=True,
+        )
+
+        in_time = get_datetime(in_row[0]["time"])
+        out_time = get_datetime(out_row[0]["time"]) if out_row else None
+
+        working_hours = None
+        if out_time and out_time > in_time:
+            gross = (out_time - in_time).total_seconds() / 3600.0
+            lunch = OFFICE_LUNCH_HOURS if (emp.attendance_mode or "Office") == "Office" else 0.0
+            working_hours = round(max(0.0, gross - lunch), 2)
+
+        # Office staff: flag late_entry if first IN crossed the grace
+        # threshold. Field staff have no shift wall — never flagged.
+        late_entry = 0
+        if (emp.attendance_mode or "Office") == "Office" and in_time.time() > LATE_THRESHOLD:
+            late_entry = 1
+
+        try:
+            doc = frappe.get_doc({
+                "doctype": "Attendance",
+                "employee": emp.name,
+                "attendance_date": target_date,
+                "status": "Present",
+                "company": emp.company,
+                "department": emp.department,
+                "shift": emp.default_shift if (emp.attendance_mode or "Office") == "Office" else None,
+                "in_time": in_time,
+                "out_time": out_time,
+                "working_hours": working_hours,
+                "late_entry": late_entry,
+            })
+            doc.insert(ignore_permissions=True)
+            doc.submit()
+            marked += 1
+        except Exception as e:
+            frappe.log_error(
+                f"Mark-present failed for {emp.name} on {target_date}: {e}",
+                "Mark Present Attendance",
+            )
+
+    frappe.db.commit()
+    return {
+        "date": str(target_date),
+        "marked": marked,
+        "skipped_existing": skipped_existing,
+        "skipped_no_company": skipped_no_company,
+    }
+
+
+@frappe.whitelist()
+def backfill_present_attendance(from_date, to_date=None):
+    """Re-run mark_present_attendance for each date in [from_date, to_date].
+
+    Skips dates that are already covered (the underlying job is idempotent
+    on existing Attendance rows). Useful to populate the gap from any
+    point in the past up to yesterday.
+
+    Admin only — guarded by `frappe.only_for(["System Manager"])`.
+    """
+    frappe.only_for(["System Manager"])
+    start = getdate(from_date)
+    end = getdate(to_date) if to_date else getdate(today())
+    if end < start:
+        frappe.throw("to_date must be ≥ from_date")
+
+    cursor = start
+    summary = []
+    while cursor <= end:
+        result = mark_present_attendance(cursor)
+        summary.append(result)
+        cursor = add_days(cursor, 1)
+    return {"days_processed": len(summary), "details": summary}
 
 
 # ── Helpers ───────────────────────────────────────────────────────

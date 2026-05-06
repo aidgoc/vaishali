@@ -2671,7 +2671,191 @@
 
     // Recently viewed
     recents: recents,
-    recentsStrip: recentsStrip
+    recentsStrip: recentsStrip,
+
+    // Photo attachments (camera-only)
+    attachPhotos: attachPhotos
   };
+
+  // ─── Photo Attachment Widget ─────────────────────────────────────────
+
+  // Camera-only photo attachment for a parent doc. Renders a thumbnail
+  // strip of existing image attachments + a "Take photo" button that
+  // hints the device camera (capture=environment) instead of the gallery.
+  // Note: `capture` is a hint — desktop browsers fall back to file picker.
+  // On mobile, every supported browser respects it.
+  function attachPhotos(opts) {
+    opts = opts || {};
+    var doctype = opts.doctype;
+    var docname = opts.docname;
+    var label = opts.label || 'Photos';
+    var maxFiles = opts.max || 8;
+    var onChange = opts.onChange || function () {};
+
+    var box = el('div', { className: 'attach-photos' });
+    var heading = el('div', {
+      textContent: label,
+      style: {
+        font: 'var(--m3-label-medium)',
+        color: 'var(--m3-on-surface-variant)',
+        margin: '8px 0 8px',
+        letterSpacing: '0.4px'
+      }
+    });
+    box.appendChild(heading);
+
+    var thumbStrip = el('div', {
+      className: 'attach-photos-strip',
+      style: {
+        display: 'flex', flexWrap: 'wrap', gap: '8px',
+        marginBottom: '8px'
+      }
+    });
+    box.appendChild(thumbStrip);
+
+    var photos = [];  // { name, file_url, file_name, thumb_el }
+
+    function renderThumbs() {
+      thumbStrip.textContent = '';
+      for (var i = 0; i < photos.length; i++) {
+        (function (p) {
+          var thumb = el('div', {
+            style: {
+              position: 'relative',
+              width: '80px', height: '80px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              background: 'var(--m3-surface-variant, #eee)',
+              flexShrink: '0'
+            }
+          });
+          var img = el('img', {
+            src: p.file_url,
+            alt: p.file_name || 'Photo',
+            style: {
+              width: '100%', height: '100%', objectFit: 'cover',
+              cursor: 'pointer'
+            },
+            onClick: function () { window.open(p.file_url, '_blank'); }
+          });
+          thumb.appendChild(img);
+
+          var rm = el('button', {
+            'aria-label': 'Remove photo',
+            style: {
+              position: 'absolute', top: '2px', right: '2px',
+              width: '22px', height: '22px',
+              border: '0', borderRadius: '50%',
+              background: 'rgba(0,0,0,0.6)', color: '#fff',
+              fontSize: '14px', lineHeight: '20px',
+              cursor: 'pointer'
+            },
+            textContent: '×',
+            onClick: function (e) {
+              e.stopPropagation();
+              if (!confirm('Remove this photo?')) return;
+              window.fieldAPI.apiCall('DELETE',
+                '/api/resource/File/' + encodeURIComponent(p.name)
+              ).then(function (r) {
+                if (r.error) { showToastSafe('Could not remove photo', 'danger'); return; }
+                photos = photos.filter(function (x) { return x.name !== p.name; });
+                renderThumbs();
+                onChange(photos);
+              });
+            }
+          });
+          thumb.appendChild(rm);
+          thumbStrip.appendChild(thumb);
+        })(photos[i]);
+      }
+    }
+
+    function showToastSafe(msg, type) {
+      if (typeof toast === 'function') { toast(msg, type); }
+      else if (window.UI && window.UI.toast) { window.UI.toast(msg, type); }
+    }
+
+    // Hidden file input — capture=environment hints the back camera on mobile.
+    var fileInput = el('input', {
+      type: 'file',
+      accept: 'image/*',
+      style: { display: 'none' }
+    });
+    fileInput.setAttribute('capture', 'environment');
+
+    var takeBtn = el('button', {
+      type: 'button',
+      className: 'm3-btn m3-btn-outline',
+      style: {
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '8px 14px', borderRadius: '8px',
+        border: '1px solid var(--m3-outline-variant, #ccc)',
+        background: 'transparent', cursor: 'pointer',
+        font: 'var(--m3-label-large)'
+      },
+      onClick: function () {
+        if (photos.length >= maxFiles) {
+          showToastSafe('Max ' + maxFiles + ' photos', 'danger');
+          return;
+        }
+        fileInput.click();
+      }
+    });
+    if (window.icon) takeBtn.appendChild(window.icon('camera') || document.createTextNode('📷'));
+    takeBtn.appendChild(el('span', { textContent: 'Take photo' }));
+    box.appendChild(takeBtn);
+    box.appendChild(fileInput);
+
+    fileInput.addEventListener('change', function () {
+      var f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+
+      takeBtn.disabled = true;
+      var origText = takeBtn.lastChild.textContent;
+      takeBtn.lastChild.textContent = 'Uploading…';
+
+      window.fieldAPI.uploadFile(f, doctype, docname).then(function (file) {
+        photos.push({
+          name: file.name,
+          file_url: file.file_url,
+          file_name: file.file_name
+        });
+        renderThumbs();
+        onChange(photos);
+      }).catch(function (err) {
+        showToastSafe('Upload failed: ' + (err && err.message ? err.message : err), 'danger');
+      }).then(function () {
+        fileInput.value = '';
+        takeBtn.disabled = false;
+        takeBtn.lastChild.textContent = origText;
+      });
+    });
+
+    // Load existing image attachments
+    if (doctype && docname) {
+      var qs = '?filters=' + encodeURIComponent(JSON.stringify([
+        ["File", "attached_to_doctype", "=", doctype],
+        ["File", "attached_to_name", "=", docname]
+      ])) + '&fields=' + encodeURIComponent(JSON.stringify([
+        "name", "file_url", "file_name", "is_private"
+      ])) + '&limit_page_length=50';
+      window.fieldAPI.apiCall('GET', '/api/resource/File' + qs).then(function (res) {
+        var data = (res && res.data && (res.data.data || res.data.message)) || [];
+        for (var i = 0; i < data.length; i++) {
+          var f = data[i];
+          var url = f.file_url || '';
+          // Filter to images only — there could be other attachments
+          if (!/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(url) &&
+              !/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.file_name || '')) {
+            continue;
+          }
+          photos.push({ name: f.name, file_url: url, file_name: f.file_name });
+        }
+        renderThumbs();
+      });
+    }
+
+    return box;
+  }
 
 })();

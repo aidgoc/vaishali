@@ -1008,6 +1008,19 @@
 
       content.appendChild(UI.detailCard(details));
 
+      // Site photos — camera-only attachment for proof of visit. Renders
+      // existing thumbs even after checkout; new uploads only meaningful
+      // while the visit exists (we don't lock down post-checkout because
+      // a rep may want to add a photo they took but forgot to attach).
+      if (UI.attachPhotos) {
+        content.appendChild(UI.attachPhotos({
+          doctype: 'Daily Call Report',
+          docname: dcrName,
+          label: 'Site photos',
+          max: 8
+        }));
+      }
+
       // Convert to Lead button (for completed visits with prospect data, no customer)
       if (!isOngoing && dcr.prospect_name && !dcr.customer) {
         var convertBtn = UI.btn('Convert to Lead', {

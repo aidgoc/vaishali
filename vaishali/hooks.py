@@ -199,6 +199,9 @@ scheduler_events = {
         "30 23 * * *": [
             "vaishali.api.attendance.process_late_marks",
         ],
+        "35 23 * * *": [
+            "vaishali.api.attendance.mark_present_attendance",
+        ],
         "45 23 * * *": [
             "vaishali.api.attendance.compute_overtime",
         ],

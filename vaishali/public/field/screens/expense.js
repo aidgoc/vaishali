@@ -555,6 +555,18 @@
         { label: 'Status', value: status }
       ]));
 
+      // Receipt photos — camera-only attachment for proof of expense.
+      // Editable on drafts; read-only thumbnails after submit (re-renders
+      // existing photos but no new uploads via the disabled button).
+      if (UI.attachPhotos) {
+        appEl.appendChild(UI.attachPhotos({
+          doctype: 'Expense Claim',
+          docname: claim.name,
+          label: 'Receipt photos',
+          max: 8
+        }));
+      }
+
       // Actions for drafts only — owner can edit or cancel
       if (claim.docstatus === 0) {
         appEl.appendChild(el('div', { style: { marginTop: '24px' } }, [

@@ -726,6 +726,83 @@
     });
   }
 
+  // ─── File Upload ────────────────────────────────────────────────────
+
+  // Downscale a phone-camera JPEG (often 4–6 MB) to a max dimension
+  // before upload. Returns a Blob. Falls back to the original file if
+  // canvas/createObjectURL aren't available.
+  function _downscaleImage(file, maxDim, quality) {
+    maxDim = maxDim || 1600;
+    quality = quality || 0.85;
+    return new Promise(function (resolve) {
+      try {
+        var img = new Image();
+        var url = URL.createObjectURL(file);
+        img.onload = function () {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var tw = Math.round(w * scale), th = Math.round(h * scale);
+          var canvas = document.createElement('canvas');
+          canvas.width = tw; canvas.height = th;
+          canvas.getContext('2d').drawImage(img, 0, 0, tw, th);
+          canvas.toBlob(function (blob) {
+            URL.revokeObjectURL(url);
+            resolve(blob || file);
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      } catch (e) { resolve(file); }
+    });
+  }
+
+  // Upload a file to Frappe's /api/method/upload_file. Attaches it to
+  // the given parent document. For images, downscales to 1600px / 85%
+  // JPEG first to keep mobile uploads quick.
+  function uploadFile(file, doctype, docname, opts) {
+    opts = opts || {};
+    if (!file) return Promise.reject(new Error('No file'));
+    if (!doctype || !docname) return Promise.reject(new Error('doctype + docname required'));
+
+    var prep = (file.type && file.type.indexOf('image/') === 0 && opts.optimize !== false)
+      ? _downscaleImage(file, opts.maxDim, opts.quality)
+      : Promise.resolve(file);
+
+    return prep.then(function (blob) {
+      var fd = new FormData();
+      var fname = file.name || ('photo-' + Date.now() + '.jpg');
+      fd.append('file', blob, fname);
+      fd.append('doctype', doctype);
+      fd.append('docname', docname);
+      fd.append('is_private', opts.is_private != null ? String(opts.is_private) : '1');
+      if (opts.folder) fd.append('folder', opts.folder);
+
+      var headers = {};
+      var csrf = (typeof frappe !== 'undefined' && frappe.csrf_token) || null;
+      if (!csrf) {
+        var match = document.cookie.match(/csrf_token=([^;]+)/);
+        if (match) csrf = decodeURIComponent(match[1]);
+      }
+      if (csrf) headers['X-Frappe-CSRF-Token'] = csrf;
+
+      return fetch('/api/method/upload_file', {
+        method: 'POST',
+        headers: headers,
+        body: fd,
+        credentials: 'same-origin'
+      }).then(function (resp) {
+        return resp.json().then(function (data) {
+          if (resp.status >= 400) {
+            var msg = (data && data._server_messages) || ('HTTP ' + resp.status);
+            throw new Error(msg);
+          }
+          // Frappe returns {message: {file_url, file_name, name, ...}}
+          return data.message || data;
+        });
+      });
+    });
+  }
+
   // ─── Local-first write ─────────────────────────────────────────────
 
   function localFirstWrite(type, data, idempotencyKey, apiPath, apiMethod, apiBody) {
@@ -1005,6 +1082,7 @@
     updateLocalDCR: updateLocalDCR,
     // API
     apiCall: apiCall,
+    uploadFile: uploadFile,
     localFirstWrite: localFirstWrite,
     // Sync
     runSync: runSync,
