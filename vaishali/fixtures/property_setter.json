@@ -4510,5 +4510,37 @@
   "property_type": "Select",
   "row_name": null,
   "value": "Report"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Daily Call Report",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "customer",
+  "is_system_generated": 1,
+  "modified": "2026-05-06 16:59:42.984551",
+  "module": null,
+  "name": "Daily Call Report-customer-mandatory_depends_on",
+  "property": "mandatory_depends_on",
+  "property_type": "Code",
+  "row_name": null,
+  "value": "eval:!doc.prospect_name && (in_list(['Quotation Follow-up','Order Follow-up','Recovery','Relationship Building'], doc.visit_purpose) || doc.department == 'Service')"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Daily Call Report",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "lead",
+  "is_system_generated": 1,
+  "modified": "2026-05-06 16:59:44.186257",
+  "module": null,
+  "name": "Daily Call Report-lead-mandatory_depends_on",
+  "property": "mandatory_depends_on",
+  "property_type": "Code",
+  "row_name": null,
+  "value": "eval:!doc.prospect_name && doc.visit_purpose == 'Lead Follow-up'"
  }
 ]
