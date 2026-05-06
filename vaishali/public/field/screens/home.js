@@ -21,6 +21,24 @@
     return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
   }
 
+  function daysAgoISO(n) {
+    var d = new Date();
+    d.setDate(d.getDate() - n);
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+
+  function shortDate(iso) {
+    if (!iso) return '';
+    var parts = String(iso).split('-');
+    if (parts.length !== 3) return iso;
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var mi = parseInt(parts[1], 10) - 1;
+    if (mi < 0 || mi > 11) return iso;
+    return parseInt(parts[2], 10) + ' ' + months[mi];
+  }
+
   function formatDate(date) {
     var d = date || new Date();
     var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -180,11 +198,16 @@
 
   // ─── Visit card ───────────────────────────────────────────────────
 
-  function visitCard(dcr) {
+  function visitCard(dcr, opts) {
     var statusColor = dcr.status === 'Completed' ? 'green' : 'orange';
+    var purpose = dcr.visit_purpose || dcr.service_purpose || '';
+    var sub = purpose;
+    if (opts && opts.showDate && dcr.date) {
+      sub = [shortDate(dcr.date), purpose].filter(Boolean).join(' · ');
+    }
     return UI.listCard({
-      title: dcr.customer || dcr.lead || 'Visit',
-      sub: dcr.visit_purpose || dcr.service_purpose || '',
+      title: dcr.customer || dcr.lead || dcr.prospect_name || 'Visit',
+      sub: sub,
       right: UI.pill(dcr.status || 'Ongoing', statusColor),
       onClick: function () { location.hash = '#/dcr/' + encodeURIComponent(dcr.name); }
     });
@@ -320,10 +343,11 @@
     appEl.appendChild(UI.skeleton(3));
 
     var today = todayISO();
+    var weekAgo = daysAgoISO(7);
 
     Promise.all([
       api.apiCall('GET', '/api/field/attendance/today'),
-      api.apiCall('GET', '/api/field/dcr?date=' + today),
+      api.apiCall('GET', '/api/field/dcr?from_date=' + weekAgo + '&to_date=' + today),
       api.apiCall('GET', '/api/field/leave-balance'),
       api.apiCall('GET', '/api/field/pending-expenses'),
       api.apiCall('GET', '/api/field/me')
@@ -339,7 +363,12 @@
       var attRaw = attResult.data || {};
       var att = attRaw.message || attRaw.data || attRaw;
       var dcrRaw = dcrResult.data || {};
-      var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
+      var allDcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
+      var dcrs = [], recentDcrs = [];
+      for (var di = 0; di < allDcrs.length; di++) {
+        if (allDcrs[di].date === today) dcrs.push(allDcrs[di]);
+        else recentDcrs.push(allDcrs[di]);
+      }
 
       var leaveRaw = leaveResult.data || {};
       var leaveBalances = leaveRaw.data || leaveRaw.message || (Array.isArray(leaveRaw) ? leaveRaw : []);
@@ -423,6 +452,23 @@
         }
       }
 
+      // 3b. Recent visits (last 7 days, excluding today) — gives continuity
+      // when the user opens the PWA on a new day before logging anything.
+      if (recentDcrs.length > 0) {
+        appEl.appendChild(UI.sectionHeading('Recent visits'));
+        var recentLimit = Math.min(recentDcrs.length, 5);
+        for (var ri = 0; ri < recentLimit; ri++) {
+          appEl.appendChild(visitCard(recentDcrs[ri], { showDate: true }));
+        }
+        if (recentDcrs.length > recentLimit) {
+          appEl.appendChild(UI.listCard({
+            title: 'View all visits',
+            sub: recentDcrs.length + ' more in the past 7 days',
+            onClick: function () { location.hash = '#/dcr'; }
+          }));
+        }
+      }
+
       // 4. HR Services
       appEl.appendChild(UI.sectionHeading('HR services'));
       appEl.appendChild(el('div', { className: 'hr-grid' }, [
@@ -459,12 +505,13 @@
     appEl.appendChild(UI.skeleton(3));
 
     var today = todayISO();
+    var weekAgo = daysAgoISO(7);
 
     Promise.all([
       api.apiCall('GET', '/api/field/team'),
       api.apiCall('GET', '/api/field/approvals'),
       api.apiCall('GET', '/api/field/attendance/today'),
-      api.apiCall('GET', '/api/field/dcr?date=' + today),
+      api.apiCall('GET', '/api/field/dcr?from_date=' + weekAgo + '&to_date=' + today),
       api.apiCall('GET', '/api/field/leave-balance'),
       api.apiCall('GET', '/api/field/pending-expenses'),
       api.apiCall('GET', '/api/field/me')
@@ -494,7 +541,12 @@
       var checkedIn = att && att.checked_in;
 
       var dcrRaw = dcrResult.data || {};
-      var dcrs = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
+      var allDcrsM = dcrRaw.data || dcrRaw.message || (Array.isArray(dcrRaw) ? dcrRaw : []);
+      var dcrs = [], recentDcrsM = [];
+      for (var dmi = 0; dmi < allDcrsM.length; dmi++) {
+        if (allDcrsM[dmi].date === today) dcrs.push(allDcrsM[dmi]);
+        else recentDcrsM.push(allDcrsM[dmi]);
+      }
       var myVisitCount = dcrs.length;
 
       var leaveRaw = leaveResult.data || {};
@@ -590,6 +642,26 @@
         var recentItemsM = UI.recents.list();
         if (recentItemsM.length > 0) {
           appEl.appendChild(UI.recentsStrip({ limit: 8, emptyText: null }));
+        }
+      }
+
+      // 3a. My visits — managers have no "Visits" tab in bottom nav, so
+      // surface the user's own week of visits here for continuity.
+      if (dcrs.length > 0 || recentDcrsM.length > 0) {
+        appEl.appendChild(UI.sectionHeading('My visits'));
+        for (var mj = 0; mj < dcrs.length; mj++) {
+          appEl.appendChild(visitCard(dcrs[mj], { showDate: true }));
+        }
+        var mrLimit = Math.min(recentDcrsM.length, 4);
+        for (var mri = 0; mri < mrLimit; mri++) {
+          appEl.appendChild(visitCard(recentDcrsM[mri], { showDate: true }));
+        }
+        if (recentDcrsM.length > mrLimit || dcrs.length + recentDcrsM.length > 0) {
+          appEl.appendChild(UI.listCard({
+            title: 'View all visits',
+            sub: 'Last 7 days · ' + (dcrs.length + recentDcrsM.length) + ' total',
+            onClick: function () { location.hash = '#/dcr'; }
+          }));
         }
       }
 

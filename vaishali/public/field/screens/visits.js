@@ -188,7 +188,7 @@
       'Daily call reports — log each customer or prospect visit.'
     ));
 
-    var activeTab = 'today';
+    var activeTab = 'week';
     var viewMode = 'list';
     var lastItems = [];
     var statsContainer = el('div');
@@ -211,7 +211,7 @@
       { value: 'today', label: 'Today' },
       { value: 'week', label: 'This week' },
       { value: 'all', label: 'All' }
-    ], { value: 'today', onChange: function (val) {
+    ], { value: 'week', onChange: function (val) {
       activeTab = val;
       loadVisits();
     } });
@@ -1152,9 +1152,13 @@
                     _timers = [];
                     if (sheet && sheet._close) sheet._close();
                     UI.toast('Checked out!', 'success');
-                    var currentHash = location.hash;
-                    location.hash = '#/';
-                    setTimeout(function () { location.hash = currentHash; }, 0);
+                    // Re-render the detail in place so the now-Completed state
+                    // is reflected (hides remarks editor, checkout button, live
+                    // duration timer). Avoid a hash round-trip — that flashes
+                    // home and can strand the user there if a transition
+                    // intercepts the bounce.
+                    appEl.textContent = '';
+                    window.Screens.visitDetail(appEl, { id: dcrName });
                   }).catch(function (err) {
                     UI.toast('Checkout failed: ' + (err.message || err), 'danger');
                     confirmBtn._setLoading(false);
