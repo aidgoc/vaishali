@@ -29,26 +29,21 @@ STRAIGHT_HALF_DAY_THRESHOLD = time(11, 0)  # 11:00 IST → straight half day
 HALF_DAY_THRESHOLD = 3  # 3 lates in a month → 1 half day
 REGULAR_HOURS_CAP = 9.0  # daily hours beyond this count as overtime
 
-# Server runs in UTC, business runs in IST. Employee Checkin stores
-# `time` as UTC; all the thresholds above are IST walls. Helper to
-# convert before comparing.
+# Post-2026-05-06 migration: Employee Checkin.time is stored as naive
+# IST (the rest of the app — DCR, Late Mark, Attendance, Service Call —
+# was already on this convention). Date-window filters and threshold
+# comparisons can run directly against the IST calendar day. Helpers
+# kept for backwards compatibility but now no-op shift.
 _IST = timezone(timedelta(hours=5, minutes=30))
 
 
-def _to_ist(dt):
-    """Convert a naive UTC datetime to an IST-aware datetime."""
-    return dt.replace(tzinfo=timezone.utc).astimezone(_IST)
-
-
-def _ist_day_window_in_utc(target_date):
-    """Return (start_utc_str, end_utc_str) covering the IST calendar day
-    `target_date`. Used in SQL WHERE clauses against Employee Checkin.time
-    which is stored as naive UTC."""
-    start_ist = get_datetime(f"{target_date} 00:00:00").replace(tzinfo=_IST)
-    end_ist = start_ist + timedelta(days=1)
+def _ist_day_window(target_date):
+    """Return (start_str, end_str) covering the IST calendar day
+    `target_date`. Used in SQL WHERE clauses against naive-IST datetime
+    columns."""
     return (
-        start_ist.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-        end_ist.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        f"{target_date} 00:00:00",
+        f"{target_date} 23:59:59",
     )
 
 
@@ -77,24 +72,24 @@ def process_late_marks(target_date=None):
     )
     late_created = 0
     half_day_created = 0
-    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
+    day_start, day_end = _ist_day_window(target_date)
     for emp in employees:
         if frappe.db.exists("Late Mark", {"employee": emp.name, "date": target_date}):
             continue
         first_in = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='IN'
-               AND time >= %s AND time < %s
+               AND time >= %s AND time <= %s
                ORDER BY time ASC LIMIT 1""",
-            (emp.name, day_start_utc, day_end_utc),
+            (emp.name, day_start, day_end),
             as_dict=True,
         )
         if not first_in:
             continue  # absent — handled by mark_lwp_for_unapproved_absence
-        # Server stores UTC; thresholds are IST walls. Convert before comparing.
-        checkin_utc = get_datetime(first_in[0]["time"])
-        checkin_ist = _to_ist(checkin_utc)
-        ist_time = checkin_ist.time()
+        # Employee Checkin.time is naive IST; compare directly against the
+        # IST threshold walls.
+        checkin_dt = get_datetime(first_in[0]["time"])
+        ist_time = checkin_dt.time()
         if ist_time <= LATE_THRESHOLD:
             continue
 
@@ -103,8 +98,6 @@ def process_late_marks(target_date=None):
             ist_time.hour * 60 + ist_time.minute
             - (LATE_THRESHOLD.hour * 60 + LATE_THRESHOLD.minute)
         ))
-        # Persist the local-naive IST datetime (Frappe stores naive site-local)
-        checkin_dt = checkin_ist.replace(tzinfo=None)
         frappe.get_doc({
             "doctype": "Late Mark",
             "employee": emp.name,
@@ -216,14 +209,13 @@ def mark_lwp_for_unapproved_absence(target_date=None):
         fields=["name", "company"],
     )
     marked = 0
-    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
+    day_start, day_end = _ist_day_window(target_date)
     for emp in employees:
-        # Checkin.time is naive UTC; the IST calendar day for target_date
-        # spans UTC [date−1 18:30 → date 18:30).
+        # Employee Checkin.time is naive IST → filter by IST calendar day.
         if frappe.db.sql(
             """SELECT 1 FROM `tabEmployee Checkin`
-               WHERE employee=%s AND time >= %s AND time < %s LIMIT 1""",
-            (emp.name, day_start_utc, day_end_utc),
+               WHERE employee=%s AND time >= %s AND time <= %s LIMIT 1""",
+            (emp.name, day_start, day_end),
         ):
             continue
         on_approved_leave = frappe.db.sql(
@@ -288,28 +280,27 @@ def compute_overtime(target_date=None):
 
 def _create_ot_logs(employees, target_date, holiday=False):
     created = 0
-    day_start_utc, day_end_utc = _ist_day_window_in_utc(target_date)
+    day_start, day_end = _ist_day_window(target_date)
     for emp in employees:
         if frappe.db.exists("Overtime Log", {"employee": emp.name, "date": target_date}):
             continue
         first_in_row = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='IN'
-               AND time >= %s AND time < %s ORDER BY time ASC LIMIT 1""",
-            (emp.name, day_start_utc, day_end_utc), as_dict=True,
+               AND time >= %s AND time <= %s ORDER BY time ASC LIMIT 1""",
+            (emp.name, day_start, day_end), as_dict=True,
         )
         last_out_row = frappe.db.sql(
             """SELECT time FROM `tabEmployee Checkin`
                WHERE employee=%s AND log_type='OUT'
-               AND time >= %s AND time < %s ORDER BY time DESC LIMIT 1""",
-            (emp.name, day_start_utc, day_end_utc), as_dict=True,
+               AND time >= %s AND time <= %s ORDER BY time DESC LIMIT 1""",
+            (emp.name, day_start, day_end), as_dict=True,
         )
         if not first_in_row or not last_out_row:
             continue  # incomplete — skip; will retry only if cron re-runs
-        # Convert to IST so persisted timestamps match what the operator
-        # would expect to see on the desk for an IST shift.
-        first_in = _to_ist(get_datetime(first_in_row[0]["time"])).replace(tzinfo=None)
-        last_out = _to_ist(get_datetime(last_out_row[0]["time"])).replace(tzinfo=None)
+        # Employee Checkin.time is naive IST — use directly.
+        first_in = get_datetime(first_in_row[0]["time"])
+        last_out = get_datetime(last_out_row[0]["time"])
         if last_out <= first_in:
             continue
         gross = (last_out - first_in).total_seconds() / 3600.0

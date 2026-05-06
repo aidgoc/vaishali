@@ -9,7 +9,14 @@ COMPANY = "Dynamic Servitech Private Limited"
 _IST = timezone(timedelta(hours=5, minutes=30))
 
 def _to_ist(dt):
-    """Convert naive UTC datetime to ISO 8601 string with IST offset."""
+    """Format a naive-IST datetime as an IST-suffixed ISO string for clients.
+
+    Post-2026-05-06 migration, every datetime field in this app (Employee
+    Checkin.time included) is stored as naive IST. This helper just decorates
+    the ISO output with `+05:30` so the browser parses it unambiguously — it
+    no longer shifts. Pre-migration callers that relied on the old UTC→IST
+    shift have been updated in lockstep.
+    """
     if not dt:
         return None
     if isinstance(dt, str):
@@ -17,8 +24,8 @@ def _to_ist(dt):
             dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         except ValueError:
             return dt
-    if hasattr(dt, 'replace'):
-        return dt.replace(tzinfo=timezone.utc).astimezone(_IST).strftime("%Y-%m-%dT%H:%M:%S+05:30")
+    if hasattr(dt, 'strftime'):
+        return dt.strftime("%Y-%m-%dT%H:%M:%S+05:30")
     return str(dt)
 
 
@@ -84,14 +91,13 @@ def _get_nav_tier(user=None):
 @frappe.whitelist()
 def attendance_today():
     emp = _get_employee()
-    # Server is UTC, business day is IST. Use the IST-day-window helper so
-    # a 6 AM IST checkin (00:30 UTC) doesn't get filtered out for sitting
-    # before "00:00:00" in the wrong calendar's day.
-    from vaishali.api.attendance import _ist_day_window_in_utc
-    day_start, day_end = _ist_day_window_in_utc(date.today())
+    # Employee Checkin.time is naive IST. Filter against the IST calendar
+    # day directly — no UTC shifting needed.
+    today_iso = date.today().isoformat()
     checkins = frappe.get_list("Employee Checkin",
         filters={"employee": emp.name,
-                 "time": ["between", [day_start, day_end]]},
+                 "time": ["between", [f"{today_iso} 00:00:00",
+                                       f"{today_iso} 23:59:59"]]},
         fields=["name", "log_type", "time", "latitude", "longitude"],
         order_by="time asc", limit_page_length=50)
 
@@ -125,27 +131,24 @@ def create_checkin(log_type, latitude=None, longitude=None, time=None):
     # Bound any caller-supplied `time` to within ±2h of now. Stops an
     # employee from posting backdated check-ins to dodge the late-mark
     # threshold. The PWA does not currently send `time` — server uses
-    # datetime.now() — but a direct API caller might.
+    # the IST clock — but a direct API caller might.
+    now_ist = datetime.now(_IST).replace(tzinfo=None)
     if time:
         from frappe.utils import get_datetime as _gd
         try:
             requested = _gd(time)
         except Exception:
             frappe.throw(_("Invalid checkin time"))
-        # Normalise to naive UTC: Frappe's get_datetime returns naive
-        # local-time on the server (UTC here). If the caller sent an
-        # offset-aware ISO string (e.g. JS Date.toISOString() ends in
-        # `Z`), dateutil parses it tz-aware; subtract that from a naive
-        # `now_utc` and Python raises TypeError → 500. Convert.
+        # Coerce to naive IST. tz-aware → astimezone(IST). Naive → assumed
+        # IST per the new convention (server runs UTC OS but stores IST).
         if requested.tzinfo is not None:
-            requested = requested.astimezone(timezone.utc).replace(tzinfo=None)
-        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-        delta_minutes = abs((now_utc - requested).total_seconds()) / 60
+            requested = requested.astimezone(_IST).replace(tzinfo=None)
+        delta_minutes = abs((now_ist - requested).total_seconds()) / 60
         if delta_minutes > 120:
             frappe.throw(_("Check-in time must be within 2 hours of now"))
         checkin_time = requested
     else:
-        checkin_time = datetime.now()
+        checkin_time = now_ist
 
     doc = frappe.new_doc("Employee Checkin")
     doc.employee = emp.name
@@ -583,9 +586,9 @@ def get_team():
         frappe.throw(_("Only managers can view team status"),
                      frappe.PermissionError)
 
-    from vaishali.api.attendance import _ist_day_window_in_utc
     today = date.today().isoformat()
-    day_start, day_end = _ist_day_window_in_utc(date.today())
+    day_start = f"{today} 00:00:00"
+    day_end = f"{today} 23:59:59"
 
     employees = frappe.get_list("Employee",
         filters={"company": COMPANY, "status": "Active"},
@@ -593,7 +596,8 @@ def get_team():
         order_by="employee_name asc", limit_page_length=0)
 
     # Scope today's checkins to the DSPL employee set (not every company's
-    # checkins) and use the IST-day window so 06:00 IST checkins are captured.
+    # checkins). Employee Checkin.time is naive IST so an IST date window
+    # captures the right rows directly.
     emp_names = [e.name for e in employees]
     checkins = []
     if emp_names:
