@@ -102,6 +102,7 @@ doc_events = {
         ],
     },
     "Purchase Receipt": {
+        "before_submit": "vaishali.qa_qc_guard.enforce_quality_inspection",
         "on_submit": "vaishali.notifications.on_purchase_receipt_submit",
     },
     "Purchase Invoice": {
