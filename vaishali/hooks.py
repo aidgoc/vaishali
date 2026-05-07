@@ -35,6 +35,15 @@ website_route_rules = [
 # stale PWA clients (without the 403 "not whitelisted" handler) auto-recover.
 before_request = ["vaishali.auth_guard.auth_guard"]
 
+# Hide private inbox Communications (e.g. Email Account "Harsh") from everyone
+# except the owner. Administrator bypasses query conditions automatically.
+permission_query_conditions = {
+    "Communication": "vaishali.permissions.get_communication_permission_query",
+}
+has_permission = {
+    "Communication": "vaishali.permissions.has_communication_permission",
+}
+
 # Doc Events
 doc_events = {
     "Daily Call Report": {
