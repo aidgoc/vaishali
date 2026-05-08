@@ -110,6 +110,64 @@ def _allowed(value, options_str):
     return value if value in opts else None
 
 
+def dump_missing(output_path: str = None):
+    """Write the part numbers that have no matching Item to a CSV.
+
+    Default path: <site>/private/files/ers_abc_missing_parts.csv
+    Returns the absolute file path.
+    """
+    import csv
+
+    data = _load_data()
+    rows = frappe.db.sql("SELECT name FROM `tabItem` WHERE disabled = 0")
+    item_codes = {r[0] for r in rows}
+    suffix_index = {}
+    for code in item_codes:
+        if len(code) > 1 and code[0].isalpha():
+            suffix_index.setdefault(code[1:], []).append(code)
+
+    missing_rows = []
+    for part_no, info in data.items():
+        if part_no in item_codes:
+            continue
+        cands = suffix_index.get(part_no, [])
+        if len(cands) == 1:
+            continue
+        # Either no candidate, or ambiguous — both flagged for review.
+        missing_rows.append({
+            "part_no": part_no,
+            "part_name": info.get("part_name") or "",
+            "department": info.get("department") or "",
+            "equipment_name": info.get("equipment_name") or "",
+            "model": info.get("model") or "",
+            "unit": info.get("unit") or "",
+            "abc_class": info.get("abc_class") or "",
+            "status": info.get("status") or "",
+            "segment": info.get("segment") or "",
+            "min_stock": info.get("min_stock") or "",
+            "reorder_qty": info.get("reorder_qty") or "",
+            "max_stock": info.get("max_stock") or "",
+            "ambiguous_candidates": ",".join(cands) if len(cands) > 1 else "",
+        })
+
+    if output_path is None:
+        site_path = frappe.get_site_path("private", "files")
+        output_path = os.path.join(site_path, "ers_abc_missing_parts.csv")
+
+    fieldnames = list(missing_rows[0].keys()) if missing_rows else [
+        "part_no", "part_name", "department", "equipment_name", "model",
+        "unit", "abc_class", "status", "segment", "min_stock", "reorder_qty",
+        "max_stock", "ambiguous_candidates",
+    ]
+    with open(output_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(missing_rows)
+
+    print(f"Wrote {len(missing_rows)} missing parts to {output_path}")
+    return output_path
+
+
 def import_abc(dry_run: bool = True):
     """Match Part No -> Item.item_code, update ABC fields. Idempotent.
 
