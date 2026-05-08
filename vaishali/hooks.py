@@ -44,6 +44,12 @@ has_permission = {
     "Communication": "vaishali.permissions.has_communication_permission",
 }
 
+# Re-apply DCEPL ERS Store SOP seeders on every `bench migrate`.
+# Custom fields / DocTypes / hooks survive via fixtures + app code,
+# but the Quality Inspection Template and the two new Roles are not
+# in any fixture and need to be replayed. Each seeder is idempotent.
+after_migrate = ["vaishali.setup_store_sop.run"]
+
 # Doc Events
 doc_events = {
     "Daily Call Report": {
