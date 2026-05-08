@@ -134,9 +134,12 @@ def test_wedge4_mrn_approval(item_code: str):
         return
     _record("wedge4: create + submit MR", True, f"name={mr.name}")
 
-    # 2. Build a draft Stock Entry referencing that MR — guard should block.
+    # 2. Build an in-memory Stock Entry (no insert — guard reads doc
+    #    state + queries the MR from DB; we want to avoid Frappe's heavy
+    #    validate on Stock Entry insert and any stock-ledger risk).
     se = frappe.new_doc("Stock Entry")
     se.stock_entry_type = "Material Issue"
+    se.purpose = "Material Issue"
     se.company = COMPANY
     se.posting_date = nowdate()
     se.posting_time = nowtime()
@@ -146,14 +149,6 @@ def test_wedge4_mrn_approval(item_code: str):
         "s_warehouse": WAREHOUSE,
         "material_request": mr.name,
     })
-    se.flags.ignore_permissions = True
-    try:
-        se.insert()
-        _cleanup.append(("Stock Entry", se.name))
-    except Exception as e:
-        _record("wedge4: insert draft Stock Entry", False, str(e)[:160])
-        return
-    _record("wedge4: insert draft Stock Entry", True, f"name={se.name}")
 
     _expect_throw(
         lambda: enforce_mrn_approval_on_issue(se),
