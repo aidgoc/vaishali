@@ -5,6 +5,7 @@ EC2: `dspl-erp-server`, `35.154.17.172`, `i-08deae9f14e3cc99e`, ap-south-1. SSH 
 
 ## Critical Rules
 
+- **⛔ NEVER rotate `site_config.json::encryption_key`.** Locked permanently. Rotation breaks every encrypted password (Email Account, Connected App, GST api_secret) and there is no automatic recovery. If a tool/migration/restore wants to change it, stop and ask.
 - No innerHTML — always `el()` or `textContent`
 - No card borders — whitespace separation
 - No decorative shadows — flat surfaces only
