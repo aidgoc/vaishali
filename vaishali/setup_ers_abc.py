@@ -126,17 +126,42 @@ def import_abc(dry_run: bool = True):
     allow_segment  = "\nRegular\nAsPerRequirement\nNoFuture\nNoFutureTrading"
     allow_dept     = "\nERS\nESS"
 
-    item_codes = {r[0] for r in frappe.db.sql(
-        "SELECT name FROM `tabItem` WHERE disabled = 0"
-    )}
+    rows = frappe.db.sql("SELECT name FROM `tabItem` WHERE disabled = 0")
+    item_codes = {r[0] for r in rows}
 
+    # ERPNext codes carry a single-letter prefix (E/B/D/...) on top of the
+    # workshop's bare part numbers. Build a suffix index so "FI02008" matches
+    # "EFI02008", "AA01003" matches "EAA01003", etc. Only exactly-one-prefix-
+    # char matches are used; ambiguous (>1 candidate) suffixes are skipped.
+    suffix_index = {}  # bare_suffix -> list[item_code]
+    for code in item_codes:
+        if len(code) > 1 and code[0].isalpha():
+            suffix_index.setdefault(code[1:], []).append(code)
+
+    ambiguous = 0
     for part_no, info in data.items():
-        if part_no not in item_codes:
+        target_code = None
+        if part_no in item_codes:
+            target_code = part_no
+        else:
+            cands = suffix_index.get(part_no, [])
+            if len(cands) == 1:
+                target_code = cands[0]
+            elif len(cands) > 1:
+                ambiguous += 1
+                missing += 1
+                if len(sample_missing) < 10:
+                    sample_missing.append(f"{part_no} (ambiguous: {','.join(cands)})")
+                continue
+
+        if not target_code:
             missing += 1
             if len(sample_missing) < 10:
                 sample_missing.append(part_no)
             continue
         matched += 1
+        # Use target_code (the actual ERPNext name) for downstream lookups
+        part_no_match = target_code
 
         new_vals = {
             "ers_abc_class":   _allowed((info.get("abc_class") or "").upper(), allow_class),
@@ -146,7 +171,7 @@ def import_abc(dry_run: bool = True):
         }
 
         cur = frappe.db.get_value(
-            "Item", part_no,
+            "Item", part_no_match,
             ["ers_abc_class", "ers_abc_status", "ers_abc_segment", "ers_department"],
             as_dict=True,
         ) or {}
@@ -161,7 +186,7 @@ def import_abc(dry_run: bool = True):
             continue
 
         for k, v in diff.items():
-            frappe.db.set_value("Item", part_no, k, v, update_modified=False)
+            frappe.db.set_value("Item", part_no_match, k, v, update_modified=False)
         updated += 1
 
     if not dry_run:
@@ -171,6 +196,7 @@ def import_abc(dry_run: bool = True):
         "dry_run": dry_run,
         "matched": matched,
         "missing": missing,
+        "ambiguous": ambiguous,
         "updated": updated,
         "unchanged": unchanged,
         "sample_missing": sample_missing,
