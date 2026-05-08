@@ -1,7 +1,7 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\": \"k1laaiFqD0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Process Guides</b></span>\", \"col\": 12}}, {\"id\": \"KUqlfUqpcv\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sales Guide\", \"col\": 4}}, {\"id\": \"xGxZDkbZ9Z\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchase Guide\", \"col\": 4}}, {\"id\": \"M8oVwCdSfR\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Manufacturing Guide\", \"col\": 4}}, {\"id\": \"Cl7KjQPdWc\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Inventory Guide\", \"col\": 4}}, {\"id\": \"OcKdX40vDh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Complaint & CAPA Guide\", \"col\": 4}}, {\"id\": \"NHZkP2mCb7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quality Guide\", \"col\": 4}}, {\"id\": \"D8ByfuPF7l\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Finance Guide\", \"col\": 4}}, {\"id\": \"czP9k8kn6T\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"HR Guide\", \"col\": 4}}, {\"id\": \"WyzaJRASaA\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"jYilLRgCtL\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reference</b></span>\", \"col\": 12}}, {\"id\": \"Ky9ze3HFbO\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Full Documentation\", \"col\": 4}}, {\"id\": \"kh2IpPZt7i\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Field App\", \"col\": 4}}]",
+  "content": "[{\"id\": \"k1laaiFqD0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Process Guides</b></span>\", \"col\": 12}}, {\"id\": \"KUqlfUqpcv\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sales Guide\", \"col\": 4}}, {\"id\": \"xGxZDkbZ9Z\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchase Guide\", \"col\": 4}}, {\"id\": \"M8oVwCdSfR\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Manufacturing Guide\", \"col\": 4}}, {\"id\": \"Cl7KjQPdWc\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Inventory Guide\", \"col\": 4}}, {\"id\": \"218f5cffe0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Store Guide\", \"col\": 4}}, {\"id\": \"OcKdX40vDh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Complaint & CAPA Guide\", \"col\": 4}}, {\"id\": \"NHZkP2mCb7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quality Guide\", \"col\": 4}}, {\"id\": \"D8ByfuPF7l\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Finance Guide\", \"col\": 4}}, {\"id\": \"czP9k8kn6T\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"HR Guide\", \"col\": 4}}, {\"id\": \"WyzaJRASaA\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"jYilLRgCtL\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reference</b></span>\", \"col\": 12}}, {\"id\": \"Ky9ze3HFbO\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Full Documentation\", \"col\": 4}}, {\"id\": \"kh2IpPZt7i\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Field App\", \"col\": 4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -12,7 +12,7 @@
   "is_hidden": 0,
   "label": "ERP Guides",
   "links": [],
-  "modified": "2026-04-16 14:57:19.883202",
+  "modified": "2026-05-08 17:23:04.164046",
   "module": "Vaishali",
   "name": "ERP Guides",
   "number_cards": [],
@@ -107,6 +107,23 @@
     "stats_filter": null,
     "type": "URL",
     "url": "/complaint-guide"
+   },
+   {
+    "color": "#bf8f00",
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Store Guide",
+    "link_to": null,
+    "parent": "ERP Guides",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "URL",
+    "url": "/store-guide"
    },
    {
     "color": "#00695c",
