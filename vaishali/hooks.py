@@ -93,6 +93,7 @@ doc_events = {
         "on_update_after_submit": "vaishali.notifications.on_warranty_claim_status_update",
     },
     "Material Request": {
+        "validate": "vaishali.mrn_approval_guard.validate_material_request",
         "on_submit": "vaishali.notifications.on_material_request_submit",
     },
     "Purchase Order": {
@@ -113,6 +114,7 @@ doc_events = {
         "on_update_after_submit": "vaishali.notifications.on_work_order_complete",
     },
     "Stock Entry": {
+        "before_submit": "vaishali.mrn_approval_guard.enforce_mrn_approval_on_issue",
         "on_submit": [
             "vaishali.notifications.on_stock_entry_submit",
             "vaishali.notifications.on_stock_entry_general",
