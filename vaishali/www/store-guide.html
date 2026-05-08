@@ -1,0 +1,293 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Store Material Management Process — DCEPL ERS{% endblock %}
+
+{% block page_content %}
+<style>
+  .cg { max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; line-height: 1.6; }
+  .cg h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+  .cg .subtitle { color: #666; margin-bottom: 2rem; }
+  .cg h2 { font-size: 1.3rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E60005; letter-spacing: -0.02em; }
+  .cg h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .cg table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .cg th { background: #f5f5f5; text-align: left; padding: 0.6rem 0.8rem; border: 1px solid #ddd; font-weight: 600; }
+  .cg td { padding: 0.6rem 0.8rem; border: 1px solid #ddd; vertical-align: top; }
+  .cg .step-card { background: #fafafa; border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 4px solid #E60005; }
+  .cg .step-card h3 { margin-top: 0; color: #E60005; }
+  .cg .step-card .who { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .cg ol, .cg ul { padding-left: 1.5rem; }
+  .cg li { margin-bottom: 0.3rem; }
+  .cg .flow { background: #f8f8f8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  .cg .tip { background: #e8f5e9; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .tip::before { content: "Tip: "; font-weight: 600; }
+  .cg .warning { background: #fff3e0; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+  .cg .warning::before { content: "Important: "; font-weight: 600; color: #e65100; }
+  .cg .toc { background: #f5f5f5; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .cg .toc a { color: #E60005; text-decoration: none; }
+  .cg .toc a:hover { text-decoration: underline; }
+  .cg .toc ol { margin: 0.5rem 0 0; }
+  .cg .band { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
+  .cg .band-red    { background: #ffebee; color: #c62828; }
+  .cg .band-yellow { background: #fffde7; color: #f57f17; }
+  .cg .band-green  { background: #e8f5e9; color: #2e7d32; }
+  @media print {
+    .cg { max-width: none; }
+    .cg .step-card, .cg table { break-inside: avoid; }
+  }
+</style>
+
+<div class="cg">
+  <h1>Store Material Management Process</h1>
+  <p class="subtitle">DCEPL ERS Central Workshop Store &mdash; Standard Operating Procedure</p>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview &amp; scope</a></li>
+      <li><a href="#inward">Material Inward (PR &amp; QA/QC)</a></li>
+      <li><a href="#abc">ABC classification</a></li>
+      <li><a href="#monitor">Stock monitoring &amp; re-order</a></li>
+      <li><a href="#issue">Material Issue &amp; MRN approval</a></li>
+      <li><a href="#return">Material Return</a></li>
+      <li><a href="#gate">Outward Gate Pass</a></li>
+      <li><a href="#roles">Roles &amp; permissions</a></li>
+      <li><a href="#config">Configuration &amp; kill switches</a></li>
+      <li><a href="#source">Source documents</a></li>
+    </ol>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="overview">1. Overview &amp; scope</h2>
+  <p>
+    This SOP standardises material handling at the DCEPL ERS Central Workshop store &mdash; covering Material Inward, Material Issue, and Material Return &mdash; to ensure proper control, traceability, and accuracy of inventory.
+  </p>
+  <p>Signed off <strong>25 March 2026</strong> by Anirudha Bhide (prepared) and Ramdas Avhad (reviewed).</p>
+
+  <table>
+    <tr><th>Activity</th><th>Responsibility</th></tr>
+    <tr><td>Material Receipt</td><td>Store Executive</td></tr>
+    <tr><td>Inspection</td><td>Store Executive + Maintenance Head</td></tr>
+    <tr><td>Damage Reporting</td><td>Store Executive + Maintenance Head</td></tr>
+    <tr><td>Stock Update</td><td>Store Executive</td></tr>
+    <tr><td>Approval</td><td>ERS&nbsp;HOD</td></tr>
+  </table>
+
+  <div class="warning">
+    Scope is <strong>DCEPL only</strong>. The system gates fire only when company is "Dynamic Crane Engineers Private Limited" AND the warehouse is in <code>site_config.dcepl_ers_warehouses</code> (default: <code>Stores - DCEPL</code>). DSPL, Gear Up, and other DCEPL warehouses are unaffected.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="inward">2. Material Inward (Purchase Receipt &amp; QA/QC)</h2>
+  <p>
+    Every inward movement at the CWS store must pass a <strong>Quality Inspection</strong> before the Purchase Receipt can be submitted. The system blocks PR submission if any item lands in <code>Stores - DCEPL</code> without an Accepted QI.
+  </p>
+
+  <div class="step-card">
+    <h3>Inward flow</h3>
+    <div class="who">Who: Store Executive + Maintenance Head</div>
+    <ol>
+      <li>Material arrives at the gate. Gate guard logs inward register entry; verifies invoice/challan present.</li>
+      <li>Material is moved to the store with required documents.</li>
+      <li>Store Executive creates a Purchase Receipt (or pulls from PO) in the desk.</li>
+      <li>For each row landing in a CWS warehouse, create a <strong>Quality Inspection</strong>:
+        <ul>
+          <li>Use template <strong>"DCEPL ERS Store QA/QC"</strong></li>
+          <li>5 parameters &mdash; tick "Yes" on each: Inv OK, PO Match, Qty Match, Physical OK, Technical OK</li>
+          <li>Status auto-flips to Accepted/Rejected based on the readings</li>
+        </ul>
+      </li>
+      <li>Submit the QI(s), then submit the Purchase Receipt &mdash; the system verifies every CWS-bound row has an Accepted QI.</li>
+      <li>Store Executive assigns bin location, updates bin card, and closes the process.</li>
+    </ol>
+    <div class="tip">
+      If the material fails inspection, mark the QI Rejected and route to Purchase for return-to-vendor or RTO. Do NOT submit the PR until rejected items are reversed off it.
+    </div>
+  </div>
+
+  <div class="warning">
+    The 5 QI parameters use formula-based criteria (<code>reading_1 == "Yes"</code>). Anything other than the literal "Yes" fails the inspection. Don't bypass by editing the formula &mdash; if a parameter doesn't apply to a particular item, raise it to Anirudha to amend the SOP and the template together.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="abc">3. ABC classification</h2>
+  <p>
+    Every workshop item carries 4 classification fields on its Item master, populated from the workshop's master sheet:
+  </p>
+  <table>
+    <tr><th>Field</th><th>Values</th><th>Meaning</th></tr>
+    <tr><td><strong>ERS ABC Class</strong></td><td>A / B / C</td><td>Pareto value &mdash; A is highest spend, C is tail</td></tr>
+    <tr><td><strong>Stock Status</strong></td><td>RED / YELLOW / GREEN</td><td>Current stock health (live indicator from the SOP master)</td></tr>
+    <tr><td><strong>ABC Segment</strong></td><td>Regular / AsPerRequirement / NoFuture / NoFutureTrading</td><td>Usage segmentation</td></tr>
+    <tr><td><strong>ERS Department</strong></td><td>ERS / ESS</td><td>Owning department</td></tr>
+  </table>
+  <p>
+    <strong>873 of 1,160 SOP parts</strong> are classified as of the first import (75%). The remaining 287 parts exist on the SOP sheet but aren't yet in the ERPNext Item master &mdash; the missing list is at
+    <a href="/private/files/ers_abc_missing_partsfe8a8f.csv">/private/files/ers_abc_missing_partsfe8a8f.csv</a> for the store team to Data Import.
+  </p>
+
+  <div class="tip">
+    Filter Items in the desk by <strong>ERS ABC Class</strong>, <strong>Stock Status</strong>, <strong>ABC Segment</strong>, or <strong>ERS Department</strong> &mdash; all four are standard filters on the Item list.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="monitor">4. Stock monitoring &amp; re-order</h2>
+  <p>
+    Stock is monitored using three colour bands. Each item has a defined Min / Reorder / Max level on its Item master &mdash; the same numbers as the SOP master sheet.
+  </p>
+  <table>
+    <tr><th>Band</th><th>Trigger</th><th>Action</th></tr>
+    <tr><td><span class="band band-green">GREEN</span></td><td>Stock above Reorder level</td><td>Continue monitoring</td></tr>
+    <tr><td><span class="band band-yellow">YELLOW</span></td><td>Stock at or below Reorder, above Min</td><td>Plan replenishment within 15 days</td></tr>
+    <tr><td><span class="band band-red">RED</span></td><td>Stock at or below Min</td><td>Auto-Material Request fires immediately</td></tr>
+  </table>
+
+  <div class="step-card">
+    <h3>Auto Material Request</h3>
+    <div class="who">Who: System (cron) &nbsp;|&nbsp; What: ERPNext <code>reorder_item</code> scheduler</div>
+    <p>
+      With <strong>Stock Settings &gt; Auto Indent = enabled</strong>, the daily reorder cron creates a Purchase Material Request whenever actual qty in <code>Stores - DCEPL</code> falls below the Min level on a configured item.
+    </p>
+    <ul>
+      <li><strong>405 items</strong> have reorder rows configured against <code>Stores - DCEPL</code> as of the first import.</li>
+      <li>468 of the 873 matched parts are in the <code>AsPerRequirement</code> segment with no Min/Reorder data &mdash; they're skipped (intentional: don't auto-MR for one-off parts).</li>
+      <li>Material Requests created by the cron land in Draft. Approve them as you would any MR.</li>
+    </ul>
+  </div>
+
+  <div class="tip">
+    To see what's about to trigger an auto-MR, open Stock &gt; Bin and filter Warehouse = <code>Stores - DCEPL</code>, sort by Actual Qty ascending. Compare against the Reorder Level column on the Item.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="issue">5. Material Issue &amp; MRN approval</h2>
+  <p>
+    Every Material Issue out of <code>Stores - DCEPL</code> requires an originating Material Requisition Note (Material Request, type "Material Issue") that has been approved by an HOD. The Stock Entry refuses to submit otherwise.
+  </p>
+
+  <div class="step-card">
+    <h3>Site Technician flow</h3>
+    <ol>
+      <li>Site tech raises a Material Request (type <strong>Material Issue</strong>, set warehouse <code>Stores - DCEPL</code>).</li>
+      <li>HOD opens the MR, reviews items / qty, ticks <strong>MRN HOD Approved</strong>, saves. The system stamps Approved By + Approved At automatically.</li>
+      <li>Store Executive creates a Stock Entry (type Material Issue) referencing the approved MR for each row.</li>
+      <li>On submit, the system verifies each source row's MR is approved. If not, submission is blocked with the list of unapproved MRs.</li>
+      <li>Store updates bin card, hands material to the technician, and closes the loop.</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Central Workshop (CSW) flow</h3>
+    <ol>
+      <li>CSW raises an MR with required approvals (same flow as Site Tech).</li>
+      <li>HOD approves on the desk by ticking the box.</li>
+      <li>Store issues material via Stock Entry; bin card updated.</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Sales Department flow</h3>
+    <ol>
+      <li>Sales raises an MR for material going to a customer.</li>
+      <li>PO and invoice details are verified via email and attached to the MR.</li>
+      <li>HOD approves; Store packages and dispatches.</li>
+      <li>Stock Entry is submitted referencing the approved MR. Outward Gate Pass is filled at the gate (see &#xA7;7).</li>
+    </ol>
+  </div>
+
+  <div class="warning">
+    Only users with the <strong>DCEPL ERS HOD</strong> role can tick "MRN HOD Approved". Trying to tick the box without the role is rejected with a clear error. Until HOD users are mapped to that role, no Material Issue can submit out of <code>Stores - DCEPL</code>.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="return">6. Material Return</h2>
+  <ol>
+    <li>Returned material arrives at the store with delivery challan; gate inward stamp verified.</li>
+    <li>Physical condition inspected for damage and usability.</li>
+    <li>If usable: Material is re-stored, Stock Entry (type Material Receipt) brings it back into <code>Stores - DCEPL</code>, bin card updated.</li>
+    <li>If damaged: damage is documented; HOD informed via email or WhatsApp; rejected stock moved to a dedicated rejected location (do NOT mix with good stock).</li>
+  </ol>
+
+  <div class="tip">
+    For tools and demo equipment that were issued under the <strong>Returnable</strong> flag of an Outward Gate Pass, click <strong>Mark Returned</strong> on the original Gate Pass when the item comes back. This stamps the return time and closes the loop.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="gate">7. Outward Gate Pass</h2>
+  <p>
+    Every outward movement at the workshop gate must be logged on a submittable <strong>Outward Gate Pass</strong> document (naming: <code>GP-YYYY-#####</code>).
+  </p>
+
+  <div class="step-card">
+    <h3>Filling the Gate Pass</h3>
+    <div class="who">Who: Gate guard &nbsp;|&nbsp; Where: dgoc.logstop.com/app/outward-gate-pass/new</div>
+    <ol>
+      <li>Date and time auto-fill to now. Set <strong>Vehicle No</strong> and capture driver name + phone.</li>
+      <li>Set <strong>Source Warehouse</strong> (default <code>Stores - DCEPL</code>) and <strong>Destination Type</strong> (Site / CSW / Customer / Vendor / Internal / Other) with the destination name.</li>
+      <li>Optional: link the carrier as an Employee record.</li>
+      <li>If material is expected back (tools, demo equipment), tick <strong>Returnable</strong> and set Expected Return Date.</li>
+      <li>Optional: link the source document &mdash; Stock Entry, Delivery Note, or Material Request &mdash; for reconciliation. Always link the originating MRN where possible.</li>
+      <li>Add items: item code, qty, UOM, serial/batch where applicable.</li>
+      <li>Save and Submit. Status flips to <strong>Out</strong>.</li>
+    </ol>
+  </div>
+
+  <div class="step-card">
+    <h3>Closing returnable Gate Passes</h3>
+    <p>When a returnable item comes back:</p>
+    <ol>
+      <li>Open the original Gate Pass (filter list view by Status = Out, Returnable = ticked).</li>
+      <li>Click <strong>Mark Returned</strong> in the toolbar.</li>
+      <li>Status flips to Returned and the system stamps Returned At.</li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    The list view colour-codes status: red Draft, orange Out, green Returned, blue Closed. Use the Status standard filter for daily reconciliation against Stock Entries.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="roles">8. Roles &amp; permissions</h2>
+
+  <table>
+    <tr><th>Role</th><th>Purpose</th><th>Granted</th></tr>
+    <tr><td><strong>DCEPL ERS HOD</strong></td><td>Approve MRNs (Material Issue out of CWS)</td><td>Right to tick "MRN HOD Approved" on Material Request</td></tr>
+    <tr><td><strong>DCEPL Gate Guard</strong></td><td>Log outward movements at the gate</td><td>Read + write + create + submit on Outward Gate Pass (no cancel/delete/amend)</td></tr>
+    <tr><td>Stock Manager</td><td>Existing role &mdash; full stock authority</td><td>Full powers on Outward Gate Pass + standard stock DocTypes</td></tr>
+    <tr><td>Stock User</td><td>Existing role &mdash; day-to-day store work</td><td>Create/submit Outward Gate Pass; standard stock operations</td></tr>
+  </table>
+
+  <div class="warning">
+    Both new roles ship empty &mdash; no users assigned. Until HODs and gate guards are mapped to their roles, the gates are locked: no MRN approvals possible, no Gate Passes possible. Assign via Desk &gt; User &gt; Roles.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="config">9. Configuration &amp; kill switches</h2>
+  <p>All controls live in <code>site_config.json</code> and can be toggled per-site without code changes.</p>
+  <table>
+    <tr><th>Key</th><th>Default</th><th>Effect</th></tr>
+    <tr><td><code>dcepl_ers_warehouses</code></td><td><code>["Stores - DCEPL"]</code></td><td>Which warehouses are in scope for QA/QC, MRN, and Outward Gate Pass enforcement</td></tr>
+    <tr><td><code>dcepl_ers_qa_qc_enabled</code></td><td><code>true</code></td><td>Set <code>false</code> to disable Purchase Receipt QI guard</td></tr>
+    <tr><td><code>dcepl_mrn_approval_enabled</code></td><td><code>true</code></td><td>Set <code>false</code> to disable both MRN approval validation and Stock Entry guard</td></tr>
+    <tr><td>Stock Settings &gt; Auto Indent</td><td><code>enabled</code></td><td>ERPNext-native flag &mdash; turn off to stop auto-Material-Request creation</td></tr>
+  </table>
+
+  <div class="tip">
+    Re-running the importers is always safe (idempotent): <code>vaishali.setup_ers_abc.import_abc</code> writes only diffs; <code>vaishali.setup_ers_reorder.import_reorder</code> only adds rows that aren't already there. Run both after the store team adds new Items or fills missing Min/Reorder data.
+  </div>
+
+  <!-- ────────────────────────────────────────────────────── -->
+  <h2 id="source">10. Source documents</h2>
+  <ul>
+    <li><strong>Store SOP master:</strong> <code>docs/Store.xlsx</code> &mdash; Activity Flowchart, Material Inward / Issue / Return flows, Stock Monitoring, Re-order Process. Signed off 25/03/2026.</li>
+    <li><strong>QA/QC checklist + ABC classification master:</strong> <code>docs/QA QC Checklist ABC.xlsx</code> &mdash; 1,160 workshop parts with Min/Reorder/Max, Department, Status, Segment.</li>
+    <li><strong>Pre-processed JSON:</strong> <code>vaishali/data/ers_abc_classification.json</code> &mdash; checked into git so prod doesn't need openpyxl and the data is reviewable.</li>
+    <li><strong>Missing parts list:</strong> <a href="/private/files/ers_abc_missing_partsfe8a8f.csv">/private/files/ers_abc_missing_partsfe8a8f.csv</a> &mdash; 287 parts on the SOP sheet not yet in the ERPNext Item master.</li>
+  </ul>
+
+  <hr style="margin-top: 3rem; border: none; border-top: 1px solid #ddd;">
+  <p style="color: #999; font-size: 0.8rem; text-align: center;">
+    Document version 1.0 &mdash; May 2026 &mdash; DCEPL ERS Central Workshop<br>
+    Access this guide anytime at: dgoc.logstop.com/store-guide
+  </p>
+</div>
+{% endblock %}

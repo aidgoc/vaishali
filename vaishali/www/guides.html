@@ -207,6 +207,40 @@
     </div>
   </div>
 
+  <!-- Store (DCEPL ERS) -->
+  <div class="gh-mod" id="mod-store">
+    <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="gh-mod-icon" style="background:#fff8e1; color:#bf8f00;">&#x1f3ed;</div>
+      <div class="gh-mod-title">
+        <h3>Store &mdash; Material Management Process</h3>
+        <p>DCEPL ERS Central Workshop SOP &mdash; QA/QC, ABC, re-order, MRN approval, Outward Gate Pass</p>
+      </div>
+      <a href="/store-guide" class="gh-mod-link" onclick="event.stopPropagation()">Open guide</a>
+      <span class="gh-toggle">&#9660;</span>
+    </div>
+    <div class="gh-mod-body">
+      <div class="gh-feat">
+        <span class="gh-pill-new gh-pill">DCEPL only</span>
+        <span class="gh-pill-new gh-pill">QI gate on PR</span>
+        <span class="gh-pill-new gh-pill">873 ABC-classified items</span>
+        <span class="gh-pill-new gh-pill">405 auto-reorder rows</span>
+        <span class="gh-pill-new gh-pill">MRN HOD approval</span>
+        <span class="gh-pill-new gh-pill">Outward Gate Pass DocType</span>
+      </div>
+      <table>
+        <tr><th>Feature</th><th>Details</th></tr>
+        <tr><td>Inward QA/QC</td><td>Purchase Receipt into Stores - DCEPL blocked unless every row has an Accepted Quality Inspection using template "DCEPL ERS Store QA/QC" (5 formula-based parameters)</td></tr>
+        <tr><td>ABC classification</td><td>4 fields on Item: Class (A/B/C), Status (RED/YELLOW/GREEN), Segment (Regular/AsPerRequirement/NoFuture/NoFutureTrading), Department (ERS/ESS). 873 of 1,160 SOP parts classified; 287 missing-from-master in CSV</td></tr>
+        <tr><td>Auto re-order</td><td>405 Item Reorder rows on Stores - DCEPL feeding ERPNext's <code>reorder_item</code> cron; auto-creates Purchase Material Requests when actual qty &lt; Min</td></tr>
+        <tr><td>MRN approval</td><td>Material Request (Material Issue, DCEPL, CWS warehouse) needs "MRN HOD Approved" tick by user with the <strong>DCEPL ERS HOD</strong> role; auto-stamps approver + timestamp; Stock Entry submission gated on this</td></tr>
+        <tr><td>Outward Gate Pass</td><td>Submittable DocType (GP-YYYY-#####): vehicle, driver, destination, carrier, returnable flag, source-doc reference, items table. Mark Returned button for tools/demo equipment</td></tr>
+        <tr><td>New roles</td><td><strong>DCEPL ERS HOD</strong> (approves MRNs), <strong>DCEPL Gate Guard</strong> (logs Gate Passes) &mdash; both ship empty, must be assigned to actual users</td></tr>
+        <tr><td>Kill switches</td><td><code>dcepl_ers_qa_qc_enabled</code>, <code>dcepl_mrn_approval_enabled</code>, <code>dcepl_ers_warehouses</code> in site_config.json</td></tr>
+        <tr><td>Source</td><td>docs/Store.xlsx + docs/QA QC Checklist ABC.xlsx, signed off 25/03/2026 by Anirudha Bhide / Ramdas Avhad</td></tr>
+      </table>
+    </div>
+  </div>
+
   <!-- Complaints & CAPA -->
   <div class="gh-mod" id="mod-capa">
     <div class="gh-mod-head" onclick="this.parentElement.classList.toggle('open')">
