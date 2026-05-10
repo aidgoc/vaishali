@@ -92,8 +92,74 @@
 
     appEl.textContent = '';
 
-    var customerInput = UI.m3TextField('Customer', { value: prefilledCustomer });
-    appEl.appendChild(customerInput);
+    // Customer search — must resolve to a Customer.name (Link field on Service Call)
+    var selectedCustomer = prefilledCustomer || null;
+    var customerDisplay = el('div', { style: { display: 'none', marginTop: '8px' } });
+    var searchResults = el('div', { className: 'search-results', style: { display: 'none' } });
+    var customerSearch = UI.searchInput('Search customer...', function (query) {
+      if (!query || query.length < 2) {
+        searchResults.style.display = 'none';
+        searchResults.textContent = '';
+        return;
+      }
+      api.apiCall('GET', '/api/field/customers?search=' + encodeURIComponent(query)).then(function (res) {
+        searchResults.textContent = '';
+        var customers = [];
+        if (res && res.data) {
+          customers = Array.isArray(res.data) ? res.data : (res.data.data || res.data.message || []);
+        }
+        if (customers.length === 0) {
+          searchResults.style.display = 'none';
+          return;
+        }
+        searchResults.style.display = 'block';
+        for (var i = 0; i < customers.length; i++) {
+          (function (c) {
+            var name = c.name || c.customer_name || c;
+            var label = typeof c === 'string' ? c : (c.customer_name || c.name);
+            var resultItem = el('div', {
+              className: 'search-result-item',
+              textContent: label,
+              onClick: function () {
+                selectedCustomer = name;
+                searchResults.style.display = 'none';
+                showCustomerChip(label);
+              }
+            });
+            searchResults.appendChild(resultItem);
+          })(customers[i]);
+        }
+      });
+    });
+    var customerField = UI.field('Customer', el('div', null, [customerSearch, searchResults, customerDisplay]));
+    var customerSearchInput = customerSearch.querySelector('input');
+    customerSearchInput.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!selectedCustomer) UI.fieldError(customerSearchInput, 'Required');
+        else UI.fieldError(customerSearchInput, null);
+      }, 200);
+    });
+    function showCustomerChip(label) {
+      UI.fieldError(customerSearchInput, null);
+      customerDisplay.textContent = '';
+      customerDisplay.style.display = 'block';
+      var removeBtn = el('button', {
+        textContent: '×',
+        className: 'chip-remove',
+        style: { marginLeft: '8px', background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#666' },
+        onClick: function () {
+          selectedCustomer = null;
+          customerDisplay.style.display = 'none';
+          customerSearch.querySelector('input').value = '';
+        }
+      });
+      customerDisplay.appendChild(el('div', { className: 'customer-chip', style: {
+        display: 'inline-flex', alignItems: 'center', background: 'var(--control-bg, #f0f0f0)',
+        borderRadius: '20px', padding: '6px 12px', fontSize: '14px'
+      } }, [el('span', { textContent: label }), removeBtn]));
+    }
+    appEl.appendChild(customerField);
+    if (prefilledCustomer) showCustomerChip(prefilledCustomer);
 
     var channel = 'Phone';
     var channelSeg = UI.segmented(['Phone', 'WhatsApp', 'Other'], channel, function (v) { channel = v; });
@@ -138,9 +204,9 @@
       type: 'primary',
       block: true,
       onClick: function () {
-        var customer = inputValue(customerInput);
+        var customer = selectedCustomer;
         var summary = inputValue(summaryInput);
-        if (!customer) { UI.fieldError(customerInput, 'Customer is required'); return; }
+        if (!customer) { UI.fieldError(customerSearchInput, 'Pick a customer from the list'); return; }
         if (!outcome) { UI.toast('Pick an outcome', 'danger'); return; }
         if (!summary.trim()) { UI.fieldError(summaryInput, 'Summary is required'); return; }
 
