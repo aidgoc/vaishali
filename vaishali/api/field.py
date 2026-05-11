@@ -729,13 +729,20 @@ def get_upcoming_holidays(limit=5):
 # ── Approval Actions (Manager) ────────────────────────────────────
 
 @frappe.whitelist(methods=["POST"])
-def process_approval(doctype, name, action):
+def process_approval(doctype, name, action, approved_amount=None, reason=None):
     """Approve or reject a Leave Application, Expense Claim, or Employee Advance.
 
     Accepts either the full doctype name ("Leave Application") or the short
     form the PWA uses in URLs ("leave"/"expense"/"advance"). The PWA passes
     `item.type.toLowerCase()` in the URL path; we normalise here so both old
     and new clients work without a SW bump.
+
+    Partial approval (Employee Advance only):
+    pass `approved_amount` lower than `doc.advance_amount` to reduce the
+    amount before submit. ERPNext has no native partial-approval field —
+    convention is to edit `advance_amount` down. Original vs approved is
+    captured in a Comment so the approver's intent is auditable beyond
+    the bare Version Log.
     """
     _DT_ALIASES = {
         "leave": "Leave Application",
@@ -779,23 +786,113 @@ def process_approval(doctype, name, action):
             doc.save(ignore_permissions=True)
             doc.submit()
         elif doctype == "Employee Advance":
+            requested = float(doc.advance_amount or 0)
+            approved = requested
+            if approved_amount is not None and str(approved_amount).strip() != "":
+                try:
+                    approved = float(approved_amount)
+                except (TypeError, ValueError):
+                    frappe.throw(_("Approved amount must be a number"))
+                if approved <= 0:
+                    frappe.throw(_("Approved amount must be greater than zero"))
+                if approved > requested:
+                    frappe.throw(_(
+                        "Approved amount (₹{0}) cannot exceed the requested amount (₹{1})"
+                    ).format(f"{approved:,.0f}", f"{requested:,.0f}"))
+            partial = approved < requested
+            if partial:
+                doc.advance_amount = approved
             doc.save(ignore_permissions=True)
             doc.submit()
+            if partial:
+                note = (f"Partially approved: requested ₹{requested:,.0f}, "
+                        f"approved ₹{approved:,.0f}.")
+                if reason:
+                    note += f" Reason: {frappe.utils.escape_html(reason)}"
+                doc.add_comment("Info", note)
+            elif reason:
+                doc.add_comment("Info",
+                    f"Approved with note: {frappe.utils.escape_html(reason)}")
     elif action == "reject":
+        rej_note = "Rejected via DSPL ERP"
+        if reason:
+            rej_note = f"Rejected: {frappe.utils.escape_html(reason)}"
         if doctype == "Leave Application":
             doc.status = "Rejected"
             doc.save(ignore_permissions=True)
             doc.submit()
+            doc.add_comment("Info", rej_note)
         elif doctype == "Expense Claim":
             doc.approval_status = "Rejected"
             doc.save(ignore_permissions=True)
+            doc.add_comment("Info", rej_note)
         elif doctype == "Employee Advance":
-            doc.add_comment("Comment", "Rejected via DSPL ERP")
+            doc.add_comment("Info", rej_note)
     else:
         frappe.throw(_(f"Invalid action: {action}"))
 
     frappe.db.commit()
     return {"success": True, "action": action, "doctype": doctype, "name": name}
+
+
+@frappe.whitelist()
+def get_my_approvals(days=30):
+    """History of what the current user has approved/rejected via the PWA.
+
+    Drives the 'My approvals' history view. Source of truth: docstatus +
+    modified_by + Comments (for advance partial-approval reductions and
+    rejection notes).
+    """
+    user = frappe.session.user
+    try:
+        days = int(days)
+    except (TypeError, ValueError):
+        days = 30
+    days = max(1, min(days, 180))
+    cutoff = frappe.utils.add_days(frappe.utils.nowdate(), -days)
+    results = []
+
+    leaves = frappe.get_all("Leave Application",
+        filters={"modified_by": user, "modified": [">=", cutoff],
+                 "status": ["in", ["Approved", "Rejected"]]},
+        fields=["name", "employee", "employee_name", "leave_type",
+                "from_date", "to_date", "total_leave_days", "status", "modified"],
+        order_by="modified desc", limit_page_length=50)
+    for l in leaves:
+        l["doctype"] = "Leave Application"
+        l["type"] = "Leave"
+        l["action"] = "approved" if l["status"] == "Approved" else "rejected"
+        results.append(l)
+
+    expenses = frappe.get_all("Expense Claim",
+        filters={"modified_by": user, "modified": [">=", cutoff],
+                 "approval_status": ["in", ["Approved", "Rejected"]]},
+        fields=["name", "employee", "employee_name", "total_claimed_amount",
+                "approval_status", "modified"],
+        order_by="modified desc", limit_page_length=50)
+    for e in expenses:
+        e["doctype"] = "Expense Claim"
+        e["type"] = "Expense"
+        e["action"] = "approved" if e["approval_status"] == "Approved" else "rejected"
+        e["amount"] = e.get("total_claimed_amount")
+        results.append(e)
+
+    # Submitted advances modified by me — these are approvals.
+    advances = frappe.get_all("Employee Advance",
+        filters={"modified_by": user, "modified": [">=", cutoff], "docstatus": 1},
+        fields=["name", "employee", "employee_name", "advance_amount",
+                "purpose", "posting_date", "status", "modified"],
+        order_by="modified desc", limit_page_length=50)
+    for a in advances:
+        a["doctype"] = "Employee Advance"
+        a["type"] = "Advance"
+        a["action"] = "approved"
+        a["amount"] = a.get("advance_amount")
+        results.append(a)
+
+    # Stable sort by modified desc across types
+    results.sort(key=lambda r: str(r.get("modified") or ""), reverse=True)
+    return results
 
 
 # ── Operator Logsheet (Phase 2 — PWA replaces the paper logsheet) ─

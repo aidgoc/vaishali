@@ -421,6 +421,12 @@
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
+      else if (path === '/api/field/approvals/history' || path.indexOf('/api/field/approvals/history?') === 0) {
+        var apHistQS = '';
+        var apHistQIdx = path.indexOf('?');
+        if (apHistQIdx !== -1) apHistQS = path.substring(apHistQIdx);
+        path = '/api/method/vaishali.api.field.get_my_approvals' + apHistQS;
+      }
       else if (path.match(/^\/api\/field\/approvals\/[^/]+\/[^/]+\/(approve|reject)$/)) {
         var apParts = path.replace('/api/field/approvals/', '').split('/');
         body = body || {};
