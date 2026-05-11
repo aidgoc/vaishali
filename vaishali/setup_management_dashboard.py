@@ -21,8 +21,10 @@ WORKSPACE_NAME = "Management"
 # Filter format (matches what Frappe itself produces, NOT the 3-element
 # shape that frappe.db.count accepts):
 #   filters_json:         [[doctype, field, operator, value, is_dynamic_bool]]
-#   dynamic_filters_json: [[doctype, field, operator, "<python_expression>"]]
-#                         (4-element, value is the expression to safe_eval)
+#   dynamic_filters_json: [[doctype, field, operator, "<JS_expression>"]]
+#                         (4-element; value is a JAVASCRIPT expression that
+#                          the desk evaluates in the browser, so use
+#                          frappe.datetime.* not frappe.utils.*)
 #
 # Time windows prefer the native 'Timespan' operator with values like
 # 'today', 'this month', 'this year' — cleaner than expressions, and the
@@ -40,7 +42,7 @@ _CARDS = [
      [["Sales Invoice", "docstatus", "=", "1", False],
       ["Sales Invoice", "outstanding_amount", ">", 0, False]],
      [["Sales Invoice", "due_date", "<",
-       "frappe.utils.add_days(frappe.utils.nowdate(), -30)"]],
+       "frappe.datetime.add_days(frappe.datetime.nowdate(), -30)"]],
      "outstanding_amount", "#D32F2F"),
     ("Mgmt — Draft Sales Invoices", "Sales Invoice", "Count",
      [["Sales Invoice", "docstatus", "=", "0", False]],
@@ -103,13 +105,13 @@ _CARDS = [
      [["Sales Invoice", "docstatus", "=", "1", False],
       ["Sales Invoice", "outstanding_amount", ">", 0, False]],
      [["Sales Invoice", "due_date", "<",
-       "frappe.utils.add_days(frappe.utils.nowdate(), -90)"]],
+       "frappe.datetime.add_days(frappe.datetime.nowdate(), -90)"]],
      None, "#B71C1C"),
     ("Mgmt — AR Overdue 60d+ Amount", "Sales Invoice", "Sum",
      [["Sales Invoice", "docstatus", "=", "1", False],
       ["Sales Invoice", "outstanding_amount", ">", 0, False]],
      [["Sales Invoice", "due_date", "<",
-       "frappe.utils.add_days(frappe.utils.nowdate(), -60)"]],
+       "frappe.datetime.add_days(frappe.datetime.nowdate(), -60)"]],
      "outstanding_amount", "#BF360C"),
 ]
 
