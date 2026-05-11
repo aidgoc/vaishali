@@ -416,6 +416,11 @@ def get_me():
         "date_of_joining": str(doc.date_of_joining) if doc.date_of_joining else None,
         "status": doc.status,
         "telegram_chat_id": doc.telegram_chat_id,
+        # Roles surface so the PWA can re-sync Auth.hasRole() on every load
+        # instead of relying on the at-login snapshot in IndexedDB.
+        "roles": frappe.get_roles(frappe.session.user),
+        "user_id": frappe.session.user,
+        "nav_tier": _get_nav_tier(),
     }
 
 

@@ -400,6 +400,10 @@
       // 1b. Setup nudges (onboarding prompts — dismissible per day)
       var meRaw = meResult.data || {};
       var meData = meRaw.message || meRaw.data || meRaw || {};
+      // Re-sync cached session roles (see manager-home for rationale).
+      if (Array.isArray(meData.roles) && Auth.refreshRoles) {
+        Auth.refreshRoles(meData.roles);
+      }
       renderSetupNudges(appEl, {
         telegramConnected: !!meData.telegram_chat_id,
         checkedInToday: !!checkedIn
@@ -581,6 +585,14 @@
       // 1b. Setup nudges
       var meRawM = meResultM.data || {};
       var meDataM = meRawM.message || meRawM.data || meRawM || {};
+      // Re-sync cached session roles every time home loads — the IDB
+      // snapshot is taken at login and goes stale when an admin grants
+      // a role mid-session (e.g. 'DSPL Director' banner). refreshRoles
+      // mutates _session.roles synchronously so the hasRole() check
+      // below sees the latest set on first paint.
+      if (Array.isArray(meDataM.roles) && Auth.refreshRoles) {
+        Auth.refreshRoles(meDataM.roles);
+      }
       renderSetupNudges(appEl, {
         telegramConnected: !!meDataM.telegram_chat_id,
         checkedInToday: !!checkedIn

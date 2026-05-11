@@ -108,6 +108,18 @@
     return _session.roles.indexOf(roleName) !== -1;
   }
 
+  // Synchronously update cached roles so checks after a mid-session
+  // role grant (e.g. 'DSPL Director') reflect the change immediately.
+  // The async IDB write is fire-and-forget — _session is the source of
+  // truth for hasRole().
+  function refreshRoles(roles) {
+    if (!_session) return;
+    _session.roles = Array.isArray(roles) ? roles : [];
+    if (window.fieldAPI && window.fieldAPI.idbPut) {
+      window.fieldAPI.idbPut('session', _session);
+    }
+  }
+
   function canAccess(screenName) {
     var level = SCREEN_ACCESS[screenName];
     if (!level) return false;
@@ -134,6 +146,7 @@
     isManager: isManager,
     isAdmin: isAdmin,
     hasRole: hasRole,
+    refreshRoles: refreshRoles,
     canAccess: canAccess,
     getNavTabs: getNavTabs
   };
