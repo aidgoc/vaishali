@@ -68,6 +68,16 @@ _CARDS = [
     ("Mgmt — Active Sales Orders", "Sales Order", "Count",
      [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]]],
      None, None, "#283593"),
+
+    # Cash & ageing
+    ("Mgmt — Overdue Invoices > 90d", "Sales Invoice", "Count",
+     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
+     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -90)"]],
+     None, "#B71C1C"),
+    ("Mgmt — AR > 60d Amount", "Sales Invoice", "Sum",
+     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
+     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -60)"]],
+     "outstanding_amount", "#BF360C"),
 ]
 
 # ── Dashboard Charts ─────────────────────────────────────────────────
@@ -206,6 +216,7 @@ def _workspace_content():
     layout = []
     layout.append(header("Cash & Receivables"))
     for n in ("Mgmt — Outstanding AR", "Mgmt — AR Overdue 30d+",
+              "Mgmt — AR > 60d Amount", "Mgmt — Overdue Invoices > 90d",
               "Mgmt — Unpaid Invoices", "Mgmt — Draft Sales Invoices"):
         layout.append(card(n))
 
@@ -232,7 +243,9 @@ def _workspace_content():
 
 
 _SHORTCUTS = [
+    ("Management (PWA)", "URL", "/field/#/management", "Orange"),
     ("Approvals (PWA)", "URL", "/field/#/approvals", "Orange"),
+    ("Receivables Summary", "Report", "Accounts Receivable Summary", "Pink"),
     ("Pending Advances", "DocType", "Employee Advance", "Yellow"),
     ("Pending Leaves", "DocType", "Leave Application", "Yellow"),
     ("Quotations", "DocType", "Quotation", "Blue"),

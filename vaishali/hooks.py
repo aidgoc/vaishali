@@ -76,6 +76,7 @@ doc_events = {
             "vaishali.notifications.on_sales_order_submit",
             "vaishali.notifications.on_sales_order_submit_production",
             "vaishali.notifications.on_sales_order_email_draft",
+            "vaishali.director_alerts.on_sales_order_submit",
         ],
     },
     "Delivery Note": {
@@ -152,8 +153,12 @@ doc_events = {
         "on_update": "vaishali.notifications.on_expense_claim_update",
     },
     "Employee Advance": {
+        "after_insert": "vaishali.director_alerts.on_advance_create",
         "on_submit": "vaishali.notifications.on_employee_advance_submit",
         "on_update": "vaishali.notifications.on_employee_advance_update",
+    },
+    "Issue": {
+        "after_insert": "vaishali.director_alerts.on_issue_create",
     },
     "Communication": {
         "after_insert": "vaishali.notifications.on_communication_receive",
@@ -213,6 +218,7 @@ scheduler_events = {
             "vaishali.notifications.check_overdue_work_orders",
             "vaishali.notifications.check_overdue_sales_invoices",
             "vaishali.notifications.remind_pending_visit_needed_calls",
+            "vaishali.director_alerts.daily_overdue_sweep",
         ],
         "0 9 * * 1": [
             "vaishali.notifications.check_draft_documents_reminder",

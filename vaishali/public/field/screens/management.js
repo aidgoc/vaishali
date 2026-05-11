@@ -105,6 +105,40 @@
         return;
       }
 
+      // Cash position
+      if (d.cash_position) {
+        var cashTotalTile = tile('Cash & bank balance', rupees(d.cash_position.total),
+          { color: '#1B5E20' });
+        cashTotalTile.style.gridColumn = '1 / -1';
+        var cashSection = el('div', { style: { marginTop: '18px' } });
+        cashSection.appendChild(el('div', {
+          textContent: 'Cash position',
+          style: { font: '500 12px/1 system-ui', color: 'var(--ink-tertiary, #6B6B70)', margin: '0 0 8px 4px' }
+        }));
+        var cashGrid = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } });
+        cashGrid.appendChild(cashTotalTile);
+        cashSection.appendChild(cashGrid);
+        if (d.cash_position.by_account && d.cash_position.by_account.length) {
+          var bdWrap = el('div', { style: {
+            marginTop: '8px', padding: '12px', background: 'var(--surface-1, #F8F8F8)',
+            borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '6px'
+          }});
+          for (var bi = 0; bi < d.cash_position.by_account.length; bi++) {
+            var acc = d.cash_position.by_account[bi];
+            bdWrap.appendChild(el('div', { style: {
+              display: 'flex', justifyContent: 'space-between', font: '400 13px/1.3 system-ui'
+            }}, [
+              el('span', { textContent: acc.name + ' · ' + acc.type,
+                style: { color: 'var(--ink-secondary, #5B5B61)' }}),
+              el('span', { textContent: rupees(acc.balance),
+                style: { color: acc.balance < 0 ? '#D32F2F' : 'var(--ink-primary)', fontWeight: '500' }})
+            ]));
+          }
+          cashSection.appendChild(bdWrap);
+        }
+        content.appendChild(cashSection);
+      }
+
       // Cash & Receivables
       content.appendChild(section('Cash & receivables', [
         tile('Outstanding AR', rupees(d.cash.outstanding_ar), { color: '#C2185B', onClick: function () { location.hash = '#/billing'; } }),
@@ -112,6 +146,67 @@
         tile('Unpaid invoices', d.cash.unpaid_invoices, {}),
         tile('Draft invoices', d.cash.draft_invoices, { color: '#FFA000' })
       ]));
+
+      // Receivables aging chart
+      if (d.ar_aging && d.ar_aging.length) {
+        var totalAR = 0;
+        for (var ai = 0; ai < d.ar_aging.length; ai++) totalAR += d.ar_aging[ai].amount;
+        if (totalAR > 0) {
+          var agingWrap = el('div', { style: {
+            marginTop: '12px', padding: '14px', background: 'var(--surface-1, #F8F8F8)', borderRadius: '12px'
+          }});
+          agingWrap.appendChild(el('div', { textContent: 'Receivables aging',
+            style: { font: '500 12px/1 system-ui', color: 'var(--ink-tertiary, #6B6B70)', marginBottom: '10px' }}));
+          var palette = ['#43A047', '#FBC02D', '#FB8C00', '#E64A19', '#C62828'];
+          for (var pi = 0; pi < d.ar_aging.length; pi++) {
+            var bucket = d.ar_aging[pi];
+            var pct = totalAR > 0 ? (bucket.amount / totalAR * 100) : 0;
+            agingWrap.appendChild(el('div', { style: { marginBottom: '6px' }}, [
+              el('div', { style: { display: 'flex', justifyContent: 'space-between', font: '400 12px/1.3 system-ui', marginBottom: '3px' }}, [
+                el('span', { textContent: bucket.bucket + (bucket.count ? ' (' + bucket.count + ')' : ''),
+                  style: { color: 'var(--ink-secondary, #5B5B61)' }}),
+                el('span', { textContent: rupees(bucket.amount), style: { color: 'var(--ink-primary)', fontWeight: '500' }})
+              ]),
+              el('div', { style: { height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}, [
+                el('div', { style: { height: '100%', width: pct.toFixed(1) + '%', background: palette[pi % palette.length] }})
+              ])
+            ]));
+          }
+          content.appendChild(agingWrap);
+        }
+      }
+
+      // Top 5 overdue invoices — actionable, drill-down opens desk SI
+      if (d.top_overdue && d.top_overdue.length) {
+        var ovWrap = el('div', { style: {
+          marginTop: '12px', padding: '14px', background: 'var(--surface-1, #F8F8F8)', borderRadius: '12px'
+        }});
+        ovWrap.appendChild(el('div', { textContent: 'Top overdue invoices',
+          style: { font: '500 12px/1 system-ui', color: 'var(--ink-tertiary, #6B6B70)', marginBottom: '8px' }}));
+        for (var oi = 0; oi < d.top_overdue.length; oi++) {
+          var inv = d.top_overdue[oi];
+          (function (invl) {
+            var sevColor = invl.days_overdue >= 90 ? '#C62828' : invl.days_overdue >= 60 ? '#E64A19' : '#FB8C00';
+            ovWrap.appendChild(el('div', {
+              onClick: function () { window.open('/app/sales-invoice/' + invl.name, '_blank'); },
+              style: {
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', cursor: 'pointer'
+              }
+            }, [
+              el('div', null, [
+                el('div', { textContent: invl.customer_name,
+                  style: { font: '500 13px/1.3 system-ui', color: 'var(--ink-primary)' }}),
+                el('div', { textContent: invl.name + ' · ' + invl.days_overdue + 'd overdue',
+                  style: { font: '400 11px/1.3 system-ui', color: sevColor }})
+              ]),
+              el('div', { textContent: rupees(invl.outstanding),
+                style: { font: '600 14px/1 system-ui', color: 'var(--ink-primary)', letterSpacing: '-0.01em' }})
+            ]));
+          })(inv);
+        }
+        content.appendChild(ovWrap);
+      }
 
       // Sales & Pipeline
       content.appendChild(section('Sales & pipeline', [

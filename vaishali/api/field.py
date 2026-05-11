@@ -3583,11 +3583,74 @@ def get_management_dashboard():
 	""", (thirty_ago,), as_dict=True) or []
 	sales_30d = [{"d": str(r["d"]), "v": float(r["v"] or 0)} for r in rows]
 
+	# Cash & Bank position — sum GL Entry balances on accounts where
+	# account_type IN (Cash, Bank). Sign convention: debit is asset
+	# increase, so balance = SUM(debit) - SUM(credit).
+	cash_rows = frappe.db.sql("""
+		SELECT a.company, a.name AS account, a.account_name, a.account_type,
+		       COALESCE(SUM(gle.debit - gle.credit), 0) AS balance
+		FROM `tabAccount` a
+		LEFT JOIN `tabGL Entry` gle
+		     ON gle.account = a.name AND gle.is_cancelled = 0
+		WHERE a.account_type IN ('Cash', 'Bank')
+		  AND a.is_group = 0 AND a.disabled = 0
+		GROUP BY a.name
+		HAVING balance != 0
+		ORDER BY balance DESC
+	""", as_dict=True) or []
+	cash_position = {
+		"total": sum(float(r["balance"] or 0) for r in cash_rows),
+		"by_account": [{"company": r["company"], "account": r["account"],
+		                "name": r["account_name"], "type": r["account_type"],
+		                "balance": float(r["balance"] or 0)} for r in cash_rows[:8]],
+	}
+
+	# Top 5 overdue invoices by outstanding amount
+	top_overdue = frappe.db.sql("""
+		SELECT name, customer, customer_name, posting_date, due_date,
+		       grand_total, outstanding_amount,
+		       DATEDIFF(%s, due_date) AS days_overdue
+		FROM `tabSales Invoice`
+		WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s
+		ORDER BY outstanding_amount DESC
+		LIMIT 5
+	""", (nowdate(), nowdate()), as_dict=True) or []
+	top_overdue = [{"name": r["name"], "customer_name": r["customer_name"] or r["customer"],
+	                "outstanding": float(r["outstanding_amount"] or 0),
+	                "days_overdue": int(r["days_overdue"] or 0),
+	                "due_date": str(r["due_date"])} for r in top_overdue]
+
+	# Receivables aging — buckets in days past due
+	ar_aging_rows = frappe.db.sql("""
+		SELECT
+		    CASE
+		        WHEN DATEDIFF(%s, due_date) <= 0 THEN 'Not yet due'
+		        WHEN DATEDIFF(%s, due_date) <= 30 THEN '0-30 days'
+		        WHEN DATEDIFF(%s, due_date) <= 60 THEN '31-60 days'
+		        WHEN DATEDIFF(%s, due_date) <= 90 THEN '61-90 days'
+		        ELSE '90+ days'
+		    END AS bucket,
+		    COALESCE(SUM(outstanding_amount), 0) AS amount,
+		    COUNT(*) AS count
+		FROM `tabSales Invoice`
+		WHERE docstatus=1 AND outstanding_amount > 0
+		GROUP BY bucket
+	""", (nowdate(), nowdate(), nowdate(), nowdate()), as_dict=True) or []
+	# Force canonical order even if some buckets are empty
+	_order = ["Not yet due", "0-30 days", "31-60 days", "61-90 days", "90+ days"]
+	_lookup = {r["bucket"]: r for r in ar_aging_rows}
+	ar_aging = [{"bucket": b,
+	             "amount": float((_lookup.get(b) or {}).get("amount") or 0),
+	             "count": int((_lookup.get(b) or {}).get("count") or 0)} for b in _order]
+
 	return {
 		"cash": cash,
 		"sales": sales,
 		"people": people,
 		"service": service,
 		"sales_30d": sales_30d,
+		"cash_position": cash_position,
+		"top_overdue": top_overdue,
+		"ar_aging": ar_aging,
 		"as_of": frappe.utils.now(),
 	}
