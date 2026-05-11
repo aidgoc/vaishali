@@ -429,6 +429,8 @@
       }
       else if (path === '/api/field/companies') path = '/api/method/vaishali.api.field.get_companies';
       else if (path === '/api/field/default-company') path = '/api/method/vaishali.api.field.set_default_company';
+      else if (path === '/api/field/outstanding-advances') path = '/api/method/vaishali.api.field.get_outstanding_advances';
+      else if (path === '/api/field/tag-receipt') path = '/api/method/vaishali.api.field.tag_receipt';
       else if (path === '/api/field/approvals/history' || path.indexOf('/api/field/approvals/history?') === 0) {
         var apHistQS = '';
         var apHistQIdx = path.indexOf('?');

@@ -1208,16 +1208,31 @@ def get_modes_of_payment():
 
 
 @frappe.whitelist(methods=["POST"])
-def submit_expense_claim(expenses, posting_date=None, approver=None):
+def submit_expense_claim(expenses, posting_date=None, approver=None,
+                          advances=None, receipt_files=None):
     """Create a draft Expense Claim for the current employee.
 
     Auto-resolves company and expense_approver. Stays in Draft so the
-    approver can act on it via the Approvals queue."""
+    approver can act on it via the Approvals queue.
+
+    `advances`: optional [{employee_advance, allocated_amount}] — appends
+    to the doc.advances child table so the claim is netted off against
+    the named outstanding advance (native ERPNext flow).
+
+    `receipt_files`: optional list of {file_name, line_index, code}.
+    Re-parents staged File docs (uploaded to the user during entry, since
+    the claim didn't exist yet) onto the new claim and writes the
+    receipt code into the matching expense line's description.
+    """
     import json
     if isinstance(expenses, str):
         expenses = json.loads(expenses)
     if not expenses:
         frappe.throw(_("Add at least one expense item"))
+    if isinstance(advances, str):
+        advances = json.loads(advances or "[]")
+    if isinstance(receipt_files, str):
+        receipt_files = json.loads(receipt_files or "[]")
 
     emp = _get_employee()
     doc = frappe.new_doc("Expense Claim")
@@ -1226,23 +1241,163 @@ def submit_expense_claim(expenses, posting_date=None, approver=None):
     doc.posting_date = posting_date or date.today().isoformat()
     doc.expense_approver = approver or _resolve_expense_approver(emp)
 
-    for line in expenses:
+    # Group receipts by line index so we can stamp the codes into the
+    # description as we walk the expenses list below.
+    receipts_by_line = {}
+    for rf in (receipt_files or []):
+        idx = rf.get("line_index")
+        if idx is None:
+            continue
+        receipts_by_line.setdefault(int(idx), []).append(rf)
+
+    for i, line in enumerate(expenses):
         amt = float(line.get("amount") or 0)
         if amt <= 0:
             frappe.throw(_("Amount must be greater than zero"))
         if not line.get("expense_type"):
             frappe.throw(_("Expense type is required"))
+        desc = line.get("description") or ""
+        line_receipts = receipts_by_line.get(i, [])
+        if line_receipts:
+            codes = ", ".join(r.get("code") for r in line_receipts if r.get("code"))
+            if codes:
+                desc = (desc + ("\n" if desc else "") + f"Receipts: {codes}").strip()
         doc.append("expenses", {
             "expense_date": line.get("expense_date") or doc.posting_date,
             "expense_type": line.get("expense_type"),
             "amount": amt,
-            "description": line.get("description") or "",
+            "description": desc,
+        })
+
+    # Advances child table — restricted to the requester's own advances
+    for adv in (advances or []):
+        adv_name = adv.get("employee_advance")
+        alloc = float(adv.get("allocated_amount") or 0)
+        if not adv_name or alloc <= 0:
+            continue
+        adv_doc = frappe.db.get_value("Employee Advance", adv_name,
+            ["employee", "advance_amount", "paid_amount", "claimed_amount",
+             "return_amount", "docstatus"], as_dict=True)
+        if not adv_doc:
+            frappe.throw(_("Advance {0} not found").format(adv_name))
+        if adv_doc.employee != emp.name:
+            frappe.throw(_("Advance {0} doesn't belong to you").format(adv_name),
+                         frappe.PermissionError)
+        if adv_doc.docstatus != 1:
+            frappe.throw(_("Advance {0} is not approved yet").format(adv_name))
+        remaining = (float(adv_doc.advance_amount or 0)
+                     - float(adv_doc.claimed_amount or 0)
+                     - float(adv_doc.return_amount or 0))
+        if alloc > remaining:
+            frappe.throw(_("Allocated ₹{0} exceeds remaining ₹{1} on advance {2}")
+                .format(f"{alloc:,.0f}", f"{remaining:,.0f}", adv_name))
+        doc.append("advances", {
+            "employee_advance": adv_name,
+            "posting_date": adv_doc.get("posting_date") or doc.posting_date,
+            "advance_account": frappe.db.get_value("Employee Advance",
+                adv_name, "advance_account"),
+            "advance_paid": float(adv_doc.paid_amount or 0),
+            "unclaimed_amount": remaining,
+            "allocated_amount": alloc,
         })
 
     doc.insert(ignore_permissions=True)
+
+    # Re-parent staged receipt files (uploaded against User) onto the
+    # new claim so Accounts can find them attached to the right record.
+    for rf in (receipt_files or []):
+        fname = rf.get("file_name")
+        if not fname or not frappe.db.exists("File", fname):
+            continue
+        try:
+            f = frappe.get_doc("File", fname)
+            if f.attached_to_doctype != "Expense Claim":
+                f.attached_to_doctype = "Expense Claim"
+                f.attached_to_name = doc.name
+                f.save(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(title=f"Receipt re-parent failed for {fname}",
+                             message=frappe.get_traceback())
+
     frappe.db.commit()
     return {"name": doc.name, "approver": doc.expense_approver,
             "total": doc.total_claimed_amount}
+
+
+# ── Outstanding advances + receipt code endpoints ─────────────────
+
+@frappe.whitelist()
+def get_outstanding_advances():
+    """List of the current employee's submitted Employee Advances that
+    still have remaining money to claim against. Used by the PWA expense
+    form so reps can apply a claim against an existing advance."""
+    emp = _get_employee()
+    rows = frappe.db.sql("""
+        SELECT name, advance_amount, paid_amount, claimed_amount,
+               return_amount, status, posting_date, purpose
+        FROM `tabEmployee Advance`
+        WHERE employee = %s AND docstatus = 1
+          AND (advance_amount - IFNULL(claimed_amount,0) - IFNULL(return_amount,0)) > 0
+        ORDER BY posting_date DESC
+    """, (emp.name,), as_dict=True) or []
+    out = []
+    for r in rows:
+        remaining = (float(r["advance_amount"] or 0)
+                     - float(r["claimed_amount"] or 0)
+                     - float(r["return_amount"] or 0))
+        out.append({
+            "name": r["name"],
+            "advance_amount": float(r["advance_amount"] or 0),
+            "paid_amount": float(r["paid_amount"] or 0),
+            "claimed_amount": float(r["claimed_amount"] or 0),
+            "return_amount": float(r["return_amount"] or 0),
+            "remaining": remaining,
+            "status": r["status"],
+            "posting_date": str(r["posting_date"]) if r["posting_date"] else "",
+            "purpose": r["purpose"] or "",
+        })
+    return out
+
+
+_RECEIPT_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"  # no 0/O, 1/I — easy to write
+
+
+def _generate_receipt_code():
+    import secrets
+    return "R-" + "".join(secrets.choice(_RECEIPT_ALPHABET) for _ in range(5))
+
+
+@frappe.whitelist(methods=["POST"])
+def tag_receipt(file_name):
+    """Generate a short human-writable receipt code for an uploaded File
+    and persist it on the File.description. The PWA shows the code to the
+    user immediately after capture so they can write it on the physical
+    receipt — that makes the paper match the digital record."""
+    emp = _get_employee()
+    if not frappe.db.exists("File", file_name):
+        frappe.throw(_("File not found"))
+    f = frappe.get_doc("File", file_name)
+    # Only allow tagging files that this user owns
+    if f.owner != frappe.session.user:
+        frappe.throw(_("Not your file"), frappe.PermissionError)
+    # Collision avoidance: regenerate up to 10 times if we somehow clash
+    code = None
+    for _ in range(10):
+        candidate = _generate_receipt_code()
+        existing = frappe.db.exists("File",
+            {"description": ["like", f"%[{candidate}]%"]})
+        if not existing:
+            code = candidate
+            break
+    if not code:
+        code = _generate_receipt_code()  # collision unlikely; fall through
+    # Prefix the description with [CODE] so it's searchable
+    prev = (f.description or "").strip()
+    f.description = f"[{code}] " + prev if prev else f"[{code}]"
+    f.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"file_name": f.name, "file_url": f.file_url, "code": code,
+            "employee": emp.employee_name}
 
 
 @frappe.whitelist(methods=["POST"])

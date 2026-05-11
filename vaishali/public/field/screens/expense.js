@@ -265,16 +265,133 @@
     function renderForm(types, existing) {
       var lines = [];
       var linesContainer = el('div', { className: 'expense-lines' });
+      var allAdvances = [];           // fetched once below
+      var selectedAdvance = null;     // { name, remaining, purpose }
+      var allocatedAmount = 0;        // ₹ to deduct from advance
+
+      // ── Advance picker (optional) ────────────────────────────
+      var advanceCard = el('div', { style: {
+        background: 'var(--m3-surface-container-low)',
+        borderRadius: 'var(--m3-shape-md)', padding: '14px', marginBottom: '16px',
+        display: 'none'
+      }});
+      var advanceLabel = el('div', {
+        textContent: 'Apply against advance (optional)',
+        style: { font: '500 13px/1.3 system-ui', color: 'var(--ink-secondary, #5B5B61)', marginBottom: '8px' }
+      });
+      var advanceSelect = el('select', {
+        className: 'm3-text-input',
+        style: { width: '100%' }
+      });
+      advanceSelect.appendChild(el('option', { value: '', textContent: '— No advance —' }));
+      var advanceAmtInput = el('input', {
+        type: 'number', min: '0', step: '0.01',
+        placeholder: 'Allocated amount (₹)',
+        className: 'm3-text-input',
+        style: { width: '100%', marginTop: '8px', display: 'none' }
+      });
+      var advanceHelp = el('div', {
+        style: { font: '400 11px/1.4 system-ui', color: 'var(--ink-tertiary, #6B6B70)', marginTop: '6px' }
+      });
+      advanceSelect.addEventListener('change', function () {
+        var v = advanceSelect.value;
+        if (!v) {
+          selectedAdvance = null;
+          advanceAmtInput.style.display = 'none';
+          advanceHelp.textContent = '';
+          return;
+        }
+        for (var i = 0; i < allAdvances.length; i++) {
+          if (allAdvances[i].name === v) { selectedAdvance = allAdvances[i]; break; }
+        }
+        if (!selectedAdvance) return;
+        advanceAmtInput.style.display = 'block';
+        // Default to min(claim total, remaining) — set on each recalc
+        var total = computeTotal();
+        var defaultAlloc = Math.min(total, selectedAdvance.remaining);
+        advanceAmtInput.value = defaultAlloc.toFixed(2);
+        advanceHelp.textContent = '₹' + Math.round(selectedAdvance.remaining).toLocaleString('en-IN')
+          + ' remaining on this advance · default allocation = lesser of claim total and remaining';
+      });
+      advanceCard.appendChild(advanceLabel);
+      advanceCard.appendChild(advanceSelect);
+      advanceCard.appendChild(advanceAmtInput);
+      advanceCard.appendChild(advanceHelp);
+
+      // Fetch outstanding advances
+      api.apiCall('GET', '/api/field/outstanding-advances').then(function (res) {
+        var raw = res.data || {};
+        var list = raw.message || raw.data || (Array.isArray(raw) ? raw : []);
+        allAdvances = list || [];
+        if (allAdvances.length > 0) {
+          advanceCard.style.display = 'block';
+          for (var i = 0; i < allAdvances.length; i++) {
+            var a = allAdvances[i];
+            advanceSelect.appendChild(el('option', {
+              value: a.name,
+              textContent: a.name + ' · ₹' + Math.round(a.remaining).toLocaleString('en-IN')
+                + ' remaining · ' + (a.purpose || '').substring(0, 40)
+            }));
+          }
+        }
+      });
+      formArea.appendChild(advanceCard);
 
       var totalEl = el('div', { className: 'amount-large', textContent: '₹ 0' });
       var totalCard = UI.card([totalEl], { className: 'total-display' });
 
-      function recalcTotal() {
+      function computeTotal() {
         var total = 0;
         for (var i = 0; i < lines.length; i++) {
           total += parseFloat(lines[i].amountInput.value) || 0;
         }
-        totalEl.textContent = formatCurrency(total);
+        return total;
+      }
+      function recalcTotal() {
+        totalEl.textContent = formatCurrency(computeTotal());
+        // If an advance is selected, re-default the allocation to min(total, remaining)
+        if (selectedAdvance) {
+          var t = computeTotal();
+          var defaultAlloc = Math.min(t, selectedAdvance.remaining);
+          // Only auto-adjust if user hasn't overridden (keep their value if non-empty and ≤ remaining)
+          var current = parseFloat(advanceAmtInput.value);
+          if (!current || current > selectedAdvance.remaining) {
+            advanceAmtInput.value = defaultAlloc.toFixed(2);
+          }
+        }
+      }
+
+      function showReceiptCodeModal(code, fileUrl) {
+        var overlay = el('div', { style: {
+          position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '9999',
+          padding: '20px'
+        }});
+        var card = el('div', { style: {
+          background: '#fff', borderRadius: '16px', padding: '28px 24px',
+          maxWidth: '360px', width: '100%', textAlign: 'center',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.25)'
+        }}, [
+          el('div', { textContent: 'Receipt captured ✓',
+            style: { font: '500 14px/1 system-ui', color: '#388E3C', marginBottom: '8px' }}),
+          el('div', { textContent: 'Write this code on the physical receipt:',
+            style: { font: '400 13px/1.4 system-ui', color: 'var(--ink-secondary, #5B5B61)', marginBottom: '14px' }}),
+          el('div', { textContent: code, style: {
+            font: '700 36px/1 ui-monospace, Menlo, monospace',
+            letterSpacing: '0.08em', color: '#1F2937',
+            padding: '14px', background: '#F3F4F6', borderRadius: '12px',
+            marginBottom: '18px'
+          }}),
+          el('div', { textContent: 'This code links the paper receipt to your digital claim. Accounts will use it during settlement.',
+            style: { font: '400 12px/1.4 system-ui', color: 'var(--ink-tertiary, #6B6B70)', marginBottom: '18px' }})
+        ]);
+        var okBtn = UI.btn('I have written the code', {
+          type: 'primary', block: true,
+          onClick: function () { document.body.removeChild(overlay); }
+        });
+        card.appendChild(okBtn);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
       }
 
       function updateRemoveButtons() {
@@ -325,6 +442,68 @@
         });
         var descInput = descField._getInput();
 
+        // Per-line receipt capture — staged files re-parent to claim on submit
+        var receipts = [];  // [{file_name, code, file_url}]
+        var receiptsList = el('div', { style: { marginTop: '8px' } });
+
+        function renderReceiptsList() {
+          receiptsList.textContent = '';
+          if (!receipts.length) return;
+          for (var i = 0; i < receipts.length; i++) {
+            (function (r, idx) {
+              receiptsList.appendChild(el('div', {
+                style: {
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 10px', background: '#ECFDF5', borderRadius: '8px',
+                  marginBottom: '4px'
+                }
+              }, [
+                el('span', { textContent: '📎  ' + r.code,
+                  style: { font: '600 12px/1.2 ui-monospace, Menlo, monospace', color: '#065F46', letterSpacing: '0.04em' } }),
+                el('button', {
+                  textContent: 'View',
+                  onClick: function () { window.open(r.file_url, '_blank'); },
+                  style: { background: 'none', border: 'none', color: '#065F46', font: '500 12px/1 system-ui', cursor: 'pointer' }
+                })
+              ]));
+            })(receipts[i], i);
+          }
+        }
+
+        var fileInput = el('input', {
+          type: 'file', accept: 'image/*', capture: 'environment',
+          style: { display: 'none' },
+          onChange: function () {
+            var f = fileInput.files && fileInput.files[0];
+            if (!f) return;
+            captureBtn._setLoading(true, 'Uploading…');
+            // Stage against the User so the file has a parent before the
+            // claim exists; submit_expense_claim re-parents on success.
+            var meEmail = (Auth.getEmployee() && Auth.getEmployee().user_id) || '';
+            window.fieldAPI.uploadFile(f, 'User', meEmail || 'Administrator').then(function (file) {
+              return api.apiCall('POST', '/api/field/tag-receipt', { file_name: file.name });
+            }).then(function (res) {
+              captureBtn._setLoading(false);
+              if (res.error) { UI.toast('Failed: ' + res.error, 'danger'); return; }
+              var raw = res.data || {};
+              var d = raw.message || raw.data || raw;
+              if (!d || !d.code) { UI.toast('No code returned', 'danger'); return; }
+              receipts.push({ file_name: d.file_name, code: d.code, file_url: d.file_url });
+              renderReceiptsList();
+              showReceiptCodeModal(d.code, d.file_url);
+              fileInput.value = '';
+            }).catch(function (err) {
+              captureBtn._setLoading(false);
+              UI.toast('Upload failed: ' + (err.message || 'try again'), 'danger');
+            });
+          }
+        });
+
+        var captureBtn = UI.btn('📷  Capture receipt photo', {
+          type: 'outline', block: true,
+          onClick: function () { fileInput.click(); }
+        });
+
         var lineObj;
         var removeBtn = UI.btn('Remove line', {
           type: 'outline-danger',
@@ -344,6 +523,9 @@
           dateField,
           amountField,
           descField,
+          fileInput,
+          captureBtn,
+          receiptsList,
           el('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '4px' } }, [removeBtn])
         ]);
 
@@ -353,7 +535,8 @@
           dateInput: dateInput,
           amountInput: amountInput,
           descInput: descInput,
-          removeBtn: removeBtn
+          removeBtn: removeBtn,
+          receipts: receipts
         };
 
         lines.push(lineObj);
@@ -384,6 +567,7 @@
 
       function collect() {
         var expenses = [];
+        var receipt_files = [];
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i];
           var t = line.typeSelect.value;
@@ -402,28 +586,54 @@
             amount: amt,
             description: line.descInput.value || ''
           });
+          // Roll receipts up — server uses line_index to stamp code into desc
+          for (var ri = 0; ri < (line.receipts || []).length; ri++) {
+            receipt_files.push({
+              file_name: line.receipts[ri].file_name,
+              code: line.receipts[ri].code,
+              line_index: i
+            });
+          }
         }
-        return expenses;
+        return { expenses: expenses, receipt_files: receipt_files };
       }
 
       function doSubmit() {
-        var expenses = collect();
-        if (!expenses) return;
+        var collected = collect();
+        if (!collected) return;
+        var expenses = collected.expenses;
+        var receipt_files = collected.receipt_files;
+
+        // Advance allocation (optional)
+        var advances = [];
+        if (selectedAdvance) {
+          var alloc = parseFloat(advanceAmtInput.value);
+          if (!alloc || alloc <= 0) {
+            UI.toast('Enter an allocation amount for the selected advance', 'danger');
+            return;
+          }
+          if (alloc > selectedAdvance.remaining) {
+            UI.toast('Allocation exceeds remaining advance (₹' + Math.round(selectedAdvance.remaining).toLocaleString('en-IN') + ')', 'danger');
+            return;
+          }
+          advances.push({
+            employee_advance: selectedAdvance.name,
+            allocated_amount: alloc
+          });
+        }
 
         submitBtn._setLoading(true, isEdit ? 'Saving…' : 'Submitting…');
 
-        var promise;
-        if (isEdit) {
-          promise = api.apiCall('POST', '/api/field/expense/' + encodeURIComponent(name), {
-            expenses: JSON.stringify(expenses),
-            posting_date: existing.posting_date
-          });
-        } else {
-          promise = api.apiCall('POST', '/api/field/expense', {
-            expenses: JSON.stringify(expenses),
-            posting_date: todayISO()
-          });
-        }
+        var body = {
+          expenses: JSON.stringify(expenses),
+          posting_date: (existing && existing.posting_date) || todayISO()
+        };
+        if (advances.length) body.advances = JSON.stringify(advances);
+        if (receipt_files.length) body.receipt_files = JSON.stringify(receipt_files);
+
+        var promise = isEdit
+          ? api.apiCall('POST', '/api/field/expense/' + encodeURIComponent(name), body)
+          : api.apiCall('POST', '/api/field/expense', body);
 
         promise.then(function (res) {
           if (res.error) {
