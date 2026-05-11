@@ -601,6 +601,28 @@
         { value: teamVisitCount, label: 'Visits', support: 'today' }
       ], 3));
 
+      // Director banner — links to the Management dashboard.
+      if (Auth.hasRole && Auth.hasRole('DSPL Director')) {
+        var mgmtBanner = el('div', {
+          onClick: function () { location.hash = '#/management'; },
+          style: {
+            marginTop: '12px', padding: '14px 16px',
+            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+            color: '#fff', borderRadius: '12px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }
+        }, [
+          el('div', null, [
+            el('div', { textContent: 'Management dashboard',
+              style: { font: '600 15px/1.2 system-ui', letterSpacing: '-0.01em' } }),
+            el('div', { textContent: 'Cash, sales, people, service — live KPIs',
+              style: { font: '400 12px/1.3 system-ui', opacity: '0.8', marginTop: '2px' } })
+          ]),
+          el('span', { textContent: '→', style: { font: '600 18px/1 system-ui' } })
+        ]);
+        appEl.appendChild(mgmtBanner);
+      }
+
       // 3. Action cards 2x2 grid
       var actionGrid = el('div', { className: 'action-grid' }, [
         UI.actionCard({

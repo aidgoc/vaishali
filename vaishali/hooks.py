@@ -48,7 +48,10 @@ has_permission = {
 # Custom fields / DocTypes / hooks survive via fixtures + app code,
 # but the Quality Inspection Template and the two new Roles are not
 # in any fixture and need to be replayed. Each seeder is idempotent.
-after_migrate = ["vaishali.setup_store_sop.run"]
+after_migrate = [
+    "vaishali.setup_store_sop.run",
+    "vaishali.setup_management_dashboard.run",
+]
 
 # Doc Events
 doc_events = {

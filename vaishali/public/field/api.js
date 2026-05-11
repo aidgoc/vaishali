@@ -421,6 +421,7 @@
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
+      else if (path === '/api/field/management-dashboard') path = '/api/method/vaishali.api.field.get_management_dashboard';
       else if (path === '/api/field/approvals/history' || path.indexOf('/api/field/approvals/history?') === 0) {
         var apHistQS = '';
         var apHistQIdx = path.indexOf('?');

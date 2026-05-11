@@ -1,0 +1,282 @@
+"""Management Dashboard — Workspace + Number Cards + Dashboard Charts.
+
+Pure ERPNext-native: Workspace, Number Card, Dashboard Chart, Role.
+Scope: visible only to the three directors (harsh@dgoc.in, njg@dgoc.in,
+bng@dgoc.in) via the `DSPL Director` role.
+
+Idempotent — re-run on every `bench migrate` via the after_migrate hook.
+"""
+
+import json
+import frappe
+
+DIRECTORS = ("harsh@dgoc.in", "njg@dgoc.in", "bng@dgoc.in")
+ROLE_NAME = "DSPL Director"
+WORKSPACE_NAME = "Management"
+
+# ── Number Cards ─────────────────────────────────────────────────────
+# (name, label, doctype, function, filters_json, dynamic_filters_json,
+#  field_to_aggregate, color)
+_CARDS = [
+    # Cash & Receivables
+    ("Mgmt: Outstanding AR", "Outstanding AR", "Sales Invoice", "Sum",
+     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
+     None, "outstanding_amount", "#E91E63"),
+    ("Mgmt: AR Over 30d", "AR Overdue 30d+", "Sales Invoice", "Sum",
+     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
+     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -30)"]],
+     "outstanding_amount", "#D32F2F"),
+    ("Mgmt: Draft Sales Invoices", "Draft Sales Invoices", "Sales Invoice", "Count",
+     [["docstatus", "=", 0]], None, None, "#FFA000"),
+    ("Mgmt: Unpaid Invoices", "Unpaid Invoices", "Sales Invoice", "Count",
+     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]], None, None, "#FF6F00"),
+
+    # Sales & Pipeline
+    ("Mgmt: MTD Sales Orders", "Sales Orders MTD", "Sales Order", "Sum",
+     [["docstatus", "=", 1]],
+     [["transaction_date", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
+     "grand_total", "#388E3C"),
+    ("Mgmt: MTD Quotations", "Quotations MTD", "Quotation", "Count",
+     [["docstatus", "=", 1]],
+     [["transaction_date", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
+     None, "#1976D2"),
+    ("Mgmt: MTD New Leads", "New Leads MTD", "Lead", "Count", [],
+     [["creation", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
+     None, "#0097A7"),
+    ("Mgmt: Open Opportunities", "Open Opportunities", "Opportunity", "Count",
+     [["status", "=", "Open"]], None, None, "#7B1FA2"),
+
+    # People & Approvals
+    ("Mgmt: Pending Advances", "Pending Advances", "Employee Advance", "Count",
+     [["docstatus", "=", 0]], None, None, "#F57C00"),
+    ("Mgmt: Pending Leaves", "Pending Leaves", "Leave Application", "Count",
+     [["status", "=", "Open"]], None, None, "#FBC02D"),
+    ("Mgmt: Pending Expenses", "Pending Expenses", "Expense Claim", "Count",
+     [["approval_status", "=", "Draft"], ["docstatus", "=", 0]], None, None, "#F9A825"),
+    ("Mgmt: Visits Today", "Visits Today", "Daily Call Report", "Count", [],
+     [["date", "=", "frappe.utils.nowdate()"]], None, "#00838F"),
+
+    # Service & Operations
+    ("Mgmt: Open Breakdowns", "Open Breakdowns", "Warranty Claim", "Count",
+     [["status", "=", "Open"]], None, None, "#C62828"),
+    ("Mgmt: Open Complaints", "Open Complaints", "Issue", "Count",
+     [["status", "=", "Open"]], None, None, "#AD1457"),
+    ("Mgmt: Open Material Requests", "Open Material Requests", "Material Request", "Count",
+     [["docstatus", "=", 1], ["status", "=", "Pending"]], None, None, "#5E35B1"),
+    ("Mgmt: Active Sales Orders", "Active Sales Orders", "Sales Order", "Count",
+     [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]]],
+     None, None, "#283593"),
+]
+
+# ── Dashboard Charts ─────────────────────────────────────────────────
+# (name, chart_name, doctype, based_on, value_based_on, function,
+#  timespan, time_interval, type, filters_json, color)
+_CHARTS = [
+    ("Mgmt: Sales 30d", "Sales (Last 30 days)", "Sales Order", "transaction_date",
+     "grand_total", "Sum", "Last Month", "Daily", "Line",
+     [["docstatus", "=", 1]], "#388E3C"),
+    ("Mgmt: Quotations 30d", "Quotations (Last 30 days)", "Quotation", "transaction_date",
+     "grand_total", "Sum", "Last Month", "Daily", "Line",
+     [["docstatus", "=", 1]], "#1976D2"),
+    ("Mgmt: Visits 30d", "Visits (Last 30 days)", "Daily Call Report", "date",
+     None, "Count", "Last Month", "Daily", "Bar", [], "#00838F"),
+    ("Mgmt: New Leads 30d", "New Leads (Last 30 days)", "Lead", "creation",
+     None, "Count", "Last Month", "Daily", "Bar", [], "#0097A7"),
+]
+
+
+def ensure_role():
+    if not frappe.db.exists("Role", ROLE_NAME):
+        frappe.get_doc({
+            "doctype": "Role",
+            "role_name": ROLE_NAME,
+            "desk_access": 1,
+            "is_custom": 1,
+        }).insert(ignore_permissions=True)
+
+
+def ensure_director_users_have_role():
+    for user_id in DIRECTORS:
+        if not frappe.db.exists("User", user_id):
+            continue
+        user = frappe.get_doc("User", user_id)
+        existing = {r.role for r in (user.roles or [])}
+        if ROLE_NAME not in existing:
+            user.append("roles", {"role": ROLE_NAME})
+            user.save(ignore_permissions=True)
+
+
+def ensure_number_cards():
+    for spec in _CARDS:
+        (name, label, doctype, function, filters,
+         dyn_filters, agg_field, color) = spec
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        doc = frappe.get_doc("Number Card", name) if frappe.db.exists("Number Card", name) \
+            else frappe.new_doc("Number Card")
+        doc.update({
+            "name": name,
+            "label": label,
+            "document_type": doctype,
+            "function": function,
+            "filters_json": json.dumps(filters or []),
+            "dynamic_filters_json": json.dumps(dyn_filters) if dyn_filters else None,
+            "color": color,
+            "is_public": 1,
+            "show_percentage_stats": 0,
+            "type": "Document Type",
+        })
+        if function in ("Sum", "Average"):
+            doc.aggregate_function_based_on = agg_field
+        try:
+            doc.save(ignore_permissions=True) if doc.get("modified") else doc.insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.log_error(title=f"NumberCard {name} setup failed", message=str(e))
+
+
+def ensure_dashboard_charts():
+    for spec in _CHARTS:
+        (name, chart_name, doctype, based_on, value_based_on, function,
+         timespan, time_interval, ctype, filters, color) = spec
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        doc = frappe.get_doc("Dashboard Chart", name) if frappe.db.exists("Dashboard Chart", name) \
+            else frappe.new_doc("Dashboard Chart")
+        doc.update({
+            "name": name,
+            "chart_name": chart_name,
+            "document_type": doctype,
+            "based_on": based_on,
+            "value_based_on": value_based_on,
+            "group_by_type": "Count",
+            "chart_type": function,  # Sum / Count / Average
+            "timespan": timespan,
+            "time_interval": time_interval,
+            "type": ctype,
+            "filters_json": json.dumps(filters or []),
+            "is_public": 1,
+            "color": color,
+            "timeseries": 1,
+            "module": "Vaishali",
+        })
+        try:
+            doc.save(ignore_permissions=True) if doc.get("modified") else doc.insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.log_error(title=f"DashboardChart {name} setup failed", message=str(e))
+
+
+def _workspace_content():
+    """Visual layout JSON for the Management workspace."""
+
+    def header(text):
+        return {"id": frappe.generate_hash(length=10), "type": "header",
+                "data": {"text": f"<span class='h4'>{text}</span>", "col": 12}}
+
+    def card(card_name):
+        return {"id": frappe.generate_hash(length=10), "type": "number_card",
+                "data": {"number_card_name": card_name, "col": 3}}
+
+    def chart(chart_name, col=6):
+        return {"id": frappe.generate_hash(length=10), "type": "chart",
+                "data": {"chart_name": chart_name, "col": col}}
+
+    def spacer():
+        return {"id": frappe.generate_hash(length=10), "type": "spacer", "data": {"col": 12}}
+
+    layout = []
+    layout.append(header("Cash & Receivables"))
+    for n in ("Mgmt: Outstanding AR", "Mgmt: AR Over 30d",
+              "Mgmt: Unpaid Invoices", "Mgmt: Draft Sales Invoices"):
+        layout.append(card(n))
+
+    layout.append(header("Sales & Pipeline"))
+    for n in ("Mgmt: MTD Sales Orders", "Mgmt: MTD Quotations",
+              "Mgmt: MTD New Leads", "Mgmt: Open Opportunities"):
+        layout.append(card(n))
+    layout.append(chart("Mgmt: Sales 30d"))
+    layout.append(chart("Mgmt: Quotations 30d"))
+
+    layout.append(header("People & Approvals"))
+    for n in ("Mgmt: Pending Advances", "Mgmt: Pending Leaves",
+              "Mgmt: Pending Expenses", "Mgmt: Visits Today"):
+        layout.append(card(n))
+    layout.append(chart("Mgmt: Visits 30d"))
+    layout.append(chart("Mgmt: New Leads 30d"))
+
+    layout.append(header("Service & Operations"))
+    for n in ("Mgmt: Open Breakdowns", "Mgmt: Open Complaints",
+              "Mgmt: Open Material Requests", "Mgmt: Active Sales Orders"):
+        layout.append(card(n))
+
+    return json.dumps(layout)
+
+
+_SHORTCUTS = [
+    ("Approvals (PWA)", "URL", "/field/#/approvals", "Orange"),
+    ("Pending Advances", "DocType", "Employee Advance", "Yellow"),
+    ("Pending Leaves", "DocType", "Leave Application", "Yellow"),
+    ("Quotations", "DocType", "Quotation", "Blue"),
+    ("Sales Orders", "DocType", "Sales Order", "Green"),
+    ("Sales Invoices", "DocType", "Sales Invoice", "Pink"),
+    ("Payment Entries", "DocType", "Payment Entry", "Green"),
+    ("Daily Call Reports", "DocType", "Daily Call Report", "Cyan"),
+    ("Customers", "DocType", "Customer", "Purple"),
+]
+
+
+def ensure_workspace():
+    name = WORKSPACE_NAME
+    if frappe.db.exists("Workspace", name):
+        ws = frappe.get_doc("Workspace", name)
+    else:
+        ws = frappe.new_doc("Workspace")
+        ws.name = name
+
+    ws.title = name
+    ws.label = name
+    ws.module = "Vaishali"
+    ws.icon = "leaderboard"
+    ws.public = 1
+    ws.is_hidden = 0
+    ws.for_user = ""
+    ws.content = _workspace_content()
+
+    # Reset child tables and rebuild idempotently
+    ws.set("roles", [])
+    ws.append("roles", {"role": ROLE_NAME})
+
+    ws.set("number_cards", [])
+    for spec in _CARDS:
+        if frappe.db.exists("Number Card", spec[0]):
+            ws.append("number_cards", {"number_card_name": spec[0], "label": spec[1]})
+
+    ws.set("charts", [])
+    for spec in _CHARTS:
+        if frappe.db.exists("Dashboard Chart", spec[0]):
+            ws.append("charts", {"chart_name": spec[0], "label": spec[1]})
+
+    ws.set("shortcuts", [])
+    for label, link_type, link_to, color in _SHORTCUTS:
+        ws.append("shortcuts", {
+            "label": label,
+            "type": link_type,
+            "link_to": link_to,
+            "color": color,
+        })
+
+    ws.save(ignore_permissions=True)
+
+
+def run():
+    """Idempotent — safe to call from after_migrate or manually."""
+    try:
+        ensure_role()
+        ensure_director_users_have_role()
+        ensure_number_cards()
+        frappe.db.commit()
+        ensure_dashboard_charts()
+        frappe.db.commit()
+        ensure_workspace()
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(title="Management dashboard setup failed", message=str(e))

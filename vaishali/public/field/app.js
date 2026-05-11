@@ -287,6 +287,7 @@
     // Manager
     { pattern: '#/approvals',            handler: function () { S().approvalsList(appEl); },        tab: 'home', title: 'Approvals', back: null },
     { pattern: '#/approvals/history',    handler: function () { S().approvalsHistory(appEl); },     tab: 'home', title: 'My approvals', back: '#/approvals' },
+    { pattern: '#/management',           handler: function () { S().management(appEl); },           tab: 'home', title: 'Management',   back: '#/home' },
     { pattern: '#/approvals/:type/:id',  handler: function (p) { S().approvalDetail(appEl, p); },   tab: 'home', title: 'Approval',  back: '#/approvals' },
     { pattern: '#/team',                 handler: function () { S().teamOverview(appEl); },          tab: 'home', title: 'Team',      back: null },
 

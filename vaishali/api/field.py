@@ -3498,3 +3498,92 @@ def get_customer_context(customer_id):
 		"recent_calls": recent_calls,
 		"contacts": contacts,
 	}
+
+
+# ── Management Dashboard ──────────────────────────────────────────────
+
+_DIRECTORS = {"harsh@dgoc.in", "njg@dgoc.in", "bng@dgoc.in"}
+
+
+def _is_director(user=None):
+	user = user or frappe.session.user
+	return user in _DIRECTORS or "DSPL Director" in (frappe.get_roles(user) or [])
+
+
+@frappe.whitelist()
+def get_management_dashboard():
+	"""Aggregate KPIs for the directors' dashboard. Same numbers as the
+	desk Workspace 'Management', surfaced in one round-trip for the PWA.
+	Restricted to DSPL Directors."""
+	if not _is_director():
+		frappe.throw(_("Restricted to directors"), frappe.PermissionError)
+
+	from frappe.utils import nowdate, get_first_day, add_days
+	month_start = get_first_day(nowdate())
+	thirty_ago = add_days(nowdate(), -30)
+
+	def _sum(dt, field, filters):
+		v = frappe.db.get_value(dt, filters=filters, fieldname=f"SUM(`{field}`)") or 0
+		return float(v)
+
+	def _count(dt, filters):
+		return int(frappe.db.count(dt, filters=filters) or 0)
+
+	cash = {
+		"outstanding_ar": _sum("Sales Invoice", "outstanding_amount",
+			{"docstatus": 1, "outstanding_amount": [">", 0]}),
+		"ar_over_30d": _sum("Sales Invoice", "outstanding_amount",
+			{"docstatus": 1, "outstanding_amount": [">", 0],
+			 "due_date": ["<", add_days(nowdate(), -30)]}),
+		"draft_invoices": _count("Sales Invoice", {"docstatus": 0}),
+		"unpaid_invoices": _count("Sales Invoice",
+			{"docstatus": 1, "outstanding_amount": [">", 0]}),
+	}
+	sales = {
+		"mtd_so_amount": _sum("Sales Order", "grand_total",
+			{"docstatus": 1, "transaction_date": [">=", month_start]}),
+		"mtd_quotations": _count("Quotation",
+			{"docstatus": 1, "transaction_date": [">=", month_start]}),
+		"mtd_new_leads": _count("Lead", {"creation": [">=", month_start]}),
+		"open_opportunities": _count("Opportunity", {"status": "Open"}),
+	}
+	people = {
+		"pending_advances": _count("Employee Advance", {"docstatus": 0}),
+		"pending_leaves": _count("Leave Application", {"status": "Open"}),
+		"pending_expenses": _count("Expense Claim",
+			{"approval_status": "Draft", "docstatus": 0}),
+		"visits_today": _count("Daily Call Report", {"date": nowdate()}),
+		"advances_approved_mtd": _sum("Employee Advance", "advance_amount",
+			{"docstatus": 1, "posting_date": [">=", month_start]}),
+	}
+	# Service & Operations — guard each in case the doctype isn't present.
+	def _safe_count(dt, filters):
+		try:
+			return _count(dt, filters)
+		except Exception:
+			return 0
+	service = {
+		"open_breakdowns": _safe_count("Warranty Claim", {"status": "Open"}),
+		"open_complaints": _safe_count("Issue", {"status": "Open"}),
+		"open_material_requests": _safe_count("Material Request",
+			{"docstatus": 1, "status": "Pending"}),
+		"active_sales_orders": _count("Sales Order",
+			{"docstatus": 1, "status": ["in", ["To Deliver and Bill", "To Deliver"]]}),
+	}
+	# Sparkline: last 30d daily SO total
+	rows = frappe.db.sql("""
+		SELECT transaction_date AS d, SUM(grand_total) AS v
+		FROM `tabSales Order`
+		WHERE docstatus=1 AND transaction_date >= %s
+		GROUP BY transaction_date ORDER BY transaction_date
+	""", (thirty_ago,), as_dict=True) or []
+	sales_30d = [{"d": str(r["d"]), "v": float(r["v"] or 0)} for r in rows]
+
+	return {
+		"cash": cash,
+		"sales": sales,
+		"people": people,
+		"service": service,
+		"sales_30d": sales_30d,
+		"as_of": frappe.utils.now(),
+	}
