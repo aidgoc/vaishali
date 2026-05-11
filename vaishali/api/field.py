@@ -3522,26 +3522,29 @@ def get_management_dashboard():
 	month_start = get_first_day(nowdate())
 	thirty_ago = add_days(nowdate(), -30)
 
-	def _sum(dt, field, filters):
-		v = frappe.db.get_value(dt, filters=filters, fieldname=f"SUM(`{field}`)") or 0
-		return float(v)
-
 	def _count(dt, filters):
 		return int(frappe.db.count(dt, filters=filters) or 0)
 
+	def _scalar(sql, values=()):
+		row = frappe.db.sql(sql, values)
+		return float((row[0][0] if row and row[0][0] is not None else 0))
+
 	cash = {
-		"outstanding_ar": _sum("Sales Invoice", "outstanding_amount",
-			{"docstatus": 1, "outstanding_amount": [">", 0]}),
-		"ar_over_30d": _sum("Sales Invoice", "outstanding_amount",
-			{"docstatus": 1, "outstanding_amount": [">", 0],
-			 "due_date": ["<", add_days(nowdate(), -30)]}),
+		"outstanding_ar": _scalar(
+			"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			"WHERE docstatus=1 AND outstanding_amount > 0"),
+		"ar_over_30d": _scalar(
+			"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			"WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s",
+			(add_days(nowdate(), -30),)),
 		"draft_invoices": _count("Sales Invoice", {"docstatus": 0}),
 		"unpaid_invoices": _count("Sales Invoice",
 			{"docstatus": 1, "outstanding_amount": [">", 0]}),
 	}
 	sales = {
-		"mtd_so_amount": _sum("Sales Order", "grand_total",
-			{"docstatus": 1, "transaction_date": [">=", month_start]}),
+		"mtd_so_amount": _scalar(
+			"SELECT COALESCE(SUM(grand_total),0) FROM `tabSales Order` "
+			"WHERE docstatus=1 AND transaction_date >= %s", (month_start,)),
 		"mtd_quotations": _count("Quotation",
 			{"docstatus": 1, "transaction_date": [">=", month_start]}),
 		"mtd_new_leads": _count("Lead", {"creation": [">=", month_start]}),
@@ -3553,8 +3556,9 @@ def get_management_dashboard():
 		"pending_expenses": _count("Expense Claim",
 			{"approval_status": "Draft", "docstatus": 0}),
 		"visits_today": _count("Daily Call Report", {"date": nowdate()}),
-		"advances_approved_mtd": _sum("Employee Advance", "advance_amount",
-			{"docstatus": 1, "posting_date": [">=", month_start]}),
+		"advances_approved_mtd": _scalar(
+			"SELECT COALESCE(SUM(advance_amount),0) FROM `tabEmployee Advance` "
+			"WHERE docstatus=1 AND posting_date >= %s", (month_start,)),
 	}
 	# Service & Operations — guard each in case the doctype isn't present.
 	def _safe_count(dt, filters):
