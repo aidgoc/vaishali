@@ -16,68 +16,100 @@ WORKSPACE_NAME = "Management"
 
 # ── Number Cards ─────────────────────────────────────────────────────
 # Number Card autoname uses the `label` field, so the label IS the name.
-# Prefix every label with "Mgmt — " to namespace cards in the desk.
+# Frappe disallows '<' and '>' in docnames; '—' (em-dash) is fine.
+#
+# Filter format (matches what Frappe itself produces, NOT the 3-element
+# shape that frappe.db.count accepts):
+#   filters_json:         [[doctype, field, operator, value, is_dynamic_bool]]
+#   dynamic_filters_json: [[doctype, field, operator, "<python_expression>"]]
+#                         (4-element, value is the expression to safe_eval)
+#
+# Time windows prefer the native 'Timespan' operator with values like
+# 'today', 'this month', 'this year' — cleaner than expressions, and the
+# desk knows how to label them.
+#
 # Tuple: (label, doctype, function, filters_json, dynamic_filters_json,
 #         field_to_aggregate, color)
 _CARDS = [
     # Cash & Receivables
     ("Mgmt — Outstanding AR", "Sales Invoice", "Sum",
-     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
+     [["Sales Invoice", "docstatus", "=", "1", False],
+      ["Sales Invoice", "outstanding_amount", ">", 0, False]],
      None, "outstanding_amount", "#E91E63"),
     ("Mgmt — AR Overdue 30d+", "Sales Invoice", "Sum",
-     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
-     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -30)"]],
+     [["Sales Invoice", "docstatus", "=", "1", False],
+      ["Sales Invoice", "outstanding_amount", ">", 0, False]],
+     [["Sales Invoice", "due_date", "<",
+       "frappe.utils.add_days(frappe.utils.nowdate(), -30)"]],
      "outstanding_amount", "#D32F2F"),
     ("Mgmt — Draft Sales Invoices", "Sales Invoice", "Count",
-     [["docstatus", "=", 0]], None, None, "#FFA000"),
+     [["Sales Invoice", "docstatus", "=", "0", False]],
+     None, None, "#FFA000"),
     ("Mgmt — Unpaid Invoices", "Sales Invoice", "Count",
-     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]], None, None, "#FF6F00"),
+     [["Sales Invoice", "docstatus", "=", "1", False],
+      ["Sales Invoice", "outstanding_amount", ">", 0, False]],
+     None, None, "#FF6F00"),
 
-    # Sales & Pipeline
+    # Sales & Pipeline — Timespan beats expressions for MTD windows
     ("Mgmt — Sales Orders MTD", "Sales Order", "Sum",
-     [["docstatus", "=", 1]],
-     [["transaction_date", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
-     "grand_total", "#388E3C"),
+     [["Sales Order", "docstatus", "=", "1", False],
+      ["Sales Order", "transaction_date", "Timespan", "this month", False]],
+     None, "grand_total", "#388E3C"),
     ("Mgmt — Quotations MTD", "Quotation", "Count",
-     [["docstatus", "=", 1]],
-     [["transaction_date", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
-     None, "#1976D2"),
-    ("Mgmt — New Leads MTD", "Lead", "Count", [],
-     [["creation", ">=", "frappe.utils.get_first_day(frappe.utils.nowdate())"]],
-     None, "#0097A7"),
+     [["Quotation", "docstatus", "=", "1", False],
+      ["Quotation", "transaction_date", "Timespan", "this month", False]],
+     None, None, "#1976D2"),
+    ("Mgmt — New Leads MTD", "Lead", "Count",
+     [["Lead", "creation", "Timespan", "this month", False]],
+     None, None, "#0097A7"),
     ("Mgmt — Open Opportunities", "Opportunity", "Count",
-     [["status", "=", "Open"]], None, None, "#7B1FA2"),
+     [["Opportunity", "status", "=", "Open", False]],
+     None, None, "#7B1FA2"),
 
     # People & Approvals
     ("Mgmt — Pending Advances", "Employee Advance", "Count",
-     [["docstatus", "=", 0]], None, None, "#F57C00"),
+     [["Employee Advance", "docstatus", "=", "0", False]],
+     None, None, "#F57C00"),
     ("Mgmt — Pending Leaves", "Leave Application", "Count",
-     [["status", "=", "Open"]], None, None, "#FBC02D"),
+     [["Leave Application", "status", "=", "Open", False]],
+     None, None, "#FBC02D"),
     ("Mgmt — Pending Expenses", "Expense Claim", "Count",
-     [["approval_status", "=", "Draft"], ["docstatus", "=", 0]], None, None, "#F9A825"),
-    ("Mgmt — Visits Today", "Daily Call Report", "Count", [],
-     [["date", "=", "frappe.utils.nowdate()"]], None, "#00838F"),
+     [["Expense Claim", "approval_status", "=", "Draft", False],
+      ["Expense Claim", "docstatus", "=", "0", False]],
+     None, None, "#F9A825"),
+    ("Mgmt — Visits Today", "Daily Call Report", "Count",
+     [["Daily Call Report", "date", "Timespan", "today", False]],
+     None, None, "#00838F"),
 
     # Service & Operations
     ("Mgmt — Open Breakdowns", "Warranty Claim", "Count",
-     [["status", "=", "Open"]], None, None, "#C62828"),
+     [["Warranty Claim", "status", "=", "Open", False]],
+     None, None, "#C62828"),
     ("Mgmt — Open Complaints", "Issue", "Count",
-     [["status", "=", "Open"]], None, None, "#AD1457"),
+     [["Issue", "status", "=", "Open", False]],
+     None, None, "#AD1457"),
     ("Mgmt — Open Material Requests", "Material Request", "Count",
-     [["docstatus", "=", 1], ["status", "=", "Pending"]], None, None, "#5E35B1"),
+     [["Material Request", "docstatus", "=", "1", False],
+      ["Material Request", "status", "=", "Pending", False]],
+     None, None, "#5E35B1"),
     ("Mgmt — Active Sales Orders", "Sales Order", "Count",
-     [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]]],
+     [["Sales Order", "docstatus", "=", "1", False],
+      ["Sales Order", "status", "in",
+       ["To Deliver and Bill", "To Deliver"], False]],
      None, None, "#283593"),
 
-    # Cash & ageing — Frappe disallows '<' and '>' in docnames, so labels
-    # use the word form ('Overdue 90d+' instead of 'Overdue > 90d').
+    # Cash ageing (couldn't be expressed via Timespan)
     ("Mgmt — Overdue Invoices 90d+", "Sales Invoice", "Count",
-     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
-     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -90)"]],
+     [["Sales Invoice", "docstatus", "=", "1", False],
+      ["Sales Invoice", "outstanding_amount", ">", 0, False]],
+     [["Sales Invoice", "due_date", "<",
+       "frappe.utils.add_days(frappe.utils.nowdate(), -90)"]],
      None, "#B71C1C"),
     ("Mgmt — AR Overdue 60d+ Amount", "Sales Invoice", "Sum",
-     [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
-     [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -60)"]],
+     [["Sales Invoice", "docstatus", "=", "1", False],
+      ["Sales Invoice", "outstanding_amount", ">", 0, False]],
+     [["Sales Invoice", "due_date", "<",
+       "frappe.utils.add_days(frappe.utils.nowdate(), -60)"]],
      "outstanding_amount", "#BF360C"),
 ]
 
@@ -88,10 +120,10 @@ _CARDS = [
 _CHARTS = [
     ("Mgmt — Sales (Last 30 days)", "Sales Order", "transaction_date",
      "grand_total", "Sum", "Last Month", "Daily", "Line",
-     [["docstatus", "=", 1]], "#388E3C"),
+     [["Sales Order", "docstatus", "=", "1", False]], "#388E3C"),
     ("Mgmt — Quotations (Last 30 days)", "Quotation", "transaction_date",
      "grand_total", "Sum", "Last Month", "Daily", "Line",
-     [["docstatus", "=", 1]], "#1976D2"),
+     [["Quotation", "docstatus", "=", "1", False]], "#1976D2"),
     ("Mgmt — Visits (Last 30 days)", "Daily Call Report", "date",
      None, "Count", "Last Month", "Daily", "Bar", [], "#00838F"),
     ("Mgmt — New Leads (Last 30 days)", "Lead", "creation",
