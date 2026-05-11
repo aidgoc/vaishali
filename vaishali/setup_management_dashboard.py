@@ -257,12 +257,12 @@ def ensure_workspace():
 
     ws.set("shortcuts", [])
     for label, link_type, link_to, color in _SHORTCUTS:
-        ws.append("shortcuts", {
-            "label": label,
-            "type": link_type,
-            "link_to": link_to,
-            "color": color,
-        })
+        row = {"label": label, "type": link_type, "color": color}
+        if link_type == "URL":
+            row["url"] = link_to
+        else:
+            row["link_to"] = link_to
+        ws.append("shortcuts", row)
 
     ws.save(ignore_permissions=True)
 
