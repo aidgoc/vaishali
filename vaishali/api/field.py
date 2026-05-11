@@ -515,10 +515,17 @@ def get_conversion_funnel(period="month", employee=None, department=None):
 
 @frappe.whitelist()
 def get_customers(search=None):
+    # Name-lookup helper for PWA visit/call/breakdown forms. Every authenticated
+    # employee needs to be able to attach a Customer to their work; service team
+    # roles ("Employee" / "Desk User" only) don't carry Customer read perm by
+    # default, which silently emptied the dropdown and blocked Pratik & co. from
+    # creating any DCR. Returned fields are intentionally minimal (no
+    # financials, no addresses) so this is safe to expose.
+    _get_employee()  # gates to active employees only — Guest/external users still rejected
     filters = [["disabled", "=", 0]]
     if search:
         filters.append(["customer_name", "like", f"%{search}%"])
-    return frappe.get_list("Customer",
+    return frappe.get_all("Customer",
         filters=filters,
         fields=["name", "customer_name", "territory"],
         order_by="customer_name asc",
