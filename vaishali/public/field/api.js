@@ -421,7 +421,14 @@
       else if (path === '/api/field/stats') path = '/api/method/vaishali.api.field.get_stats';
       else if (path === '/api/field/team') path = '/api/method/vaishali.api.field.get_team';
       else if (path === '/api/field/approvals') path = '/api/method/vaishali.api.field.get_approvals';
-      else if (path === '/api/field/management-dashboard') path = '/api/method/vaishali.api.field.get_management_dashboard';
+      else if (path === '/api/field/management-dashboard' || path.indexOf('/api/field/management-dashboard?') === 0) {
+        var mdQS = '';
+        var mdQIdx = path.indexOf('?');
+        if (mdQIdx !== -1) mdQS = path.substring(mdQIdx);
+        path = '/api/method/vaishali.api.field.get_management_dashboard' + mdQS;
+      }
+      else if (path === '/api/field/companies') path = '/api/method/vaishali.api.field.get_companies';
+      else if (path === '/api/field/default-company') path = '/api/method/vaishali.api.field.set_default_company';
       else if (path === '/api/field/approvals/history' || path.indexOf('/api/field/approvals/history?') === 0) {
         var apHistQS = '';
         var apHistQIdx = path.indexOf('?');

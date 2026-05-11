@@ -179,17 +179,41 @@
     return h + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
   }
 
+  function companyBadgeColor(abbr) {
+    // Deterministic palette by abbr \u2014 DCEPL gets red-ish, DSPL navy, etc.
+    var map = { 'DCEPL': '#C62828', 'DSPL': '#1565C0', 'GEAR': '#388E3C' };
+    return map[(abbr || '').toUpperCase().slice(0, 5)] || '#37474F';
+  }
+
+  function companyBadge(abbr) {
+    if (!abbr) return null;
+    return el('span', {
+      textContent: abbr,
+      title: 'Company',
+      style: {
+        display: 'inline-block', marginLeft: '8px',
+        padding: '2px 8px', borderRadius: '999px',
+        background: companyBadgeColor(abbr), color: '#fff',
+        font: '600 10px/1.4 system-ui', letterSpacing: '0.04em',
+        verticalAlign: 'middle'
+      }
+    });
+  }
+
   function greetingHero(showDepartment) {
+    var emp = Auth.getEmployee() || {};
     var nameSpan = el('span', { className: 'greeting-name' }, [firstName()]);
-    var children = [
-      el('h2', null, [greetingText() + ', ', nameSpan])
-    ];
+    var titleRow = el('h2', null, [greetingText() + ', ', nameSpan]);
+    // Company chip beside the name for every employee, on every home load
+    if (emp.company_abbr) {
+      titleRow.appendChild(companyBadge(emp.company_abbr));
+    }
+    var children = [titleRow];
     var metaParts = [];
     metaParts.push(formatDate());
     metaParts.push(formatCurrentTime());
     if (showDepartment) {
-      var emp = Auth.getEmployee();
-      var dept = emp && emp.department ? emp.department : '';
+      var dept = emp.department || '';
       if (dept) metaParts.push(dept);
     }
     children.push(el('div', { className: 'greeting-meta' }, [metaParts.join(' \u00b7 ')]));
@@ -394,16 +418,21 @@
       var expenseCount = expenseData.count || 0;
       var expenseTotal = expenseData.total || 0;
 
+      // 0. Refresh cached session BEFORE the greeting hero so the
+      //    company badge can read the fresh company_abbr.
+      var meRaw = meResult.data || {};
+      var meData = meRaw.message || meRaw.data || meRaw || {};
+      if (Array.isArray(meData.roles) && Auth.refreshRoles) {
+        Auth.refreshRoles(meData.roles);
+      }
+      if (Auth.refreshEmployee) {
+        Auth.refreshEmployee(meData);
+      }
+
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
 
       // 1b. Setup nudges (onboarding prompts — dismissible per day)
-      var meRaw = meResult.data || {};
-      var meData = meRaw.message || meRaw.data || meRaw || {};
-      // Re-sync cached session roles (see manager-home for rationale).
-      if (Array.isArray(meData.roles) && Auth.refreshRoles) {
-        Auth.refreshRoles(meData.roles);
-      }
       renderSetupNudges(appEl, {
         telegramConnected: !!meData.telegram_chat_id,
         checkedInToday: !!checkedIn
@@ -579,20 +608,21 @@
       var expenseCount = expenseData.count || 0;
       var expenseTotal = expenseData.total || 0;
 
+      // 0. Refresh cached session BEFORE rendering greeting + banner so the
+      //    company badge + DSPL Director check see fresh data.
+      var meRawM = meResultM.data || {};
+      var meDataM = meRawM.message || meRawM.data || meRawM || {};
+      if (Array.isArray(meDataM.roles) && Auth.refreshRoles) {
+        Auth.refreshRoles(meDataM.roles);
+      }
+      if (Auth.refreshEmployee) {
+        Auth.refreshEmployee(meDataM);
+      }
+
       // 1. Greeting hero
       appEl.appendChild(greetingHero(true));
 
       // 1b. Setup nudges
-      var meRawM = meResultM.data || {};
-      var meDataM = meRawM.message || meRawM.data || meRawM || {};
-      // Re-sync cached session roles every time home loads — the IDB
-      // snapshot is taken at login and goes stale when an admin grants
-      // a role mid-session (e.g. 'DSPL Director' banner). refreshRoles
-      // mutates _session.roles synchronously so the hasRole() check
-      // below sees the latest set on first paint.
-      if (Array.isArray(meDataM.roles) && Auth.refreshRoles) {
-        Auth.refreshRoles(meDataM.roles);
-      }
       renderSetupNudges(appEl, {
         telegramConnected: !!meDataM.telegram_chat_id,
         checkedInToday: !!checkedIn

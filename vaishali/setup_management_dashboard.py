@@ -14,6 +14,17 @@ DIRECTORS = ("harsh@dgoc.in", "njg@dgoc.in", "bng@dgoc.in")
 ROLE_NAME = "DSPL Director"
 WORKSPACE_NAME = "Management"
 
+# Manager-tier roles each director should hold so they can see the native
+# ERPNext workspaces in the sidebar (Selling, Buying, HR, Accounting, etc.).
+# Harsh already has System Manager and most of these; we still enforce them
+# for NJG + BNG who only carry 'Employee' by default.
+DIRECTOR_MANAGER_ROLES = (
+    "Accounts Manager", "Sales Manager", "Purchase Manager",
+    "HR Manager", "Stock Manager", "Manufacturing Manager",
+    "Maintenance Manager", "Quality Manager", "Item Manager",
+    "Projects Manager", "Fleet Manager",
+)
+
 # ── Number Cards ─────────────────────────────────────────────────────
 # Number Card autoname uses the `label` field, so the label IS the name.
 # Frappe disallows '<' and '>' in docnames; '—' (em-dash) is fine.
@@ -113,6 +124,49 @@ _CARDS = [
      [["Sales Invoice", "due_date", "<",
        "frappe.datetime.add_days(frappe.datetime.nowdate(), -60)"]],
      "outstanding_amount", "#BF360C"),
+
+    # Purchase
+    ("Mgmt — Purchase Orders MTD", "Purchase Order", "Sum",
+     [["Purchase Order", "docstatus", "=", "1", False],
+      ["Purchase Order", "transaction_date", "Timespan", "this month", False]],
+     None, "grand_total", "#4527A0"),
+    ("Mgmt — Pending POs", "Purchase Order", "Count",
+     [["Purchase Order", "docstatus", "=", "1", False],
+      ["Purchase Order", "status", "in",
+       ["To Receive and Bill", "To Receive"], False]],
+     None, None, "#5E35B1"),
+    ("Mgmt — Outstanding AP", "Purchase Invoice", "Sum",
+     [["Purchase Invoice", "docstatus", "=", "1", False],
+      ["Purchase Invoice", "outstanding_amount", ">", 0, False]],
+     None, "outstanding_amount", "#6A1B9A"),
+    ("Mgmt — Draft Purchase Invoices", "Purchase Invoice", "Count",
+     [["Purchase Invoice", "docstatus", "=", "0", False]],
+     None, None, "#AB47BC"),
+
+    # HR
+    ("Mgmt — Active Employees", "Employee", "Count",
+     [["Employee", "status", "=", "Active", False]],
+     None, None, "#1565C0"),
+
+    # Payments MTD
+    ("Mgmt — Payments In MTD", "Payment Entry", "Sum",
+     [["Payment Entry", "docstatus", "=", "1", False],
+      ["Payment Entry", "payment_type", "=", "Receive", False],
+      ["Payment Entry", "posting_date", "Timespan", "this month", False]],
+     None, "paid_amount", "#2E7D32"),
+    ("Mgmt — Payments Out MTD", "Payment Entry", "Sum",
+     [["Payment Entry", "docstatus", "=", "1", False],
+      ["Payment Entry", "payment_type", "=", "Pay", False],
+      ["Payment Entry", "posting_date", "Timespan", "this month", False]],
+     None, "paid_amount", "#C62828"),
+
+    # Operations
+    ("Mgmt — Active Work Orders", "Work Order", "Count",
+     [["Work Order", "status", "in", ["Not Started", "In Process"], False]],
+     None, None, "#303F9F"),
+    ("Mgmt — Draft Delivery Notes", "Delivery Note", "Count",
+     [["Delivery Note", "docstatus", "=", "0", False]],
+     None, None, "#3949AB"),
 ]
 
 # ── Dashboard Charts ─────────────────────────────────────────────────
@@ -144,20 +198,24 @@ def ensure_role():
 
 
 def ensure_director_users_have_role():
+    roles_needed = (ROLE_NAME,) + DIRECTOR_MANAGER_ROLES
     for user_id in DIRECTORS:
         if not frappe.db.exists("User", user_id):
             continue
-        if frappe.db.exists("Has Role", {"parent": user_id, "role": ROLE_NAME}):
-            continue
-        # Direct child insert — User.save() with role append silently dropped
-        # the new row in our env, so we bypass the user-doc roundtrip.
-        frappe.get_doc({
-            "doctype": "Has Role",
-            "parent": user_id,
-            "parenttype": "User",
-            "parentfield": "roles",
-            "role": ROLE_NAME,
-        }).insert(ignore_permissions=True)
+        for role in roles_needed:
+            if not frappe.db.exists("Role", role):
+                continue
+            if frappe.db.exists("Has Role", {"parent": user_id, "role": role}):
+                continue
+            # Direct child insert — User.save() with role append silently dropped
+            # the new row in our env, so we bypass the user-doc roundtrip.
+            frappe.get_doc({
+                "doctype": "Has Role",
+                "parent": user_id,
+                "parenttype": "User",
+                "parentfield": "roles",
+                "role": role,
+            }).insert(ignore_permissions=True)
         frappe.clear_cache(user=user_id)
 
 
@@ -279,7 +337,18 @@ def _workspace_content():
 
     layout.append(header("Service & Operations"))
     for n in ("Mgmt — Open Breakdowns", "Mgmt — Open Complaints",
-              "Mgmt — Open Material Requests", "Mgmt — Active Sales Orders"):
+              "Mgmt — Open Material Requests", "Mgmt — Active Sales Orders",
+              "Mgmt — Active Work Orders", "Mgmt — Draft Delivery Notes"):
+        layout.append(card(n))
+
+    layout.append(header("Purchase & Payables"))
+    for n in ("Mgmt — Purchase Orders MTD", "Mgmt — Pending POs",
+              "Mgmt — Outstanding AP", "Mgmt — Draft Purchase Invoices",
+              "Mgmt — Payments In MTD", "Mgmt — Payments Out MTD"):
+        layout.append(card(n))
+
+    layout.append(header("HR"))
+    for n in ("Mgmt — Active Employees",):
         layout.append(card(n))
 
     return json.dumps([w for w in layout if w is not None])

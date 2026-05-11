@@ -416,11 +416,16 @@ def get_me():
         "date_of_joining": str(doc.date_of_joining) if doc.date_of_joining else None,
         "status": doc.status,
         "telegram_chat_id": doc.telegram_chat_id,
+        "company_abbr": (frappe.db.get_value("Company", doc.company, "abbr") or "")
+                        if doc.company else "",
         # Roles surface so the PWA can re-sync Auth.hasRole() on every load
         # instead of relying on the at-login snapshot in IndexedDB.
         "roles": frappe.get_roles(frappe.session.user),
         "user_id": frappe.session.user,
         "nav_tier": _get_nav_tier(),
+        # Director-only: current default company so the PWA switcher knows
+        # which option to mark as selected on render.
+        "default_company": frappe.defaults.get_user_default("Company") or "",
     }
 
 
@@ -3516,54 +3521,164 @@ def _is_director(user=None):
 
 
 @frappe.whitelist()
-def get_management_dashboard():
+def get_management_dashboard(company=None):
 	"""Aggregate KPIs for the directors' dashboard. Same numbers as the
 	desk Workspace 'Management', surfaced in one round-trip for the PWA.
-	Restricted to DSPL Directors."""
+	Restricted to DSPL Directors.
+
+	`company` filters everything that has a company field. Empty/None =
+	consolidated across all companies. Defaults to the user's default
+	company so the PWA reflects the same toggle the desk uses."""
 	if not _is_director():
 		frappe.throw(_("Restricted to directors"), frappe.PermissionError)
 
 	from frappe.utils import nowdate, get_first_day, add_days
 	month_start = get_first_day(nowdate())
 	thirty_ago = add_days(nowdate(), -30)
+	year_start = get_first_day(nowdate()).replace(day=1)  # placeholder; FY logic below
 
-	def _count(dt, filters):
-		return int(frappe.db.count(dt, filters=filters) or 0)
+	if company == "":
+		company = None
+	if company is None:
+		company = frappe.defaults.get_user_default("Company")
+	# `company=ALL` is an explicit opt-out, used by the PWA switcher when
+	# the user picks "All companies".
+	if company == "ALL":
+		company = None
+
+	def _co_clause(table_alias=""):
+		"""Optional WHERE-AND clause for the current company filter."""
+		if not company:
+			return "", ()
+		prefix = f"{table_alias}." if table_alias else ""
+		return f"AND {prefix}company = %s", (company,)
+
+	def _count(dt, filters, has_company=True):
+		"""Count with the active company filter merged in when the doctype
+		has a `company` column."""
+		f = dict(filters)
+		if company and has_company:
+			f["company"] = company
+		return int(frappe.db.count(dt, filters=f) or 0)
 
 	def _scalar(sql, values=()):
 		row = frappe.db.sql(sql, values)
 		return float((row[0][0] if row and row[0][0] is not None else 0))
 
+	# Pre-build the per-table company suffix once so the SQL stays readable
+	co_si, co_si_vals = _co_clause("")  # for tabSales Invoice
+	co_so, co_so_vals = _co_clause("")  # same suffix, kept for readability
+	co_ea, co_ea_vals = _co_clause("")
+	co_pi, co_pi_vals = _co_clause("")
+	co_po, co_po_vals = _co_clause("")
+	co_pe, co_pe_vals = _co_clause("")
+
 	cash = {
 		"outstanding_ar": _scalar(
-			"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
-			"WHERE docstatus=1 AND outstanding_amount > 0"),
+			f"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			f"WHERE docstatus=1 AND outstanding_amount > 0 {co_si}",
+			co_si_vals),
 		"ar_over_30d": _scalar(
-			"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
-			"WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s",
-			(add_days(nowdate(), -30),)),
+			f"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			f"WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s {co_si}",
+			(add_days(nowdate(), -30),) + co_si_vals),
+		"ar_over_60d": _scalar(
+			f"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			f"WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s {co_si}",
+			(add_days(nowdate(), -60),) + co_si_vals),
+		"ar_over_90d": _scalar(
+			f"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabSales Invoice` "
+			f"WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s {co_si}",
+			(add_days(nowdate(), -90),) + co_si_vals),
 		"draft_invoices": _count("Sales Invoice", {"docstatus": 0}),
 		"unpaid_invoices": _count("Sales Invoice",
 			{"docstatus": 1, "outstanding_amount": [">", 0]}),
 	}
 	sales = {
 		"mtd_so_amount": _scalar(
-			"SELECT COALESCE(SUM(grand_total),0) FROM `tabSales Order` "
-			"WHERE docstatus=1 AND transaction_date >= %s", (month_start,)),
+			f"SELECT COALESCE(SUM(grand_total),0) FROM `tabSales Order` "
+			f"WHERE docstatus=1 AND transaction_date >= %s {co_so}",
+			(month_start,) + co_so_vals),
+		"mtd_so_count": _count("Sales Order",
+			{"docstatus": 1, "transaction_date": [">=", month_start]}),
 		"mtd_quotations": _count("Quotation",
 			{"docstatus": 1, "transaction_date": [">=", month_start]}),
-		"mtd_new_leads": _count("Lead", {"creation": [">=", month_start]}),
+		"mtd_quotation_amount": _scalar(
+			f"SELECT COALESCE(SUM(grand_total),0) FROM `tabQuotation` "
+			f"WHERE docstatus=1 AND transaction_date >= %s {co_so}",
+			(month_start,) + co_so_vals),
+		"mtd_new_leads": _count("Lead", {"creation": [">=", month_start]}, has_company=False),
 		"open_opportunities": _count("Opportunity", {"status": "Open"}),
+		"mtd_won_quotations": _count("Quotation",
+			{"docstatus": 1, "status": "Ordered",
+			 "transaction_date": [">=", month_start]}),
+		"mtd_lost_quotations": _count("Quotation",
+			{"docstatus": 1, "status": "Lost",
+			 "transaction_date": [">=", month_start]}),
 	}
+	# Purchase
+	purchase = {
+		"mtd_po_amount": _scalar(
+			f"SELECT COALESCE(SUM(grand_total),0) FROM `tabPurchase Order` "
+			f"WHERE docstatus=1 AND transaction_date >= %s {co_po}",
+			(month_start,) + co_po_vals),
+		"pending_pos": _count("Purchase Order",
+			{"docstatus": 1, "status": ["in", ["To Receive and Bill", "To Receive"]]}),
+		"outstanding_ap": _scalar(
+			f"SELECT COALESCE(SUM(outstanding_amount),0) FROM `tabPurchase Invoice` "
+			f"WHERE docstatus=1 AND outstanding_amount > 0 {co_pi}",
+			co_pi_vals),
+		"unpaid_pinvoices": _count("Purchase Invoice",
+			{"docstatus": 1, "outstanding_amount": [">", 0]}),
+		"draft_pinvoices": _count("Purchase Invoice", {"docstatus": 0}),
+		"open_material_requests": _count("Material Request",
+			{"docstatus": 1, "status": "Pending"}),
+	}
+	# Payments
+	payments = {
+		"mtd_pe_in": _scalar(
+			f"SELECT COALESCE(SUM(paid_amount),0) FROM `tabPayment Entry` "
+			f"WHERE docstatus=1 AND payment_type='Receive' AND posting_date >= %s {co_pe}",
+			(month_start,) + co_pe_vals),
+		"mtd_pe_out": _scalar(
+			f"SELECT COALESCE(SUM(paid_amount),0) FROM `tabPayment Entry` "
+			f"WHERE docstatus=1 AND payment_type='Pay' AND posting_date >= %s {co_pe}",
+			(month_start,) + co_pe_vals),
+	}
+	# People & HR — most of these are employee-scoped, so we filter Active
+	# Employees by company first and pass that set down to each query
+	emp_filters = {"status": "Active"}
+	if company:
+		emp_filters["company"] = company
+	co_emp_ids = frappe.get_all("Employee", filters=emp_filters, pluck="name")
 	people = {
-		"pending_advances": _count("Employee Advance", {"docstatus": 0}),
-		"pending_leaves": _count("Leave Application", {"status": "Open"}),
+		"active_employees": len(co_emp_ids),
+		"pending_advances": _count("Employee Advance",
+			{"docstatus": 0,
+			 **({"employee": ["in", co_emp_ids]} if company else {})}),
+		"pending_leaves": _count("Leave Application",
+			{"status": "Open",
+			 **({"employee": ["in", co_emp_ids]} if company else {})},
+			has_company=False),
 		"pending_expenses": _count("Expense Claim",
-			{"approval_status": "Draft", "docstatus": 0}),
-		"visits_today": _count("Daily Call Report", {"date": nowdate()}),
+			{"approval_status": "Draft", "docstatus": 0,
+			 **({"employee": ["in", co_emp_ids]} if company else {})}),
+		"visits_today": _count("Daily Call Report",
+			{"date": nowdate(),
+			 **({"employee": ["in", co_emp_ids]} if company else {})},
+			has_company=False),
 		"advances_approved_mtd": _scalar(
-			"SELECT COALESCE(SUM(advance_amount),0) FROM `tabEmployee Advance` "
-			"WHERE docstatus=1 AND posting_date >= %s", (month_start,)),
+			f"SELECT COALESCE(SUM(advance_amount),0) FROM `tabEmployee Advance` "
+			f"WHERE docstatus=1 AND posting_date >= %s {co_ea}",
+			(month_start,) + co_ea_vals),
+		"on_leave_today": frappe.db.count("Leave Application",
+			{"status": "Approved", "docstatus": 1,
+			 "from_date": ["<=", nowdate()], "to_date": [">=", nowdate()],
+			 **({"employee": ["in", co_emp_ids]} if company else {})}),
+		"late_marks_today": (frappe.db.count("Late Mark",
+			{"date": nowdate(),
+			 **({"employee": ["in", co_emp_ids]} if company else {})})
+			if frappe.db.exists("DocType", "Late Mark") else 0),
 	}
 	# Service & Operations — guard each in case the doctype isn't present.
 	def _safe_count(dt, filters):
@@ -3574,35 +3689,54 @@ def get_management_dashboard():
 	service = {
 		"open_breakdowns": _safe_count("Warranty Claim", {"status": "Open"}),
 		"open_complaints": _safe_count("Issue", {"status": "Open"}),
-		"open_material_requests": _safe_count("Material Request",
-			{"docstatus": 1, "status": "Pending"}),
+		"open_service_calls": (frappe.db.count("Service Call",
+			{"outcome": ["in", ["Pending", "Visit needed"]]})
+			if frappe.db.exists("DocType", "Service Call") else 0),
+		"amc_expiring_30d": (frappe.db.count("Warranty Claim",
+			{"warranty_expiry_date": ["<=", add_days(nowdate(), 30)],
+			 "warranty_expiry_date": [">=", nowdate()]})
+			if frappe.db.exists("DocType", "Warranty Claim") else 0),
+	}
+	operations = {
 		"active_sales_orders": _count("Sales Order",
 			{"docstatus": 1, "status": ["in", ["To Deliver and Bill", "To Deliver"]]}),
+		"active_so_amount": _scalar(
+			f"SELECT COALESCE(SUM(grand_total - per_billed * grand_total / 100), 0) "
+			f"FROM `tabSales Order` "
+			f"WHERE docstatus=1 AND status IN ('To Deliver and Bill','To Deliver') {co_so}",
+			co_so_vals),
+		"pending_delivery_notes": _count("Delivery Note", {"docstatus": 0}),
+		"active_work_orders": _count("Work Order",
+			{"status": ["in", ["Not Started", "In Process"]]}),
+		"completed_work_orders_mtd": _count("Work Order",
+			{"status": "Completed",
+			 "actual_end_date": [">=", month_start]}),
 	}
 	# Sparkline: last 30d daily SO total
-	rows = frappe.db.sql("""
-		SELECT transaction_date AS d, SUM(grand_total) AS v
+	rows = frappe.db.sql(
+		f"""SELECT transaction_date AS d, SUM(grand_total) AS v
 		FROM `tabSales Order`
-		WHERE docstatus=1 AND transaction_date >= %s
-		GROUP BY transaction_date ORDER BY transaction_date
-	""", (thirty_ago,), as_dict=True) or []
+		WHERE docstatus=1 AND transaction_date >= %s {co_so}
+		GROUP BY transaction_date ORDER BY transaction_date""",
+		(thirty_ago,) + co_so_vals, as_dict=True) or []
 	sales_30d = [{"d": str(r["d"]), "v": float(r["v"] or 0)} for r in rows]
 
 	# Cash & Bank position — sum GL Entry balances on accounts where
 	# account_type IN (Cash, Bank). Sign convention: debit is asset
 	# increase, so balance = SUM(debit) - SUM(credit).
-	cash_rows = frappe.db.sql("""
-		SELECT a.company, a.name AS account, a.account_name, a.account_type,
-		       COALESCE(SUM(gle.debit - gle.credit), 0) AS balance
+	co_acc, co_acc_vals = (" AND a.company = %s", (company,)) if company else ("", ())
+	cash_rows = frappe.db.sql(
+		f"""SELECT a.company, a.name AS account, a.account_name, a.account_type,
+		           COALESCE(SUM(gle.debit - gle.credit), 0) AS balance
 		FROM `tabAccount` a
 		LEFT JOIN `tabGL Entry` gle
 		     ON gle.account = a.name AND gle.is_cancelled = 0
 		WHERE a.account_type IN ('Cash', 'Bank')
-		  AND a.is_group = 0 AND a.disabled = 0
+		  AND a.is_group = 0 AND a.disabled = 0 {co_acc}
 		GROUP BY a.name
 		HAVING balance != 0
-		ORDER BY balance DESC
-	""", as_dict=True) or []
+		ORDER BY balance DESC""",
+		co_acc_vals, as_dict=True) or []
 	cash_position = {
 		"total": sum(float(r["balance"] or 0) for r in cash_rows),
 		"by_account": [{"company": r["company"], "account": r["account"],
@@ -3611,23 +3745,23 @@ def get_management_dashboard():
 	}
 
 	# Top 5 overdue invoices by outstanding amount
-	top_overdue = frappe.db.sql("""
-		SELECT name, customer, customer_name, posting_date, due_date,
-		       grand_total, outstanding_amount,
-		       DATEDIFF(%s, due_date) AS days_overdue
+	top_overdue = frappe.db.sql(
+		f"""SELECT name, customer, customer_name, posting_date, due_date,
+		           grand_total, outstanding_amount,
+		           DATEDIFF(%s, due_date) AS days_overdue
 		FROM `tabSales Invoice`
-		WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s
+		WHERE docstatus=1 AND outstanding_amount > 0 AND due_date < %s {co_si}
 		ORDER BY outstanding_amount DESC
-		LIMIT 5
-	""", (nowdate(), nowdate()), as_dict=True) or []
+		LIMIT 5""",
+		(nowdate(), nowdate()) + co_si_vals, as_dict=True) or []
 	top_overdue = [{"name": r["name"], "customer_name": r["customer_name"] or r["customer"],
 	                "outstanding": float(r["outstanding_amount"] or 0),
 	                "days_overdue": int(r["days_overdue"] or 0),
 	                "due_date": str(r["due_date"])} for r in top_overdue]
 
 	# Receivables aging — buckets in days past due
-	ar_aging_rows = frappe.db.sql("""
-		SELECT
+	ar_aging_rows = frappe.db.sql(
+		f"""SELECT
 		    CASE
 		        WHEN DATEDIFF(%s, due_date) <= 0 THEN 'Not yet due'
 		        WHEN DATEDIFF(%s, due_date) <= 30 THEN '0-30 days'
@@ -3638,9 +3772,9 @@ def get_management_dashboard():
 		    COALESCE(SUM(outstanding_amount), 0) AS amount,
 		    COUNT(*) AS count
 		FROM `tabSales Invoice`
-		WHERE docstatus=1 AND outstanding_amount > 0
-		GROUP BY bucket
-	""", (nowdate(), nowdate(), nowdate(), nowdate()), as_dict=True) or []
+		WHERE docstatus=1 AND outstanding_amount > 0 {co_si}
+		GROUP BY bucket""",
+		(nowdate(), nowdate(), nowdate(), nowdate()) + co_si_vals, as_dict=True) or []
 	# Force canonical order even if some buckets are empty
 	_order = ["Not yet due", "0-30 days", "31-60 days", "61-90 days", "90+ days"]
 	_lookup = {r["bucket"]: r for r in ar_aging_rows}
@@ -3649,13 +3783,47 @@ def get_management_dashboard():
 	             "count": int((_lookup.get(b) or {}).get("count") or 0)} for b in _order]
 
 	return {
+		"company": company,
 		"cash": cash,
 		"sales": sales,
+		"purchase": purchase,
+		"payments": payments,
 		"people": people,
 		"service": service,
+		"operations": operations,
 		"sales_30d": sales_30d,
 		"cash_position": cash_position,
 		"top_overdue": top_overdue,
 		"ar_aging": ar_aging,
 		"as_of": frappe.utils.now(),
 	}
+
+
+# ── Company switcher endpoints ─────────────────────────────────────
+
+@frappe.whitelist()
+def get_companies():
+	"""List of companies for the director's company switcher. Public to
+	authenticated users — the switcher itself is director-gated in the UI."""
+	_get_employee()  # authenticated employees only
+	rows = frappe.get_all("Company", fields=["name", "abbr"], order_by="abbr")
+	return [{"name": r["name"], "abbr": r["abbr"]} for r in rows]
+
+
+@frappe.whitelist(methods=["POST"])
+def set_default_company(company=None):
+	"""Set the user's default company so desk dashboards (which read
+	`frappe.defaults.get_user_default("Company")` in their dynamic filters)
+	pick up the same toggle as the PWA. company=None / "" clears it
+	(consolidated view across companies)."""
+	if not _is_director():
+		frappe.throw(_("Restricted to directors"), frappe.PermissionError)
+	user = frappe.session.user
+	if company and company != "ALL":
+		if not frappe.db.exists("Company", company):
+			frappe.throw(_("Unknown company: {0}").format(company))
+		frappe.defaults.set_user_default("Company", company, user=user)
+	else:
+		# Clear: ERPNext interprets blank as "all companies" in dashboards
+		frappe.defaults.clear_user_default("Company", user=user)
+	return {"company": company or None}

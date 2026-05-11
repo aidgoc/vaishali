@@ -120,6 +120,21 @@
     }
   }
 
+  // Merge fresh employee fields into the cached object so reads via
+  // Auth.getEmployee() see new server-side fields (company_abbr,
+  // default_company, etc.) without requiring a logout.
+  function refreshEmployee(employee) {
+    if (!_session || !employee) return;
+    var existing = _session.employee || {};
+    var merged = {};
+    Object.keys(existing).forEach(function (k) { merged[k] = existing[k]; });
+    Object.keys(employee).forEach(function (k) { merged[k] = employee[k]; });
+    _session.employee = merged;
+    if (window.fieldAPI && window.fieldAPI.idbPut) {
+      window.fieldAPI.idbPut('session', _session);
+    }
+  }
+
   function canAccess(screenName) {
     var level = SCREEN_ACCESS[screenName];
     if (!level) return false;
@@ -147,6 +162,7 @@
     isAdmin: isAdmin,
     hasRole: hasRole,
     refreshRoles: refreshRoles,
+    refreshEmployee: refreshEmployee,
     canAccess: canAccess,
     getNavTabs: getNavTabs
   };
