@@ -674,7 +674,7 @@ def get_approvals():
         order_by="creation desc", limit_page_length=20)
     for l in leaves:
         l["doctype"] = "Leave Application"
-        l["type"] = "Leave Application"
+        l["type"] = "Leave"
         results.append(l)
 
     # Pending expense claims
@@ -685,7 +685,8 @@ def get_approvals():
         order_by="creation desc", limit_page_length=20)
     for e in expenses:
         e["doctype"] = "Expense Claim"
-        e["type"] = "Expense Claim"
+        e["type"] = "Expense"
+        e["amount"] = e.get("total_claimed_amount")
         results.append(e)
 
     # Pending employee advances — only those whose employee reports to current user
@@ -694,11 +695,13 @@ def get_approvals():
     if my_reports:
         advances = frappe.get_list("Employee Advance",
             filters={"docstatus": 0, "employee": ["in", my_reports]},
-            fields=["name", "employee", "employee_name", "advance_amount", "status"],
+            fields=["name", "employee", "employee_name", "advance_amount",
+                    "purpose", "posting_date", "status"],
             order_by="creation desc", limit_page_length=20)
         for a in advances:
             a["doctype"] = "Employee Advance"
-            a["type"] = "Employee Advance"
+            a["type"] = "Advance"
+            a["amount"] = a.get("advance_amount")
             results.append(a)
 
     return results
@@ -727,7 +730,22 @@ def get_upcoming_holidays(limit=5):
 
 @frappe.whitelist(methods=["POST"])
 def process_approval(doctype, name, action):
-    """Approve or reject a Leave Application, Expense Claim, or Employee Advance."""
+    """Approve or reject a Leave Application, Expense Claim, or Employee Advance.
+
+    Accepts either the full doctype name ("Leave Application") or the short
+    form the PWA uses in URLs ("leave"/"expense"/"advance"). The PWA passes
+    `item.type.toLowerCase()` in the URL path; we normalise here so both old
+    and new clients work without a SW bump.
+    """
+    _DT_ALIASES = {
+        "leave": "Leave Application",
+        "leave application": "Leave Application",
+        "expense": "Expense Claim",
+        "expense claim": "Expense Claim",
+        "advance": "Employee Advance",
+        "employee advance": "Employee Advance",
+    }
+    doctype = _DT_ALIASES.get((doctype or "").strip().lower(), doctype)
     allowed_doctypes = {"Leave Application", "Expense Claim", "Employee Advance"}
     if doctype not in allowed_doctypes:
         frappe.throw(_(f"Cannot process approval for {doctype}"))
