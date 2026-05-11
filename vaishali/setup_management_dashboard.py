@@ -69,12 +69,13 @@ _CARDS = [
      [["docstatus", "=", 1], ["status", "in", ["To Deliver and Bill", "To Deliver"]]],
      None, None, "#283593"),
 
-    # Cash & ageing
-    ("Mgmt — Overdue Invoices > 90d", "Sales Invoice", "Count",
+    # Cash & ageing — Frappe disallows '<' and '>' in docnames, so labels
+    # use the word form ('Overdue 90d+' instead of 'Overdue > 90d').
+    ("Mgmt — Overdue Invoices 90d+", "Sales Invoice", "Count",
      [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
      [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -90)"]],
      None, "#B71C1C"),
-    ("Mgmt — AR > 60d Amount", "Sales Invoice", "Sum",
+    ("Mgmt — AR Overdue 60d+ Amount", "Sales Invoice", "Sum",
      [["docstatus", "=", 1], ["outstanding_amount", ">", 0]],
      [["due_date", "<", "frappe.utils.add_days(frappe.utils.nowdate(), -60)"]],
      "outstanding_amount", "#BF360C"),
@@ -196,17 +197,25 @@ def ensure_dashboard_charts():
 
 
 def _workspace_content():
-    """Visual layout JSON for the Management workspace."""
+    """Visual layout JSON for the Management workspace.
+
+    Helpers skip cards/charts that don't actually exist in the DB so a
+    failed insert upstream can't leave the page rendering broken
+    references (which surfaces in the desk as 'Invalid filter: =' dialogs)."""
 
     def header(text):
         return {"id": frappe.generate_hash(length=10), "type": "header",
                 "data": {"text": f"<span class='h4'>{text}</span>", "col": 12}}
 
     def card(card_name):
+        if not frappe.db.exists("Number Card", card_name):
+            return None
         return {"id": frappe.generate_hash(length=10), "type": "number_card",
                 "data": {"number_card_name": card_name, "col": 3}}
 
     def chart(chart_name, col=6):
+        if not frappe.db.exists("Dashboard Chart", chart_name):
+            return None
         return {"id": frappe.generate_hash(length=10), "type": "chart",
                 "data": {"chart_name": chart_name, "col": col}}
 
@@ -216,7 +225,7 @@ def _workspace_content():
     layout = []
     layout.append(header("Cash & Receivables"))
     for n in ("Mgmt — Outstanding AR", "Mgmt — AR Overdue 30d+",
-              "Mgmt — AR > 60d Amount", "Mgmt — Overdue Invoices > 90d",
+              "Mgmt — AR Overdue 60d+ Amount", "Mgmt — Overdue Invoices 90d+",
               "Mgmt — Unpaid Invoices", "Mgmt — Draft Sales Invoices"):
         layout.append(card(n))
 
@@ -239,7 +248,7 @@ def _workspace_content():
               "Mgmt — Open Material Requests", "Mgmt — Active Sales Orders"):
         layout.append(card(n))
 
-    return json.dumps(layout)
+    return json.dumps([w for w in layout if w is not None])
 
 
 _SHORTCUTS = [
