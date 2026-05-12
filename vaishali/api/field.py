@@ -1370,9 +1370,11 @@ def _generate_receipt_code():
 @frappe.whitelist(methods=["POST"])
 def tag_receipt(file_name):
     """Generate a short human-writable receipt code for an uploaded File
-    and persist it on the File.description. The PWA shows the code to the
-    user immediately after capture so they can write it on the physical
-    receipt — that makes the paper match the digital record."""
+    and persist it as a `[CODE] ` prefix on File.file_name. The PWA shows
+    the code to the user immediately after capture so they can write it
+    on the physical receipt — that makes the paper match the digital
+    record. (File doesn't expose a `description` field, so the code
+    rides on `file_name` which appears wherever the file is referenced.)"""
     emp = _get_employee()
     if not frappe.db.exists("File", file_name):
         frappe.throw(_("File not found"))
@@ -1380,20 +1382,24 @@ def tag_receipt(file_name):
     # Only allow tagging files that this user owns
     if f.owner != frappe.session.user:
         frappe.throw(_("Not your file"), frappe.PermissionError)
-    # Collision avoidance: regenerate up to 10 times if we somehow clash
+    # If already tagged, return the existing code (idempotent)
+    import re as _re
+    existing_match = _re.match(r"^\[(R-[A-Z0-9]{5})\]\s+", f.file_name or "")
+    if existing_match:
+        return {"file_name": f.name, "file_url": f.file_url,
+                "code": existing_match.group(1),
+                "employee": emp.employee_name}
+    # Collision avoidance: regenerate up to 10 times
     code = None
     for _ in range(10):
         candidate = _generate_receipt_code()
-        existing = frappe.db.exists("File",
-            {"description": ["like", f"%[{candidate}]%"]})
-        if not existing:
+        clash = frappe.db.exists("File", {"file_name": ["like", f"[{candidate}]%"]})
+        if not clash:
             code = candidate
             break
     if not code:
-        code = _generate_receipt_code()  # collision unlikely; fall through
-    # Prefix the description with [CODE] so it's searchable
-    prev = (f.description or "").strip()
-    f.description = f"[{code}] " + prev if prev else f"[{code}]"
+        code = _generate_receipt_code()  # collision unlikely after 10 tries
+    f.file_name = f"[{code}] " + (f.file_name or "")
     f.save(ignore_permissions=True)
     frappe.db.commit()
     return {"file_name": f.name, "file_url": f.file_url, "code": code,
