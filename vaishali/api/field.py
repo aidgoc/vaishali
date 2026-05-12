@@ -1306,8 +1306,8 @@ def submit_expense_claim(expenses, posting_date=None, approver=None,
             "posting_date": adv_doc.get("posting_date") or doc.posting_date,
             "advance_account": frappe.db.get_value("Employee Advance",
                 adv_name, "advance_account"),
-            "advance_paid": float(adv_doc.paid_amount or 0),
-            "unclaimed_amount": remaining,
+            "advance_paid": paid,
+            "unclaimed_amount": claimable,
             "allocated_amount": alloc,
         })
 
