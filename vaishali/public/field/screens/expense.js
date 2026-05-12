@@ -477,10 +477,11 @@
             var f = fileInput.files && fileInput.files[0];
             if (!f) return;
             captureBtn._setLoading(true, 'Uploading…');
-            // Stage against the User so the file has a parent before the
-            // claim exists; submit_expense_claim re-parents on success.
-            var meEmail = (Auth.getEmployee() && Auth.getEmployee().user_id) || '';
-            window.fieldAPI.uploadFile(f, 'User', meEmail || 'Administrator').then(function (file) {
+            // Upload as an unattached File (no parent doctype). Frappe
+            // creates a loose File owned by the current user, no
+            // per-doctype perm check needed. submit_expense_claim
+            // re-parents it to the new Expense Claim on submit.
+            window.fieldAPI.uploadFile(f, '', '').then(function (file) {
               return api.apiCall('POST', '/api/field/tag-receipt', { file_name: file.name });
             }).then(function (res) {
               captureBtn._setLoading(false);

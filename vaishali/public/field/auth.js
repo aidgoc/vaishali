@@ -80,9 +80,29 @@
 
   function clearSession() {
     _session = null;
-    return window.fieldAPI.idbPut('session', { id: 'current' }).then(function () {
-      location.hash = '#/login';
-      location.reload();
+    // Tell Frappe to invalidate the server-side session and clear the
+    // sid / user_id cookies. Without this, _startup() reads user_id
+    // from the surviving cookie, calls /api/field/session-info, and
+    // silently re-creates a session — user ends up bounced back to
+    // home instead of the login screen.
+    var logoutCall = (window.fieldAPI && window.fieldAPI.apiCall)
+      ? window.fieldAPI.apiCall('POST', '/api/method/logout').catch(function () { /* swallow */ })
+      : fetch('/api/method/logout', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    return Promise.resolve(logoutCall).then(function () {
+      // Best-effort cookie nuke (defends against Frappe leaving stragglers
+      // or returning a 4xx that skipped its own cookie clearing).
+      ['sid', 'user_id', 'user_image', 'full_name', 'system_user', 'csrf_token']
+        .forEach(function (n) {
+          document.cookie = n + '=; Max-Age=0; path=/;';
+          document.cookie = n + '=; Max-Age=0; path=/api;';
+        });
+      return window.fieldAPI.idbPut('session', { id: 'current' });
+    }).then(function () {
+      // Use replace + full reload so the SW re-bootstraps from a clean slate.
+      // location.hash before reload guarantees the next boot sees #/login.
+      location.replace('/field#/login');
+      // Belt-and-braces: some browsers ignore replace-then-reload in PWA mode
+      setTimeout(function () { location.reload(); }, 50);
     });
   }
 

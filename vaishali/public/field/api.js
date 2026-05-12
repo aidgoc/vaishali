@@ -778,7 +778,10 @@
   function uploadFile(file, doctype, docname, opts) {
     opts = opts || {};
     if (!file) return Promise.reject(new Error('No file'));
-    if (!doctype || !docname) return Promise.reject(new Error('doctype + docname required'));
+    // doctype + docname are optional. When omitted the file is created as
+    // an unattached File doc (no parent), which is what we want for
+    // staging-then-reparent flows like receipt capture — it avoids
+    // per-doctype permission gates on the temporary parent.
 
     var prep = (file.type && file.type.indexOf('image/') === 0 && opts.optimize !== false)
       ? _downscaleImage(file, opts.maxDim, opts.quality)
@@ -788,8 +791,8 @@
       var fd = new FormData();
       var fname = file.name || ('photo-' + Date.now() + '.jpg');
       fd.append('file', blob, fname);
-      fd.append('doctype', doctype);
-      fd.append('docname', docname);
+      if (doctype) fd.append('doctype', doctype);
+      if (docname) fd.append('docname', docname);
       fd.append('is_private', opts.is_private != null ? String(opts.is_private) : '1');
       if (opts.folder) fd.append('folder', opts.folder);
 
