@@ -1266,6 +1266,11 @@ def submit_expense_claim(expenses, posting_date=None, approver=None,
             "expense_date": line.get("expense_date") or doc.posting_date,
             "expense_type": line.get("expense_type"),
             "amount": amt,
+            # Default sanctioned = amount so HRMS's
+            # 'advance amount > total sanctioned' guard doesn't fire on
+            # Draft insert. The approver can reduce this on approval (partial
+            # sanction) — process_approval picks up the modified value.
+            "sanctioned_amount": amt,
             "description": desc,
         })
 
