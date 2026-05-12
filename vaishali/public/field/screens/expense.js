@@ -325,13 +325,27 @@
         allAdvances = list || [];
         if (allAdvances.length > 0) {
           advanceCard.style.display = 'block';
+          var anyClaimable = false;
           for (var i = 0; i < allAdvances.length; i++) {
             var a = allAdvances[i];
+            var label;
+            if (a.pending_unpaid) {
+              label = a.name + ' · ₹' + Math.round(a.advance_amount).toLocaleString('en-IN')
+                    + ' awaiting payment by Accounts';
+            } else {
+              anyClaimable = true;
+              label = a.name + ' · ₹' + Math.round(a.remaining).toLocaleString('en-IN')
+                    + ' claimable · ' + (a.purpose || '').substring(0, 40);
+            }
             advanceSelect.appendChild(el('option', {
-              value: a.name,
-              textContent: a.name + ' · ₹' + Math.round(a.remaining).toLocaleString('en-IN')
-                + ' remaining · ' + (a.purpose || '').substring(0, 40)
+              value: a.pending_unpaid ? '' : a.name,
+              textContent: label,
+              disabled: !!a.pending_unpaid
             }));
+          }
+          if (!anyClaimable) {
+            advanceHelp.textContent = 'Your approved advances haven\'t been paid yet — Accounts must book a Payment Entry before you can claim against them.';
+            advanceHelp.style.color = '#C62828';
           }
         }
       });

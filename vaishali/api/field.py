@@ -1285,12 +1285,22 @@ def submit_expense_claim(expenses, posting_date=None, approver=None,
                          frappe.PermissionError)
         if adv_doc.docstatus != 1:
             frappe.throw(_("Advance {0} is not approved yet").format(adv_name))
-        remaining = (float(adv_doc.advance_amount or 0)
-                     - float(adv_doc.claimed_amount or 0)
-                     - float(adv_doc.return_amount or 0))
-        if alloc > remaining:
-            frappe.throw(_("Allocated ₹{0} exceeds remaining ₹{1} on advance {2}")
-                .format(f"{alloc:,.0f}", f"{remaining:,.0f}", adv_name))
+        # ERPNext only allows claiming against money that's been PAID —
+        # mirror that here so the user gets a clear error rather than a
+        # cryptic HRMS validation message at insert time.
+        paid = float(adv_doc.paid_amount or 0)
+        claimed = float(adv_doc.claimed_amount or 0)
+        returned = float(adv_doc.return_amount or 0)
+        claimable = paid - claimed - returned
+        if claimable <= 0:
+            frappe.throw(_(
+                "Advance {0} hasn't been paid by Accounts yet — claimable "
+                "headroom is ₹0. Ask Accounts to book a Payment Entry "
+                "against it before claiming."
+            ).format(adv_name))
+        if alloc > claimable:
+            frappe.throw(_("Allocated ₹{0} exceeds claimable ₹{1} on advance {2}")
+                .format(f"{alloc:,.0f}", f"{claimable:,.0f}", adv_name))
         doc.append("advances", {
             "employee_advance": adv_name,
             "posting_date": adv_doc.get("posting_date") or doc.posting_date,
@@ -1328,30 +1338,42 @@ def submit_expense_claim(expenses, posting_date=None, approver=None,
 
 @frappe.whitelist()
 def get_outstanding_advances():
-    """List of the current employee's submitted Employee Advances that
-    still have remaining money to claim against. Used by the PWA expense
-    form so reps can apply a claim against an existing advance."""
+    """Current employee's submitted Employee Advances with money available
+    to claim against (paid_amount - claimed_amount - return_amount > 0).
+
+    ERPNext's hrms.validate_advances enforces that you can only claim
+    against PAID money — if an advance is still Unpaid (paid_amount = 0),
+    Accounts must book a Payment Entry first. This endpoint mirrors that
+    rule so the PWA dropdown never shows an option that would fail
+    submission. Each item also carries `pending_unpaid` so the UI can
+    surface 'awaiting payment by Accounts' to the user."""
     emp = _get_employee()
     rows = frappe.db.sql("""
         SELECT name, advance_amount, paid_amount, claimed_amount,
                return_amount, status, posting_date, purpose
         FROM `tabEmployee Advance`
         WHERE employee = %s AND docstatus = 1
-          AND (advance_amount - IFNULL(claimed_amount,0) - IFNULL(return_amount,0)) > 0
         ORDER BY posting_date DESC
     """, (emp.name,), as_dict=True) or []
     out = []
     for r in rows:
-        remaining = (float(r["advance_amount"] or 0)
-                     - float(r["claimed_amount"] or 0)
-                     - float(r["return_amount"] or 0))
+        paid = float(r["paid_amount"] or 0)
+        claimed = float(r["claimed_amount"] or 0)
+        returned = float(r["return_amount"] or 0)
+        # ERPNext's "claimable headroom" = what's been paid minus what's
+        # already been settled. If the advance is still Unpaid, this is 0.
+        claimable = paid - claimed - returned
+        if claimable <= 0 and float(r["advance_amount"] or 0) - claimed - returned <= 0:
+            # fully settled — skip
+            continue
         out.append({
             "name": r["name"],
             "advance_amount": float(r["advance_amount"] or 0),
-            "paid_amount": float(r["paid_amount"] or 0),
-            "claimed_amount": float(r["claimed_amount"] or 0),
-            "return_amount": float(r["return_amount"] or 0),
-            "remaining": remaining,
+            "paid_amount": paid,
+            "claimed_amount": claimed,
+            "return_amount": returned,
+            "remaining": claimable,             # what the PWA can allocate
+            "pending_unpaid": claimable <= 0,   # surfaced as 'awaiting payment'
             "status": r["status"],
             "posting_date": str(r["posting_date"]) if r["posting_date"] else "",
             "purpose": r["purpose"] or "",
