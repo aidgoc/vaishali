@@ -13,5 +13,12 @@ EC2: `dspl-erp-server`, `35.154.17.172`, `i-08deae9f14e3cc99e`, ap-south-1. SSH 
 - Status colors: green=completed, orange=in-progress, red=open/overdue, blue=default
 - Currency: always `₹` + `toLocaleString('en-IN')`
 - Cache bust: bump `?v=` in hooks.py + SW version in sw.js + `bench build` + nginx restart on CSS changes
+- **Number Card / Dashboard Chart filters: 5-element `[doctype, field, op, value, is_dynamic_bool]`.** 3-element form is accepted on save but explodes at render. `dynamic_filters_json` expressions run in the **browser** — use `frappe.datetime.*` not `frappe.utils.*`.
+- **Aggregates need raw SQL.** `frappe.db.get_value` with `SUM()` returns the first row; `frappe.get_all` with `SUM()` adds implicit `GROUP BY name`. Use `frappe.db.sql("SELECT COALESCE(SUM(x),0) FROM tab... WHERE ...")` for real aggregates.
+- **Frappe File doctype has NO `description` field.** Tag metadata by prefixing `file_name`. To stage a file without a parent doc, use `save_file(dt=None, dn=None, ...)` or PWA `fieldAPI.uploadFile(file, '', '')` — re-parent on submit.
+
+## Sibling repos
+
+- **`~/dspl_erp`** → `https://github.com/aidgoc/DSPL_ERP` — FastAPI sidecar (AI chat proxy, Telegram bot, director notifications). Deployed at `/home/frappe/dspl_erp/` on the EC2 box. Deploy: `git push origin main` locally → `sudo -u frappe git -C /home/frappe/dspl_erp pull origin main && sudo supervisorctl restart dspl-fastapi`.
 
 @.claude/rules/conventions.md
