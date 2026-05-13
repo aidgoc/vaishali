@@ -1596,6 +1596,7 @@ def get_session_info():
     if frappe.session.user == "Guest":
         frappe.throw("Not logged in", frappe.AuthenticationError)
     emp = _get_employee()
+    must_change = bool(frappe.db.get_value("User", frappe.session.user, "force_password_reset"))
     return {
         "employee": {
             "name": emp.name,
@@ -1606,7 +1607,26 @@ def get_session_info():
         },
         "nav_tier": _get_nav_tier(),
         "user": frappe.session.user,
+        "must_change_password": must_change,
     }
+
+
+@frappe.whitelist(methods=["POST"])
+def set_new_password(new_password):
+    """First-login password change. Bypasses User doctype strength validation
+    by writing to __Auth directly; we enforce a minimum length here. Clears
+    the force_password_reset flag on success."""
+    if frappe.session.user == "Guest":
+        frappe.throw("Not logged in", frappe.AuthenticationError)
+    pw = (new_password or "").strip()
+    if len(pw) < 6:
+        frappe.throw("Password must be at least 6 characters")
+    if pw.lower() in {"test123", "password", "123456", "qwerty", "abc123"}:
+        frappe.throw("Pick a less common password")
+    from frappe.utils.password import update_password
+    update_password(frappe.session.user, pw)
+    frappe.db.set_value("User", frappe.session.user, "force_password_reset", 0)
+    return {"ok": True}
 
 
 # ── Leads ─────────────────────────────────────────────────────────

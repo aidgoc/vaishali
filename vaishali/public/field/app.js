@@ -158,6 +158,7 @@
   var routes = [
     // Auth
     { pattern: '#/login', handler: renderLogin, tab: null, title: null, back: null },
+    { pattern: '#/set-password', handler: function () { S().setPassword(appEl); }, tab: null, title: 'Set new password', back: null },
 
     // Core
     { pattern: '#/home',       handler: function () { S().home(appEl); },       tab: 'home',    title: 'Field', back: null },
@@ -655,6 +656,7 @@
                   nav_tier: info.nav_tier || 'field',
                   api_key: null,
                   api_secret: null,
+                  must_change_password: !!info.must_change_password,
                 },
                 status: 200
               };
@@ -682,7 +684,11 @@
               document.getElementById('app-header').style.display = '';
               document.getElementById('bottom-nav').style.display = '';
               buildBottomNav();
-              navigate('#/home');
+              if (d.must_change_password) {
+                navigate('#/set-password');
+              } else {
+                navigate('#/home');
+              }
             });
           });
         });
@@ -732,7 +738,7 @@
                 buildBottomNav();
                 _setupBellBadgePolling();
                 dismissSplash();
-                navigate('#/home');
+                navigate(info.must_change_password ? '#/set-password' : '#/home');
               });
             }
             dismissSplash();
