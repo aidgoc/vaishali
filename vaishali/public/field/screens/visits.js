@@ -78,27 +78,10 @@
     return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
 
-  function getGPS() {
-    return new Promise(function (resolve) {
-      if (!navigator.geolocation) {
-        resolve({ lat: null, lng: null, accuracy: null, error: 'Geolocation not supported' });
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        function (pos) {
-          resolve({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: Math.round(pos.coords.accuracy)
-          });
-        },
-        function (err) {
-          resolve({ lat: null, lng: null, accuracy: null, error: err.message });
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
-    });
-  }
+  // Use the central fieldAPI.getGPS which retries with low-accuracy on
+  // timeout — handles indoor / weak-signal cases that a single
+  // high-accuracy attempt rejects after 10s.
+  var getGPS = window.fieldAPI.getGPS;
 
   function statusColor(status) {
     if (!status) return 'gray';

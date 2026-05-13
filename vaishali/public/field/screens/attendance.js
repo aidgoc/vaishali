@@ -31,27 +31,10 @@
     return 'Server error';
   }
 
-  function getGPS() {
-    return new Promise(function (resolve) {
-      if (!navigator.geolocation) {
-        resolve({ lat: null, lng: null, accuracy: null, error: 'Geolocation not supported' });
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        function (pos) {
-          resolve({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: Math.round(pos.coords.accuracy)
-          });
-        },
-        function (err) {
-          resolve({ lat: null, lng: null, accuracy: null, error: err.message });
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
-    });
-  }
+  // Use the central fieldAPI.getGPS which retries with low-accuracy on
+  // timeout — handles indoor / garage / weak-signal cases that a single
+  // high-accuracy attempt rejects after 10s.
+  var getGPS = window.fieldAPI.getGPS;
 
   // Server returns naive IST for DCR/Service Call fields, and tz-aware
   // strings (with +05:30) for Employee Checkin via _to_ist. Either way,
@@ -138,14 +121,24 @@
     var gps = { lat: null, lng: null, accuracy: null };
     var coordsExpanded = false;
 
-    // Capture GPS
-    getGPS().then(function (result) {
+    // Capture GPS (with manual retry affordance if still fails)
+    function captureGPS() {
+      gpsBox.textContent = '';
+      gpsBox.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+        el('div', { textContent: 'Locating...', style: { fontSize: '14px', color: 'var(--text-muted)' } })
+      ]));
+      getGPS().then(handleGPSResult);
+    }
+    function handleGPSResult(result) {
       if (result.error) {
         gpsBox.textContent = '';
-        gpsBox.appendChild(el('div', {
+        var msg = el('div', {
           textContent: 'GPS unavailable: ' + result.error,
-          style: { color: 'var(--red, #dc3545)', fontSize: '14px' }
-        }));
+          style: { color: 'var(--red, #dc3545)', fontSize: '14px', marginBottom: '8px' }
+        });
+        var retryBtn = UI.btn('Retry location', { type: 'outline', onClick: captureGPS });
+        gpsBox.appendChild(msg);
+        gpsBox.appendChild(retryBtn);
         return;
       }
       gps.lat = result.lat;
@@ -174,7 +167,8 @@
         el('div', { textContent: gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6), style: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'monospace' } })
       ]);
       gpsBox.appendChild(coordsDetail);
-    });
+    }
+    captureGPS();
 
     // Show loading while fetching attendance
     actionArea.appendChild(UI.skeleton(2));
