@@ -96,7 +96,12 @@
           document.cookie = n + '=; Max-Age=0; path=/;';
           document.cookie = n + '=; Max-Age=0; path=/api;';
         });
-      return window.fieldAPI.idbPut('session', { id: 'current' });
+      // Actually delete the IDB row. idbPut({id:'current'}) writes a truthy
+      // shell that fools getSession() on next boot → _startup sees a non-null
+      // session and skips the login check, trapping the user on home.
+      return window.fieldAPI.idbDelete
+        ? window.fieldAPI.idbDelete('session', 'current')
+        : window.fieldAPI.clearSession();
     }).then(function () {
       // Use replace + full reload so the SW re-bootstraps from a clean slate.
       // location.hash before reload guarantees the next boot sees #/login.
