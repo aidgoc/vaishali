@@ -38,6 +38,24 @@ def _tiers():
     }
 
 
+def _user_cap(user):
+    """Per-user discount ceiling, in % (overrides director threshold).
+
+    Config in site_config.json::quotation_discount_user_caps, e.g.:
+        {"sales3@dgoc.in": 50}
+
+    Returns None if no cap is set for this user.
+    """
+    caps = frappe.conf.get("quotation_discount_user_caps") or {}
+    raw = caps.get(user)
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def _compute_total_discount_pct(doc):
     """Effective discount % across line-level + document-level discounts.
 
@@ -81,25 +99,39 @@ def validate_discount_approval(doc, method=None):
 
     user = frappe.session.user
     user_roles = set(frappe.get_roles(user))
+    personal_cap = _user_cap(user)
 
-    # > director threshold: needs Director / System Manager
+    # > director threshold: needs Director / System Manager, OR a personal cap that covers it
     if pct > tiers["director"]:
-        if not (user_roles & _DIRECTOR_ROLES):
-            frappe.throw(
-                _(
-                    "Discount {0:.1f}% exceeds the {1:.0f}% director-approval threshold. "
-                    "Reduce the discount or have a Director submit on your behalf."
-                ).format(pct, tiers["director"]),
-                frappe.PermissionError,
+        if user_roles & _DIRECTOR_ROLES:
+            doc.add_comment(
+                "Comment",
+                f"Discount {pct:.1f}% — director-tier approval ({user})."
             )
-        doc.add_comment(
-            "Comment",
-            f"Discount {pct:.1f}% — director-tier approval ({user})."
+            return
+        if personal_cap is not None and pct <= personal_cap:
+            doc.add_comment(
+                "Comment",
+                f"Discount {pct:.1f}% — within personal cap {personal_cap:.0f}% for {user}."
+            )
+            return
+        ceiling = personal_cap if personal_cap is not None else tiers["director"]
+        frappe.throw(
+            _(
+                "Discount {0:.1f}% exceeds your {1:.0f}% approval limit. "
+                "Reduce the discount or have a Director submit on your behalf."
+            ).format(pct, ceiling),
+            frappe.PermissionError,
         )
-        return
 
-    # > manager threshold: needs Sales Manager / Director / System Manager
+    # > manager threshold: needs Sales Manager / Director / System Manager, OR a personal cap covering it
     if pct > tiers["manager"]:
+        if personal_cap is not None and pct <= personal_cap:
+            doc.add_comment(
+                "Comment",
+                f"Discount {pct:.1f}% — within personal cap {personal_cap:.0f}% for {user}."
+            )
+            return
         if not (user_roles & _MANAGER_ROLES):
             frappe.throw(
                 _(
