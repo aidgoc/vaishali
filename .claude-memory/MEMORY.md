@@ -11,6 +11,22 @@
 - [allocate_earned_leaves does NOT dedupe](allocate_earned_leaves_no_dedupe.md) — re-running `hrms.hr.utils.allocate_earned_leaves` adds another month's accrual every call; no idempotency check. Before manually firing, STOP the Scheduled Job Type or you'll double-up when the natural cron fires. Burned 2026-05-12 (720 extra LLE rows).
 - [Stale item_group on Quotation Item child rows](stale_item_group_on_quotation_items.md) — amending an old quote fails with `Could not find Row #1: Item Group: X` when the Item Group has been renamed/deleted. `fetch_from` caches the value on the child row and never refreshes. Same risk on SO/DN/SI Item. Before any Item Group rename/delete, scan historical child tables. Hit 2026-05-12 on `22/2026-2027/0009-6` (BLF01* electric scissor lifts).
 - [Server Script Scheduler Event pattern](server_script_scheduler_event_pattern.md) — one-shot future actions in Frappe: daily Scheduler Event Server Script that date-gates the body and self-deletes when done. No hooks.py edit, no deploy. Live example: `vaishali_reenable_earned_leaves_2026_06_01`.
+- [PWA logout — idbDelete not idbPut](pwa_logout_idb_shell_bug.md) — `Auth.clearSession()` MUST `idbDelete('session','current')`. `idbPut({id:'current'})` writes a truthy shell that fools `getSession()` on next boot → user trapped on home. Plus POST `/api/method/logout` + nuke 6 cookies + `location.replace` + reload. All four steps needed. Hit 2026-05-13, fixed in `8013709`.
+- [PWA duplicate getGPS footgun](pwa_duplicate_getgps_footgun.md) — attendance.js and visits.js had their own dumb getGPS shims (no low-accuracy retry, maximumAge=0). Users in garages/indoors timed out. Always call `window.fieldAPI.getGPS()` — it's the smart one. Don't reinvent. Hit 2026-05-13, fixed in `7423ed4`.
+- [Bulk User creation gates: password strength + creation throttle](bulk_user_creation_password_throttle_bypass.md) — Frappe v15 blocks bulk Users two ways. Bypass strength by setting password via `frappe.utils.password.update_password()` AFTER insert (don't put `new_password` on the doc). Bypass throttle with `frappe.flags.in_import = True`. Hit during 134-user DCEPL onboarding 2026-05-13.
+- [Frappe v15 User has NO force_password_reset field](frappe_v15_no_force_password_reset.md) — must add Custom Field. Discovered 2026-05-13. Field added + exported to fixtures in commit `085eede`.
+
+## References
+- [PWA first-login password reset flow](pwa_first_login_password_reset_flow.md) — full wiring of the gate live since commit `a10fd71` (2026-05-13). Reusable template for any "must finish onboarding" gate.
+
+## Session 2026-05-14
+- [Per-user Quotation discount cap](quotation_per_user_discount_cap.md) — `site_config.quotation_discount_user_caps` overrides the 30% director threshold for named users. Raghuvir Joshi (`sales3@dgoc.in`) capped at 50% on 2026-05-14 to unblock D.N.D. Constructions quote `22/2026-2027/0088` (37.5%). Commit `92b84f2`. Adding more caps = `bench set-config -p` + restart, no code change.
+
+## Session 2026-05-13 ⭐⭐
+- **DCEPL PWA users baseline.** 134 new Users created (firstname@dgoc.in / test123), 27 module roles granted across 16 designated employees, 120 operators on Employee role only. PDF delivered via Jarvis. Detail in [dcepl_users_baseline_2026_05_13.md](dcepl_users_baseline_2026_05_13.md). Open: 120 operators can't get module roles until designations are filled (still blocked on ERS Tally integration).
+- **First-login force-reset shipped.** Custom field `User.force_password_reset` + PWA gate live for all 134 new accounts. Commits `a10fd71` + `085eede`. SW v95 → v96. Detail in [pwa_first_login_password_reset_flow.md](pwa_first_login_password_reset_flow.md).
+- **PWA logout fixed + GPS reliability fixed.** See pattern entries above. Two commits (`8013709`, `7423ed4`), SW v93 → v95.
+- **Server Script `vaishali_reenable_earned_leaves_2026_06_01` confirmed active** (daily, enabled). Scheduled Job Type `utils.allocate_earned_leaves` confirmed `stopped=1`. Both verified live on 2026-05-13.
 
 ## Session 2026-05-12 ⭐
 - [FY 2026-27 leave allocation final state](leave_allocation_fy_2026_27.md) — 32 carry-fwd employees at PL=2.0/SL=6.0 (capped); 148 others at PL=2.0/SL=1.0. Sick Leave `is_carry_forward=1`. **Scheduled Job Type `utils.allocate_earned_leaves` is STOPPED** through 31 May; Server Script `vaishali_reenable_earned_leaves_2026_06_01` re-enables it on 1 June. Anirudha Bhide now has DCEPL leave policy assigned. Carry-fwd LLE doc names: HR-LAL-2026-00455 to HR-LAL-2026-00486.
