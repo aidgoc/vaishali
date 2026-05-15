@@ -20,9 +20,9 @@ EC2: `dspl-erp-server`, `35.154.17.172`, `i-08deae9f14e3cc99e`, ap-south-1. SSH 
 
 ## Rules (split by topic)
 
-@.claude/rules/deploy.md
-@.claude/rules/frappe-gotchas.md
-@.claude/rules/email-and-auth.md
-@.claude/rules/pwa-and-attendance.md
-@.claude/rules/hrms-expense.md
-@.claude/rules/status-log.md
+@docs/rules/deploy.md
+@docs/rules/frappe-gotchas.md
+@docs/rules/email-and-auth.md
+@docs/rules/pwa-and-attendance.md
+@docs/rules/hrms-expense.md
+@docs/rules/status-log.md
